@@ -53,6 +53,9 @@ class NativeTextFieldView: NativeHostingView {
         model = TextFieldModel(config: config ?? TextFieldConfig.empty)
 
         super.init()
+        // So Dart can exempt this view from an edge effect's mask (bar chrome
+        // is painted over the effect, not under it).
+        _view.viewId = viewId
 
         setupSwiftUI()
 

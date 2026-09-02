@@ -1,4 +1,5 @@
 import 'package:cupertino_widgets/cupertino_widgets.dart';
+import 'package:cupertino_widgets/src/internal/edge_effect_coverage.dart';
 import 'package:flutter/cupertino.dart' show OverlayVisibilityMode;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -259,6 +260,81 @@ void main() {
     expect(
       viewTypes,
       contains('com.example.cupertino_widgets/cupertino_native_toggle'),
+    );
+  }, variant: iOS);
+
+  // The one thing a BackdropFilter cannot do is reach a platform view, so the
+  // effect tells the native side where it is and the controls dissolve
+  // themselves. If this rectangle stops arriving, every SwiftUI view under a
+  // bar silently goes back to drawing crisp through the blur.
+  testWidgets('scroll edge effect publishes its region', (tester) async {
+    final calls = <MethodCall>[];
+    const channel = MethodChannel('com.example.cupertino_widgets/alert');
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(channel, (call) async {
+          calls.add(call);
+          return null;
+        });
+    addTearDown(
+      () => TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, null),
+    );
+
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Align(
+          alignment: Alignment.topLeft,
+          child: SizedBox(
+            width: 390,
+            height: 120,
+            child: CupertinoScrollEdgeEffect(intensity: 0.5),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    final call = calls.singleWhere((c) => c.method == 'setEdgeEffectRegion');
+    final region = (call.arguments as Map)['region'] as Map;
+    expect(region['top'], 0);
+    expect(region['height'], 120);
+    expect(region['width'], 390);
+    expect(region['atTop'], true);
+    expect(region['intensity'], 0.5);
+  }, variant: iOS);
+
+  // The mask is geometric: a bar's own buttons sit inside the effect's
+  // rectangle, exactly where the content melting under them is. Only the
+  // widget tree can separate the two, and this is how it says so.
+  testWidgets('bar chrome exempts its platform views', (tester) async {
+    final calls = <MethodCall>[];
+    const channel = MethodChannel('com.example.cupertino_widgets/alert');
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(channel, (call) async {
+          calls.add(call);
+          return null;
+        });
+    addTearDown(
+      () => TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, null),
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Center(
+          child: CupertinoEdgeEffectExempt(
+            child: CupertinoNativeSwitch(value: true, onChanged: (_) {}),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(
+      calls
+          .where((c) => c.method == 'setEdgeEffectExempt')
+          .map((c) => (c.arguments as Map)['exempt']),
+      [true],
     );
   }, variant: iOS);
 }

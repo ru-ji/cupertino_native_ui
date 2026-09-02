@@ -732,14 +732,34 @@ Stack(children: [
 | Parameter | Type | Default | |
 | --- | --- | --- | --- |
 | `edge` | `CupertinoScrollEdgeEffectEdge` | `.top` | `top` or `bottom`. |
-| `style` | `CupertinoScrollEdgeEffectStyle` | `.soft` | `soft` is blur-forward; `hard` is the denser scrim iOS uses for high-legibility areas. `automatic` is treated as `soft`. |
+| `style` | `CupertinoScrollEdgeEffectStyle` | `.soft` | `soft` is the progressive blur plus scrim. `hard` is the system's cut-off: an opaque background ending with the bar, no blur and no fade — the way Flutter's own `AppBar` sits on a `Scaffold`. `automatic` is treated as `soft`. |
 | `color` | `Color?` | — | Tint. Defaults to the resolved system background — pass your page background when it differs. |
 | `intensity` | `double` | `1` | Scales blur and scrim together, 0 to 1. |
+| `native` | `bool` | `false` | Render as a native view instead of the shader. Set it only when the effect has to cover a native control — see below. Ignored off iOS. |
 
 Built on [haze](https://pub.dev/packages/haze): two backdrop layers running a
 separable fragment shader (`ui.ImageFilter.shader`), not a plain Gaussian blur,
 with sampling bounded to the widget's own rectangle so nothing outside it
 smears in.
+
+**Over a native control, set `native: true`.** A backdrop filter only ever
+filters its own render target. Painted over a platform view, the shader lands in
+an overlay layer that the iOS embedder clears to transparent before rendering
+into it — so it filters nothing, and the control keeps drawing crisply through
+the effect. `native: true` swaps the shader for a `UIVisualEffectView`, which is
+composited after the control's own view and samples the whole UIKit hierarchy
+below it: Flutter surface and native controls alike.
+
+It is a trade, not an upgrade. `UIVisualEffectView` is the only view UIKit hands
+the backdrop to, and its blur radius is the material's rather than ours, so
+`intensity` scales how much of the effect shows through the falloff instead of
+how wide the kernel is — the ramp reads flatter than the shader's. Nothing an
+app can write sees past its own content: not Metal in a `CAMetalLayer`, not
+SwiftUI's `.layerEffect`, not Flutter's `ImageFilter`. Flutter's own engine hit
+this wall and answered it by reaching into `UIVisualEffectView`'s private view
+tree for its `gaussianBlur` CAFilter, with a runtime bail-out for the day Apple
+renames something. Leave `native` false on pages with no native view under the
+effect.
 
 **Not the system effect.** `UIScrollEdgeEffect` is a property of a scroll view
 and blurs *that scroll view's own content*. A Flutter page has no `UIScrollView`

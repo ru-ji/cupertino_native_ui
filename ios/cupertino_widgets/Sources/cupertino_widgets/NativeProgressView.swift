@@ -45,6 +45,9 @@ class NativeProgressView: NativeHostingView {
         messenger: FlutterBinaryMessenger
     ) {
         super.init()
+        // So Dart can exempt this view from an edge effect's mask (bar chrome
+        // is painted over the effect, not under it).
+        _view.viewId = viewId
 
         channel = FlutterMethodChannel(
             name: "cupertino_widgets/progress_\(viewId)", binaryMessenger: messenger)

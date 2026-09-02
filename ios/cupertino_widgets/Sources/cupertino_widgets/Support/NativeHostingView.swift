@@ -213,6 +213,11 @@ class NativeHostingView: NSObject, FlutterPlatformView {
 final class HostingContainerView: UIView {
     weak var hostedController: UIHostingController<AnyView>?
 
+    /// The Flutter platform view id, so Dart can name this exact view when it
+    /// exempts it from a scroll edge effect's mask. Set by the owning
+    /// `Native*View` right after `super.init()`.
+    var viewId: Int64 = -1
+
     /// Called after every (re)parenting pass. Containment changes make UIKit
     /// re-derive the hosted controller's layout margins, so subclass owners
     /// that force custom margins (the scaffold) re-assert them here.
@@ -229,9 +234,26 @@ final class HostingContainerView: UIView {
     /// two owners would have them overwrite each other.
     var onLayoutMeasure: (() -> Void)?
 
+    /// Whether this view dissolves under a Flutter scroll edge effect it
+    /// passes beneath. True for the embedded controls, which scroll under
+    /// bars; false for a full-screen host (the scaffold), which IS the page
+    /// the bar sits on rather than something moving under it.
+    var masksUnderEdgeEffect = true {
+        didSet { updateEdgeEffectRegistration() }
+    }
+
     override func didMoveToWindow() {
         super.didMoveToWindow()
         updateHostParenting()
+        updateEdgeEffectRegistration()
+    }
+
+    private func updateEdgeEffectRegistration() {
+        if window != nil, masksUnderEdgeEffect {
+            EdgeEffectCoverage.shared.register(self)
+        } else {
+            EdgeEffectCoverage.shared.unregister(self)
+        }
     }
 
     override func layoutSubviews() {

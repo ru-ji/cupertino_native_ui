@@ -126,6 +126,25 @@ public class FlutterCupertinoPlugin: NSObject, FlutterPlugin {
             result(nil)
             return
         }
+        if call.method == "setEdgeEffectRegion" {
+            if #available(iOS 15.0, *), let args = call.arguments as? [String: Any],
+                let id = args["id"] as? Int
+            {
+                EdgeEffectCoverage.shared.setRegion(id: id, args: args["region"] as? [String: Any])
+            }
+            result(nil)
+            return
+        }
+        if call.method == "setEdgeEffectExempt" {
+            if #available(iOS 15.0, *), let args = call.arguments as? [String: Any],
+                let viewId = args["viewId"] as? Int
+            {
+                EdgeEffectCoverage.shared.setExempt(
+                    viewId: Int64(viewId), args["exempt"] as? Bool ?? false)
+            }
+            result(nil)
+            return
+        }
         if call.method == "showSheet" {
             guard #available(iOS 15.0, *) else {
                 result(

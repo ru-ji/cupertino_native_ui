@@ -11,6 +11,7 @@ import 'cupertino_native_glass_container.dart';
 import 'cupertino_native_tab_bar.dart' show CupertinoScrollEdgeEffectStyle;
 import 'cupertino_native_text_field.dart';
 import 'cupertino_scroll_edge_effect.dart';
+import 'internal/edge_effect_coverage.dart';
 import 'internal/ios_version.dart';
 import 'models/cupertino_native_icon.dart';
 import 'models/cupertino_symbols.dart';
@@ -1074,58 +1075,60 @@ class _IOS26SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
                 left: 0,
                 right: 0,
                 height: _barH,
-                child: Offstage(
-                  offstage: !actionsVisible,
-                  child: !centerTitle
-                      ? Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: Row(
-                            children: [
-                              if (leading != null) ...[
-                                leading!,
-                                const SizedBox(width: 12),
-                              ],
-                              Expanded(
-                                child: Align(
-                                  alignment: Alignment.centerLeft,
-                                  child: inlineTitleBlock,
+                child: CupertinoEdgeEffectExempt(
+                  child: Offstage(
+                    offstage: !actionsVisible,
+                    child: !centerTitle
+                        ? Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: Row(
+                              children: [
+                                if (leading != null) ...[
+                                  leading!,
+                                  const SizedBox(width: 12),
+                                ],
+                                Expanded(
+                                  child: Align(
+                                    alignment: Alignment.centerLeft,
+                                    child: inlineTitleBlock,
+                                  ),
                                 ),
-                              ),
-                              ?trailing,
+                                ?trailing,
+                              ],
+                            ),
+                          )
+                        : Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              // Buttons first, collapsed title LAST — the
+                              // opposite of the large title below, and for the
+                              // opposite reason. The large title scrolls
+                              // *behind* the glass and has to be under it to be
+                              // refracted; the collapsed title sits between the
+                              // buttons and never passes behind them, so
+                              // nothing is lost by painting it on top — and on
+                              // top it stays in the Flutter surface above the
+                              // native views instead of the one under them.
+                              if (leading != null)
+                                Align(
+                                  alignment: Alignment.centerLeft,
+                                  child: Padding(
+                                    padding: const EdgeInsets.only(left: 16),
+                                    child: leading!,
+                                  ),
+                                ),
+                              if (trailing != null)
+                                Align(
+                                  alignment: Alignment.centerRight,
+                                  child: Padding(
+                                    padding: const EdgeInsets.only(right: 16),
+                                    child: trailing!,
+                                  ),
+                                ),
+                              inlineTitleBlock,
                             ],
                           ),
-                        )
-                      : Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            // Buttons first, collapsed title LAST — the
-                            // opposite of the large title below, and for the
-                            // opposite reason. The large title scrolls
-                            // *behind* the glass and has to be under it to be
-                            // refracted; the collapsed title sits between the
-                            // buttons and never passes behind them, so
-                            // nothing is lost by painting it on top — and on
-                            // top it stays in the Flutter surface above the
-                            // native views instead of the one under them.
-                            if (leading != null)
-                              Align(
-                                alignment: Alignment.centerLeft,
-                                child: Padding(
-                                  padding: const EdgeInsets.only(left: 16),
-                                  child: leading!,
-                                ),
-                              ),
-                            if (trailing != null)
-                              Align(
-                                alignment: Alignment.centerRight,
-                                child: Padding(
-                                  padding: const EdgeInsets.only(right: 16),
-                                  child: trailing!,
-                                ),
-                              ),
-                            inlineTitleBlock,
-                          ],
-                        ),
+                  ),
                 ),
               ),
               if (_hasSearch) ...[
@@ -1145,9 +1148,11 @@ class _IOS26SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
                     // has to be live to take first responder.
                     interactive: !searchable || searchActive,
                     onTap: onSearchOpen,
-                    child: CupertinoSearchRowVisibility(
-                      listenable: searchRowVisibility,
-                      child: searchField!,
+                    child: CupertinoEdgeEffectExempt(
+                      child: CupertinoSearchRowVisibility(
+                        listenable: searchRowVisibility,
+                        child: searchField!,
+                      ),
                     ),
                   ),
                 ),
@@ -1163,7 +1168,7 @@ class _IOS26SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
                       offset: Offset((1 - searchT) * 140, 0),
                       child: Transform.scale(
                         scale: 0.7 + 0.3 * searchT,
-                        child: closeButton!,
+                        child: CupertinoEdgeEffectExempt(child: closeButton!),
                       ),
                     ),
                   ),
@@ -1285,13 +1290,20 @@ class CupertinoAppBar extends StatelessWidget {
         fit: StackFit.expand,
         children: [
           // Reaches past the bar's own bounds so the blur/tint fade out
-          // instead of ending at the edge (see _effectOverhang).
+          // instead of ending at the edge (see _effectOverhang). Not for
+          // `hard`: that style IS an edge — an opaque background that stops
+          // with the bar — so overhanging would just make the bar look 30
+          // points taller.
           Positioned(
             top: 0,
             left: 0,
             right: 0,
             height:
-                topPadding + 44 + _IOS26SliverAppBarDelegate._effectOverhang,
+                topPadding +
+                44 +
+                (scrollEdgeEffect == CupertinoScrollEdgeEffectStyle.hard
+                    ? 0
+                    : _IOS26SliverAppBarDelegate._effectOverhang),
             child: RepaintBoundary(
               child: CupertinoScrollEdgeEffect(
                 edge: CupertinoScrollEdgeEffectEdge.top,
@@ -1300,54 +1312,59 @@ class CupertinoAppBar extends StatelessWidget {
               ),
             ),
           ),
+          // Chrome, not content: these buttons are painted OVER the effect,
+          // so they must not dissolve into it. The native mask is geometric
+          // and cannot tell them from a row scrolled to the same place.
           Positioned(
             top: topPadding,
             left: 0,
             right: 0,
             height: 44,
-            child: !centerTitle
-                ? Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Row(
-                      children: [
-                        if (leadingWidget != null) ...[
-                          leadingWidget,
-                          const SizedBox(width: 12),
-                        ],
-                        Expanded(
-                          child: Align(
-                            alignment: Alignment.centerLeft,
-                            child: titleBlock,
+            child: CupertinoEdgeEffectExempt(
+              child: !centerTitle
+                  ? Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Row(
+                        children: [
+                          if (leadingWidget != null) ...[
+                            leadingWidget,
+                            const SizedBox(width: 12),
+                          ],
+                          Expanded(
+                            child: Align(
+                              alignment: Alignment.centerLeft,
+                              child: titleBlock,
+                            ),
                           ),
-                        ),
-                        if (trailing.isNotEmpty) trailingRow,
+                          if (trailing.isNotEmpty) trailingRow,
+                        ],
+                      ),
+                    )
+                  : Stack(
+                      alignment: Alignment.center,
+                      // Title painted last, over the native buttons — see the
+                      // collapsing bar's Stack for why.
+                      children: [
+                        if (leadingWidget != null)
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: Padding(
+                              padding: const EdgeInsets.only(left: 16),
+                              child: leadingWidget,
+                            ),
+                          ),
+                        if (trailing.isNotEmpty)
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: Padding(
+                              padding: const EdgeInsets.only(right: 16),
+                              child: trailingRow,
+                            ),
+                          ),
+                        titleBlock,
                       ],
                     ),
-                  )
-                : Stack(
-                    alignment: Alignment.center,
-                    // Title painted last, over the native buttons — see the
-                    // collapsing bar's Stack for why.
-                    children: [
-                      if (leadingWidget != null)
-                        Align(
-                          alignment: Alignment.centerLeft,
-                          child: Padding(
-                            padding: const EdgeInsets.only(left: 16),
-                            child: leadingWidget,
-                          ),
-                        ),
-                      if (trailing.isNotEmpty)
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: Padding(
-                            padding: const EdgeInsets.only(right: 16),
-                            child: trailingRow,
-                          ),
-                        ),
-                      titleBlock,
-                    ],
-                  ),
+            ),
           ),
         ],
       ),

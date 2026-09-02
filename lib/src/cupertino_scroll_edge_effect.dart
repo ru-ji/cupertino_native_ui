@@ -3,6 +3,8 @@ import 'package:flutter/cupertino.dart'
 import 'package:flutter/widgets.dart';
 import 'package:haze/haze.dart';
 
+import 'internal/edge_effect_coverage.dart';
+
 import 'cupertino_native_tab_bar.dart' show CupertinoScrollEdgeEffectStyle;
 
 /// Which screen edge a [CupertinoScrollEdgeEffect] hugs.
@@ -52,9 +54,10 @@ class CupertinoScrollEdgeEffect extends StatelessWidget {
 
   final CupertinoScrollEdgeEffectEdge edge;
 
-  /// `soft` (blur-forward) or `hard` (denser scrim, the more defined
-  /// boundary iOS uses for high-legibility areas). `automatic` is treated as
-  /// `soft`, like the system default.
+  /// `soft` is the progressive blur plus scrim. `hard` is the system's
+  /// cut-off: an opaque background that ends with the bar, no blur and no
+  /// fade — the way Flutter's own `AppBar` sits on a `Scaffold`. `automatic`
+  /// is treated as `soft`, like the system default.
   final CupertinoScrollEdgeEffectStyle style;
 
   /// Tint override. Defaults to the resolved system background.
@@ -85,27 +88,45 @@ class CupertinoScrollEdgeEffect extends StatelessWidget {
   /// plateau; the system's fade is the long, patient version.
   static const double _falloff = 1.0;
 
-  /// Peak opacity of the wash. `hard` is the denser, more opaque boundary
-  /// iOS uses where legibility beats seamlessness.
-  static const double _softTint = 0.55;
-  static const double _hardTint = 0.85;
+  /// Peak opacity of the wash, at the edge.
+  static const double _tintOpacity = 0.55;
 
   @override
   Widget build(BuildContext context) {
-    final hard = style == CupertinoScrollEdgeEffectStyle.hard;
-    return IgnorePointer(
-      child: Haze(
-        edge: edge == CupertinoScrollEdgeEffectEdge.top
-            ? HazeEdge.top
-            : HazeEdge.bottom,
-        sigma: _sigma * intensity,
-        falloff: _falloff,
-        plateau: _plateau,
-        tint: CupertinoDynamicColor.resolve(
-          color ?? CupertinoColors.systemBackground,
-          context,
+    final tint = CupertinoDynamicColor.resolve(
+      color ?? CupertinoColors.systemBackground,
+      context,
+    );
+    // `hard` is not a denser fade, it is the absence of one: the system's hard
+    // style cuts content off at the bar with a defined boundary — an opaque
+    // background, the way Flutter's own `AppBar` sits on a `Scaffold`. No
+    // blur, no falloff: an opaque box already covers whatever passes under
+    // it.
+    if (style == CupertinoScrollEdgeEffectStyle.hard) {
+      return IgnorePointer(child: ColoredBox(color: tint));
+    }
+    // A backdrop filter only ever filters its own render target, and over a
+    // platform view Flutter paints into an overlay surface the embedder clears
+    // to transparent — so the blur below reaches every pixel of this page
+    // EXCEPT the native controls, which come back up crisp through it. The
+    // native side cannot be blurred from here, so it is told where this effect
+    // is and dissolves itself along the same falloff. See
+    // [CupertinoEdgeEffectCoverage].
+    return CupertinoEdgeEffectCoverage(
+      atTop: edge == CupertinoScrollEdgeEffectEdge.top,
+      intensity: intensity,
+      plateau: _plateau,
+      child: IgnorePointer(
+        child: Haze(
+          edge: edge == CupertinoScrollEdgeEffectEdge.top
+              ? HazeEdge.top
+              : HazeEdge.bottom,
+          sigma: _sigma * intensity,
+          falloff: _falloff,
+          plateau: _plateau,
+          tint: tint,
+          tintOpacity: _tintOpacity * intensity,
         ),
-        tintOpacity: (hard ? _hardTint : _softTint) * intensity,
       ),
     );
   }

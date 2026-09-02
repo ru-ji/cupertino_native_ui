@@ -57,6 +57,9 @@ class NativeLiquidGlassView: NativeHostingView {
         messenger: FlutterBinaryMessenger
     ) {
         super.init()
+        // So Dart can exempt this view from an edge effect's mask (bar chrome
+        // is painted over the effect, not under it).
+        _view.viewId = viewId
 
         channel = FlutterMethodChannel(
             name: "cupertino_widgets/liquid_glass_\(viewId)", binaryMessenger: messenger)
@@ -275,8 +278,7 @@ struct AdaptiveLiquidGlassView: View {
             //         .glassEffect(.regular.interactive(), in: Circle())
             //
             GlassEffectContainer {
-                content
-                    .glassEffect(glass, in: glassShape)
+                glassSurface
                     .simultaneousGesture(
                         TapGesture().onEnded { if config.pressable == true { onPressed() } })
             }
@@ -291,22 +293,51 @@ struct AdaptiveLiquidGlassView: View {
         }
     }
 
-    /// What the glass is painted around: a native icon when there is one, and
-    /// otherwise Apple's own placeholder — invisible to the eye, solid to
-    /// touches. It has to be *something*: `EmptyView` is erased from the
-    /// hierarchy (frame and all, so the glass gets a 0×0 shape and paints
-    /// nothing) and `Color.clear` has no substance for `.interactive()` to
-    /// track, which is a container that renders but never responds.
+    /// The material, and what sits on it.
+    ///
+    /// A native icon is `glassEffect` CONTENT — the arrangement Apple
+    /// documents, and the one the icon-only container already renders
+    /// correctly. A hosted engine cannot be. `glassEffect` captures what it
+    /// wraps and hands that to the container to render, and a `FlutterView` is
+    /// a live Metal layer the capture has nothing to sample: the material and
+    /// the body both come out blank. That is the whole difference between the
+    /// glass circle with an `icon`, which draws, and every container with a
+    /// `route`, which drew nothing.
+    ///
+    /// So a hosted body gets the glass BEHIND it instead — the same
+    /// placeholder Apple uses, carrying the effect, as a `background` so it
+    /// takes the body's size in either layout mode. The body is drawn on the
+    /// material rather than captured into it, which costs the refraction of
+    /// the content itself; it keeps its own crisp pixels, and the container
+    /// finally renders.
+    @available(iOS 26.0, *)
+    @ViewBuilder
+    private var glassSurface: some View {
+        if let engine = model.engine, #available(iOS 16.0, *) {
+            FlutterContentView(engine: engine)
+                .padding(insets)
+                .applyGlassExpand(expand)
+                .background {
+                    Color.white.opacity(0.001).glassEffect(glass, in: glassShape)
+                }
+                // The hosted view states its own height and overshoots the box
+                // until Dart's layout reports back; the shape is also the clip.
+                .clipShape(glassShape)
+        } else {
+            content.glassEffect(glass, in: glassShape)
+        }
+    }
+
+    /// What the glass is painted around when it is `glassEffect` content: a
+    /// native icon when there is one, and otherwise Apple's own placeholder —
+    /// invisible to the eye, solid to touches. It has to be *something*:
+    /// `EmptyView` is erased from the hierarchy (frame and all, so the glass
+    /// gets a 0×0 shape and paints nothing) and `Color.clear` has no substance
+    /// for `.interactive()` to track, which is a container that renders but
+    /// never responds.
     @ViewBuilder
     private var base: some View {
-        if let engine = model.engine, #available(iOS 16.0, *) {
-            // The Flutter body as a SwiftUI view — so `glassEffect` captures
-            // it the way it captures a `Text` or an `Image`, and the content
-            // ends up *in* the material instead of composited over it. This
-            // is the only arrangement in which Flutter content is refracted
-            // correctly rather than lensed at the glass edges.
-            FlutterContentView(engine: engine)
-        } else if let icon = config.icon {
+        if let icon = config.icon {
             IconView(icon: icon)
         } else {
             // No content of its own: Apple's placeholder, invisible to the eye

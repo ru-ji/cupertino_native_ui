@@ -44,6 +44,9 @@ class NativeSliderView: NativeHostingView {
             name: "adaptive_slider_\(viewId)", binaryMessenger: messenger)
 
         super.init()
+        // So Dart can exempt this view from an edge effect's mask (bar chrome
+        // is painted over the effect, not under it).
+        _view.viewId = viewId
 
         // Push measurements instead of waiting to be polled.
         sizeChannel = channel

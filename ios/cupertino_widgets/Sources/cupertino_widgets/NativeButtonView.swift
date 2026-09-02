@@ -40,6 +40,9 @@ class NativeButtonView: NativeHostingView {
         messenger: FlutterBinaryMessenger
     ) {
         super.init()
+        // So Dart can exempt this view from an edge effect's mask (bar chrome
+        // is painted over the effect, not under it).
+        _view.viewId = viewId
 
         channel = FlutterMethodChannel(
             name: "cupertino_widgets/button_\(viewId)", binaryMessenger: messenger)

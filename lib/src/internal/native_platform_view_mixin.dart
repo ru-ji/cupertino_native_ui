@@ -1,6 +1,8 @@
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
+import 'edge_effect_coverage.dart';
+
 /// Shared `MethodChannel` + intrinsic-size machinery for widgets that host a
 /// native `UiKitView`. Every `CupertinoNative*` widget re-implemented this
 /// identically; this mixin is the single copy.
@@ -22,6 +24,14 @@ mixin NativePlatformViewStateMixin<T extends StatefulWidget> on State<T> {
     Future<dynamic> Function(MethodCall call)? onMethodCall,
   }) {
     channel = MethodChannel(channelName);
+    // Bar chrome does not dissolve into the bar's own edge effect: the
+    // buttons are painted OVER it. The mask on the native side is geometric
+    // and cannot tell a leading button from a row that has scrolled up to the
+    // same place, so the widget tree — which knows — says so here.
+    _edgeEffectViewId = id;
+    if (CupertinoEdgeEffectExempt.of(context)) {
+      CupertinoEdgeEffectCoverage.setExempt(id, true);
+    }
     // Always handled here, whether or not the widget wants calls of its own:
     // `intrinsicSize` is pushed by the native view the moment its container
     // lays out, and every widget wants that.
@@ -81,6 +91,19 @@ mixin NativePlatformViewStateMixin<T extends StatefulWidget> on State<T> {
       }
       await Future<void>.delayed(Duration(milliseconds: 16 * (attempt + 1)));
     }
+  }
+
+  /// The platform view id, kept so the edge-effect exemption can be dropped
+  /// when this view goes away and the id is handed to the next one.
+  int? _edgeEffectViewId;
+
+  /// Releases the exemption this view claimed. Mixed into a `State`, so the
+  /// widget's own `dispose` runs this by calling `super.dispose()`.
+  @override
+  void dispose() {
+    final id = _edgeEffectViewId;
+    if (id != null) CupertinoEdgeEffectCoverage.setExempt(id, false);
+    super.dispose();
   }
 
   /// Sends updated config to the native view via [method].

@@ -262,51 +262,39 @@ class _NativeZooProbePageState extends State<NativeZooProbePage> {
               ),
             ),
           ),
-          SizedBox(
-            height: 300,
-            width: MediaQuery.of(context).size.width,
-            child: Stack(
-              children: [
-                Positioned(
-                  bottom: 100,
-                  child: CupertinoNativeButton(
-                    title: 'Glass',
-                    style: CupertinoNativeButtonStyle.glassProminent,
-                    borderShape: CupertinoNativeButtonBorderShape.capsule,
-                    onPressed: () {},
-                  ),
-                ),
-
-                Positioned(
-                  bottom: 0,
-                  left: 100,
-                  child: Container(
-                    height: 50,
-                    width: 100,
-                    color: CupertinoColors.activeBlue,
-                    child: Text(
-                      'Button',
-                      style: TextStyle(color: CupertinoColors.white),
-                    ),
-                  ),
-                ),
-                Positioned(
-                  height: 300,
-                  width: 300,
-                  child: Haze(
-                    edge: HazeEdge.top,
-                    sigma: 50,
-                    falloff: 1,
-                    plateau: .3,
-                    tint: CupertinoDynamicColor.resolve(
-                      CupertinoColors.systemBackground,
-                      context,
-                    ),
-                    tintOpacity: .8,
-                  ),
-                ),
-              ],
+          // Which of the two boxes does the effect actually reach?
+          //
+          // A Flutter effect painted over a native view lands in an overlay
+          // render target that was cleared to transparent, so a BackdropFilter
+          // up there has no backdrop to sample: it reaches the Flutter box and
+          // cannot touch the native button, which keeps drawing on top of it.
+          // A native effect is a UIView composited after the button's own
+          // UIView, so it samples the whole hierarchy below — Flutter surface
+          // and native controls alike.
+          _blurProbe(
+            context,
+            'Haze (Flutter shader)',
+            Haze(
+              edge: HazeEdge.top,
+              sigma: 50,
+              falloff: 1,
+              plateau: .3,
+              tint: CupertinoDynamicColor.resolve(
+                CupertinoColors.systemBackground,
+                context,
+              ),
+              tintOpacity: .8,
             ),
+          ),
+          _blurProbe(
+            context,
+            'Glass container (native)',
+            const CupertinoNativeGlassContainer(cornerRadius: 0),
+          ),
+          _blurProbe(
+            context,
+            'Scroll edge effect',
+            const CupertinoScrollEdgeEffect(),
           ),
         ],
         // Full-width hosts: these cover the right third on their own.
@@ -373,6 +361,55 @@ class _NativeZooProbePageState extends State<NativeZooProbePage> {
 
   /// Label left, control right — the control has to sit in the right third to
   /// pass under the incoming page at all.
+  /// One native control and one Flutter box, both under [effect].
+  ///
+  /// The only question it answers is which of the two the effect reaches. If
+  /// the blue Flutter box goes soft and the glass button stays crisp on top,
+  /// the effect never saw the native view.
+  Widget _blurProbe(BuildContext context, String label, Widget effect) =>
+      Padding(
+        padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(label, style: rowTitleStyle(context)),
+            const SizedBox(height: 8),
+            SizedBox(
+              height: 160,
+              child: Stack(
+                children: [
+                  Positioned(
+                    top: 12,
+                    left: 0,
+                    child: CupertinoNativeButton(
+                      title: 'Native',
+                      style: CupertinoNativeButtonStyle.glassProminent,
+                      borderShape: CupertinoNativeButtonBorderShape.capsule,
+                      onPressed: () {},
+                    ),
+                  ),
+                  Positioned(
+                    top: 12,
+                    right: 0,
+                    child: Container(
+                      height: 44,
+                      width: 110,
+                      alignment: Alignment.center,
+                      color: CupertinoColors.activeBlue,
+                      child: const Text(
+                        'Flutter',
+                        style: TextStyle(color: CupertinoColors.white),
+                      ),
+                    ),
+                  ),
+                  Positioned.fill(child: effect),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+
   Widget _header(String text) => Padding(
     padding: const EdgeInsets.fromLTRB(16, 24, 16, 6),
     child: Builder(

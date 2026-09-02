@@ -206,6 +206,9 @@ class NativeScaffoldView: NativeHostingView {
 
         super.init()
         _view.backgroundColor = .clear
+        // The scaffold IS the page a bar sits on, not something scrolling
+        // under one: it must never dissolve into an edge effect.
+        _view.masksUnderEdgeEffect = false
 
         channel.setMethodCallHandler { [weak self] call, result in
             self?.handle(call, result: result)
