@@ -9,16 +9,23 @@ import 'package:flutter/widgets.dart';
 /// only ever filters its own render target. Painted over a platform view it
 /// lands in an overlay surface the embedder clears to transparent each frame,
 /// so it filters nothing: the blur reaches every pixel of the page except the
-/// native controls, which keep drawing crisp through the bar. Flutter cannot
-/// sample a `UIView` — those pixels never exist inside its render targets —
-/// so the control has to do its own half, and to do that it needs to know
-/// where the effect is.
+/// native controls, which would keep drawing crisp through the bar. Flutter
+/// cannot sample a `UIView` — those pixels never exist inside its render
+/// targets.
 ///
-/// This is the same division of labour as [CupertinoSearchRowVisibility]:
-/// `Opacity` cannot fade a platform view either, so the native field is told
-/// the number and fades itself.
+/// So the pixels move to where the shader is. The platform side answers this
+/// rectangle by telling each control when it enters it; the control hands over
+/// a bitmap of itself, the bar draws the covered band of it beneath the shader
+/// (`BarSnapshotSurface`), and only then is the live view cut on the same
+/// line. See `barSnapshots` for the whole path.
 ///
 /// A no-op off iOS, and free when the effect is at zero strength.
+///
+/// The rectangles currently published, in global coordinates, keyed the same
+/// way the platform side keys them. Read by `BarSnapshotSurface`, which must
+/// bound what it draws by exactly what the platform side cuts on.
+final Map<int, Rect> publishedEdgeRegions = {};
+
 class CupertinoEdgeEffectCoverage extends StatefulWidget {
   /// Marks one platform view as sitting ABOVE the effect rather than passing
   /// under it, so the native mask skips it.
@@ -39,21 +46,11 @@ class CupertinoEdgeEffectCoverage extends StatefulWidget {
   const CupertinoEdgeEffectCoverage({
     super.key,
     required this.atTop,
-    required this.intensity,
-    required this.plateau,
     required this.child,
   });
 
   /// Which end of the region the effect is densest at.
   final bool atTop;
-
-  /// 0 (nothing) to 1 (full), as published by the effect itself.
-  final double intensity;
-
-  /// Fraction of the span held at full strength before the fade begins — the
-  /// native ramp has to match the Flutter one or the two halves of the same
-  /// effect disagree about where the content should be gone.
-  final double plateau;
 
   final Widget child;
 
@@ -115,8 +112,6 @@ class _CupertinoEdgeEffectCoverageState
       'width': box.size.width,
       'height': box.size.height,
       'atTop': widget.atTop,
-      'intensity': widget.intensity,
-      'plateau': widget.plateau,
     };
     if (mapEquals(region, _sent)) return;
     _push(region);
@@ -124,6 +119,20 @@ class _CupertinoEdgeEffectCoverageState
 
   void _push(Map<String, dynamic>? region) {
     _sent = region;
+    // The same rectangle the platform side cuts on, kept for the surface that
+    // draws the bitmaps. Both halves of that illusion have to be bounded by
+    // ONE number; computing it twice — here and again from the bar's layout —
+    // is how a band of bare background ends up straight across a control.
+    if (region == null) {
+      publishedEdgeRegions.remove(_id);
+    } else {
+      publishedEdgeRegions[_id] = Rect.fromLTWH(
+        region['left'] as double,
+        region['top'] as double,
+        region['width'] as double,
+        region['height'] as double,
+      );
+    }
     _channel.invokeMethod<void>('setEdgeEffectRegion', {
       'id': _id,
       'region': region,

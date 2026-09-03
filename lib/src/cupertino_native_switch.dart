@@ -105,7 +105,7 @@ class _CupertinoNativeSwitchState extends State<CupertinoNativeSwitch>
       }
 
       // Native measurement, with a default for the frame or two before it
-      // lands. 65x32 is iOS 26's reported 61x28 plus the margin the native
+      // lands. 68x32 is iOS 26's reported 61x28 plus the margin the native
       // side adds for what the control paints outside its layout bounds (see
       // NativeToggleView.paintOverflow) — not the 51x31 UIKit drew for years,
       // which was 20% short in width. A box that under-shoots does not shrink
@@ -113,7 +113,7 @@ class _CupertinoNativeSwitchState extends State<CupertinoNativeSwitch>
       // whatever box it is given, so the excess spilled, and on a row flush
       // to the screen edge it spilled off-screen.
       return SizedBox(
-        width: intrinsicWidth ?? 65.0,
+        width: intrinsicWidth ?? 68.0,
         height: intrinsicHeight ?? 32.0,
         child: platformView,
       );

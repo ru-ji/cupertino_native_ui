@@ -3,8 +3,6 @@ import 'package:flutter/cupertino.dart'
 import 'package:flutter/widgets.dart';
 import 'package:haze/haze.dart';
 
-import 'internal/edge_effect_coverage.dart';
-
 import 'cupertino_native_tab_bar.dart' show CupertinoScrollEdgeEffectStyle;
 
 /// Which screen edge a [CupertinoScrollEdgeEffect] hugs.
@@ -89,7 +87,13 @@ class CupertinoScrollEdgeEffect extends StatelessWidget {
   static const double _falloff = 1.0;
 
   /// Peak opacity of the wash, at the edge.
-  static const double _tintOpacity = 0.55;
+  ///
+  /// Carries more of the effect than the blur does here, and deliberately: it
+  /// is the half that reaches the native controls. A `BackdropFilter` cannot
+  /// touch a platform view, so under the bar the wash is what makes a switch
+  /// or a glass button recede — the blur only ever softens the Flutter
+  /// content around them.
+  static const double _tintOpacity = 0.65;
 
   @override
   Widget build(BuildContext context) {
@@ -108,25 +112,20 @@ class CupertinoScrollEdgeEffect extends StatelessWidget {
     // A backdrop filter only ever filters its own render target, and over a
     // platform view Flutter paints into an overlay surface the embedder clears
     // to transparent — so the blur below reaches every pixel of this page
-    // EXCEPT the native controls, which come back up crisp through it. The
-    // native side cannot be blurred from here, so it is told where this effect
-    // is and dissolves itself along the same falloff. See
-    // [CupertinoEdgeEffectCoverage].
-    return CupertinoEdgeEffectCoverage(
-      atTop: edge == CupertinoScrollEdgeEffectEdge.top,
-      intensity: intensity,
-      plateau: _plateau,
-      child: IgnorePointer(
-        child: Haze(
-          edge: edge == CupertinoScrollEdgeEffectEdge.top
-              ? HazeEdge.top
-              : HazeEdge.bottom,
-          sigma: _sigma * intensity,
-          falloff: _falloff,
-          plateau: _plateau,
-          tint: tint,
-          tintOpacity: _tintOpacity * intensity,
-        ),
+    // EXCEPT the native controls, which would come back up crisp through it.
+    // The answer is not here but in the bar that hosts this: it publishes its
+    // own rectangle, and a control inside it is drawn from a bitmap instead of
+    // being left to come back up crisp. See [BarSnapshotSurface].
+    return IgnorePointer(
+      child: Haze(
+        edge: edge == CupertinoScrollEdgeEffectEdge.top
+            ? HazeEdge.top
+            : HazeEdge.bottom,
+        sigma: _sigma * intensity,
+        falloff: _falloff,
+        plateau: _plateau,
+        tint: tint,
+        tintOpacity: _tintOpacity * intensity,
       ),
     );
   }

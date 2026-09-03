@@ -210,8 +210,9 @@ class _NativeZooProbePageState extends State<NativeZooProbePage> {
           ),
           _row(
             'Glass field',
-            SizedBox(
+            Container(
               width: 170,
+              padding: const EdgeInsets.only(right: 20),
               child: CupertinoNativeTextField(
                 placeholder: 'Glass',
                 glass: const CupertinoGlass(cornerRadius: 16),
@@ -226,22 +227,28 @@ class _NativeZooProbePageState extends State<NativeZooProbePage> {
           // with the real button an app bar now takes.
           _row(
             'Bar action (glass circle)',
-            CupertinoNativeGlassContainer(
-              shape: CupertinoGlassShape.circle,
-              interactive: true,
-              width: 44,
-              height: 44,
-              icon: CupertinoNativeIcon.named('moon').withDefaultSize(20),
-              onPressed: () {},
+            Padding(
+              padding: const EdgeInsets.only(right: 20),
+              child: CupertinoNativeGlassContainer(
+                shape: CupertinoGlassShape.circle,
+                interactive: true,
+                width: 44,
+                height: 44,
+                icon: CupertinoNativeIcon.named('moon').withDefaultSize(20),
+                onPressed: () {},
+              ),
             ),
           ),
           _row(
             'Glass capsule + label',
-            CupertinoNativeButton(
-              title: 'Edit',
-              style: CupertinoNativeButtonStyle.glass,
-              borderShape: CupertinoNativeButtonBorderShape.capsule,
-              onPressed: () {},
+            Padding(
+              padding: const EdgeInsets.only(right: 20),
+              child: CupertinoNativeButton(
+                title: 'Edit',
+                style: CupertinoNativeButtonStyle.glass,
+                borderShape: CupertinoNativeButtonBorderShape.capsule,
+                onPressed: () {},
+              ),
             ),
           ),
           _row(
@@ -250,6 +257,10 @@ class _NativeZooProbePageState extends State<NativeZooProbePage> {
               items: const [
                 CupertinoNativeMenuAction(title: 'Copy', actionId: 'copy'),
               ],
+              // The child below is a 10pt rounded box; without this the lift
+              // draws its plate on the full rectangle and the corners square
+              // off as it comes away from the page.
+              previewCornerRadius: 10,
               child: Container(
                 width: 88,
                 height: 44,

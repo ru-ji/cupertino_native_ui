@@ -67,6 +67,11 @@ public class FlutterCupertinoPlugin: NSObject, FlutterPlugin {
         registrar.register(
             listFactory, withId: "com.example.cupertino_widgets/cupertino_native_list")
 
+        let glassGroupFactory = NativeGlassGroupFactory(messenger: registrar.messenger())
+        registrar.register(
+            glassGroupFactory,
+            withId: "com.example.cupertino_widgets/cupertino_native_glass_group")
+
         let liquidGlassFactory = NativeLiquidGlassFactory(messenger: registrar.messenger())
         registrar.register(
             liquidGlassFactory,
@@ -141,6 +146,16 @@ public class FlutterCupertinoPlugin: NSObject, FlutterPlugin {
             {
                 EdgeEffectCoverage.shared.setExempt(
                     viewId: Int64(viewId), args["exempt"] as? Bool ?? false)
+            }
+            result(nil)
+            return
+        }
+        if call.method == "setEdgeCut" {
+            if #available(iOS 15.0, *), let args = call.arguments as? [String: Any],
+                let viewId = args["viewId"] as? Int
+            {
+                EdgeEffectCoverage.shared.setCut(
+                    viewId: Int64(viewId), args["cut"] as? Bool ?? false)
             }
             result(nil)
             return

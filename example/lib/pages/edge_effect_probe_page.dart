@@ -16,7 +16,15 @@ import '../widgets/settings_ui.dart';
 ///   adaptation included.
 /// * **Flutter page** has no scroll view for a native effect to attach to —
 ///   one hosted over it draws nothing at all — so the bar draws the
-///   recreation.
+///   recreation. Tried twice: `.scrollEdgeEffectStyle` on a hosted SwiftUI
+///   view, and iOS 26's `UIScrollEdgeElementContainerInteraction` pointed at
+///   an empty `UIScrollView` whose offset Dart drove. Neither renders a
+///   thing. `UIScrollEdgeEffect` blurs the content its own scroll view holds,
+///   and an empty one holds none — being composited over the Flutter surface
+///   buys nothing.
+///
+/// The third screen is about the other half of the same wall: what a Flutter
+/// effect can reach once native controls are the ones scrolling under it.
 class EdgeEffectProbePage extends StatelessWidget {
   const EdgeEffectProbePage({super.key});
 
@@ -50,6 +58,16 @@ class EdgeEffectProbePage extends StatelessWidget {
               onTap: () => Navigator.of(context).push(
                 CupertinoPageRoute<void>(
                   builder: (_) => const _HazeProbe(),
+                  title: 'Back',
+                ),
+              ),
+            ),
+            SettingsRow(
+              title: 'Native controls under the bar',
+              subtitle: 'What the effect can and cannot reach',
+              onTap: () => Navigator.of(context).push(
+                CupertinoPageRoute<void>(
+                  builder: (_) => const _NativeUnderBarProbe(),
                   title: 'Back',
                 ),
               ),
@@ -91,71 +109,44 @@ class _NativeProbe extends StatelessWidget {
   }
 }
 
-/// The recreation, over the same bands: a Flutter scrollable with
-/// [CupertinoScrollEdgeEffect] stacked over its top edge.
+/// The recreation, over the same bands: the package's own `CupertinoAppBar`
+/// stacked over a Flutter scrollable.
 ///
-/// Its tint is fixed, and that is not a shortcut — it is the only thing
-/// available. The system effect hosted over this same page draws nothing at
-/// all: `UIScrollEdgeEffect` blurs the content of the scroll view it belongs
-/// to, and a Flutter page has no scroll view for it to belong to. Tested, not
-/// assumed.
+/// The bar itself, not a hand-built imitation of it — same Haze, same span,
+/// same order, so what this screen shows is what a real page shows. Its tint
+/// is fixed, and that is not a shortcut: the system effect hosted over this
+/// same page draws nothing at all. `UIScrollEdgeEffect` blurs the content of
+/// the scroll view it belongs to, and a Flutter page has no scroll view for it
+/// to belong to. Tested, not assumed.
 class _HazeProbe extends StatelessWidget {
   const _HazeProbe();
 
   @override
   Widget build(BuildContext context) {
-    final top = MediaQuery.paddingOf(context).top;
     return CupertinoPageScaffold(
       child: Stack(
         children: [
           const Positioned.fill(
             child: SingleChildScrollView(child: EdgeEffectProbeBody()),
           ),
+          // The bar last: its glass action is painted over the effect, never
+          // under it — the same order the bar keeps internally.
           Positioned(
             top: 0,
             left: 0,
             right: 0,
-            // Roughly what the native probe's effect spans: its region is the
-            // bar's safe area (status bar + large title) and the fade runs
-            // past it. A box only as tall as the inline bar squeezes the
-            // whole profile — plateau and fade — into half the distance, and
-            // no tuning can look right compressed.
-            //
-            // It is also the effect's cost: every pixel in here runs the
-            // kernel twice. Doubling the height doubles the GPU work.
-            height: top + 44 + 110,
-            child: const CupertinoScrollEdgeEffect(),
-          ),
-          Positioned(
-            top: top,
-            left: 0,
-            right: 0,
-            height: 44,
-            child: Row(
-              children: [
-                const SizedBox(width: 16),
-                CupertinoNativeButton(
-                  icon: CupertinoNativeIcon.symbol(
-                    CupertinoSymbols.chevronBackward,
-                    size: 20,
-                  ),
-                  style: CupertinoNativeButtonStyle.glass,
-                  borderShape: CupertinoNativeButtonBorderShape.circle,
-                  labelStyle: CupertinoNativeButtonLabelStyle.iconOnly,
-                  onPressed: () => Navigator.pop(context),
+            child: CupertinoAppBar(
+              title: 'Haze',
+              leading: CupertinoNativeButton(
+                icon: CupertinoNativeIcon.symbol(
+                  CupertinoSymbols.chevronBackward,
+                  size: 20,
                 ),
-                const Spacer(),
-                const Text(
-                  'Haze',
-                  style: TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w600,
-                    decoration: TextDecoration.none,
-                    color: CupertinoColors.white,
-                  ),
-                ),
-                const SizedBox(width: 16),
-              ],
+                style: CupertinoNativeButtonStyle.glass,
+                borderShape: CupertinoNativeButtonBorderShape.circle,
+                labelStyle: CupertinoNativeButtonLabelStyle.iconOnly,
+                onPressed: () => Navigator.pop(context),
+              ),
             ),
           ),
         ],
@@ -263,6 +254,178 @@ class _LayerIsolationProbeState extends State<_LayerIsolationProbe> {
 /// The content every probe scrolls: alternating bands chosen for what they do
 /// to a tint — saturated gradients, flat white, flat black, and a high-noise
 /// band that stands in for a photograph.
+/// Native controls passing under a Flutter effect, next to their Flutter
+/// counterparts, so the two behaviours are visible in the same scroll.
+///
+/// The Flutter widgets blur. The native ones cannot: a `BackdropFilter` only
+/// filters its own render target, and over a platform view Flutter paints
+/// into an overlay the embedder clears to transparent — so the shader has no
+/// pixels of the control to read, and it would come back up crisp through the
+/// bar. They dissolve instead, natively, along the same falloff the tint uses
+/// (`CupertinoEdgeEffectCoverage` publishes the effect's rectangle; the
+/// hosted views fade themselves).
+///
+/// What to look for, scrolling slowly:
+///
+/// * the Flutter control **softens** — it is genuinely blurred;
+/// * the native control **thins out** — it is faded, not blurred, and there
+///   is no way to blur it from Flutter's side;
+/// * the bar's own back button stays **sharp** at any scroll position. It is
+///   inside the effect's rectangle too, and only the widget tree can tell it
+///   apart from a row that has scrolled up behind it.
+class _NativeUnderBarProbe extends StatefulWidget {
+  const _NativeUnderBarProbe();
+
+  @override
+  State<_NativeUnderBarProbe> createState() => _NativeUnderBarProbeState();
+}
+
+class _NativeUnderBarProbeState extends State<_NativeUnderBarProbe> {
+  bool _switchValue = true;
+  double _slider = 0.4;
+  int _segment = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    final top = MediaQuery.paddingOf(context).top;
+    return CupertinoPageScaffold(
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: ListView(
+              padding: EdgeInsets.only(
+                top: top + 44 + 24,
+                bottom: MediaQuery.paddingOf(context).bottom + 80,
+              ),
+              children: [
+                for (var i = 0; i < 3; i++) ...[
+                  _pair(
+                    'Switch',
+                    CupertinoSwitch(
+                      value: _switchValue,
+                      onChanged: (v) => setState(() => _switchValue = v),
+                    ),
+                    CupertinoNativeSwitch(
+                      value: _switchValue,
+                      onChanged: (v) => setState(() => _switchValue = v),
+                    ),
+                  ),
+                  _pair(
+                    'Glass action',
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: const BoxDecoration(
+                        color: CupertinoColors.systemGrey4,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    CupertinoNativeButton(
+                      icon: CupertinoNativeIcon.symbol(
+                        CupertinoSymbols.star,
+                        size: 20,
+                      ),
+                      style: CupertinoNativeButtonStyle.glass,
+                      borderShape: CupertinoNativeButtonBorderShape.circle,
+                      labelStyle: CupertinoNativeButtonLabelStyle.iconOnly,
+                      onPressed: () {},
+                    ),
+                  ),
+                  _pair(
+                    'Slider',
+                    SizedBox(
+                      width: 140,
+                      child: CupertinoSlider(
+                        value: _slider,
+                        onChanged: (v) => setState(() => _slider = v),
+                      ),
+                    ),
+                    SizedBox(
+                      width: 140,
+                      child: CupertinoNativeSlider(
+                        value: _slider,
+                        onChanged: (v) => setState(() => _slider = v),
+                      ),
+                    ),
+                  ),
+                  _pair(
+                    'Segmented',
+                    SizedBox(
+                      width: 140,
+                      child: CupertinoSlidingSegmentedControl<int>(
+                        groupValue: _segment,
+                        onValueChanged: (v) =>
+                            setState(() => _segment = v ?? 0),
+                        children: const {0: Text('A'), 1: Text('B')},
+                      ),
+                    ),
+                    SizedBox(
+                      width: 140,
+                      child: CupertinoNativeSegmentedControl(
+                        children: const ['A', 'B'],
+                        groupValue: _segment,
+                        onChanged: (v) => setState(() => _segment = v),
+                      ),
+                    ),
+                  ),
+                  // A band between each set, so the blur has something with
+                  // structure to work on and the tint has a colour to sit on.
+                  const _Band(
+                    label: 'Warm gradient',
+                    colors: [Color(0xFFFF6B9D), Color(0xFFFFC371)],
+                  ),
+                ],
+              ],
+            ),
+          ),
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: CupertinoAppBar(
+              title: 'Under the bar',
+              leading: CupertinoNativeButton(
+                icon: CupertinoNativeIcon.symbol(
+                  CupertinoSymbols.chevronBackward,
+                  size: 20,
+                ),
+                style: CupertinoNativeButtonStyle.glass,
+                borderShape: CupertinoNativeButtonBorderShape.circle,
+                labelStyle: CupertinoNativeButtonLabelStyle.iconOnly,
+                onPressed: () => Navigator.pop(context),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// One row: the same control twice, Flutter on the left, native on the
+  /// right, at the same height — so the difference under the bar is the only
+  /// difference between them.
+  Widget _pair(String label, Widget flutter, Widget native) => Padding(
+    padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
+    child: Row(
+      children: [
+        SizedBox(
+          width: 90,
+          child: Text(
+            label,
+            style: const TextStyle(
+              fontSize: 13,
+              decoration: TextDecoration.none,
+              color: CupertinoColors.secondaryLabel,
+            ),
+          ),
+        ),
+        Expanded(child: Center(child: flutter)),
+        Expanded(child: Center(child: native)),
+      ],
+    ),
+  );
+}
+
 class EdgeEffectProbeBody extends StatelessWidget {
   const EdgeEffectProbeBody({super.key});
 

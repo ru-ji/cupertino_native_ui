@@ -53,6 +53,10 @@ class NativeContextMenuView: NSObject, FlutterPlatformView, UIContextMenuInterac
     private var blurBackground = false
     private var backgroundBlurView: UIVisualEffectView?
     private var isDark: Bool?
+    /// The child's corner radius, from Dart. UIKit shapes the lift's plate and
+    /// shadow from `UIPreviewParameters.visiblePath`, and its default is the
+    /// preview's full rectangle — square corners around a rounded child.
+    private var previewCornerRadius: CGFloat = 0
 
     init(
         frame: CGRect,
@@ -65,6 +69,10 @@ class NativeContextMenuView: NSObject, FlutterPlatformView, UIContextMenuInterac
         super.init()
 
         container.backgroundColor = .clear
+        // Not opaque: the default promises the render server a full box of
+        // pixels this view never draws, and the lift's snapshot is where that
+        // shows as a plate around the child.
+        container.isOpaque = false
         container.addInteraction(UIContextMenuInteraction(delegate: self))
 
         if let dict = args as? [String: Any] {
@@ -87,6 +95,7 @@ class NativeContextMenuView: NSObject, FlutterPlatformView, UIContextMenuInterac
             items = itemMaps.compactMap { decodeConfig(MenuItemConfig.self, from: $0) }
         }
         blurBackground = args["blurBackground"] as? Bool ?? false
+        previewCornerRadius = CGFloat(args["previewCornerRadius"] as? Double ?? 0)
         if let dark = args["isDark"] as? Bool {
             isDark = dark
             container.overrideUserInterfaceStyle = dark ? .dark : .light
@@ -287,6 +296,10 @@ class NativeContextMenuView: NSObject, FlutterPlatformView, UIContextMenuInterac
         imageView.clipsToBounds = true
         let parameters = UIPreviewParameters()
         parameters.backgroundColor = .clear
+        if previewCornerRadius > 0 {
+            parameters.visiblePath = UIBezierPath(
+                roundedRect: imageView.bounds, cornerRadius: previewCornerRadius)
+        }
         let target = UIPreviewTarget(
             container: container,
             center: CGPoint(x: container.bounds.midX, y: container.bounds.midY))
@@ -349,3 +362,4 @@ class NativeContextMenuView: NSObject, FlutterPlatformView, UIContextMenuInterac
         }
     }
 }
+

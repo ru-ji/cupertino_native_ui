@@ -10,20 +10,20 @@ import UIKit
 /// the bar while the Flutter content around it blurs away. Flutter cannot
 /// sample a `UIView` — the pixels never exist inside its render targets.
 ///
-/// So the control does its own half. Dart publishes the effect's rectangle and
-/// strength; each hosted view masks itself with the SAME falloff over the part
-/// of it that is covered. Not a blur — no public API hands a view a blurred
-/// copy of its own content — but the composite reads right: what the eye reads
-/// under a scroll edge effect is content dissolving into the tint, and a
-/// control that is nearly gone where the tint is densest cannot look crisp.
+/// So the pixels are moved to where the blur can reach them. When a control
+/// enters an effect's rectangle this tells Dart; Dart takes a bitmap of the
+/// control (`PlatformViewSnapshot`), draws the covered band of it inside the
+/// bar — ordinary Flutter pixels, under the shader — and only then asks for
+/// the cut, at which point this hides exactly that band of the live view.
 ///
-/// Same trick, one layer over, as `CupertinoSearchRowVisibility`: Flutter's
-/// `Opacity` cannot fade a platform view either, so the native field fades
-/// itself.
+/// What the eye is given is one control: live below the line, a picture of
+/// itself above it, blurring away with everything else. Nothing fades, nothing
+/// is approximated. Same illusion as SwiftUI's tab-bar indicator, which does
+/// not move the icons it passes over — it repaints the part it covers.
 ///
-/// ponytail: mask, not blur. A real blur means a `UIVisualEffectView` per
-/// control (the only view UIKit hands the backdrop to) — worth it only if the
-/// dissolve reads wrong against the system's.
+/// The cut is deliberately NOT applied on this side's own initiative: Dart
+/// asks for it once it holds the bitmap, so there is never a frame where the
+/// band is hidden and nothing has replaced it.
 @available(iOS 15.0, *)
 final class EdgeEffectCoverage {
     static let shared = EdgeEffectCoverage()
@@ -34,10 +34,6 @@ final class EdgeEffectCoverage {
         let rect: CGRect
         /// Whether the dense end is the top edge of `rect` or the bottom.
         let atTop: Bool
-        /// 0 (nothing) to 1 (full), animated as the bar takes content under it.
-        let intensity: CGFloat
-        /// Fraction of the span held at full strength before the fade starts.
-        let plateau: CGFloat
 
         init?(_ args: [String: Any]) {
             guard let width = args["width"] as? Double, let height = args["height"] as? Double,
@@ -47,8 +43,6 @@ final class EdgeEffectCoverage {
                 x: args["left"] as? Double ?? 0, y: args["top"] as? Double ?? 0,
                 width: width, height: height)
             atTop = args["atTop"] as? Bool ?? true
-            intensity = CGFloat(args["intensity"] as? Double ?? 1)
-            plateau = CGFloat(args["plateau"] as? Double ?? 0.3)
         }
     }
 
@@ -58,7 +52,10 @@ final class EdgeEffectCoverage {
     /// design, at the same coordinates as the content melting away beneath
     /// them, so geometry cannot separate them: Dart names them.
     private var exempt: Set<Int64> = []
-    private var views = NSHashTable<UIView>.weakObjects()
+    /// Views whose covered band Dart has replaced with a bitmap, and which may
+    /// therefore be cut. Empty until Dart says so, view by view.
+    private var cut: Set<Int64> = []
+    private var views = NSHashTable<HostingContainerView>.weakObjects()
     /// Driven per frame, because the views MOVE under a stationary effect: a
     /// scroll changes a platform view's frame without laying its own container
     /// out, so there is no callback to hang this on.
@@ -67,11 +64,24 @@ final class EdgeEffectCoverage {
     /// Dart publishes one of these per live `CupertinoScrollEdgeEffect`,
     /// keyed by widget, and clears it on dispose.
     func setRegion(id: Int, args: [String: Any]?) {
-        if let args, let region = Region(args), region.intensity > 0 {
+        if let args, let region = Region(args) {
             regions[id] = region
         } else {
             regions.removeValue(forKey: id)
         }
+        #if DEBUG
+            // Three things produce "the control is not fading" and look
+            // identical on screen: the rectangle never arrives, it arrives at
+            // zero strength, or it arrives and no view ever intersects it.
+            // This line and the one in `apply` say which.
+            print(
+                "[cupertino_widgets] edge region \(id) "
+                    + (regions[id].map {
+                        "\(Int($0.rect.width))x\(Int($0.rect.height))"
+                            + "@\(Int($0.rect.minY))"
+                    } ?? "cleared")
+                    + " views=\(views.count)")
+        #endif
         sync()
     }
 
@@ -84,14 +94,24 @@ final class EdgeEffectCoverage {
         tick()
     }
 
-    func register(_ view: UIView) {
+    /// Dart holds the bitmap for this view (or has released it).
+    func setCut(viewId: Int64, _ isCut: Bool) {
+        if isCut {
+            cut.insert(viewId)
+        } else {
+            cut.remove(viewId)
+        }
+        tick()
+    }
+
+    func register(_ view: HostingContainerView) {
         views.add(view)
         sync()
     }
 
-    func unregister(_ view: UIView) {
+    func unregister(_ view: HostingContainerView) {
         views.remove(view)
-        view.layer.mask = nil
+        view.clearEdgeEffect()
         sync()
     }
 
@@ -106,7 +126,7 @@ final class EdgeEffectCoverage {
         } else if !wanted, let link = displayLink {
             link.invalidate()
             displayLink = nil
-            for view in views.allObjects { view.layer.mask = nil }
+            for view in views.allObjects { view.clearEdgeEffect() }
         }
         tick()
     }
@@ -117,65 +137,32 @@ final class EdgeEffectCoverage {
         }
     }
 
-    private func apply(to view: UIView) {
-        guard view.window != nil, view.bounds.height > 0,
-            !exempt.contains((view as? HostingContainerView)?.viewId ?? -1),
-            let region = covering(view)
+    private func apply(to view: HostingContainerView) {
+        guard view.window != nil, view.bounds.height > 0, !exempt.contains(view.viewId),
+            cut.contains(view.viewId), let region = covering(view)
         else {
-            if view.layer.mask != nil { view.layer.mask = nil }
+            view.clearEdgeEffect()
             return
         }
-        // The effect's rectangle in the view's own coordinates. Flutter's
-        // logical origin is the FlutterView's, which is the window's on every
-        // arrangement this package supports (a full-screen FlutterViewController).
+        // The line the control is cut on, in its own coordinates: the far edge
+        // of the bar's own rectangle. Above it Dart draws the bitmap, below it
+        // the live view continues — and both come from the same published
+        // rectangle, so there is no seam to align by hand.
         let effect = view.convert(region.rect, from: nil)
-
-        let mask = view.layer.mask as? CAGradientLayer ?? CAGradientLayer()
-        CATransaction.begin()
-        CATransaction.setDisableActions(true)
-        mask.frame = view.bounds
-        mask.startPoint = CGPoint(x: 0.5, y: 0)
-        mask.endPoint = CGPoint(x: 0.5, y: 1)
-        var colors: [CGColor] = []
-        var locations: [NSNumber] = []
-        // Sampled across the view, not across the effect: a mask layer is
-        // transparent outside its own frame, so it has to span the whole view
-        // and carry the ramp inside it. Sixteen steps is past the point where
-        // more of them changes anything on screen.
-        let steps = 16
-        for i in 0...steps {
-            let u = CGFloat(i) / CGFloat(steps)
-            let y = view.bounds.minY + u * view.bounds.height
-            colors.append(UIColor(white: 1, alpha: alpha(atY: y, in: effect, region: region)).cgColor)
-            locations.append(NSNumber(value: Double(u)))
-        }
-        mask.colors = colors
-        mask.locations = locations
-        view.layer.mask = mask
-        CATransaction.commit()
-    }
-
-    /// How much of the view survives at `y` (view coordinates).
-    ///
-    /// The same smootherstep the Dart side ramps the tint with, so the control
-    /// thins out exactly where the wash thickens. Outside the effect the view
-    /// is untouched; past its dense edge it stays at the peak rather than
-    /// coming back — a row scrolled fully behind the bar must not reappear.
-    private func alpha(atY y: CGFloat, in effect: CGRect, region: Region) -> CGFloat {
-        guard effect.height > 0 else { return 1 }
-        let fromDenseEdge = region.atTop ? (y - effect.minY) : (effect.maxY - y)
-        let u = min(max(fromDenseEdge / effect.height, 0), 1)
-        let t = region.plateau >= 1 ? 0 : max(0, (u - region.plateau) / (1 - region.plateau))
-        let s = t * t * t * (t * (t * 6 - 15) + 10)
-        return 1 - region.intensity * (1 - s)
+        view.applyEdgeCut(
+            visibleFrom: region.atTop ? effect.maxY : effect.minY, atTop: region.atTop)
     }
 
     /// The strongest region this view actually intersects, if any. Overlap is
     /// tested in window space so a view can be checked without laying it out.
     private func covering(_ view: UIView) -> Region? {
         let frame = view.convert(view.bounds, to: nil)
+        // The tallest of the rectangles this view is inside. Two bars can
+        // publish at once (a top one and a tab bar); a control can only be in
+        // one of them, and where they somehow overlap the larger cut is the
+        // safe one.
         return regions.values
             .filter { $0.rect.intersects(frame) }
-            .max { $0.intensity < $1.intensity }
+            .max { $0.rect.height < $1.rect.height }
     }
 }

@@ -127,7 +127,20 @@ class NativeToggleView: NativeHostingView {
     /// a shadow at best, the capsule's own edge at worst. A couple of points
     /// of transparent margin around a centred control cannot be seen; a
     /// trimmed switch can.
+    ///
+    /// Four, not two: two is the excess the measurements imply (61 reported,
+    /// about 63 drawn) and it clips on a real screen. The margin is not the
+    /// thing to minimise — a point of transparent box around a centred control
+    /// cannot be seen, a shaved capsule edge can.
     private static let paintOverflow: CGFloat = 4
+    /// Width only, on top of [paintOverflow]. The switch is the one control
+    /// whose drawing overruns its layout box enough to be seen: measured 61,
+    /// drawn about 63, and the outer stroke iOS 26 gives it lands past even
+    /// that. Three more points is the difference between a photograph of the
+    /// whole control and one with its ends shaved — and, on a row flush to the
+    /// screen edge with no padding of its own, between a switch inside the
+    /// screen and one spilling off it.
+    private static let extraWidth: CGFloat = 3
 
     override func intrinsicSize() -> [String: Double] {
         let measured = super.intrinsicSize()
@@ -135,12 +148,18 @@ class NativeToggleView: NativeHostingView {
             width > 0, height > 0
         else { return measured }
         return [
-            "width": width + Double(Self.paintOverflow),
+            "width": width + Double(Self.paintOverflow + Self.extraWidth),
             "height": height + Double(Self.paintOverflow),
         ]
     }
 
     private func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
+        // A bitmap of this view, for Flutter to draw in its own layer tree.
+        // See PlatformViewSnapshot.
+        if call.method == "snapshot" {
+            result(PlatformViewSnapshot.capture(view()))
+            return
+        }
         switch call.method {
         case "getIntrinsicSize":
             result(intrinsicSize())

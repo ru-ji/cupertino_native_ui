@@ -1,6 +1,10 @@
+import 'dart:async';
+import 'dart:ui' as ui;
+
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
+import 'bar_snapshots.dart';
 import 'edge_effect_coverage.dart';
 
 /// Shared `MethodChannel` + intrinsic-size machinery for widgets that host a
@@ -31,6 +35,8 @@ mixin NativePlatformViewStateMixin<T extends StatefulWidget> on State<T> {
     _edgeEffectViewId = id;
     if (CupertinoEdgeEffectExempt.of(context)) {
       CupertinoEdgeEffectCoverage.setExempt(id, true);
+    } else {
+      _keepBitmapFresh();
     }
     // Always handled here, whether or not the widget wants calls of its own:
     // `intrinsicSize` is pushed by the native view the moment its container
@@ -93,6 +99,75 @@ mixin NativePlatformViewStateMixin<T extends StatefulWidget> on State<T> {
     }
   }
 
+  /// Takes a bitmap of this control the moment it starts passing under a
+  /// scroll edge effect, and hands it to the bar to draw.
+  ///
+  /// A `BackdropFilter` cannot reach a platform view, so the pixels are moved
+  /// to where it can: the bar draws the covered band of this bitmap in its own
+  /// layer, under the shader, and only once it holds one is the live view cut
+  /// on the same line. See [barSnapshots].
+  ///
+  /// Frozen, and that is the point rather than a limitation: a control halfway
+  /// under a bar is not one anybody is operating. The capture is refreshed the
+  /// next time it comes back out and goes under again.
+  /// Keeps an up-to-date bitmap of this control on hand, always.
+  ///
+  /// Not when it approaches a bar — **always**, from the moment it can be
+  /// photographed until it goes away. Taking it on approach was the mistake
+  /// that produced every blink: a control announced early is usually still
+  /// off-screen, and an off-screen view has never rendered, which is the one
+  /// state `drawHierarchy` refuses. The picture then only existed after the
+  /// crossing had already happened.
+  ///
+  /// So the trigger is not proximity, it is EXISTENCE. Try as soon as the view
+  /// is created; keep trying while it refuses, which covers the whole of a
+  /// route transition and the frames before the first render; stop at the
+  /// first success. From then on it is retaken only when the control itself
+  /// changes — a switch flipped, a tint changed, a character typed — because
+  /// that is the only thing that can make the picture wrong.
+  ///
+  /// By the time any bar is involved there is nothing left to decide: the band
+  /// inside the bar's rectangle is drawn from the bitmap, the live view is cut
+  /// on the same line, and neither waits on the other.
+  void _keepBitmapFresh() {
+    if (barSnapshots.holds(_edgeEffectViewId ?? -1)) return;
+    _captureTimer ??= Timer.periodic(
+      const Duration(milliseconds: 100),
+      (_) => _captureIntoBar(),
+    );
+    _captureIntoBar();
+  }
+
+  /// Takes the bitmap and registers it. A refusal is not an error — the view
+  /// has simply not rendered yet, and [_keepBitmapFresh] asks again.
+  Future<void> _captureIntoBar() async {
+    final id = _edgeEffectViewId;
+    final channel = this.channel;
+    if (id == null || channel == null || !mounted) return;
+    final box = context.findRenderObject() as RenderBox?;
+    if (box == null || !box.hasSize || box.size.isEmpty) return;
+    (ui.Image, Rect)? capture;
+    try {
+      capture = await captureNativeView(channel);
+    } catch (_) {
+      return;
+    }
+    if (capture == null) return;
+    if (!mounted) {
+      capture.$1.dispose();
+      return;
+    }
+    _captureTimer?.cancel();
+    _captureTimer = null;
+    barSnapshots.add(id, BarSnapshotEntry(capture.$1, box, capture.$2));
+    // The platform side may cut this view from now on: there is something to
+    // put in the band's place.
+    unawaited(setEdgeCut(id, true));
+  }
+
+  /// Runs until the first capture succeeds, then stops.
+  Timer? _captureTimer;
+
   /// The platform view id, kept so the edge-effect exemption can be dropped
   /// when this view goes away and the id is handed to the next one.
   int? _edgeEffectViewId;
@@ -101,8 +176,12 @@ mixin NativePlatformViewStateMixin<T extends StatefulWidget> on State<T> {
   /// widget's own `dispose` runs this by calling `super.dispose()`.
   @override
   void dispose() {
+    _captureTimer?.cancel();
     final id = _edgeEffectViewId;
-    if (id != null) CupertinoEdgeEffectCoverage.setExempt(id, false);
+    if (id != null) {
+      CupertinoEdgeEffectCoverage.setExempt(id, false);
+      barSnapshots.remove(id);
+    }
     super.dispose();
   }
 
@@ -119,6 +198,13 @@ mixin NativePlatformViewStateMixin<T extends StatefulWidget> on State<T> {
     final future = channel?.invokeMethod(method, args);
     if (refreshIntrinsicSize) {
       future?.then((_) => requestIntrinsicSize());
+    }
+    // The bitmap held for this control is a photograph, and the control just
+    // changed underneath it. Left alone, a switch flipped on its way to the
+    // bar would show its old state above the cut and its new one below.
+    // The bitmap is a photograph and the control just changed underneath it.
+    if (barSnapshots.holds(_edgeEffectViewId ?? -1)) {
+      future?.then((_) => _captureIntoBar());
     }
   }
 }

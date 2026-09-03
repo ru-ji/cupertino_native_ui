@@ -21,6 +21,7 @@ export 'src/cupertino_native_scaffold.dart';
 export 'src/cupertino_native_list.dart';
 export 'src/cupertino_native_form.dart';
 export 'src/cupertino_native_glass_container.dart';
+export 'src/cupertino_native_glass_group.dart';
 export 'src/cupertino_native_sheet.dart';
 export 'src/cupertino_native_date_picker.dart';
 export 'src/cupertino_scroll_edge_effect.dart';

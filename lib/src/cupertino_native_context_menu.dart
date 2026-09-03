@@ -46,6 +46,7 @@ class CupertinoNativeContextMenu extends StatefulWidget {
     this.onOpenChanged,
     this.childInteractive = false,
     this.blurBackground = false,
+    this.previewCornerRadius = 0,
   });
 
   /// Flutter content the context menu wraps.
@@ -75,6 +76,19 @@ class CupertinoNativeContextMenu extends StatefulWidget {
   /// the ones this widget uses — stays sharp while everything around it
   /// blurs, and re-filtering the screen per frame stutters.
   final bool blurBackground;
+
+  /// Corner radius of [child], for the lift.
+  ///
+  /// UIKit draws the lifted preview's plate and shadow over the **rectangle**
+  /// of what it lifts unless it is told otherwise, so a child with rounded
+  /// corners shows square ones the moment it comes off the page — the corners
+  /// are transparent in the snapshot but the plate underneath is not. There
+  /// is nothing native to read this from: only the caller knows the shape of
+  /// the Flutter widget it handed over.
+  ///
+  /// 0 (the default) means a square child, which is exactly right for a photo
+  /// tile filling its box.
+  final double previewCornerRadius;
 
   /// Whether [child] receives touches. Defaults to false so every touch —
   /// including the long-press — reaches the native interaction; set true when
@@ -143,6 +157,7 @@ class _CupertinoNativeContextMenuState extends State<CupertinoNativeContextMenu>
 
   Map<String, dynamic> _toMap() {
     return {
+      'previewCornerRadius': widget.previewCornerRadius,
       'items': widget.items.map((e) => e.toMap()).toList(),
       'blurBackground': widget.blurBackground,
       'isDark': _isDark,

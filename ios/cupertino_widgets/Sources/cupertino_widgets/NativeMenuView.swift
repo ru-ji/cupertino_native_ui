@@ -86,6 +86,12 @@ class NativeMenuView: NativeHostingView {
     }
 
     private func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
+        // A bitmap of this view, for Flutter to draw in its own layer tree.
+        // See PlatformViewSnapshot.
+        if call.method == "snapshot" {
+            result(PlatformViewSnapshot.capture(view()))
+            return
+        }
         switch call.method {
         case "getIntrinsicSize":
             result(intrinsicSize())

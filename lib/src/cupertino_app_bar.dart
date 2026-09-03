@@ -11,6 +11,7 @@ import 'cupertino_native_glass_container.dart';
 import 'cupertino_native_tab_bar.dart' show CupertinoScrollEdgeEffectStyle;
 import 'cupertino_native_text_field.dart';
 import 'cupertino_scroll_edge_effect.dart';
+import 'internal/bar_snapshots.dart';
 import 'internal/edge_effect_coverage.dart';
 import 'internal/ios_version.dart';
 import 'models/cupertino_native_icon.dart';
@@ -724,7 +725,7 @@ class _IOS26SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
   /// How far the scroll-edge effect reaches past the bottom of the last thing
   /// in the header — the search field when there is one (NOT the row's bottom
   /// padding), the header's own edge otherwise.
-  static const double _effectOverhang = 30;
+  static const double _effectOverhang = 17;
 
   /// The row the search field lives in: the field, the gap above it (14 —
   /// measured off the system's own floating search row, between the toolbar
@@ -990,19 +991,53 @@ class _IOS26SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
     // the search open, no title and no actions — just the docked field. It
     // therefore shrinks and grows with the collapse and the morph on its own,
     // with no special-casing per configuration.
-    final effectH =
-        (_hasSearch ? fieldTop + fieldH + 3 : height) + _effectOverhang;
+    final effectH = (_hasSearch ? fieldTop + fieldH : height) + _effectOverhang;
 
     return Stack(
       clipBehavior: Clip.none,
       fit: StackFit.expand,
       children: [
+        // The covered band of every native control passing under this bar,
+        // drawn as ordinary Flutter pixels UNDER the effect so the shader can
+        // reach them — the one thing a backdrop filter cannot do to a platform
+        // view. Same rectangle as the effect, so the two agree on where the
+        // seam is. See [barSnapshots].
+        // Bounded by the published effect rectangle, not by anything laid out
+        // here — see [BarSnapshotSurface]. It only has to be painted BEFORE
+        // the effect, which is what this position in the stack buys.
+        const Positioned.fill(child: BarSnapshotSurface()),
         Positioned(
           top: 0,
           left: 0,
           right: 0,
           height: effectH,
           child: edgeEffect,
+        ),
+        // The bar's REAL rectangle — its own extent, without the effect's
+        // overhang. Two things hang off it, and they are the same idea:
+        //
+        //  * it absorbs taps, because a bar is a surface and a tap on the
+        //    empty space between the title and the actions belongs to it;
+        //  * it is published to the platform side, which cuts every native
+        //    control on this line so the bitmap drawn above it takes over.
+        //
+        // Sized to the extent, it grows and shrinks with the collapse and with
+        // the search row on its own — which is what makes it match the system
+        // bar it stands in for, in every one of its states, without a table of
+        // heights to maintain.
+        //
+        // Only over the header's OWN extent, which is what this Stack is
+        // sized to. The effect above reaches `_effectOverhang` further down so
+        // its blur and wash can fade out instead of ending on a line — that
+        // overhang is decoration lying over the page, and the page keeps its
+        // taps. Sized to the extent, this grows and shrinks with the collapse
+        // and with the search row on its own, which is exactly the behaviour
+        // of the system bar it stands in for.
+        //
+        // Below the actions in the stack, so they are hit-tested first.
+        const CupertinoEdgeEffectCoverage(
+          atTop: true,
+          child: AbsorbPointer(child: SizedBox.expand()),
         ),
         ClipRect(
           child: Stack(
@@ -1066,71 +1101,6 @@ class _IOS26SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
                   ),
                 ),
               ),
-              // Inline bar row. Hidden outright while search is active —
-              // the framework's Visibility treatment, not a fade/slide —
-              // via Offstage so the glass-action platform views stay alive
-              // instead of being destroyed and recreated per morph.
-              Positioned(
-                top: topPadding,
-                left: 0,
-                right: 0,
-                height: _barH,
-                child: CupertinoEdgeEffectExempt(
-                  child: Offstage(
-                    offstage: !actionsVisible,
-                    child: !centerTitle
-                        ? Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            child: Row(
-                              children: [
-                                if (leading != null) ...[
-                                  leading!,
-                                  const SizedBox(width: 12),
-                                ],
-                                Expanded(
-                                  child: Align(
-                                    alignment: Alignment.centerLeft,
-                                    child: inlineTitleBlock,
-                                  ),
-                                ),
-                                ?trailing,
-                              ],
-                            ),
-                          )
-                        : Stack(
-                            alignment: Alignment.center,
-                            children: [
-                              // Buttons first, collapsed title LAST — the
-                              // opposite of the large title below, and for the
-                              // opposite reason. The large title scrolls
-                              // *behind* the glass and has to be under it to be
-                              // refracted; the collapsed title sits between the
-                              // buttons and never passes behind them, so
-                              // nothing is lost by painting it on top — and on
-                              // top it stays in the Flutter surface above the
-                              // native views instead of the one under them.
-                              if (leading != null)
-                                Align(
-                                  alignment: Alignment.centerLeft,
-                                  child: Padding(
-                                    padding: const EdgeInsets.only(left: 16),
-                                    child: leading!,
-                                  ),
-                                ),
-                              if (trailing != null)
-                                Align(
-                                  alignment: Alignment.centerRight,
-                                  child: Padding(
-                                    padding: const EdgeInsets.only(right: 16),
-                                    child: trailing!,
-                                  ),
-                                ),
-                              inlineTitleBlock,
-                            ],
-                          ),
-                  ),
-                ),
-              ),
               if (_hasSearch) ...[
                 // The user's search field, permanently mounted in a slot that
                 // shrinks/fades with the collapse and travels to the top when
@@ -1174,6 +1144,78 @@ class _IOS26SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
                   ),
               ],
             ],
+          ),
+        ),
+        // Inline bar row. OUTSIDE the ClipRect above, and painted after it:
+        // a glass action casts its shadow a few points past its own box, and
+        // the clip cut that off square at the header's bottom edge — a hard
+        // rectangle around the back button.
+        // Still painted after the large title, which has to pass BEHIND the
+        // glass to be refracted by it.
+        //
+        // Hidden outright while search is active —
+        // the framework's Visibility treatment, not a fade/slide —
+        // via Offstage so the glass-action platform views stay alive
+        // instead of being destroyed and recreated per morph.
+        Positioned(
+          top: topPadding,
+          left: 0,
+          right: 0,
+          height: _barH,
+          child: CupertinoEdgeEffectExempt(
+            child: Offstage(
+              offstage: !actionsVisible,
+              child: !centerTitle
+                  ? Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Row(
+                        children: [
+                          if (leading != null) ...[
+                            leading!,
+                            const SizedBox(width: 12),
+                          ],
+                          Expanded(
+                            child: Align(
+                              alignment: Alignment.centerLeft,
+                              child: inlineTitleBlock,
+                            ),
+                          ),
+                          ?trailing,
+                        ],
+                      ),
+                    )
+                  : Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        // Buttons first, collapsed title LAST — the
+                        // opposite of the large title below, and for the
+                        // opposite reason. The large title scrolls
+                        // *behind* the glass and has to be under it to be
+                        // refracted; the collapsed title sits between the
+                        // buttons and never passes behind them, so
+                        // nothing is lost by painting it on top — and on
+                        // top it stays in the Flutter surface above the
+                        // native views instead of the one under them.
+                        if (leading != null)
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: Padding(
+                              padding: const EdgeInsets.only(left: 16),
+                              child: leading!,
+                            ),
+                          ),
+                        if (trailing != null)
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: Padding(
+                              padding: const EdgeInsets.only(right: 16),
+                              child: trailing!,
+                            ),
+                          ),
+                        inlineTitleBlock,
+                      ],
+                    ),
+            ),
           ),
         ),
       ],
@@ -1294,6 +1336,9 @@ class CupertinoAppBar extends StatelessWidget {
           // `hard`: that style IS an edge — an opaque background that stops
           // with the bar — so overhanging would just make the bar look 30
           // points taller.
+          // See the collapsing bar: the native controls' covered pixels, drawn
+          // here so the shader above them can blur them.
+          const Positioned.fill(child: BarSnapshotSurface()),
           Positioned(
             top: 0,
             left: 0,
@@ -1311,6 +1356,15 @@ class CupertinoAppBar extends StatelessWidget {
                 color: tintColor,
               ),
             ),
+          ),
+          // The bar's real rectangle — see the collapsing bar's note. This
+          // Stack is `topPadding + 44`, the bar itself; the effect above it
+          // overhangs by 30 more so it can fade out, and that overhang is
+          // decoration: the page keeps its taps through it, and a control
+          // there is not cut.
+          const CupertinoEdgeEffectCoverage(
+            atTop: true,
+            child: AbsorbPointer(child: SizedBox.expand()),
           ),
           // Chrome, not content: these buttons are painted OVER the effect,
           // so they must not dissolve into it. The native mask is geometric

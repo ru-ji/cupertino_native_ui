@@ -93,6 +93,16 @@ class NativeHostingView: NSObject, FlutterPlatformView {
             host.sizingOptions = .intrinsicContentSize
         }
         host.view.backgroundColor = .clear
+        // A UIView is `isOpaque = true` by DEFAULT, which is a promise to the
+        // render server that every pixel of its bounds is filled. A hosted
+        // control keeps that promise nowhere: a switch is a capsule in a
+        // rectangle, a glass circle is a circle. The compositor is entitled to
+        // skip blending and show the box — which is what surfaces as a faint
+        // rectangle around an embedded control, most visibly where two of
+        // their boxes overlap or a snapshot is taken (the context menu lift).
+        // Clearing the background is not the same statement and does not
+        // retract it.
+        host.view.isOpaque = false
         host.view.translatesAutoresizingMaskIntoConstraints = false
         _view.addSubview(host.view)
         configureConstraints(host.view, _view)
@@ -213,6 +223,14 @@ class NativeHostingView: NSObject, FlutterPlatformView {
 final class HostingContainerView: UIView {
     weak var hostedController: UIHostingController<AnyView>?
 
+    /// Never opaque: see the note on the hosted view in `attach`. This box is
+    /// mostly empty by design — a control is centred in it, and since the
+    /// paint-room change the box is deliberately larger than the control.
+    override var isOpaque: Bool {
+        get { false }
+        set {}
+    }
+
     /// The Flutter platform view id, so Dart can name this exact view when it
     /// exempts it from a scroll edge effect's mask. Set by the owning
     /// `Native*View` right after `super.init()`.
@@ -246,6 +264,57 @@ final class HostingContainerView: UIView {
         super.didMoveToWindow()
         updateHostParenting()
         updateEdgeEffectRegistration()
+    }
+
+    private var edgeMask: CALayer?
+
+    /// The rectangle the cut is measured against, in this view's coordinates.
+    ///
+    /// Outset, and that is the whole point: a mask layer is TRANSPARENT
+    /// outside its own frame, so a mask sized to the view is a clip. UIKit
+    /// controls paint past their bounds — the switch's rim, a glass shadow —
+    /// and a mask laid on exactly those bounds shaved the excess the moment
+    /// the control came near a bar. It looked like the bar was cutting the
+    /// switch, because it was.
+    var edgeMaskRect: CGRect { bounds.insetBy(dx: -edgeMaskOutset, dy: -edgeMaskOutset) }
+
+    /// How far past its own box this view is treated as drawing — used both by
+    /// the cut and by the bitmap that replaces the cut part, so the two cover
+    /// the same pixels.
+    let edgeMaskOutset: CGFloat = 24
+
+    /// Hides everything past `visibleFrom` — the band Dart is drawing a bitmap
+    /// of inside the bar.
+    ///
+    /// A mask layer is transparent outside its own frame, which is exactly the
+    /// tool here: the mask IS the part that stays. Solid, no gradient — the
+    /// point is that nothing of the live control shows where its picture is,
+    /// and nothing of the picture is missing where the control shows.
+    func applyEdgeCut(visibleFrom: CGFloat, atTop: Bool) {
+        let full = edgeMaskRect
+        let visible =
+            atTop
+            ? CGRect(
+                x: full.minX, y: visibleFrom, width: full.width,
+                height: max(0, full.maxY - visibleFrom))
+            : CGRect(
+                x: full.minX, y: full.minY, width: full.width,
+                height: max(0, visibleFrom - full.minY))
+        let mask = edgeMask ?? CALayer()
+        edgeMask = mask
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        mask.backgroundColor = UIColor.white.cgColor
+        mask.frame = visible
+        layer.mask = mask
+        CATransaction.commit()
+    }
+
+    /// Drops the cut, for a view no effect covers any more.
+    func clearEdgeEffect() {
+        guard edgeMask != nil else { return }
+        layer.mask = nil
+        edgeMask = nil
     }
 
     private func updateEdgeEffectRegistration() {

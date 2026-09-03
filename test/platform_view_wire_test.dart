@@ -263,11 +263,16 @@ void main() {
     );
   }, variant: iOS);
 
-  // The one thing a BackdropFilter cannot do is reach a platform view, so the
-  // effect tells the native side where it is and the controls dissolve
-  // themselves. If this rectangle stops arriving, every SwiftUI view under a
-  // bar silently goes back to drawing crisp through the blur.
-  testWidgets('scroll edge effect publishes its region', (tester) async {
+  // The rectangle a bar publishes is what the platform side cuts every native
+  // control on, and what the surface inside the bar draws its bitmaps within.
+  // If it stops arriving, or arrives wrong, every SwiftUI view under a bar
+  // goes back to drawing crisp through the blur.
+  //
+  // Tested on the publisher rather than through `CupertinoAppBar`: the bar
+  // only takes its iOS 26 path on a real iOS 26 device (`isIOS26OrLater` reads
+  // the running OS, which a platform override cannot fake), so a widget test
+  // driving the bar would exercise the pre-26 fallback and never reach it.
+  testWidgets('a bar zone publishes its rectangle', (tester) async {
     final calls = <MethodCall>[];
     const channel = MethodChannel('com.example.cupertino_widgets/alert');
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
@@ -286,8 +291,11 @@ void main() {
           alignment: Alignment.topLeft,
           child: SizedBox(
             width: 390,
-            height: 120,
-            child: CupertinoScrollEdgeEffect(intensity: 0.5),
+            height: 91,
+            child: CupertinoEdgeEffectCoverage(
+              atTop: true,
+              child: SizedBox.expand(),
+            ),
           ),
         ),
       ),
@@ -297,44 +305,39 @@ void main() {
     final call = calls.singleWhere((c) => c.method == 'setEdgeEffectRegion');
     final region = (call.arguments as Map)['region'] as Map;
     expect(region['top'], 0);
-    expect(region['height'], 120);
+    expect(region['height'], 91);
     expect(region['width'], 390);
     expect(region['atTop'], true);
-    expect(region['intensity'], 0.5);
   }, variant: iOS);
 
-  // The mask is geometric: a bar's own buttons sit inside the effect's
-  // rectangle, exactly where the content melting under them is. Only the
-  // widget tree can separate the two, and this is how it says so.
-  testWidgets('bar chrome exempts its platform views', (tester) async {
-    final calls = <MethodCall>[];
-    const channel = MethodChannel('com.example.cupertino_widgets/alert');
-    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-        .setMockMethodCallHandler(channel, (call) async {
-          calls.add(call);
-          return null;
-        });
-    addTearDown(
-      () => TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-          .setMockMethodCallHandler(channel, null),
-    );
-
-    await tester.pumpWidget(
-      MaterialApp(
-        home: Center(
-          child: CupertinoEdgeEffectExempt(
-            child: CupertinoNativeSwitch(value: true, onChanged: (_) {}),
+  // The group is one platform view for several glasses — the only arrangement
+  // in which they can merge. If the items stop travelling as one payload,
+  // there is no group left, just a row.
+  testWidgets('glass group sends its items as one payload', (tester) async {
+    final params = await paramsOf(
+      tester,
+      CupertinoNativeGlassGroup(
+        spacing: 4,
+        items: [
+          CupertinoNativeGlassGroupItem(
+            actionId: 'back',
+            icon: CupertinoNativeIcon.symbol(CupertinoSymbols.chevronBackward),
           ),
-        ),
+          const CupertinoNativeGlassGroupItem(
+            actionId: 'edit',
+            title: 'Edit',
+            shape: CupertinoGlassGroupShape.capsule,
+          ),
+        ],
       ),
     );
-    await tester.pump();
 
-    expect(
-      calls
-          .where((c) => c.method == 'setEdgeEffectExempt')
-          .map((c) => (c.arguments as Map)['exempt']),
-      [true],
-    );
+    expect(params['spacing'], 4.0);
+    final items = params['items'] as List;
+    expect(items.length, 2);
+    expect((items[0] as Map)['actionId'], 'back');
+    expect((items[1] as Map)['shape'], 'capsule');
+    // The id is also the morph identity on the SwiftUI side.
+    expect((items[1] as Map)['actionId'], 'edit');
   }, variant: iOS);
 }

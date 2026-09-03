@@ -46,7 +46,8 @@ still builds.
 
 - [Native controls](#native-controls) — Slider, Switch, Segmented Control,
   Button, Popup Menu, Context Menu, Alert, Progress, Text Field, Date Picker,
-  Liquid Glass, Tab Bar, List &amp; Form, Sheet, Native Scaffold
+  Liquid Glass (and glass groups), Tab Bar, List &amp; Form, Sheet, Native
+  Scaffold
 - [Flutter-drawn companions](#flutter-drawn-companions) — App Bar, Scroll Edge
   Effect, Symbol Image
 - [Shared models](#shared-models) — icons, menu items, list rows, bar items
@@ -201,6 +202,7 @@ CupertinoNativeContextMenu(
 | `onOpenChanged` | `ValueChanged<bool>?` | — | Fires `false` when dismissal *starts*, not when it ends. |
 | `blurBackground` | `bool` | `false` | Blurs the whole app behind the menu, natively (`UIVisualEffectView` over the window) — a Flutter blur cannot sample the native menu above it. |
 | `childInteractive` | `bool` | `false` | Let `child` receive touches. Keep false so the long-press reaches the native interaction. |
+| `previewCornerRadius` | `double` | `0` | Corner radius of `child`, for the lift. UIKit shapes the lifted preview's plate and shadow from the preview's full **rectangle** unless told otherwise, so a rounded child shows square corners as it comes off the page. Nothing native can read this — only the caller knows the shape of the Flutter widget it handed over. |
 
 ## Alert
 
@@ -406,6 +408,50 @@ in Dart. Leave `animateChanges` off for that: the box is already animating.
 
 `CupertinoGlass` — the settings object taken by `CupertinoNativeTextField.glass`:
 `cornerRadius` (`16`), `variant` (`.regular`), `interactive` (`true`), `tint`.
+
+### Glass group
+
+Several glasses in **one** platform view, so they behave as one piece of glass:
+brought close they stretch towards each other and merge, then separate again.
+
+```dart
+CupertinoNativeGlassGroup(
+  spacing: 4, // small enough that the glasses reach for each other
+  items: [
+    CupertinoNativeGlassGroupItem(
+      actionId: 'back',
+      icon: CupertinoNativeIcon.symbol(CupertinoSymbols.chevronBackward)),
+    CupertinoNativeGlassGroupItem(
+      actionId: 'edit', title: 'Edit',
+      shape: CupertinoGlassGroupShape.capsule),
+  ],
+  onAction: (id) => handle(id),
+)
+```
+
+There is no other arrangement in which the merge exists. `GlassEffectContainer`
+joins glasses that live in the same SwiftUI tree, and every
+`CupertinoNativeGlassContainer` is its own platform view — a separate tree, a
+separate hosting controller, a separate layer. No amount of positioning from
+Dart makes two of them aware of one another. A group is also one layer, so its
+items cannot overlap or be composited out of order the way neighbouring platform
+views can.
+
+The price is that a group's children are **configuration, not widgets**: a
+native icon, a title, a shape, a size. A `CupertinoNativeGlassContainer` takes
+any Flutter child because the child is composited over it; a group's items are
+laid out by SwiftUI, which is exactly what lets them share a container.
+
+| Parameter | Type | Default | |
+| --- | --- | --- | --- |
+| `items` | `List<CupertinoNativeGlassGroupItem>` | required | `actionId`, `icon`, `title`, `shape`, `width`, `height`, `enabled`. The id is also the item's identity for the morph — keep it stable or an item fades instead of travelling. |
+| `onAction` | `ValueChanged<String>?` | — | Tapped item's `actionId`. |
+| `spacing` | `double` | `8` | The gap **and** the distance at which the glasses merge — in SwiftUI it is one number, so it is one here. Animate it and the group flows apart and back together. |
+| `vertical` | `bool` | `false` | |
+| `tint` / `clear` / `interactive` | | | As on the container, applied to every glass in the group. |
+| `cornerRadius` | `double` | `16` | For `roundedRect` items. |
+
+Falls back to a plain material row below iOS 26, and draws nothing below iOS 16.
 
 ## Tab Bar
 
@@ -715,6 +761,12 @@ is a `.glass` `CupertinoNativeButton` with the `capsule` border shape.
 `title`, `subtitle`, `centerTitle`, `leading`, `trailing`, `scrollEdgeEffect`,
 `tintColor`.
 
+Both bars **absorb taps over their own extent** — a bar is a surface, and a tap
+on the empty space between the title and the actions belongs to it. The edge
+effect reaches 30pt further down so its blur and wash can fade out instead of
+ending on a line; that overhang is decoration lying over the page, and the page
+keeps its taps through it.
+
 ## Scroll Edge Effect
 
 The iOS 26 progressive blur plus gradient scrim where content meets a screen
@@ -735,36 +787,55 @@ Stack(children: [
 | `style` | `CupertinoScrollEdgeEffectStyle` | `.soft` | `soft` is the progressive blur plus scrim. `hard` is the system's cut-off: an opaque background ending with the bar, no blur and no fade — the way Flutter's own `AppBar` sits on a `Scaffold`. `automatic` is treated as `soft`. |
 | `color` | `Color?` | — | Tint. Defaults to the resolved system background — pass your page background when it differs. |
 | `intensity` | `double` | `1` | Scales blur and scrim together, 0 to 1. |
-| `native` | `bool` | `false` | Render as a native view instead of the shader. Set it only when the effect has to cover a native control — see below. Ignored off iOS. |
 
 Built on [haze](https://pub.dev/packages/haze): two backdrop layers running a
 separable fragment shader (`ui.ImageFilter.shader`), not a plain Gaussian blur,
 with sampling bounded to the widget's own rectangle so nothing outside it
 smears in.
 
-**Over a native control, set `native: true`.** A backdrop filter only ever
-filters its own render target. Painted over a platform view, the shader lands in
-an overlay layer that the iOS embedder clears to transparent before rendering
-into it — so it filters nothing, and the control keeps drawing crisply through
-the effect. `native: true` swaps the shader for a `UIVisualEffectView`, which is
-composited after the control's own view and samples the whole UIKit hierarchy
-below it: Flutter surface and native controls alike.
+**Over a native control, the pixels move to the shader.** A backdrop filter
+only ever filters its own render target. Painted over a platform view, the
+shader lands in an overlay layer that the iOS embedder clears to transparent
+before rendering into it — so it filters nothing, and the control would keep
+drawing crisply through the effect while everything around it blurs.
 
-It is a trade, not an upgrade. `UIVisualEffectView` is the only view UIKit hands
-the backdrop to, and its blur radius is the material's rather than ours, so
-`intensity` scales how much of the effect shows through the falloff instead of
-how wide the kernel is — the ramp reads flatter than the shader's. Nothing an
-app can write sees past its own content: not Metal in a `CAMetalLayer`, not
-SwiftUI's `.layerEffect`, not Flutter's `ImageFilter`. Flutter's own engine hit
-this wall and answered it by reaching into `UIVisualEffectView`'s private view
-tree for its `gaussianBlur` CAFilter, with a runtime bail-out for the day Apple
-renames something. Leave `native` false on pages with no native view under the
-effect.
+Flutter cannot sample a `UIView`: those pixels do not exist until iOS composites
+the frame, after Flutter has finished it. So the control is captured natively
+instead (raw BGRA straight into the buffer that crosses the channel, no codec on
+either side), the covered band of that bitmap is drawn *inside the bar* directly
+under the shader — ordinary Flutter pixels, in the shader's own render target —
+and only then is the live view cut on the same line. Below the line the control
+continues, live and interactive; above it, its picture blurs away with the rest
+of the page. It is the trick SwiftUI's tab bar plays with its indicator: the
+icons do not move, the indicator repaints the part it covers.
+
+Both halves are bounded by the *same published rectangle*, not by two
+calculations that agree — deriving it twice is how a band of bare background
+ends up straight across a control.
+
+Two things follow from it being a photograph. A control is announced to Dart a
+screen before it reaches the bar, so no scroll velocity can outrun the round
+trip; and while it is actually under the effect the picture is retaken every
+100 ms, because a **glass** control's bitmap contains the backdrop it was
+refracting when it was taken, and a frozen one reads as a plate of the wrong
+colour travelling under the bar. Opaque controls have no such problem and are
+captured once, refreshed only when their state changes.
+
+Nothing an app can write sees past its own content: not Metal in a
+`CAMetalLayer`, not SwiftUI's `.layerEffect`, not Flutter's `ImageFilter`.
+`UIVisualEffectView` is the only view UIKit hands the backdrop to — Flutter's own
+engine hit this wall and answered it by reaching into its private view tree for
+the `gaussianBlur` CAFilter, with a runtime bail-out for the day Apple renames
+something. One of those over the whole bar blurs everything below it correctly,
+but it has to *be* the effect rather than sit under `Haze`; one inside each
+control paints that control's box.
 
 **Not the system effect.** `UIScrollEdgeEffect` is a property of a scroll view
 and blurs *that scroll view's own content*. A Flutter page has no `UIScrollView`
 in it, so a native effect hosted over one finds nothing to blur and draws
-nothing at all — measured, not assumed. (`glassEffect` is the exception that
+nothing at all — measured twice: `.scrollEdgeEffectStyle` on a hosted SwiftUI
+view, and iOS 26's `UIScrollEdgeElementContainerInteraction` pointed at an empty
+`UIScrollView` whose offset Dart drove. (`glassEffect` is the exception that
 makes this worth checking: it samples its backdrop, which is why the glass
 container refracts Flutter content behind it.) The system's adaptive tint —
 which thins over bright, busy content — is therefore out of reach here, and
@@ -895,6 +966,12 @@ and Flutter content at all — but it is what the limitations below follow from,
 and it explains their signature: a page looks correct down to its first native
 control and wrong from there on.
 
+The best-known consequence of it — a `BackdropFilter` cannot blur a native
+control, because the control's pixels are never in the filter's render target —
+is **not** in this list: see
+[Scroll Edge Effect](#scroll-edge-effect), where the pixels are moved to the
+shader rather than the shader taught to reach them.
+
 ## Native views desync during route transitions
 
 During a Flutter page transition the root surface slides, but platform views
@@ -902,10 +979,16 @@ and their overlay layers are repositioned out of step. Native controls hang at
 the wrong offset for the length of the animation, and a control from the
 outgoing page can end up sitting over the incoming one.
 
-Left as is: the transition stays the system's own. Dropping the native views
-for the length of the animation would hide the artifact, but it trades a
-misplaced control for no control at all, and a page that fills in only once it
-has finished arriving.
+Left as is, for now. The machinery to fix it exists in the package — a native
+view can be captured as raw pixels and drawn by Flutter, which is how controls
+passing under a scroll edge effect are blurred — and a transition is the same
+shape of problem: draw the bitmap, hide the view, restore it when the animation
+ends. What has kept it out is the failure mode at the edges. A route arriving
+for the first time has views that have never rendered, so there is nothing to
+capture and the fallback blanks them for the whole push; and a bitmap is frozen,
+which a spinner or a glass control cannot afford for 350ms. A misplaced control
+is a worse artifact than no control only some of the time, and that is not a
+good enough reason to make the trade globally.
 
 Related: [flutter#163498](https://github.com/flutter/flutter/issues/163498)
 (open) — animations cause Flutter UI to flicker and platform views to be
