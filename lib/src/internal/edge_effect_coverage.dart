@@ -106,11 +106,18 @@ class _CupertinoEdgeEffectCoverageState
     final box = context.findRenderObject() as RenderBox?;
     if (box == null || !box.hasSize || box.size.isEmpty) return;
     final origin = box.localToGlobal(Offset.zero);
+    // Snapped to a whole device pixel before it is published, because this
+    // number becomes a line in two different rasterisers — a `CALayer` mask
+    // frame over there, a canvas clip over here. Rounded independently they
+    // land on either side of the same pixel, and that pixel is a hairline that
+    // flickers with the scroll. Rounded once, here, they cannot disagree.
+    final dpr = MediaQuery.devicePixelRatioOf(context);
+    double snap(double v) => (v * dpr).roundToDouble() / dpr;
     final region = <String, dynamic>{
-      'left': origin.dx,
-      'top': origin.dy,
-      'width': box.size.width,
-      'height': box.size.height,
+      'left': snap(origin.dx),
+      'top': snap(origin.dy),
+      'width': snap(box.size.width),
+      'height': snap(box.size.height),
       'atTop': widget.atTop,
     };
     if (mapEquals(region, _sent)) return;

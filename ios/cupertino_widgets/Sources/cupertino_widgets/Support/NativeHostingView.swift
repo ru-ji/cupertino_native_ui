@@ -305,6 +305,10 @@ final class HostingContainerView: UIView {
         CATransaction.begin()
         CATransaction.setDisableActions(true)
         mask.backgroundColor = UIColor.white.cgColor
+        // The seam is a hard line on a whole device pixel — Dart snapped the
+        // rectangle before publishing it. Antialiasing the mask's edge would
+        // put a half-covered row back, which is the hairline all over again.
+        mask.edgeAntialiasingMask = []
         mask.frame = visible
         layer.mask = mask
         CATransaction.commit()

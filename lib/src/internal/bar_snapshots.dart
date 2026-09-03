@@ -179,9 +179,6 @@ class _BarSnapshotPainter extends SingleChildRenderObjectWidget {
       ro.registry = registry;
 }
 
-/// How far the drawn band reaches past the effect's edge, in points.
-const double _seam = 2;
-
 class _RenderBarSnapshots extends RenderBox {
   _RenderBarSnapshots(this._registry) {
     _registry.addListener(markNeedsPaint);
@@ -217,21 +214,16 @@ class _RenderBarSnapshots extends RenderBox {
     final toLocal = Matrix4.tryInvert(getTransformTo(null));
     if (toLocal == null) return;
     canvas.save();
+    // No antialiasing on the seam, and no overlap either. The published
+    // rectangle is already on a whole device pixel; a soft-edged clip would
+    // put a half-transparent row back on top of it, and an overlap would lay a
+    // blurred copy over the sharp live view for those two points — both read
+    // as the same line.
     canvas.clipRect(
       publishedEdgeRegions.values
-          .map(
-            // Two points past the seam, on purpose. The cut and this clip are
-            // the same line in two rasterisations — a mask frame on the
-            // platform side, a clip on this one — and a fractional pixel of
-            // disagreement shows as a hairline that flickers with the scroll.
-            // Past the line the bitmap and the live view are the same pixels
-            // in the same place, so overlapping cannot be seen; a gap can.
-            (r) => MatrixUtils.transformRect(
-              toLocal,
-              Rect.fromLTRB(r.left, r.top - _seam, r.right, r.bottom + _seam),
-            ).shift(offset),
-          )
+          .map((r) => MatrixUtils.transformRect(toLocal, r).shift(offset))
           .reduce((a, b) => a.expandToInclude(b)),
+      doAntiAlias: false,
     );
     for (final entry in _registry.entries) {
       final box = entry.box;
