@@ -725,7 +725,13 @@ class _IOS26SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
   /// How far the scroll-edge effect reaches past the bottom of the last thing
   /// in the header — the search field when there is one (NOT the row's bottom
   /// padding), the header's own edge otherwise.
-  static const double _effectOverhang = 17;
+  /// How far past the bar's own extent the effect keeps fading.
+  ///
+  /// One bar height, and measured rather than picked: on the probe page the
+  /// system effect dies out around 150pt from the top of the screen while the
+  /// bar it belongs to ends at 103 (a 59pt inset plus 44). Ending 17pt below
+  /// the bar made the wash stop while it was still visibly on.
+  static const double _effectOverhang = 44;
 
   /// The row the search field lives in: the field, the gap above it (14 —
   /// measured off the system's own floating search row, between the toolbar
@@ -1035,10 +1041,24 @@ class _IOS26SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
         // of the system bar it stands in for.
         //
         // Below the actions in the stack, so they are hit-tested first.
-        const CupertinoEdgeEffectCoverage(
-          atTop: true,
-          child: AbsorbPointer(child: SizedBox.expand()),
+        //
+        // The two are separate rectangles because they answer different
+        // questions. What dissolves is the whole span the effect covers, the
+        // overhang included — a control left crisp there would be the one
+        // thing on the page not fading while the wash is still half on. What
+        // absorbs taps is only the bar's own extent: the overhang is
+        // decoration lying over the page, and the page keeps its taps.
+        Positioned(
+          top: 0,
+          left: 0,
+          right: 0,
+          height: effectH,
+          child: const CupertinoEdgeEffectCoverage(
+            atTop: true,
+            child: IgnorePointer(child: SizedBox.expand()),
+          ),
         ),
+        const AbsorbPointer(child: SizedBox.expand()),
         ClipRect(
           child: Stack(
             fit: StackFit.expand,
@@ -1357,15 +1377,25 @@ class CupertinoAppBar extends StatelessWidget {
               ),
             ),
           ),
-          // The bar's real rectangle — see the collapsing bar's note. This
-          // Stack is `topPadding + 44`, the bar itself; the effect above it
-          // overhangs by 30 more so it can fade out, and that overhang is
-          // decoration: the page keeps its taps through it, and a control
-          // there is not cut.
-          const CupertinoEdgeEffectCoverage(
-            atTop: true,
-            child: AbsorbPointer(child: SizedBox.expand()),
+          // Same split as the collapsing bar: the controls dissolve over the
+          // effect's whole span, the overhang included, while only the bar's
+          // own extent takes taps.
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            height:
+                topPadding +
+                44 +
+                (scrollEdgeEffect == CupertinoScrollEdgeEffectStyle.hard
+                    ? 0
+                    : _IOS26SliverAppBarDelegate._effectOverhang),
+            child: const CupertinoEdgeEffectCoverage(
+              atTop: true,
+              child: IgnorePointer(child: SizedBox.expand()),
+            ),
           ),
+          const AbsorbPointer(child: SizedBox.expand()),
           // Chrome, not content: these buttons are painted OVER the effect,
           // so they must not dissolve into it. The native mask is geometric
           // and cannot tell them from a row scrolled to the same place.

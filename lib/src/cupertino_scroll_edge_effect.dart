@@ -68,7 +68,12 @@ class CupertinoScrollEdgeEffect extends StatelessWidget {
 
   /// Peak blur at the edge. Apple's bar materials use a 24pt radius, and a
   /// Gaussian takes sigma as radius/2.
-  static const double _sigma = 5;
+  ///
+  /// Measured back off the system effect rather than assumed: on the probe
+  /// page's flat mid-grey band, the label sitting some 70pt down — half way
+  /// into the span — comes back smeared past reading under the real thing. A
+  /// 10pt radius cannot do that to a 17pt bold label; 24 can.
+  static const double _sigma = 12;
 
   /// Holds the TINT at full strength over the top third before it starts to
   /// fade. This is what the first recreation lacked: its wash began decaying
