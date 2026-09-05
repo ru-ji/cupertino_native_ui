@@ -214,11 +214,22 @@ class _RenderBarSnapshots extends RenderBox {
     final toLocal = Matrix4.tryInvert(getTransformTo(null));
     if (toLocal == null) return;
     canvas.save();
-    // No antialiasing on the seam, and no overlap either. The published
-    // rectangle is already on a whole device pixel; a soft-edged clip would
-    // put a half-transparent row back on top of it, and an overlap would lay a
-    // blurred copy over the sharp live view for those two points — both read
-    // as the same line.
+    // No antialiasing on the seam, and no overlap either — and the overlap
+    // half is the expensive lesson.
+    //
+    // Drawing the bitmap a little past the rectangle looks like cheap
+    // insurance against the platform side cutting a hair low. It is not:
+    // past the rectangle the live view is still there, and a control is not a
+    // stencil. `Tinted`, `Glass`, a slider's track — anything with a
+    // translucent fill gets that fill composited a SECOND time over the copy
+    // already on screen, and two 30% washes over one dark row make a pale band
+    // exactly as tall as the overlap. That was the whitish line; the black one
+    // was the same disagreement with the other sign.
+    //
+    // Neither is survivable by fudging. The two sides have to cut on the same
+    // pixel, which is what the KVO hook in `HostingContainerView` is for: the
+    // mask is now recomputed inside the transaction that moves the view, so
+    // the line it draws is the line this clip draws.
     canvas.clipRect(
       publishedEdgeRegions.values
           .map((r) => MatrixUtils.transformRect(toLocal, r).shift(offset))

@@ -257,13 +257,90 @@ final class HostingContainerView: UIView {
     /// bars; false for a full-screen host (the scaffold), which IS the page
     /// the bar sits on rather than something moving under it.
     var masksUnderEdgeEffect = true {
-        didSet { updateEdgeEffectRegistration() }
+        didSet {
+            updateEdgeEffectRegistration()
+            updateGeometryObservers()
+        }
     }
 
     override func didMoveToWindow() {
         super.didMoveToWindow()
         updateHostParenting()
         updateEdgeEffectRegistration()
+        updateGeometryObservers()
+    }
+
+    override func didMoveToSuperview() {
+        super.didMoveToSuperview()
+        updateGeometryObservers()
+    }
+
+    /// The layers whose geometry the embedder writes to move this view, while
+    /// we are watching them.
+    private var observedLayers: [CALayer] = []
+    private static let geometryKeys = ["transform", "position", "bounds"]
+
+    /// Watches the embedder move this view, so the cut can be recomputed
+    /// inside the very transaction that moves it.
+    ///
+    /// This is the whole answer to the seam. The embedder does not move a
+    /// platform view by laying it out — it writes a transform onto the view
+    /// that wraps it, from a task on this thread, inside a `CATransaction` of
+    /// its own. Nothing calls us. So the mask used to be recomputed on a clock
+    /// of ours (a display link, a run-loop observer), which always read the
+    /// position from BEFORE that write and masked the view where it had been a
+    /// frame ago — while the frame being composited had it somewhere else. The
+    /// difference is the distance scrolled in one frame, and it is the black
+    /// band when it lands low and the pale one when it lands high.
+    ///
+    /// `CALayer` is KVO-compliant for its animatable properties, so observing
+    /// them puts us inside that transaction, at the moment the geometry
+    /// becomes final and before it is committed. The mask set there is
+    /// composited with the position that caused it. Nothing is predicted,
+    /// nothing is compensated, and there is no clock to be wrong about.
+    private func updateGeometryObservers() {
+        stopObservingGeometry()
+        guard window != nil, masksUnderEdgeEffect else { return }
+        // Ours, and the two the embedder owns above it: it has moved the
+        // platform view by transforming one or the other across engine
+        // versions, and watching all three costs one comparison each.
+        var next: UIView? = self
+        for _ in 0..<3 {
+            guard let view = next else { break }
+            observedLayers.append(view.layer)
+            next = view.superview
+        }
+        for layer in observedLayers {
+            for key in Self.geometryKeys {
+                layer.addObserver(self, forKeyPath: key, options: [], context: &Self.observerContext)
+            }
+        }
+    }
+
+    private func stopObservingGeometry() {
+        for layer in observedLayers {
+            for key in Self.geometryKeys {
+                layer.removeObserver(self, forKeyPath: key, context: &Self.observerContext)
+            }
+        }
+        observedLayers.removeAll()
+    }
+
+    private static var observerContext = 0
+
+    override func observeValue(
+        forKeyPath keyPath: String?, of object: Any?,
+        change: [NSKeyValueChangeKey: Any]?, context: UnsafeMutableRawPointer?
+    ) {
+        guard context == &Self.observerContext else {
+            super.observeValue(forKeyPath: keyPath, of: object, change: change, context: context)
+            return
+        }
+        EdgeEffectCoverage.shared.refresh(self)
+    }
+
+    deinit {
+        stopObservingGeometry()
     }
 
     private var edgeMask: CALayer?
@@ -300,6 +377,10 @@ final class HostingContainerView: UIView {
             : CGRect(
                 x: full.minX, y: full.minY, width: full.width,
                 height: max(0, visibleFrom - full.minY))
+        // The embedder writes several geometry properties per frame and each
+        // one calls back here; only the write that actually moves the line
+        // costs anything.
+        if let existing = edgeMask, existing.frame == visible, layer.mask === existing { return }
         let mask = edgeMask ?? CALayer()
         edgeMask = mask
         CATransaction.begin()

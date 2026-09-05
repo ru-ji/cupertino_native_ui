@@ -59,7 +59,14 @@ final class EdgeEffectCoverage {
     /// Driven per frame, because the views MOVE under a stationary effect: a
     /// scroll changes a platform view's frame without laying its own container
     /// out, so there is no callback to hang this on.
-    private var displayLink: CADisplayLink?
+    ///
+    /// A run-loop observer rather than a `CADisplayLink`: the embedder moves
+    /// the platform views from a task on this thread, part-way through the
+    /// frame, and a display link fires at the START of one — so it reads where
+    /// the view was a frame ago and masks it there while the view is
+    /// composited where it is now. `beforeWaiting` runs after the embedder's
+    /// task and just ahead of CoreAnimation's commit.
+    private var observer: CFRunLoopObserver?
 
     /// Dart publishes one of these per live `CupertinoScrollEdgeEffect`,
     /// keyed by widget, and clears it on dispose.
@@ -119,22 +126,32 @@ final class EdgeEffectCoverage {
     /// that could pass under it.
     private func sync() {
         let wanted = !regions.isEmpty && views.count > 0
-        if wanted, displayLink == nil {
-            let link = CADisplayLink(target: self, selector: #selector(tick))
-            link.add(to: .main, forMode: .common)
-            displayLink = link
-        } else if !wanted, let link = displayLink {
-            link.invalidate()
-            displayLink = nil
+        if wanted, observer == nil {
+            // Ahead of CoreAnimation's own commit observer (order 2000000), so
+            // the mask lands in the same commit as everything else this frame.
+            observer = CFRunLoopObserverCreateWithHandler(
+                kCFAllocatorDefault, CFRunLoopActivity.beforeWaiting.rawValue, true, 1_999_000
+            ) { [weak self] _, _ in self?.tick() }
+            CFRunLoopAddObserver(CFRunLoopGetMain(), observer, .commonModes)
+        } else if !wanted, let observer {
+            CFRunLoopObserverInvalidate(observer)
+            self.observer = nil
             for view in views.allObjects { view.clearEdgeEffect() }
         }
         tick()
     }
 
-    @objc private func tick() {
+    private func tick() {
         for view in views.allObjects {
             apply(to: view)
         }
+    }
+
+    /// One view, the instant the embedder moved it. See
+    /// `HostingContainerView.updateGeometryObservers`.
+    func refresh(_ view: HostingContainerView) {
+        guard !regions.isEmpty else { return }
+        apply(to: view)
     }
 
     private func apply(to view: HostingContainerView) {
