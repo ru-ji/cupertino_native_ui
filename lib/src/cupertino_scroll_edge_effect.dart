@@ -75,17 +75,21 @@ class CupertinoScrollEdgeEffect extends StatelessWidget {
   /// 10pt radius cannot do that to a 17pt bold label; 24 can.
   static const double _sigma = 12;
 
-  /// Holds the TINT at full strength over the top third before it starts to
-  /// fade. This is what the first recreation lacked: its wash began decaying
-  /// at the very first pixel, so covering the bar area at all meant being
+  /// Holds the TINT at full strength over the first sliver of the span before
+  /// it starts to fade. This is what the first recreation lacked: its wash
+  /// began decaying at the very first pixel, so covering the bar area at all meant being
   /// heavy everywhere — the grey band. Held, then released, it can be lighter
-  /// overall and still read stronger where it matters.
+  /// overall and still read stronger where it matters. Kept short: the flat
+  /// band reads as a boundary against the curve below it, and the taller the
+  /// effect rect the more of a plain painted stripe a third of it becomes.
   ///
-  /// The blur takes no plateau, and is otherwise untouched from Haze 0.1.1.
-  /// Held at full radius it would have to shed all of it in what is left of
-  /// the span, and the end of the heavy blur becomes an edge; its plain
-  /// cosine descent measured better than every profile tried against it.
-  static const double _plateau = 0.3;
+  /// The blur takes no plateau: held at full radius it would have to shed all
+  /// of it in what is left of the span, and the end of the heavy blur becomes
+  /// an edge. It descends on Haze's smootherstep, which dies with zero slope
+  /// — the cosine it replaced still carried a readable radius at 90% of the
+  /// span and dropped it over the last few points, splitting a list row into
+  /// a blurred top half and a crisp bottom one.
+  static const double _plateau = 0.15;
 
   /// 1 = the bare smootherstep. Raising it tightens the decay toward the
   /// plateau; the system's fade is the long, patient version.

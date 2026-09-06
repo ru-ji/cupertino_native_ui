@@ -109,45 +109,78 @@ class _NativeProbe extends StatelessWidget {
   }
 }
 
-/// The recreation, over the same bands: the package's own `CupertinoAppBar`
-/// stacked over a Flutter scrollable.
+/// The recreation, over the same bands — with the stacking order INVERTED on
+/// purpose, for this page only.
 ///
-/// The bar itself, not a hand-built imitation of it — same Haze, same span,
-/// same order, so what this screen shows is what a real page shows. Its tint
-/// is fixed, and that is not a shortcut: the system effect hosted over this
-/// same page draws nothing at all. `UIScrollEdgeEffect` blurs the content of
-/// the scroll view it belongs to, and a Flutter page has no scroll view for it
-/// to belong to. Tested, not assumed.
+/// A real bar puts its glass buttons over the effect: they are chrome, and
+/// chrome does not dissolve. Here the effect is pushed last and given a much
+/// taller rectangle than a bar's, so it lies over the leading button instead.
+/// What the button does under it is the thing this screen is for — a
+/// `BackdropFilter` cannot reach a platform view, and nothing on this page
+/// publishes an edge region, so no bitmap stands in for it either.
+///
+/// Its tint is fixed, and that is not a shortcut: the system effect hosted
+/// over this same page draws nothing at all. `UIScrollEdgeEffect` blurs the
+/// content of the scroll view it belongs to, and a Flutter page has no scroll
+/// view for it to belong to. Tested, not assumed.
 class _HazeProbe extends StatelessWidget {
   const _HazeProbe();
 
   @override
   Widget build(BuildContext context) {
+    final top = MediaQuery.paddingOf(context).top;
     return CupertinoPageScaffold(
       child: Stack(
         children: [
           const Positioned.fill(
             child: SingleChildScrollView(child: EdgeEffectProbeBody()),
           ),
-          // The bar last: its glass action is painted over the effect, never
-          // under it — the same order the bar keeps internally.
+          // The bar row by hand rather than `CupertinoAppBar`: the bar owns
+          // its own effect and paints its buttons over it, which is the one
+          // thing this page is inverting.
+          Positioned(
+            top: top,
+            left: 0,
+            right: 0,
+            height: 44,
+            child: Row(
+              children: [
+                const SizedBox(width: 16),
+                CupertinoNativeButton(
+                  icon: CupertinoNativeIcon.symbol(
+                    CupertinoSymbols.chevronBackward,
+                    size: 20,
+                  ),
+                  style: CupertinoNativeButtonStyle.glass,
+                  borderShape: CupertinoNativeButtonBorderShape.circle,
+                  labelStyle: CupertinoNativeButtonLabelStyle.iconOnly,
+                  onPressed: () => Navigator.pop(context),
+                ),
+                const Spacer(),
+                const Text(
+                  'Haze',
+                  style: TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w600,
+                    decoration: TextDecoration.none,
+                    color: CupertinoColors.label,
+                  ),
+                ),
+                const Spacer(),
+                const SizedBox(width: 44),
+              ],
+            ),
+          ),
+          // Last, so it lies over the leading button, and 110pt past the bar
+          // instead of the bar's own overhang. It stays hit-transparent —
+          // `CupertinoScrollEdgeEffect` is an `IgnorePointer` — so the button
+          // underneath still takes its taps.
           Positioned(
             top: 0,
             left: 0,
             right: 0,
-            child: CupertinoAppBar(
-              title: 'Haze',
-              leading: CupertinoNativeButton(
-                icon: CupertinoNativeIcon.symbol(
-                  CupertinoSymbols.chevronBackward,
-                  size: 20,
-                ),
-                style: CupertinoNativeButtonStyle.glass,
-                borderShape: CupertinoNativeButtonBorderShape.circle,
-                labelStyle: CupertinoNativeButtonLabelStyle.iconOnly,
-                onPressed: () => Navigator.pop(context),
-              ),
-            ),
+            height: top + 44 + 110,
+            child: const CupertinoScrollEdgeEffect(),
           ),
         ],
       ),
