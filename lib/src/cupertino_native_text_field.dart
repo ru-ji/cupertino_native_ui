@@ -525,14 +525,14 @@ class _CupertinoNativeTextFieldState extends State<CupertinoNativeTextField>
   @override
   Widget build(BuildContext context) {
     if (defaultTargetPlatform == TargetPlatform.iOS) {
-      final platformView = UiKitView(
+      final platformView = wrapForTransition(UiKitView(
         viewType: 'com.example.cupertino_widgets/cupertino_native_text_field',
         layoutDirection: TextDirection.ltr,
         creationParams: _toMap(),
         creationParamsCodec: const StandardMessageCodec(),
         gestureRecognizers: _gestureRecognizers,
         onPlatformViewCreated: _onPlatformViewCreated,
-      );
+      ));
 
       final Widget sized;
       if (widget.fillHeight) {

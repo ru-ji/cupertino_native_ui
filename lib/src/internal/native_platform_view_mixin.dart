@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:ui' as ui;
 
+import 'package:flutter/foundation.dart';
+import 'package:flutter/scheduler.dart' show SchedulerBinding;
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
@@ -33,11 +35,11 @@ mixin NativePlatformViewStateMixin<T extends StatefulWidget> on State<T> {
     // and cannot tell a leading button from a row that has scrolled up to the
     // same place, so the widget tree — which knows — says so here.
     _edgeEffectViewId = id;
-    if (CupertinoEdgeEffectExempt.of(context)) {
-      CupertinoEdgeEffectCoverage.setExempt(id, true);
-    } else {
-      _keepBitmapFresh();
-    }
+    _exempt = CupertinoEdgeEffectExempt.of(context);
+    if (_exempt) CupertinoEdgeEffectCoverage.setExempt(id, true);
+    // Exempt or not: the bar's own buttons need a ready photo for route
+    // transitions even though they never pass under the effect.
+    _keepBitmapFresh();
     // Always handled here, whether or not the widget wants calls of its own:
     // `intrinsicSize` is pushed by the native view the moment its container
     // lays out, and every widget wants that.
@@ -130,7 +132,7 @@ mixin NativePlatformViewStateMixin<T extends StatefulWidget> on State<T> {
   /// inside the bar's rectangle is drawn from the bitmap, the live view is cut
   /// on the same line, and neither waits on the other.
   void _keepBitmapFresh() {
-    if (barSnapshots.holds(_edgeEffectViewId ?? -1)) return;
+    if (_warmImage != null) return;
     _captureTimer ??= Timer.periodic(
       const Duration(milliseconds: 100),
       (_) => _captureIntoBar(),
@@ -145,10 +147,21 @@ mixin NativePlatformViewStateMixin<T extends StatefulWidget> on State<T> {
     final channel = this.channel;
     if (id == null || channel == null || !mounted) return;
     final box = context.findRenderObject() as RenderBox?;
-    if (box == null || !box.hasSize || box.size.isEmpty) return;
+    if (box == null || !box.hasSize || box.size.isEmpty) {
+      // TEMPORARY diagnostic. Delete with the Swift-side probes.
+      return;
+    }
     (ui.Image, Rect)? capture;
     try {
       capture = await captureNativeView(channel);
+    } on MissingPluginException {
+      // This view type has no `snapshot` handler and never will — a context
+      // menu, say. Retrying it every 100ms for the life of the page is a
+      // channel round trip a second, forever, for an answer that cannot
+      // change.
+      _captureTimer?.cancel();
+      _captureTimer = null;
+      return;
     } catch (_) {
       return;
     }
@@ -159,7 +172,25 @@ mixin NativePlatformViewStateMixin<T extends StatefulWidget> on State<T> {
     }
     _captureTimer?.cancel();
     _captureTimer = null;
-    barSnapshots.add(id, BarSnapshotEntry(capture.$1, box, capture.$2));
+    // Kept on hand so a route transition can swap it in on its first frame,
+    // with no channel round trip in between.
+    _warmImage?.dispose();
+    _warmImage = capture.$1.clone();
+    _warmDest = capture.$2;
+    if (_exempt) {
+      capture.$1.dispose();
+      return;
+    }
+    // The bar places the bitmap against this State's box; the native view
+    // sits [withPaintRoom] further out.
+    barSnapshots.add(
+      id,
+      BarSnapshotEntry(
+        capture.$1,
+        box,
+        capture.$2.shift(Offset(-_paintRoom, -_paintRoom)),
+      ),
+    );
     // The platform side may cut this view from now on: there is something to
     // put in the band's place.
     unawaited(setEdgeCut(id, true));
@@ -167,6 +198,17 @@ mixin NativePlatformViewStateMixin<T extends StatefulWidget> on State<T> {
 
   /// Runs until the first capture succeeds, then stops.
   Timer? _captureTimer;
+
+  /// The latest photo of this control, and its pixels-per-point.
+  ui.Image? _warmImage;
+  Rect _warmDest = Rect.zero;
+
+  /// How far the native view reaches past this widget's box. See
+  /// [withPaintRoom].
+  double _paintRoom = 0;
+
+  /// Bar chrome: painted over the edge effect, never cut by it.
+  bool _exempt = false;
 
   /// The platform view id, kept so the edge-effect exemption can be dropped
   /// when this view goes away and the id is handed to the next one.
@@ -177,6 +219,15 @@ mixin NativePlatformViewStateMixin<T extends StatefulWidget> on State<T> {
   @override
   void dispose() {
     _captureTimer?.cancel();
+    for (final animation in _watchedRouteAnimations) {
+      animation.removeStatusListener(_handleRouteAnimationStatus);
+    }
+    _watchedRouteAnimations = const [];
+    _routeTransitioning = false;
+    _transitionImage?.dispose();
+    _transitionImage = null;
+    _warmImage?.dispose();
+    _warmImage = null;
     final id = _edgeEffectViewId;
     if (id != null) {
       CupertinoEdgeEffectCoverage.setExempt(id, false);
@@ -203,8 +254,229 @@ mixin NativePlatformViewStateMixin<T extends StatefulWidget> on State<T> {
     // changed underneath it. Left alone, a switch flipped on its way to the
     // bar would show its old state above the cut and its new one below.
     // The bitmap is a photograph and the control just changed underneath it.
-    if (barSnapshots.holds(_edgeEffectViewId ?? -1)) {
+    if (_warmImage != null) {
       future?.then((_) => _captureIntoBar());
     }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Route-transition snapshots.
+  //
+  // A platform view is a real UIView composited by UIKit ABOVE the Flutter
+  // surface, moved by the embedder one beat behind the Flutter animation it
+  // belongs to. During a route transition that shows: the bar's native
+  // buttons keep painting above the incoming page, and every native control
+  // lags the page that is carrying it. Flutter cannot composite the UIView
+  // itself, so the control is temporarily replaced by a photograph of it —
+  // ordinary Flutter pixels that slide, fade and clip exactly like the page
+  // they sit on. The official docs spell out the same technique: snapshot the
+  // native view and render it as a texture while the animation runs.
+  //
+  // The widget's own route and its secondary animation are both watched
+  // (push animates the pushed route, Cupertino's parallax animates the
+  // secondary of the covered one), so a widget hides whichever side of a
+  // transition it happens to be on — no observer for the app to install.
+  // ---------------------------------------------------------------------------
+
+  /// Whether this widget melts away into a bitmap while its route animates.
+  ///
+  /// False for a full-screen host (the scaffold): it IS the page being
+  /// transitioned, not a control riding on one, and a bitmap of it would
+  /// freeze the whole page while the route above it slides.
+  bool get hidesDuringRouteTransition => true;
+
+  /// The route animations whose status is being watched.
+  List<Animation<double>> _watchedRouteAnimations = const [];
+
+  /// True while any watched animation is in flight.
+  bool _routeTransitioning = false;
+
+  /// The photograph standing in for the live view, and its pixels-per-point.
+  ui.Image? _transitionImage;
+  Rect _transitionDest = Rect.zero;
+
+  /// A capture in flight, so a second one is not launched on top of it.
+  bool _transitionCaptureInFlight = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!hidesDuringRouteTransition) return;
+    if (kIsWeb || defaultTargetPlatform != TargetPlatform.iOS) return;
+    final route = ModalRoute.of(context);
+    final next = <Animation<double>>[
+      ?route?.animation,
+      ?route?.secondaryAnimation,
+    ];
+    if (listEquals(next, _watchedRouteAnimations)) return;
+    for (final animation in _watchedRouteAnimations) {
+      animation.removeStatusListener(_handleRouteAnimationStatus);
+    }
+    _watchedRouteAnimations = next;
+    for (final animation in _watchedRouteAnimations) {
+      animation.addStatusListener(_handleRouteAnimationStatus);
+    }
+    // A widget mounted mid-transition (a page built during the push, a row
+    // that scrolled in lazily) must join the transition it was born into.
+    if (_watchedRouteAnimations.any((a) => a.isAnimating)) {
+      _enterRouteTransition();
+    } else if (_routeTransitioning &&
+        _watchedRouteAnimations.every(
+            (a) => a.status == AnimationStatus.completed)) {
+      _exitRouteTransition();
+    }
+  }
+
+  void _handleRouteAnimationStatus(AnimationStatus status) {
+    switch (status) {
+      case AnimationStatus.forward:
+      case AnimationStatus.reverse:
+        _enterRouteTransition();
+      case AnimationStatus.completed:
+      case AnimationStatus.dismissed:
+        _exitRouteTransition();
+    }
+  }
+
+  void _enterRouteTransition() {
+    if (_routeTransitioning) return;
+    _routeTransitioning = true;
+    final warm = _warmImage;
+    if (warm != null && mounted && _transitionImage == null) {
+      // Same frame as the status change: the first frame of the slide
+      // already paints the photo, never the lagging live view.
+      setState(() {
+        _transitionImage = warm.clone();
+        _transitionDest = _warmDest;
+      });
+      return;
+    }
+    _captureRouteSnapshot(attempt: 0);
+  }
+
+  /// Photographs the live view and swaps it in. A refusal to capture is not
+  /// an error — the view has not rendered yet (a page being pushed for the
+  /// first time) — and a couple of short retries cover the frames it needs.
+  /// If none lands, the live view simply stays: hiding it with nothing to
+  /// draw in its place would leave a hole, which is worse than the one-frame
+  /// lag this whole path exists to remove.
+  Future<void> _captureRouteSnapshot({required int attempt}) async {
+    final ch = channel;
+    if (!_routeTransitioning || !mounted || ch == null) return;
+    if (_transitionImage != null || _transitionCaptureInFlight) return;
+    _transitionCaptureInFlight = true;
+    try {
+      final capture = await captureNativeView(ch);
+      if (!mounted || !_routeTransitioning) {
+        capture?.$1.dispose();
+        return;
+      }
+      if (capture != null) {
+        final box = context.findRenderObject() as RenderBox?;
+        if (box == null || !box.hasSize || box.size.isEmpty) {
+          capture.$1.dispose();
+          return;
+        }
+        setState(() {
+          _transitionImage = capture.$1;
+          _transitionDest = capture.$2;
+        });
+        return;
+      }
+    } on MissingPluginException {
+      // No `snapshot` handler: nothing to draw in the view's place, so the
+      // live view stays. One round trip and done.
+      return;
+    } catch (_) {
+      // Treat like a refusal.
+    } finally {
+      _transitionCaptureInFlight = false;
+    }
+    if (attempt < 2 && mounted && _routeTransitioning) {
+      Future<void>.delayed(Duration(milliseconds: 48 * (attempt + 1)), () {
+        if (!_transitionCaptureInFlight) {
+          _captureRouteSnapshot(attempt: attempt + 1);
+        }
+      });
+    }
+  }
+
+  void _exitRouteTransition() {
+    if (!_routeTransitioning) return;
+    _routeTransitioning = false;
+    final image = _transitionImage;
+    _transitionImage = null;
+    if (image == null) return;
+    // After the frame that stops painting it: a painter still holding it
+    // this frame would draw a disposed image.
+    SchedulerBinding.instance.addPostFrameCallback((_) => image.dispose());
+    if (mounted) setState(() {});
+  }
+
+  /// Wraps [platformView] so it is replaced by its own photograph while the
+  /// route around it animates. Wrap the sized box, not just the [UiKitView]:
+  /// the bitmap fills whatever the live view would have filled.
+  ///
+  /// The live view is hidden with opacity, the one mutation hybrid
+  /// composition is guaranteed to carry, and only once the bitmap exists —
+  /// there is never a frame with a hole in it.
+  Widget wrapForTransition(Widget platformView) {
+    if (!hidesDuringRouteTransition) return platformView;
+    if (kIsWeb || defaultTargetPlatform != TargetPlatform.iOS) {
+      return platformView;
+    }
+    final image = _transitionImage;
+    // ONE shape, bitmap or not. Returning the bare view at rest and a Stack
+    // during the transition moves the UiKitView in the element tree, which
+    // destroys and recreates the native view — the blink on every transition.
+    final dest = _transitionDest;
+    return Stack(
+      fit: StackFit.passthrough,
+      clipBehavior: Clip.none,
+      children: [
+        Opacity(
+          opacity: image == null ? 1 : 0,
+          child: IgnorePointer(ignoring: image != null, child: platformView),
+        ),
+        // On the rectangle the platform side measured, not the box: the
+        // capture reaches past the view by the cut's outset.
+        if (image != null)
+          Positioned(
+            left: dest.left,
+            top: dest.top,
+            width: dest.width,
+            height: dest.height,
+            child: RawImage(
+              image: image,
+              fit: BoxFit.fill,
+              filterQuality: FilterQuality.medium,
+            ),
+          ),
+      ],
+    );
+  }
+
+  /// Lays a `w`x`h` control out in a `w`x`h` slot, but gives its native view
+  /// [room] points more on every side, the control centred in it.
+  ///
+  /// iOS cannot capture what a view paints outside its own bounds, and a
+  /// glass circle, its rim and its shadow all do: boxed to the control's
+  /// exact size, the photo comes back with the circle cropped to a grey
+  /// square. Only for controls that hug and centre their content natively —
+  /// one pinned to fill its box would just draw bigger.
+  Widget withPaintRoom(Widget platformView, double w, double h,
+      {double room = 16}) {
+    _paintRoom = room;
+    return SizedBox(
+      width: w,
+      height: h,
+      child: OverflowBox(
+        minWidth: w + room * 2,
+        maxWidth: w + room * 2,
+        minHeight: h + room * 2,
+        maxHeight: h + room * 2,
+        child: platformView,
+      ),
+    );
   }
 }

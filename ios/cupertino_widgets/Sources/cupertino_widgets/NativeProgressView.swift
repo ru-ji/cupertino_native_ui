@@ -75,6 +75,9 @@ class NativeProgressView: NativeHostingView {
             result(intrinsicSize())
         case "updateProgress":
             if let args = call.arguments as? [String: Any] {
+                // Appearance is owned by the hosting controller, so it must be
+                // re-pinned whichever branch this update takes.
+                isDark = args["isDark"] as? Bool
                 if args["style"] as? Int ?? 0 == shownStyle {
                     // Value, total or label only: swapping the root view keeps
                     // a determinate bar's progress animating instead of
@@ -96,6 +99,8 @@ class NativeProgressView: NativeHostingView {
     private func setupSwiftUI(with args: [String: Any]) {
         let style = args["style"] as? Int ?? 0
         shownStyle = style
+        // Appearance is owned by the hosting controller, not the content.
+        isDark = args["isDark"] as? Bool
         attach(
             AnyView(makeContent(with: args)),
             configureConstraints: { host, container in

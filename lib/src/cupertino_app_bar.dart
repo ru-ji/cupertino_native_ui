@@ -650,6 +650,9 @@ class _CupertinoSliverAppBarState extends State<CupertinoSliverAppBar>
           searchRowVisibility: _searchRowVisibility,
           searchT: _searchT.value,
           titleT: widget.collapseTitle ? _titleT.value : 0.0,
+          // The effect's own strength, which is NOT `titleT`: the effect comes
+          // up on the collapse trigger whether or not the title collapses.
+          effectStrength: _titleT.value,
           searchActive: _searchActive,
           morphing: _controller.isAnimating,
           onSearchOpen: () => _setSearchActive(true),
@@ -690,6 +693,7 @@ class _IOS26SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
     required this.searchRowVisibility,
     required this.searchT,
     required this.titleT,
+    required this.effectStrength,
     required this.searchActive,
     required this.morphing,
     required this.onSearchOpen,
@@ -722,10 +726,13 @@ class _IOS26SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
   // instantly deform the search bar.
   static const double _collapseDeadZone = 10;
 
-  /// How far the scroll-edge effect reaches past the bottom of the last thing
-  /// in the header — the search field when there is one (NOT the row's bottom
-  /// padding), the header's own edge otherwise.
   /// How far past the bar's own extent the effect keeps fading.
+  ///
+  /// Measured from the header's own bottom edge, the row's bottom padding
+  /// included — UIKit's search band is the capsule plus 8pt above and below,
+  /// and the effect covers the band, not just the capsule. The header's top
+  /// already starts at the safe-area inset, so the notch / Dynamic Island
+  /// (20 / 47 / 59pt) is inside this span with nothing to add.
   ///
   /// One bar height, and measured rather than picked: on the probe page the
   /// system effect dies out around 150pt from the top of the screen while the
@@ -776,6 +783,7 @@ class _IOS26SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
   /// state's trigger animation, NOT by [shrinkOffset]: the fade runs to
   /// completion once fired, instead of being scrubbed by the finger.
   final double titleT;
+  final double effectStrength;
 
   /// True from open-animation start until close-animation start. The
   /// framework hides leading/trailing outright in this window (no fade).
@@ -997,7 +1005,7 @@ class _IOS26SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
     // the search open, no title and no actions — just the docked field. It
     // therefore shrinks and grows with the collapse and the morph on its own,
     // with no special-casing per configuration.
-    final effectH = (_hasSearch ? fieldTop + fieldH : height) + _effectOverhang;
+    final effectH = height + _effectOverhang;
 
     return Stack(
       clipBehavior: Clip.none,
@@ -1053,9 +1061,10 @@ class _IOS26SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
           left: 0,
           right: 0,
           height: effectH,
-          child: const CupertinoEdgeEffectCoverage(
+          child: CupertinoEdgeEffectCoverage(
             atTop: true,
-            child: IgnorePointer(child: SizedBox.expand()),
+            strength: effectStrength,
+            child: const IgnorePointer(child: SizedBox.expand()),
           ),
         ),
         const AbsorbPointer(child: SizedBox.expand()),
@@ -1187,7 +1196,10 @@ class _IOS26SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
               offstage: !actionsVisible,
               child: !centerTitle
                   ? Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      padding: EdgeInsets.only(
+                        left: leading != null ? _kBarItemMargin : 16,
+                        right: _kBarItemMargin,
+                      ),
                       child: Row(
                         children: [
                           if (leading != null) ...[
@@ -1220,7 +1232,9 @@ class _IOS26SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
                           Align(
                             alignment: Alignment.centerLeft,
                             child: Padding(
-                              padding: const EdgeInsets.only(left: 16),
+                              padding: const EdgeInsets.only(
+                                left: _kBarItemMargin,
+                              ),
                               child: leading!,
                             ),
                           ),
@@ -1228,7 +1242,9 @@ class _IOS26SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
                           Align(
                             alignment: Alignment.centerRight,
                             child: Padding(
-                              padding: const EdgeInsets.only(right: 16),
+                              padding: const EdgeInsets.only(
+                                right: _kBarItemMargin,
+                              ),
                               child: trailing!,
                             ),
                           ),
@@ -1245,6 +1261,15 @@ class _IOS26SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
   @override
   bool shouldRebuild(_IOS26SliverAppBarDelegate oldDelegate) => true;
 }
+
+/// Outer margin of the bar's action items, leading and trailing.
+///
+/// 12, not the 16 the title and the search capsule use. UIKit's 16pt bar
+/// layout margin dates from a bare glyph; in iOS 26 the item is a 44pt glass
+/// capsule around that glyph, so keeping 16 pushes the glyph itself to ~31pt
+/// from the edge and the back chevron stops reading as aligned with the large
+/// title under it. 12 puts the capsule where the system's sits.
+const double _kBarItemMargin = 12;
 
 /// Hosts the bottom-slot widget: passes the slot's (shrinking) height
 /// straight to the child — so a `fillHeight` native field physically
@@ -1407,7 +1432,10 @@ class CupertinoAppBar extends StatelessWidget {
             child: CupertinoEdgeEffectExempt(
               child: !centerTitle
                   ? Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      padding: EdgeInsets.only(
+                        left: leadingWidget != null ? _kBarItemMargin : 16,
+                        right: _kBarItemMargin,
+                      ),
                       child: Row(
                         children: [
                           if (leadingWidget != null) ...[
@@ -1433,7 +1461,9 @@ class CupertinoAppBar extends StatelessWidget {
                           Align(
                             alignment: Alignment.centerLeft,
                             child: Padding(
-                              padding: const EdgeInsets.only(left: 16),
+                              padding: const EdgeInsets.only(
+                                left: _kBarItemMargin,
+                              ),
                               child: leadingWidget,
                             ),
                           ),
@@ -1441,7 +1471,9 @@ class CupertinoAppBar extends StatelessWidget {
                           Align(
                             alignment: Alignment.centerRight,
                             child: Padding(
-                              padding: const EdgeInsets.only(right: 16),
+                              padding: const EdgeInsets.only(
+                                right: _kBarItemMargin,
+                              ),
                               child: trailingRow,
                             ),
                           ),

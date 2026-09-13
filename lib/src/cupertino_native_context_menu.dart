@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:ui' as ui;
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart' show Theme;
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
@@ -12,6 +11,7 @@ import 'callbacks.dart';
 
 import 'internal/native_platform_view_mixin.dart';
 import 'models/cupertino_native_menu_item.dart';
+import 'internal/scroll_friendly_recognizer.dart';
 
 /// Wraps arbitrary Flutter content in a native iOS **context menu**
 /// (`UIContextMenuInteraction`): long-press lifts the content with the system
@@ -271,11 +271,7 @@ class _CupertinoNativeContextMenuState extends State<CupertinoNativeContextMenu>
               // inside scrollables Flutter's gesture arena would otherwise
               // delay and cancel it (same pattern as the glass container).
               hitTestBehavior: PlatformViewHitTestBehavior.opaque,
-              gestureRecognizers: {
-                Factory<OneSequenceGestureRecognizer>(
-                  () => EagerGestureRecognizer(),
-                ),
-              },
+              gestureRecognizers: scrollFriendlyGestures,
               onPlatformViewCreated: _onPlatformViewCreated,
             ),
           ),

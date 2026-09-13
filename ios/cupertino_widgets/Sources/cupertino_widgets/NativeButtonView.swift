@@ -61,6 +61,7 @@ class NativeButtonView: NativeHostingView {
     }
 
     private func setupSwiftUI(with config: ButtonConfig) {
+        isDark = config.isDark
         let buttonView = AdaptiveButtonView(config: config) { [weak self] in
             self?.channel?.invokeMethod("onPressed", arguments: nil)
         }

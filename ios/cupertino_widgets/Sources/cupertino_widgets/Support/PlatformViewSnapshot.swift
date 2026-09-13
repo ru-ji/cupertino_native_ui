@@ -51,9 +51,11 @@ enum PlatformViewSnapshot {
 
         // Off for the duration, and restored after. See `afterScreenUpdates`
         // below for why the two go together.
-        let mask = view.layer.mask
-        view.layer.mask = nil
-        defer { view.layer.mask = mask }
+        // A cut view is not photographed at all. Lifting the mask and forcing
+        // a screen update (`afterScreenUpdates: true`) put the uncut control on
+        // screen for a frame — the blink while scrolling under a bar. Dart
+        // keeps the bitmap it already holds, taken before the cut.
+        guard view.layer.mask == nil else { return nil }
 
         let drawn = pixels.withUnsafeMutableBytes { raw -> Bool in
             guard let base = raw.baseAddress,
@@ -103,7 +105,7 @@ enum PlatformViewSnapshot {
             // is at 0,0. Passing the enlarged one here as well applies the
             // offset twice — the control lands a margin down and to the right,
             // and the band drawn in the bar is the empty margin.
-            return view.drawHierarchy(in: view.bounds, afterScreenUpdates: true)
+            return view.drawHierarchy(in: view.bounds, afterScreenUpdates: false)
         }
         guard drawn else { return nil }
 

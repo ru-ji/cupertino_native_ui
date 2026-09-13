@@ -979,16 +979,19 @@ and their overlay layers are repositioned out of step. Native controls hang at
 the wrong offset for the length of the animation, and a control from the
 outgoing page can end up sitting over the incoming one.
 
-Left as is, for now. The machinery to fix it exists in the package — a native
-view can be captured as raw pixels and drawn by Flutter, which is how controls
-passing under a scroll edge effect are blurred — and a transition is the same
-shape of problem: draw the bitmap, hide the view, restore it when the animation
-ends. What has kept it out is the failure mode at the edges. A route arriving
-for the first time has views that have never rendered, so there is nothing to
-capture and the fallback blanks them for the whole push; and a bitmap is frozen,
-which a spinner or a glass control cannot afford for 350ms. A misplaced control
-is a worse artifact than no control only some of the time, and that is not a
-good enough reason to make the trade globally.
+**Mitigation, applied by this package:** every native view keeps a capture of
+itself on hand, taken as soon as it has rendered and retaken whenever its
+config changes. The frame its route (or the route covering it) starts to
+animate, the live view is hidden with opacity and the capture is drawn in its
+place — ordinary Flutter pixels, so it slides exactly in step with the page
+around it. The capture crosses the channel as raw premultiplied BGRA straight
+into `ui.decodeImageFromPixels`, with no image codec in the path. The live view
+comes back the frame the route settles.
+
+A route pushed for the first time has views that have never rendered, so there
+is nothing to capture yet: those stay live (a frame or two late) rather than
+blanked. And a capture is frozen, so a spinner stands still for the length of
+the slide.
 
 Related: [flutter#163498](https://github.com/flutter/flutter/issues/163498)
 (open) — animations cause Flutter UI to flicker and platform views to be
@@ -1175,11 +1178,10 @@ made to meet. If that sounds interesting, come along — issues, pull requests,
 a reproduction of something that broke on your device, or just telling me a
 limitation above is wrong. All of it helps.
 
-The interesting problem right now is in [Limitations](#limitations): keeping
-native views visible through a route transition instead of dropping them for
-its duration. Snapshotting each view and sliding the bitmap would do it — if
-you have solved this somewhere else, or know a better trick, I would like to
-hear it.
+The interesting problem right now is in [Limitations](#limitations): views on a
+route pushed for the first time cannot be captured before they render, so they
+still arrive a frame late. If you know a trick for that, I would like to hear
+it.
 
 Repository: <https://github.com/ru-ji/cupertino_widgets>
 

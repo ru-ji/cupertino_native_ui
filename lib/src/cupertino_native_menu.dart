@@ -122,13 +122,13 @@ class _CupertinoNativeMenuState extends State<CupertinoNativeMenu>
   @override
   Widget build(BuildContext context) {
     if (defaultTargetPlatform == TargetPlatform.iOS) {
-      final platformView = UiKitView(
+      final platformView = wrapForTransition(UiKitView(
         viewType: 'com.example.cupertino_widgets/cupertino_native_menu',
         layoutDirection: TextDirection.ltr,
         creationParams: _toMap(),
         creationParamsCodec: const StandardMessageCodec(),
         onPlatformViewCreated: _onPlatformViewCreated,
-      );
+      ));
 
       // If explicit width/height provided, use them
       if (widget.width != null || widget.height != null) {

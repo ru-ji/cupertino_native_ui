@@ -131,7 +131,7 @@ class _CupertinoNativeDatePickerState extends State<CupertinoNativeDatePicker>
       );
     }
 
-    final platformView = UiKitView(
+    final platformView = wrapForTransition(UiKitView(
       viewType: 'com.example.cupertino_widgets/cupertino_native_date_picker',
       layoutDirection: TextDirection.ltr,
       creationParams: _toMap(),
@@ -143,7 +143,7 @@ class _CupertinoNativeDatePickerState extends State<CupertinoNativeDatePicker>
       gestureRecognizers: {
         Factory<OneSequenceGestureRecognizer>(EagerGestureRecognizer.new),
       },
-    );
+    ));
 
     return SizedBox(
       width: widget.width ?? intrinsicWidth ?? 148,

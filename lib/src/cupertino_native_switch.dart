@@ -1,9 +1,10 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter/gestures.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
+
 import 'internal/native_platform_view_mixin.dart';
+import 'internal/scroll_friendly_recognizer.dart';
 
 class CupertinoNativeSwitch extends StatefulWidget {
   final bool value;
@@ -31,6 +32,26 @@ class CupertinoNativeSwitch extends StatefulWidget {
 
 class _CupertinoNativeSwitchState extends State<CupertinoNativeSwitch>
     with NativePlatformViewStateMixin {
+  bool? _lastIsDark;
+
+  // Follows the app's own theme brightness, not the device's — a light app
+  // forced on a dark-mode phone should still get a light switch.
+  bool get _isDark => Theme.of(context).brightness == Brightness.dark;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Re-push config if the app toggled light/dark at runtime.
+    if (_lastIsDark != null && _lastIsDark != _isDark) {
+      updateNativeView(
+        'updateToggle',
+        _toMap(),
+        refreshIntrinsicSize: false,
+      );
+    }
+    _lastIsDark = _isDark;
+  }
+
   @override
   void didUpdateWidget(covariant CupertinoNativeSwitch oldWidget) {
     super.didUpdateWidget(oldWidget);
@@ -50,6 +71,7 @@ class _CupertinoNativeSwitchState extends State<CupertinoNativeSwitch>
       'fontSize': widget.textStyle?.fontSize,
       'fontWeight': widget.textStyle?.fontWeight?.value,
       'textColor': widget.textStyle?.color?.toARGB32(),
+      'isDark': _isDark,
     };
   }
 
@@ -72,7 +94,7 @@ class _CupertinoNativeSwitchState extends State<CupertinoNativeSwitch>
   @override
   Widget build(BuildContext context) {
     if (defaultTargetPlatform == TargetPlatform.iOS) {
-      final platformView = UiKitView(
+      final platformView = wrapForTransition(UiKitView(
         // Must match FlutterCupertinoPlugin.swift's registration. The widget
         // was renamed Toggle -> Switch on the Dart side only; this id is the
         // native contract and deliberately keeps the old spelling.
@@ -84,10 +106,8 @@ class _CupertinoNativeSwitchState extends State<CupertinoNativeSwitch>
         // Claim drags immediately so press-and-slide reaches the native
         // switch instead of being taken by Flutter's gesture arena.
         hitTestBehavior: PlatformViewHitTestBehavior.opaque,
-        gestureRecognizers: {
-          Factory<OneSequenceGestureRecognizer>(EagerGestureRecognizer.new),
-        },
-      );
+        gestureRecognizers: scrollFriendlyGestures,
+      ));
 
       // If explicit width/height provided, use them
       if (widget.width != null || widget.height != null) {

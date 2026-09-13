@@ -1,9 +1,11 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter/gestures.dart';
+import 'package:flutter/material.dart' show Theme;
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
+
 import 'internal/native_platform_view_mixin.dart';
+import 'internal/scroll_friendly_recognizer.dart';
 
 class CupertinoNativeSegmentedControl extends StatefulWidget {
   final List<String> children;
@@ -31,6 +33,26 @@ class CupertinoNativeSegmentedControl extends StatefulWidget {
 class _CupertinoNativeSegmentedControlState
     extends State<CupertinoNativeSegmentedControl>
     with NativePlatformViewStateMixin {
+  bool? _lastIsDark;
+
+  // Follows the app's own theme brightness, not the device's — a light app
+  // forced on a dark-mode phone should still get a light control.
+  bool get _isDark => Theme.of(context).brightness == Brightness.dark;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Re-push config if the app toggled light/dark at runtime.
+    if (_lastIsDark != null && _lastIsDark != _isDark) {
+      updateNativeView(
+        'updateSegmentedControl',
+        _toMap(),
+        refreshIntrinsicSize: false,
+      );
+    }
+    _lastIsDark = _isDark;
+  }
+
   @override
   void didUpdateWidget(covariant CupertinoNativeSegmentedControl oldWidget) {
     super.didUpdateWidget(oldWidget);
@@ -46,6 +68,7 @@ class _CupertinoNativeSegmentedControlState
       'items': widget.children,
       'selectedIndex': widget.groupValue,
       'color': widget.activeColor?.toARGB32(),
+      'isDark': _isDark,
     };
   }
 
@@ -68,7 +91,7 @@ class _CupertinoNativeSegmentedControlState
   @override
   Widget build(BuildContext context) {
     if (defaultTargetPlatform == TargetPlatform.iOS) {
-      final platformView = UiKitView(
+      final platformView = wrapForTransition(UiKitView(
         viewType: 'com.example.cupertino_widgets/cupertino_native_segmented',
         layoutDirection: TextDirection.ltr,
         creationParams: _toMap(),
@@ -77,10 +100,8 @@ class _CupertinoNativeSegmentedControlState
         // Claim drags immediately so press-and-slide across segments reaches
         // the native control instead of being taken by Flutter's gesture arena.
         hitTestBehavior: PlatformViewHitTestBehavior.opaque,
-        gestureRecognizers: {
-          Factory<OneSequenceGestureRecognizer>(EagerGestureRecognizer.new),
-        },
-      );
+        gestureRecognizers: scrollFriendlyGestures,
+      ));
 
       // If explicit width/height provided, use them
       if (widget.width != null || widget.height != null) {

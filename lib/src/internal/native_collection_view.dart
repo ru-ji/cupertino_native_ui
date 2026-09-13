@@ -150,13 +150,13 @@ class _NativeCollectionViewState extends State<NativeCollectionView>
       return _fallback(context);
     }
 
-    final platformView = UiKitView(
+    final platformView = wrapForTransition(UiKitView(
       viewType: 'com.example.cupertino_widgets/cupertino_native_list',
       layoutDirection: TextDirection.ltr,
       creationParams: _toMap(),
       creationParamsCodec: const StandardMessageCodec(),
       onPlatformViewCreated: _onPlatformViewCreated,
-    );
+    ));
 
     // Width fills the parent; height is fixed (given) or the measured content
     // height, with a generous placeholder until the native measurement arrives.

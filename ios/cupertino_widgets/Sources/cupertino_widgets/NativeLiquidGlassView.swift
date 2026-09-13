@@ -87,6 +87,9 @@ class NativeLiquidGlassView: NativeHostingView {
     /// the native side never sees.
     private func setupSwiftUI(with config: GlassConfig) {
         lastConfig = config
+        // Appearance is owned by the hosting controller: the model-update path
+        // below returns early, so the pin must happen before the branch.
+        isDark = config.isDark
         let expanded = config.expand == true
         // Filling the box: nothing here has a size of its own to report, and
         // measuring anyway produced the 10x10 that a glass circle was briefly

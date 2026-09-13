@@ -37,6 +37,32 @@ class NativeHostingView: NSObject, FlutterPlatformView {
     /// own, because it pushes to widgets that never asked.
     var measuresIntrinsicSize = true
 
+    /// Which appearance the hosted SwiftUI content must use. `nil` = follow
+    /// the system. Set by subclasses from their config's `isDark` — the app's
+    /// own brightness, not the device's: a light app on a dark-mode phone
+    /// must still host light controls, or the page and the control disagree.
+    ///
+    /// Applied to the hosting controller rather than as a SwiftUI
+    /// `.environment(\.colorScheme)`: the controller-level override also
+    /// reaches what a plain environment does not — `UISwitch`-style UIKit
+    /// internals, popovers a control presents, its text-field cursor.
+    var isDark: Bool? {
+        didSet {
+            guard isDark != oldValue else { return }
+            applyInterfaceStyle()
+        }
+    }
+
+    private func applyInterfaceStyle() {
+        let style: UIUserInterfaceStyle
+        switch isDark {
+        case true: style = .dark
+        case false: style = .light
+        default: style = .unspecified
+        }
+        hostingController?.overrideUserInterfaceStyle = style
+    }
+
     func view() -> UIView {
         return _view
     }
@@ -67,7 +93,7 @@ class NativeHostingView: NSObject, FlutterPlatformView {
             old.removeFromParent()
         }
 
-        let host = UIHostingController(rootView: content)
+        let host = ClearHostingController(rootView: content)
         if !keyboardAvoidance {
             if #available(iOS 16.4, *) {
                 // Embedded controls are sized and positioned entirely by
@@ -92,7 +118,7 @@ class NativeHostingView: NSObject, FlutterPlatformView {
             // pin outranks an intrinsic size every time.
             host.sizingOptions = .intrinsicContentSize
         }
-        host.view.backgroundColor = .clear
+        host.view.backgroundColor = nil
         // A UIView is `isOpaque = true` by DEFAULT, which is a promise to the
         // render server that every pixel of its bounds is filled. A hosted
         // control keeps that promise nowhere: a switch is a capsule in a
@@ -107,6 +133,13 @@ class NativeHostingView: NSObject, FlutterPlatformView {
         _view.addSubview(host.view)
         configureConstraints(host.view, _view)
         hostingController = host
+        // Subclasses set `isDark` BEFORE calling attach, while the controller
+        // is still the old one (or nil), and `didSet` skips unchanged values —
+        // so without this the new controller follows the phone's theme.
+        applyInterfaceStyle()
+        // Pin the appearance before the host is parented, so the first frame
+        // already draws in the theme Dart asked for.
+        applyInterfaceStyle()
         // Keep the controller parented into the view-controller hierarchy for
         // as long as our container is in a window (see HostingContainerView).
         _view.hostedController = host
@@ -209,6 +242,49 @@ class NativeHostingView: NSObject, FlutterPlatformView {
     }
 }
 
+/// A `UIHostingController` whose view is transparent and stays that way.
+///
+/// Setting `view.backgroundColor = .clear` once is not enough: the class
+/// re-asserts an opaque background of its own on several occasions — being
+/// added to a parent, a trait change, an appearance transition — and every one
+/// of those puts a rectangle of `systemBackground` behind a control that is
+/// supposed to be a capsule on nothing. It is invisible against a page of the
+/// same colour, which is why it only ever showed up in the wrong theme, or in
+/// the bar where the page behind it is not that colour any more.
+///
+/// Re-asserting it on every layout pass is the cheap durable answer: layout is
+/// the one thing that certainly runs after each of those moments.
+@available(iOS 15.0, *)
+final class ClearHostingController<Content: View>: UIHostingController<Content> {
+    /// Off for the one host that legitimately owns a background: the scaffold
+    /// paints the page, so its opaque colour is the point rather than a
+    /// leftover.
+    var forcesClearBackground = true
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        clearBackground()
+    }
+
+    override func viewWillLayoutSubviews() {
+        super.viewWillLayoutSubviews()
+        clearBackground()
+    }
+
+    override func didMove(toParent parent: UIViewController?) {
+        super.didMove(toParent: parent)
+        clearBackground()
+    }
+
+    private func clearBackground() {
+        guard forcesClearBackground else { return }
+        if view.backgroundColor != nil { view.backgroundColor = nil }
+        // A UIView promises to fill its bounds unless told otherwise, and the
+        // compositor is entitled to take that promise literally.
+        if view.isOpaque { view.isOpaque = false }
+    }
+}
+
 /// Container view that keeps the hosted `UIHostingController` properly
 /// parented as a child view controller of whatever view controller owns the
 /// window it currently lives in (the FlutterViewController, in practice).
@@ -228,6 +304,13 @@ final class HostingContainerView: UIView {
     /// paint-room change the box is deliberately larger than the control.
     override var isOpaque: Bool {
         get { false }
+        set {}
+    }
+
+    /// Nothing gets to paint a box behind the control, whoever asks. The
+    /// hosted controller is not the only thing that has tried.
+    override var backgroundColor: UIColor? {
+        get { nil }
         set {}
     }
 

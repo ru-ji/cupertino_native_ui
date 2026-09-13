@@ -252,6 +252,10 @@ class NativeScaffoldView: NativeHostingView {
         // Apply Flutter theme colors (background, tint).
         if let argsMap = args as? [String: Any] {
             if let bg = (argsMap["backgroundColor"] as? NSNumber)?.intValue {
+                // The scaffold IS the page, so it keeps the background the
+                // embedded controls have theirs stripped for.
+                (hostingController as? ClearHostingController<AnyView>)?
+                    .forcesClearBackground = false
                 hostingController?.view.backgroundColor = UIColor(argb: bg)
             }
             if let tint = (argsMap["primaryColor"] as? NSNumber)?.intValue {
@@ -419,6 +423,8 @@ class NativeScaffoldView: NativeHostingView {
                 }
                 // Apply updated theme colors.
                 if let bg = config.backgroundColor {
+                    (hostingController as? ClearHostingController<AnyView>)?
+                        .forcesClearBackground = false
                     hostingController?.view.backgroundColor = UIColor(argb: bg)
                 }
                 if let tint = config.primaryColor {

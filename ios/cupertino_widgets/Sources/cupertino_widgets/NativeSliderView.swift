@@ -99,6 +99,10 @@ class NativeSliderView: NativeHostingView {
     }
 
     private func updateViewModel(with args: [String: Any]) {
+        if let isDark = args["isDark"] as? Bool {
+            // Appearance is owned by the hosting controller, not the model.
+            self.isDark = isDark
+        }
         if let value = args["value"] as? NSNumber {
             viewModel.value = value.doubleValue
         }

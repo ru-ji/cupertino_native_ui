@@ -1,12 +1,12 @@
 import 'package:flutter/cupertino.dart' show CupertinoTheme;
 import 'package:flutter/foundation.dart';
-import 'package:flutter/gestures.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
 import 'internal/native_platform_view_mixin.dart';
 import 'models/cupertino_native_icon.dart';
+import 'internal/scroll_friendly_recognizer.dart';
 
 /// The shape of one glass in a [CupertinoNativeGlassGroup].
 enum CupertinoGlassGroupShape { circle, capsule, roundedRect }
@@ -203,7 +203,7 @@ class _CupertinoNativeGlassGroupState extends State<CupertinoNativeGlassGroup>
           intrinsicWidth ?? (widget.vertical ? _fallbackCross : _fallbackMain),
       height:
           intrinsicHeight ?? (widget.vertical ? _fallbackMain : _fallbackCross),
-      child: UiKitView(
+      child: wrapForTransition(UiKitView(
         viewType: 'com.example.cupertino_widgets/cupertino_native_glass_group',
         layoutDirection: TextDirection.ltr,
         creationParams: _toMap(),
@@ -211,9 +211,7 @@ class _CupertinoNativeGlassGroupState extends State<CupertinoNativeGlassGroup>
         // The taps belong to the native glasses: each one hit-tests its own
         // shape, and the arena would otherwise delay them inside a scrollable.
         hitTestBehavior: PlatformViewHitTestBehavior.opaque,
-        gestureRecognizers: {
-          Factory<OneSequenceGestureRecognizer>(EagerGestureRecognizer.new),
-        },
+        gestureRecognizers: scrollFriendlyGestures,
         onPlatformViewCreated: (id) => setUpChannel(
           id,
           'cupertino_widgets/glass_group_$id',
@@ -226,7 +224,7 @@ class _CupertinoNativeGlassGroupState extends State<CupertinoNativeGlassGroup>
             return null;
           },
         ),
-      ),
+      )),
     );
   }
 }

@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart' show Theme;
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
+
 import 'internal/native_platform_view_mixin.dart';
 import 'models/cupertino_native_button_style.dart';
 import 'models/cupertino_native_button_extra_options.dart';
@@ -74,6 +76,26 @@ class _CupertinoNativeButtonState extends State<CupertinoNativeButton>
           ? CupertinoNativeIcon.named(widget.systemImage!)
           : null);
 
+  bool? _lastIsDark;
+
+  // Follows the app's own theme brightness, not the device's — a light app
+  // forced on a dark-mode phone should still get a light control.
+  bool get _isDark => Theme.of(context).brightness == Brightness.dark;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Re-push config if the app toggled light/dark at runtime.
+    if (_lastIsDark != null && _lastIsDark != _isDark) {
+      updateNativeView(
+        'updateButton',
+        _toMap(),
+        refreshIntrinsicSize: false,
+      );
+    }
+    _lastIsDark = _isDark;
+  }
+
   @override
   void didUpdateWidget(covariant CupertinoNativeButton oldWidget) {
     super.didUpdateWidget(oldWidget);
@@ -106,6 +128,7 @@ class _CupertinoNativeButtonState extends State<CupertinoNativeButton>
       'fontSize': widget.textStyle?.fontSize,
       'fontWeight': widget.textStyle?.fontWeight?.value,
       'textColor': widget.textStyle?.color?.toARGB32(),
+      'isDark': _isDark,
       // Sized natively too, not just boxed: a SwiftUI button is `fixedSize`,
       // so a Flutter SizedBox alone leaves it drawing at its own metrics and
       // spilling out of (or rattling inside) the box.
@@ -173,14 +196,17 @@ class _CupertinoNativeButtonState extends State<CupertinoNativeButton>
   @override
   Widget build(BuildContext context) {
     if (defaultTargetPlatform == TargetPlatform.iOS) {
-      final platformView = UiKitView(
+      final platformView = wrapForTransition(UiKitView(
         viewType: 'com.example.cupertino_widgets/cupertino_native_button',
         layoutDirection: TextDirection.ltr,
         creationParams: _toMap(),
         creationParamsCodec: const StandardMessageCodec(),
         onPlatformViewCreated: _onPlatformViewCreated,
-      );
+      ));
 
+      if (_width != null && _height != null) {
+        return withPaintRoom(platformView, _width!, _height!);
+      }
       if (_width != null || _height != null) {
         return SizedBox(width: _width, height: _height, child: platformView);
       }
@@ -194,10 +220,10 @@ class _CupertinoNativeButtonState extends State<CupertinoNativeButton>
         );
       }
 
-      return SizedBox(
-        width: intrinsicWidth ?? _defaultWidth,
-        height: intrinsicHeight ?? _defaultHeight,
-        child: platformView,
+      return withPaintRoom(
+        platformView,
+        intrinsicWidth ?? _defaultWidth,
+        intrinsicHeight ?? _defaultHeight,
       );
     }
 

@@ -46,11 +46,24 @@ class CupertinoEdgeEffectCoverage extends StatefulWidget {
   const CupertinoEdgeEffectCoverage({
     super.key,
     required this.atTop,
+    this.strength = 1,
     required this.child,
   });
 
   /// Which end of the region the effect is densest at.
   final bool atTop;
+
+  /// How strongly the effect this covers is currently running, 0..1.
+  ///
+  /// At 0 nothing is published and nothing is cut. This is not an
+  /// optimisation: a bar whose effect ramps up from zero — the collapsing app
+  /// bar does, on the scroll that triggers the collapse — spends real time at
+  /// zero with content already behind it, and cutting a control there
+  /// replaces it with a bitmap while there is no effect to justify the
+  /// swap. Any difference between the bitmap and the live view then shows as
+  /// a bare patch. On a dark page the patch matches the page and nobody sees
+  /// it; on a light one it is a white block.
+  final double strength;
 
   final Widget child;
 
@@ -103,6 +116,10 @@ class _CupertinoEdgeEffectCoverageState
   }
 
   void _report() {
+    if (widget.strength <= 0) {
+      if (_sent != null) _push(null);
+      return;
+    }
     final box = context.findRenderObject() as RenderBox?;
     if (box == null || !box.hasSize || box.size.isEmpty) return;
     final origin = box.localToGlobal(Offset.zero);

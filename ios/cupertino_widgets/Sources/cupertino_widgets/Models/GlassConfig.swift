@@ -26,4 +26,8 @@ struct GlassConfig: Codable, Equatable {
     let animated: Bool?
     /// Fill the box Flutter built rather than hug a native icon.
     let expand: Bool?
+    /// The app's brightness, from Dart's theme — not the device's. Pins the
+    /// hosted view's appearance so a light app on a dark-mode phone does not
+    /// draw dark glass. See `NativeHostingView.isDark`.
+    let isDark: Bool?
 }

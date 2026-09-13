@@ -153,6 +153,12 @@ class NativeContextMenuView: NSObject, FlutterPlatformView, UIContextMenuInterac
     }
 
     private func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
+        // A bitmap of this view, for Flutter to draw while a route
+        // transition runs. See PlatformViewSnapshot.
+        if call.method == "snapshot" {
+            result(PlatformViewSnapshot.capture(view()))
+            return
+        }
         switch call.method {
         case "updateContextMenu":
             if let args = call.arguments as? [String: Any] { apply(args) }

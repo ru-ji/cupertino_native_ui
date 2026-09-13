@@ -74,6 +74,7 @@ class NativeSegmentedControlView: NativeHostingView {
     /// measures so Dart can build the box around it.
     private func setupSwiftUI(with config: SegmentedControlConfig) {
         shownIndex = config.selectedIndex
+        isDark = config.isDark
         attach(AnyView(makeContent(config: config)))
     }
 
@@ -91,6 +92,9 @@ class NativeSegmentedControlView: NativeHostingView {
             if let argsMap = call.arguments as? [String: Any],
                 let config = decodeConfig(SegmentedControlConfig.self, from: argsMap)
             {
+                // Appearance is owned by the hosting controller, so it must be
+                // re-pinned whichever branch this update takes.
+                isDark = config.isDark
                 if config.selectedIndex == shownIndex {
                     // Items or tint only: swapping the root view is enough, and
                     // leaves the selection indicator's animation alone.

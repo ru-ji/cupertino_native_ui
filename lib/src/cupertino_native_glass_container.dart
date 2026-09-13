@@ -1,11 +1,12 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter/gestures.dart';
+import 'package:flutter/material.dart' show Theme;
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
 import 'internal/native_platform_view_mixin.dart';
 import 'models/cupertino_native_icon.dart';
+import 'internal/scroll_friendly_recognizer.dart';
 
 /// The shape of a [CupertinoNativeGlassContainer].
 enum CupertinoGlassShape { capsule, circle, roundedRect }
@@ -203,7 +204,23 @@ class _CupertinoNativeGlassContainerState
       'route': widget.route,
       'animated': widget.animateChanges,
       'expand': !_hugsContent,
+      'isDark': _isDark,
     };
+  }
+
+  /// Follows the app's own theme brightness, not the device's — a light app
+  /// forced on a dark-mode phone should still get light glass.
+  bool get _isDark => Theme.of(context).brightness == Brightness.dark;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // The theme is the one config source that no property diff can see: the
+    // widget's own fields did not move, the inherited brightness did.
+    final config = _toMap();
+    if (mapEquals(_sentConfig, config)) return;
+    _sentConfig = config;
+    updateNativeView('updateGlass', config, refreshIntrinsicSize: _hugsContent);
   }
 
   /// [padding] resolved to concrete insets, for the native side.
@@ -279,7 +296,7 @@ class _CupertinoNativeGlassContainerState
       // shimmer / tap gesture — inside scrollables Flutter's gesture arena
       // would otherwise delay and cancel them.
       final wantsTouches = widget.interactive || widget.onPressed != null;
-      final glass = UiKitView(
+      final glass = wrapForTransition(UiKitView(
         viewType: 'com.example.cupertino_widgets/cupertino_native_liquid_glass',
         layoutDirection: TextDirection.ltr,
         creationParams: _toMap(),
@@ -287,15 +304,9 @@ class _CupertinoNativeGlassContainerState
         hitTestBehavior: wantsTouches
             ? PlatformViewHitTestBehavior.opaque
             : PlatformViewHitTestBehavior.transparent,
-        gestureRecognizers: wantsTouches
-            ? {
-                Factory<OneSequenceGestureRecognizer>(
-                  EagerGestureRecognizer.new,
-                ),
-              }
-            : const {},
+        gestureRecognizers: wantsTouches ? scrollFriendlyGestures : const {},
         onPlatformViewCreated: _onPlatformViewCreated,
-      );
+      ));
       content = glass;
     } else {
       // Non-iOS fallback: a translucent rounded box.

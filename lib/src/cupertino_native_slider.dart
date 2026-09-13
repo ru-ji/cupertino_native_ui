@@ -1,9 +1,10 @@
-import 'package:flutter/foundation.dart';
-import 'package:flutter/gestures.dart';
+import 'package:flutter/material.dart' show Theme;
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
+
 import 'internal/native_platform_view_mixin.dart';
+import 'internal/scroll_friendly_recognizer.dart';
 
 class CupertinoNativeSlider extends StatefulWidget {
   const CupertinoNativeSlider({
@@ -32,6 +33,24 @@ class CupertinoNativeSlider extends StatefulWidget {
 
 class _CupertinoNativeSliderState extends State<CupertinoNativeSlider>
     with NativePlatformViewStateMixin {
+  bool? _lastIsDark;
+
+  // Follows the app's own theme brightness, not the device's — a light app
+  // forced on a dark-mode phone should still get a light slider.
+  bool get _isDark => Theme.of(context).brightness == Brightness.dark;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Re-push props if the app toggled light/dark at runtime.
+    if (_lastIsDark != null && _lastIsDark != _isDark) {
+      updateNativeView('updateProps', {
+        'isDark': _isDark,
+      }, refreshIntrinsicSize: false);
+    }
+    _lastIsDark = _isDark;
+  }
+
   @override
   Widget build(BuildContext context) {
     const String viewType =
@@ -44,6 +63,7 @@ class _CupertinoNativeSliderState extends State<CupertinoNativeSlider>
       'activeColor': widget.activeColor?.toARGB32(),
       'thumbColor': widget.thumbColor?.toARGB32(),
       'isEnabled': widget.onChanged != null,
+      'isDark': _isDark,
     };
 
     // The slider fills the width offered, so only its height needs stating:
@@ -51,17 +71,15 @@ class _CupertinoNativeSliderState extends State<CupertinoNativeSlider>
     // makes. 44 is the standard control height and stands in until that lands.
     return SizedBox(
       height: intrinsicHeight ?? 44,
-      child: UiKitView(
+      child: wrapForTransition(UiKitView(
         viewType: viewType,
         layoutDirection: TextDirection.ltr,
         creationParams: creationParams,
         creationParamsCodec: const StandardMessageCodec(),
         onPlatformViewCreated: _onPlatformViewCreated,
         hitTestBehavior: PlatformViewHitTestBehavior.opaque,
-        gestureRecognizers: {
-          Factory<OneSequenceGestureRecognizer>(EagerGestureRecognizer.new),
-        },
-      ),
+        gestureRecognizers: scrollFriendlyGestures,
+      )),
     );
   }
 
@@ -94,6 +112,7 @@ class _CupertinoNativeSliderState extends State<CupertinoNativeSlider>
         'activeColor': widget.activeColor?.toARGB32(),
         'thumbColor': widget.thumbColor?.toARGB32(),
         'isEnabled': widget.onChanged != null,
+        'isDark': _isDark,
       }, refreshIntrinsicSize: false);
     }
   }

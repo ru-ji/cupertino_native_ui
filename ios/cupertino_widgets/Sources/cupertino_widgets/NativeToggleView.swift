@@ -71,6 +71,7 @@ class NativeToggleView: NativeHostingView {
 
     private func setupSwiftUI(with config: ToggleConfig) {
         shownValue = config.value
+        isDark = config.isDark
         let toggleView = makeContent(config: config)
         guard config.label == nil else {
             // A labeled switch is a full-width list row: like the button's
@@ -167,6 +168,9 @@ class NativeToggleView: NativeHostingView {
             if let argsMap = call.arguments as? [String: Any],
                 let config = decodeConfig(ToggleConfig.self, from: argsMap)
             {
+                // Appearance is owned by the hosting controller, so it must be
+                // re-pinned whichever branch this update takes.
+                isDark = config.isDark
                 if config.value == shownValue {
                     // Label, tint or font only: swap the root view, which keeps
                     // the switch's in-flight animation intact.

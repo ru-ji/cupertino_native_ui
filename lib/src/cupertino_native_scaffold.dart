@@ -258,12 +258,11 @@ class CupertinoNativeScaffold extends StatefulWidget {
     final isDark =
         ui.PlatformDispatcher.instance.platformBrightness == ui.Brightness.dark;
     try {
-      await const MethodChannel(
-        'com.example.cupertino_widgets/alert',
-      ).invokeMethod<void>('prewarmScaffold', {
-        'routes': routes,
-        'isDark': isDark,
-      });
+      await const MethodChannel('com.example.cupertino_widgets/alert')
+          .invokeMethod<void>('prewarmScaffold', {
+            'routes': routes,
+            'isDark': isDark,
+          });
     } on PlatformException {
       // Plugin unavailable (e.g. iOS < 15) — nothing to warm.
     }
@@ -418,9 +417,8 @@ class _DynamicEnvWrapperState extends State<_DynamicEnvWrapper>
     // to LIGHT regardless of the app/device brightness. Provide one with
     // the effective brightness so dynamic colors resolve correctly.
     return MediaQuery(
-      data: MediaQueryData.fromView(
-        View.of(context),
-      ).copyWith(platformBrightness: brightness),
+      data: MediaQueryData.fromView(View.of(context))
+          .copyWith(platformBrightness: brightness),
       child: Directionality(
         textDirection: TextDirection.ltr,
         child: Localizations(
@@ -453,6 +451,11 @@ class _CupertinoNativeScaffoldState extends State<CupertinoNativeScaffold>
   /// route's iOS swipe-back gesture is suppressed so it doesn't compete with
   /// the native back-swipe.
   int _nativeStackDepth = 1;
+
+  /// The scaffold IS the page: it must never be swapped for a photograph
+  /// while a route animates above it — the whole page would freeze mid-slide.
+  @override
+  bool get hidesDuringRouteTransition => false;
 
   /// The APP's brightness (its Material theme), propagated to the native
   /// SwiftUI views so they match the app — e.g. light content when the app is

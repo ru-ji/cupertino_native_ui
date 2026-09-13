@@ -232,6 +232,12 @@ class NativeTabBarView: NSObject, FlutterPlatformView, UITabBarDelegate {
     // MARK: - Method channel
 
     private func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
+        // A bitmap of this view, for Flutter to draw while a route
+        // transition runs. See PlatformViewSnapshot.
+        if call.method == "snapshot" {
+            result(PlatformViewSnapshot.capture(view()))
+            return
+        }
         switch call.method {
         case "getIntrinsicSize":
             if isSplit, let left = tabBarLeft, let right = tabBarRight {

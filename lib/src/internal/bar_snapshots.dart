@@ -114,9 +114,9 @@ class BarSnapshotRegistry extends ChangeNotifier {
 /// a decision the native side takes alone: the band is only hidden once
 /// something is drawn in its place, so there is never a frame with a hole in
 /// it.
-Future<void> setEdgeCut(int viewId, bool cut) => const MethodChannel(
-  'com.example.cupertino_widgets/alert',
-).invokeMethod<void>('setEdgeCut', {'viewId': viewId, 'cut': cut});
+Future<void> setEdgeCut(int viewId, bool cut) =>
+    const MethodChannel('com.example.cupertino_widgets/alert')
+        .invokeMethod<void>('setEdgeCut', {'viewId': viewId, 'cut': cut});
 
 /// Captures a hosted view over its own channel and decodes the pixels.
 ///
@@ -157,6 +157,13 @@ Future<(ui.Image, Rect)?> captureNativeView(MethodChannel channel) async {
 /// the bar's layout and once there from the message, is how the two halves end
 /// up disagreeing by a few points and leaving a band of bare background across
 /// a control.
+/// TEMPORARY debug switch. `true` tints every bitmap this surface draws red
+/// and outlines its destination rectangle in green, which answers two
+/// questions from one screenshot: whether an artifact is drawn here at all,
+/// and if so which control's rectangle it belongs to.
+const bool debugStainBarSnapshots =
+    false; // TEMPORARY: revert to bool.fromEnvironment('STAIN_BAR_SNAPSHOTS')
+
 class BarSnapshotSurface extends StatelessWidget {
   const BarSnapshotSurface({super.key});
 
@@ -248,13 +255,29 @@ class _RenderBarSnapshots extends RenderBox {
       );
       // The destination the platform side measured, moved to where the
       // control is on this frame.
+      final dest = entry.dest.shift(offset + topLeft);
       canvas.drawImageRect(
         entry.image,
         Offset.zero &
             Size(entry.image.width.toDouble(), entry.image.height.toDouble()),
-        entry.dest.shift(offset + topLeft),
-        Paint()..filterQuality = FilterQuality.medium,
+        dest,
+        Paint()
+          ..filterQuality = FilterQuality.medium
+          // TEMPORARY: stains every pixel this surface contributes, so a
+          // screenshot says whether an artifact came from here at all.
+          ..colorFilter = debugStainBarSnapshots
+              ? const ColorFilter.mode(Color(0x80FF0000), BlendMode.srcATop)
+              : null,
       );
+      if (debugStainBarSnapshots) {
+        canvas.drawRect(
+          dest,
+          Paint()
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 1
+            ..color = const Color(0xFF00FF00),
+        );
+      }
     }
     canvas.restore();
   }
