@@ -1170,24 +1170,19 @@ class _IOS26SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
                       left: leading != null ? _kBarItemMargin : 16,
                       right: _kBarItemMargin,
                     ),
-                    // Laid out like a Row (leading, title, trailing) but the
-                    // title is painted LAST: painted before the trailing
-                    // native button it would land in the Flutter surface
-                    // under the native views, i.e. under the edge blur.
-                    child: CustomMultiChildLayout(
-                      delegate: _InlineRowLayout(),
+                    child: Row(
                       children: [
-                        if (leading != null)
-                          LayoutId(id: #leading, child: leading!),
-                        if (trailing != null)
-                          LayoutId(id: #trailing, child: trailing!),
-                        LayoutId(
-                          id: #title,
+                        if (leading != null) ...[
+                          leading!,
+                          const SizedBox(width: 12),
+                        ],
+                        Expanded(
                           child: Align(
                             alignment: Alignment.centerLeft,
                             child: inlineTitleBlock,
                           ),
                         ),
+                        ?trailing,
                       ],
                     ),
                   )
@@ -1234,36 +1229,6 @@ class _IOS26SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
 
   @override
   bool shouldRebuild(_IOS26SliverAppBarDelegate oldDelegate) => true;
-}
-
-/// Row geometry — leading, 12pt gap, title filling, trailing — with the title
-/// free to be painted after the buttons.
-class _InlineRowLayout extends MultiChildLayoutDelegate {
-  @override
-  void performLayout(Size size) {
-    final loose = BoxConstraints.loose(size);
-    var left = 0.0;
-    var right = size.width;
-    if (hasChild(#leading)) {
-      final s = layoutChild(#leading, loose);
-      positionChild(#leading, Offset(0, (size.height - s.height) / 2));
-      left = s.width + 12;
-    }
-    if (hasChild(#trailing)) {
-      final s = layoutChild(#trailing, loose);
-      right = size.width - s.width;
-      positionChild(#trailing, Offset(right, (size.height - s.height) / 2));
-    }
-    final width = (right - left).clamp(0.0, size.width);
-    layoutChild(
-      #title,
-      BoxConstraints.tightFor(width: width, height: size.height),
-    );
-    positionChild(#title, Offset(left, 0));
-  }
-
-  @override
-  bool shouldRelayout(_InlineRowLayout oldDelegate) => false;
 }
 
 /// Outer margin of the bar's action items, leading and trailing.
