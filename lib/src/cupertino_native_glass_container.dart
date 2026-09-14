@@ -296,17 +296,20 @@ class _CupertinoNativeGlassContainerState
       // shimmer / tap gesture — inside scrollables Flutter's gesture arena
       // would otherwise delay and cancel them.
       final wantsTouches = widget.interactive || widget.onPressed != null;
-      final glass = wrapForTransition(UiKitView(
-        viewType: 'com.example.cupertino_widgets/cupertino_native_liquid_glass',
-        layoutDirection: TextDirection.ltr,
-        creationParams: _toMap(),
-        creationParamsCodec: const StandardMessageCodec(),
-        hitTestBehavior: wantsTouches
-            ? PlatformViewHitTestBehavior.opaque
-            : PlatformViewHitTestBehavior.transparent,
-        gestureRecognizers: wantsTouches ? scrollFriendlyGestures : const {},
-        onPlatformViewCreated: _onPlatformViewCreated,
-      ));
+      final glass = wrapForTransition(
+        UiKitView(
+          viewType:
+              'com.example.cupertino_widgets/cupertino_native_liquid_glass',
+          layoutDirection: TextDirection.ltr,
+          creationParams: _toMap(),
+          creationParamsCodec: const StandardMessageCodec(),
+          hitTestBehavior: wantsTouches
+              ? PlatformViewHitTestBehavior.opaque
+              : PlatformViewHitTestBehavior.transparent,
+          gestureRecognizers: wantsTouches ? scrollFriendlyGestures : const {},
+          onPlatformViewCreated: _onPlatformViewCreated,
+        ),
+      );
       content = glass;
     } else {
       // Non-iOS fallback: a translucent rounded box.

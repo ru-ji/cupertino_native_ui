@@ -2,7 +2,6 @@ import 'package:flutter/cupertino.dart'
     show CupertinoColors, CupertinoDynamicColor;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
-import 'package:haze/haze.dart';
 
 import 'cupertino_native_edge_blur.dart';
 import 'cupertino_native_tab_bar.dart' show CupertinoScrollEdgeEffectStyle;
@@ -17,7 +16,7 @@ enum CupertinoScrollEdgeEffectEdge { top, bottom }
 /// system's own `ScrollEdgeEffectView`, read off a device:
 ///
 /// * **blur** — Core Animation's `variableBlur`, at the radius the system's
-///   `PocketBlur` uses (1pt), fading on Haze's curve;
+///   `PocketBlur` uses (1pt), fading on a smootherstep curve;
 /// * **wash** — the luminance of what is under the bar, measured by the render
 ///   server exactly where the system measures it (the 44pt bar below the status
 ///   bar), settling on one of three levels — white 85% over near-white
@@ -28,8 +27,7 @@ enum CupertinoScrollEdgeEffectEdge { top, bottom }
 /// photographed, nothing is cut. The app must set `FLTDisablePartialRepaint`
 /// to true in its `Info.plist` — see [CupertinoNativeEdgeBlur].
 ///
-/// Everywhere else it falls back to [Haze] with the system's measured
-/// parameters and a fixed wash.
+/// Everywhere else `soft` draws nothing.
 ///
 /// Place it in a `Stack` behind a bar, sized to the region that should melt
 /// into the edge:
@@ -79,12 +77,6 @@ class CupertinoScrollEdgeEffect extends StatelessWidget {
   /// `inputRadius`).
   static const double _radius = 1;
 
-  /// Off iOS: the blur measured off screen recordings of the system effect
-  /// (edge rise against depth, 10-90% of a Gaussian is 2.563 sigma), and one
-  /// fixed wash standing in for the adaptive one.
-  static const double _hazeSigma = 1.8;
-  static const double _hazeTintAlpha = 0.6;
-
   @override
   Widget build(BuildContext context) {
     final background = CupertinoDynamicColor.resolve(
@@ -106,16 +98,7 @@ class CupertinoScrollEdgeEffect extends StatelessWidget {
         onBrightnessChanged: onBrightnessChanged,
       );
     }
-    return IgnorePointer(
-      child: Haze(
-        edge: edge == CupertinoScrollEdgeEffectEdge.top
-            ? HazeEdge.top
-            : HazeEdge.bottom,
-        sigma: _hazeSigma * intensity,
-        tint: background.withValues(
-          alpha: background.a * _hazeTintAlpha * intensity,
-        ),
-      ),
-    );
+    // The native blur is iOS only; elsewhere there is no soft effect.
+    return const SizedBox.shrink();
   }
 }

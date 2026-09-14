@@ -3,7 +3,6 @@ import 'package:flutter/material.dart' show Theme;
 import 'package:flutter/rendering.dart' show PlatformViewHitTestBehavior;
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
-import 'package:haze/haze.dart';
 
 import 'cupertino_scroll_edge_effect.dart' show CupertinoScrollEdgeEffectEdge;
 
@@ -22,8 +21,8 @@ import 'cupertino_scroll_edge_effect.dart' show CupertinoScrollEdgeEffectEdge;
 /// partial repaint, Flutter leaves the pixels under its own overlays uncleared,
 /// and a stale copy of chrome drawn over this blur ghosts inside it.
 ///
-/// Same curves as [Haze] (hold, smootherstep, geometric radius ramp), same
-/// automatic fit of [sigma] to the height. Off iOS it falls back to [Haze].
+/// Hold, smootherstep and a geometric radius ramp, with [sigma] fitted to the
+/// height. iOS only: elsewhere it draws nothing.
 class CupertinoNativeEdgeBlur extends StatefulWidget {
   const CupertinoNativeEdgeBlur({
     super.key,
@@ -40,7 +39,7 @@ class CupertinoNativeEdgeBlur extends StatefulWidget {
 
   final CupertinoScrollEdgeEffectEdge edge;
 
-  /// Peak blur at [edge], logical px. Fitted to the height like [Haze.sigma].
+  /// Peak blur at [edge], logical px. Capped so the fade is at least 3 sigma wide.
   final double sigma;
 
   /// Without [adaptiveTint], the wash colour; its alpha is the peak opacity at
@@ -82,7 +81,7 @@ class _CupertinoNativeEdgeBlurState extends State<CupertinoNativeEdgeBlur> {
 
   Map<String, Object?> _params(double span, bool isDark) => {
     'edge': widget.edge.name,
-    'sigma': Haze.fitSigma(span, widget.sigma),
+    'sigma': (span * (1 - 0.41) * 0.4 / 3).clamp(0.0, widget.sigma),
     'tint': widget.tint?.toARGB32(),
     'adaptive': widget.adaptiveTint,
     'intensity': widget.intensity,
@@ -102,13 +101,7 @@ class _CupertinoNativeEdgeBlurState extends State<CupertinoNativeEdgeBlur> {
   @override
   Widget build(BuildContext context) {
     if (defaultTargetPlatform != TargetPlatform.iOS) {
-      return Haze(
-        edge: widget.edge == CupertinoScrollEdgeEffectEdge.top
-            ? HazeEdge.top
-            : HazeEdge.bottom,
-        sigma: widget.sigma * widget.intensity,
-        tint: widget.tint,
-      );
+      return const SizedBox.shrink();
     }
     // The app's brightness, not the device's — the plugin's other views follow
     // `Theme.of` too.

@@ -203,28 +203,31 @@ class _CupertinoNativeGlassGroupState extends State<CupertinoNativeGlassGroup>
           intrinsicWidth ?? (widget.vertical ? _fallbackCross : _fallbackMain),
       height:
           intrinsicHeight ?? (widget.vertical ? _fallbackMain : _fallbackCross),
-      child: wrapForTransition(UiKitView(
-        viewType: 'com.example.cupertino_widgets/cupertino_native_glass_group',
-        layoutDirection: TextDirection.ltr,
-        creationParams: _toMap(),
-        creationParamsCodec: const StandardMessageCodec(),
-        // The taps belong to the native glasses: each one hit-tests its own
-        // shape, and the arena would otherwise delay them inside a scrollable.
-        hitTestBehavior: PlatformViewHitTestBehavior.opaque,
-        gestureRecognizers: scrollFriendlyGestures,
-        onPlatformViewCreated: (id) => setUpChannel(
-          id,
-          'cupertino_widgets/glass_group_$id',
-          onMethodCall: (call) async {
-            if (call.method == 'onAction') {
-              final args = call.arguments as Map?;
-              final id = args?['actionId'] as String?;
-              if (id != null) widget.onAction?.call(id);
-            }
-            return null;
-          },
+      child: wrapForTransition(
+        UiKitView(
+          viewType:
+              'com.example.cupertino_widgets/cupertino_native_glass_group',
+          layoutDirection: TextDirection.ltr,
+          creationParams: _toMap(),
+          creationParamsCodec: const StandardMessageCodec(),
+          // The taps belong to the native glasses: each one hit-tests its own
+          // shape, and the arena would otherwise delay them inside a scrollable.
+          hitTestBehavior: PlatformViewHitTestBehavior.opaque,
+          gestureRecognizers: scrollFriendlyGestures,
+          onPlatformViewCreated: (id) => setUpChannel(
+            id,
+            'cupertino_widgets/glass_group_$id',
+            onMethodCall: (call) async {
+              if (call.method == 'onAction') {
+                final args = call.arguments as Map?;
+                final id = args?['actionId'] as String?;
+                if (id != null) widget.onAction?.call(id);
+              }
+              return null;
+            },
+          ),
         ),
-      )),
+      ),
     );
   }
 }

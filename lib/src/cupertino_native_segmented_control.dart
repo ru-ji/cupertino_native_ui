@@ -91,17 +91,19 @@ class _CupertinoNativeSegmentedControlState
   @override
   Widget build(BuildContext context) {
     if (defaultTargetPlatform == TargetPlatform.iOS) {
-      final platformView = wrapForTransition(UiKitView(
-        viewType: 'com.example.cupertino_widgets/cupertino_native_segmented',
-        layoutDirection: TextDirection.ltr,
-        creationParams: _toMap(),
-        creationParamsCodec: const StandardMessageCodec(),
-        onPlatformViewCreated: _onPlatformViewCreated,
-        // Claim drags immediately so press-and-slide across segments reaches
-        // the native control instead of being taken by Flutter's gesture arena.
-        hitTestBehavior: PlatformViewHitTestBehavior.opaque,
-        gestureRecognizers: scrollFriendlyGestures,
-      ));
+      final platformView = wrapForTransition(
+        UiKitView(
+          viewType: 'com.example.cupertino_widgets/cupertino_native_segmented',
+          layoutDirection: TextDirection.ltr,
+          creationParams: _toMap(),
+          creationParamsCodec: const StandardMessageCodec(),
+          onPlatformViewCreated: _onPlatformViewCreated,
+          // Claim drags immediately so press-and-slide across segments reaches
+          // the native control instead of being taken by Flutter's gesture arena.
+          hitTestBehavior: PlatformViewHitTestBehavior.opaque,
+          gestureRecognizers: scrollFriendlyGestures,
+        ),
+      );
 
       // If explicit width/height provided, use them
       if (widget.width != null || widget.height != null) {

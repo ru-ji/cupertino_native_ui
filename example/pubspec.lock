@@ -96,7 +96,7 @@ packages:
       path: "../../haze"
       relative: true
     source: path
-    version: "0.4.4"
+    version: "0.5.0"
   inspire_blur:
     dependency: "direct main"
     description:

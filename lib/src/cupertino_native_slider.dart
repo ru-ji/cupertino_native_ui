@@ -71,15 +71,17 @@ class _CupertinoNativeSliderState extends State<CupertinoNativeSlider>
     // makes. 44 is the standard control height and stands in until that lands.
     return SizedBox(
       height: intrinsicHeight ?? 44,
-      child: wrapForTransition(UiKitView(
-        viewType: viewType,
-        layoutDirection: TextDirection.ltr,
-        creationParams: creationParams,
-        creationParamsCodec: const StandardMessageCodec(),
-        onPlatformViewCreated: _onPlatformViewCreated,
-        hitTestBehavior: PlatformViewHitTestBehavior.opaque,
-        gestureRecognizers: scrollFriendlyGestures,
-      )),
+      child: wrapForTransition(
+        UiKitView(
+          viewType: viewType,
+          layoutDirection: TextDirection.ltr,
+          creationParams: creationParams,
+          creationParamsCodec: const StandardMessageCodec(),
+          onPlatformViewCreated: _onPlatformViewCreated,
+          hitTestBehavior: PlatformViewHitTestBehavior.opaque,
+          gestureRecognizers: scrollFriendlyGestures,
+        ),
+      ),
     );
   }
 

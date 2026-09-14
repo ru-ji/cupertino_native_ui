@@ -53,11 +53,7 @@ class _CupertinoNativeProgressIndicatorState
     super.didChangeDependencies();
     // Re-push config if the app toggled light/dark at runtime.
     if (_lastIsDark != null && _lastIsDark != _isDark) {
-      updateNativeView(
-        'updateProgress',
-        _toMap(),
-        refreshIntrinsicSize: false,
-      );
+      updateNativeView('updateProgress', _toMap(), refreshIntrinsicSize: false);
     }
     _lastIsDark = _isDark;
   }
@@ -107,13 +103,15 @@ class _CupertinoNativeProgressIndicatorState
         height: circular
             ? (intrinsicHeight ?? 20)
             : (intrinsicHeight ?? (widget.label != null ? 44 : 4)),
-        child: wrapForTransition(UiKitView(
-          viewType: 'com.example.cupertino_widgets/cupertino_native_progress',
-          layoutDirection: TextDirection.ltr,
-          creationParams: _toMap(),
-          creationParamsCodec: const StandardMessageCodec(),
-          onPlatformViewCreated: _onPlatformViewCreated,
-        )),
+        child: wrapForTransition(
+          UiKitView(
+            viewType: 'com.example.cupertino_widgets/cupertino_native_progress',
+            layoutDirection: TextDirection.ltr,
+            creationParams: _toMap(),
+            creationParamsCodec: const StandardMessageCodec(),
+            onPlatformViewCreated: _onPlatformViewCreated,
+          ),
+        ),
       );
     }
 

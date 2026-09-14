@@ -87,11 +87,7 @@ class _CupertinoNativeButtonState extends State<CupertinoNativeButton>
     super.didChangeDependencies();
     // Re-push config if the app toggled light/dark at runtime.
     if (_lastIsDark != null && _lastIsDark != _isDark) {
-      updateNativeView(
-        'updateButton',
-        _toMap(),
-        refreshIntrinsicSize: false,
-      );
+      updateNativeView('updateButton', _toMap(), refreshIntrinsicSize: false);
     }
     _lastIsDark = _isDark;
   }
@@ -196,13 +192,15 @@ class _CupertinoNativeButtonState extends State<CupertinoNativeButton>
   @override
   Widget build(BuildContext context) {
     if (defaultTargetPlatform == TargetPlatform.iOS) {
-      final platformView = wrapForTransition(UiKitView(
-        viewType: 'com.example.cupertino_widgets/cupertino_native_button',
-        layoutDirection: TextDirection.ltr,
-        creationParams: _toMap(),
-        creationParamsCodec: const StandardMessageCodec(),
-        onPlatformViewCreated: _onPlatformViewCreated,
-      ));
+      final platformView = wrapForTransition(
+        UiKitView(
+          viewType: 'com.example.cupertino_widgets/cupertino_native_button',
+          layoutDirection: TextDirection.ltr,
+          creationParams: _toMap(),
+          creationParamsCodec: const StandardMessageCodec(),
+          onPlatformViewCreated: _onPlatformViewCreated,
+        ),
+      );
 
       if (_width != null && _height != null) {
         return withPaintRoom(platformView, _width!, _height!);

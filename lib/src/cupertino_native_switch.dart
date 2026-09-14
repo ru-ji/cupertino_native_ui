@@ -43,11 +43,7 @@ class _CupertinoNativeSwitchState extends State<CupertinoNativeSwitch>
     super.didChangeDependencies();
     // Re-push config if the app toggled light/dark at runtime.
     if (_lastIsDark != null && _lastIsDark != _isDark) {
-      updateNativeView(
-        'updateToggle',
-        _toMap(),
-        refreshIntrinsicSize: false,
-      );
+      updateNativeView('updateToggle', _toMap(), refreshIntrinsicSize: false);
     }
     _lastIsDark = _isDark;
   }
@@ -94,20 +90,22 @@ class _CupertinoNativeSwitchState extends State<CupertinoNativeSwitch>
   @override
   Widget build(BuildContext context) {
     if (defaultTargetPlatform == TargetPlatform.iOS) {
-      final platformView = wrapForTransition(UiKitView(
-        // Must match FlutterCupertinoPlugin.swift's registration. The widget
-        // was renamed Toggle -> Switch on the Dart side only; this id is the
-        // native contract and deliberately keeps the old spelling.
-        viewType: 'com.example.cupertino_widgets/cupertino_native_toggle',
-        layoutDirection: TextDirection.ltr,
-        creationParams: _toMap(),
-        creationParamsCodec: const StandardMessageCodec(),
-        onPlatformViewCreated: _onPlatformViewCreated,
-        // Claim drags immediately so press-and-slide reaches the native
-        // switch instead of being taken by Flutter's gesture arena.
-        hitTestBehavior: PlatformViewHitTestBehavior.opaque,
-        gestureRecognizers: scrollFriendlyGestures,
-      ));
+      final platformView = wrapForTransition(
+        UiKitView(
+          // Must match FlutterCupertinoPlugin.swift's registration. The widget
+          // was renamed Toggle -> Switch on the Dart side only; this id is the
+          // native contract and deliberately keeps the old spelling.
+          viewType: 'com.example.cupertino_widgets/cupertino_native_toggle',
+          layoutDirection: TextDirection.ltr,
+          creationParams: _toMap(),
+          creationParamsCodec: const StandardMessageCodec(),
+          onPlatformViewCreated: _onPlatformViewCreated,
+          // Claim drags immediately so press-and-slide reaches the native
+          // switch instead of being taken by Flutter's gesture arena.
+          hitTestBehavior: PlatformViewHitTestBehavior.opaque,
+          gestureRecognizers: scrollFriendlyGestures,
+        ),
+      );
 
       // If explicit width/height provided, use them
       if (widget.width != null || widget.height != null) {

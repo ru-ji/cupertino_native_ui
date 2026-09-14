@@ -807,7 +807,7 @@ Stack(children: [
 recreating UIKit's `ScrollEdgeEffectView`, whose layers were read off a device:
 
 - **Blur.** Core Animation's `variableBlur` on a `CABackdropLayer`, at the
-  radius the system's `PocketBlur` uses (1pt), fading on Haze's curve (hold,
+  radius the system's `PocketBlur` uses (1pt), fading on a smootherstep curve (hold,
   smootherstep, geometric radius ramp).
 - **Wash.** The render server measures the luminance of what is under the bar,
   where the system measures it (the 44pt bar below the status bar), through the
@@ -824,9 +824,7 @@ trails the page it rides by a frame.
 
 This relies on private Core Animation and UIKit classes, looked up at runtime.
 Should one disappear, the blur or the adaptive wash is skipped rather than
-crashing (debug builds say which). On other platforms the effect is
-[haze](https://pub.dev/packages/haze) with the system's measured blur and a
-fixed wash. `CupertinoNativeEdgeBlur` exposes the native effect directly, for
+crashing (debug builds say which). On other platforms `soft` draws nothing. `CupertinoNativeEdgeBlur` exposes the native effect directly, for
 custom radii and fixed washes.
 
 ## Symbol Image

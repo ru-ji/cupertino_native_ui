@@ -14,11 +14,6 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  # Local while the scroll edge effect's tint profile is being tuned against
-  # the system's — see CupertinoScrollEdgeEffect. Back to a hosted version
-  # before publishing: a path dependency cannot be published.
-  haze:
-    path: ../haze
 
 dev_dependencies:
   flutter_test:

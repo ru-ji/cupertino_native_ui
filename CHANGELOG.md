@@ -7,8 +7,8 @@
 rebuilt from the layers of the system's own `ScrollEdgeEffectView` as read off a
 device:
 
-* **Blur:** Core Animation's `variableBlur` at the system's radius (1pt), on
-  Haze's curve.
+* **Blur:** Core Animation's `variableBlur` at the system's radius (1pt), on a
+  smootherstep curve.
 * **Adaptive wash:** the render server measures the luminance under the bar
   (`_UILumaTrackingBackdropView`, sampling the 44pt bar below the status bar)
   and the wash settles on three levels — white 85%, black 27%, black 47% — on
@@ -18,7 +18,7 @@ device:
 * New `onBrightnessChanged`: the app bars turn their title white over dark
   content, like the system's bar items.
 * Hidden during route transitions (a platform view trails the page by a frame).
-* Off iOS it is still Haze, with the system's measured blur and a fixed wash.
+* The `haze` dependency is gone; off iOS `soft` draws nothing.
 
 **Action required:** add `<key>FLTDisablePartialRepaint</key><true/>` to the
 app's `Info.plist`. With partial repaint, Flutter leaves the pixels under its
