@@ -11,8 +11,6 @@ import 'cupertino_native_glass_container.dart';
 import 'cupertino_native_tab_bar.dart' show CupertinoScrollEdgeEffectStyle;
 import 'cupertino_native_text_field.dart';
 import 'cupertino_scroll_edge_effect.dart';
-import 'internal/bar_snapshots.dart';
-import 'internal/edge_effect_coverage.dart';
 import 'internal/ios_version.dart';
 import 'models/cupertino_native_icon.dart';
 import 'models/cupertino_symbols.dart';
@@ -255,6 +253,10 @@ class _CupertinoSliverAppBarState extends State<CupertinoSliverAppBar>
   /// the hosted field via [CupertinoSearchRowVisibility] so native fields can
   /// fade their content natively. Updated from the delegate's build.
   final ValueNotifier<double> _searchRowVisibility = ValueNotifier<double>(1);
+
+  /// What the edge effect's adaptive wash reports behind the bar; the inline
+  /// title follows it. Null until the first measurement.
+  Brightness? _effectBehind;
 
   /// Focus of the built-in search field — driven by the morph (focused on
   /// open, unfocused on close).
@@ -615,59 +617,72 @@ class _CupertinoSliverAppBarState extends State<CupertinoSliverAppBar>
           )
         : widget.bottom;
 
-    return AnimatedBuilder(
-      animation: Listenable.merge([_searchT, _titleT]),
-      builder: (context, _) => SliverPersistentHeader(
-        pinned: true,
-        delegate: _IOS26SliverAppBarDelegate(
-          largeTitle: widget.largeTitle,
-          subtitle: widget.subtitle,
-          centerTitle: widget.centerTitle,
-          expandedTitle: widget.expandedTitle,
-          collapseTitle: widget.collapseTitle,
-          leading: leading,
-          trailing: trailing,
-          searchField: bottomSlot,
-          searchable: widget._searchable,
-          fieldHeight: widget.bottomHeight,
-          bottomMode: widget.bottomMode,
-          closeButton: closeButton,
-          // Rebuilt per tick: its strength rides the collapse animation.
-          edgeEffect: RepaintBoundary(
-            child: CupertinoScrollEdgeEffect(
-              edge: CupertinoScrollEdgeEffectEdge.top,
-              style: widget.scrollEdgeEffect,
-              color: widget.tintColor,
-              // The system effect is not on at rest — blur and scrim both come
-              // up from zero at the moment the collapse fires, which is why a
-              // slow scroll shows the first rows darkening slightly before any
-              // blur is noticeable (a small sigma simply doesn't read yet).
-              // Tied to the trigger, not to the collapse itself, so it still
-              // happens with [collapseTitle] off.
-              intensity: _titleT.value,
+    // The inline title follows the edge effect's wash: white over its dark
+    // levels, like the system's bar items, on the wash's own ~0.5s.
+    return TweenAnimationBuilder<Color?>(
+      tween: ColorTween(
+        end: _effectBehind == Brightness.dark
+            ? CupertinoColors.white
+            : theme.textTheme.navTitleTextStyle.color,
+      ),
+      duration: const Duration(milliseconds: 500),
+      curve: Curves.easeOutCubic,
+      builder: (context, inlineTitleColor, _) => AnimatedBuilder(
+        animation: Listenable.merge([_searchT, _titleT]),
+        builder: (context, _) => SliverPersistentHeader(
+          pinned: true,
+          delegate: _IOS26SliverAppBarDelegate(
+            largeTitle: widget.largeTitle,
+            subtitle: widget.subtitle,
+            centerTitle: widget.centerTitle,
+            expandedTitle: widget.expandedTitle,
+            collapseTitle: widget.collapseTitle,
+            leading: leading,
+            trailing: trailing,
+            searchField: bottomSlot,
+            searchable: widget._searchable,
+            fieldHeight: widget.bottomHeight,
+            bottomMode: widget.bottomMode,
+            closeButton: closeButton,
+            edgeEffect: RepaintBoundary(
+              child: CupertinoScrollEdgeEffect(
+                edge: CupertinoScrollEdgeEffectEdge.top,
+                style: widget.scrollEdgeEffect,
+                color: widget.tintColor,
+                // The system effect is not on at rest — blur and scrim both come
+                // up from zero at the moment the collapse fires, which is why a
+                // slow scroll shows the first rows darkening slightly before any
+                // blur is noticeable (a small sigma simply doesn't read yet).
+                // Tied to the trigger, not to the collapse itself, so it still
+                // happens with [collapseTitle] off.
+                intensity: _titleT.value,
+                onBrightnessChanged: (behind) {
+                  if (mounted && behind != _effectBehind) {
+                    setState(() => _effectBehind = behind);
+                  }
+                },
+              ),
             ),
-          ),
-          searchRowVisibility: _searchRowVisibility,
-          searchT: _searchT.value,
-          titleT: widget.collapseTitle ? _titleT.value : 0.0,
-          // The effect's own strength, which is NOT `titleT`: the effect comes
-          // up on the collapse trigger whether or not the title collapses.
-          effectStrength: _titleT.value,
-          searchActive: _searchActive,
-          morphing: _controller.isAnimating,
-          onSearchOpen: () => _setSearchActive(true),
-          topPadding: MediaQuery.paddingOf(context).top,
-          // Native Flutter Cupertino nav bar text styles.
-          inlineTitleStyle: theme.textTheme.navTitleTextStyle.copyWith(
-            decoration: TextDecoration.none,
-          ),
-          largeTitleStyle: theme.textTheme.navLargeTitleTextStyle.copyWith(
-            decoration: TextDecoration.none,
-          ),
-          subtitleStyle: theme.textTheme.tabLabelTextStyle.copyWith(
-            fontSize: 13,
-            decoration: TextDecoration.none,
-            color: CupertinoColors.secondaryLabel.resolveFrom(context),
+            searchRowVisibility: _searchRowVisibility,
+            searchT: _searchT.value,
+            titleT: widget.collapseTitle ? _titleT.value : 0.0,
+            searchActive: _searchActive,
+            morphing: _controller.isAnimating,
+            onSearchOpen: () => _setSearchActive(true),
+            topPadding: MediaQuery.paddingOf(context).top,
+            // Native Flutter Cupertino nav bar text styles.
+            inlineTitleStyle: theme.textTheme.navTitleTextStyle.copyWith(
+              decoration: TextDecoration.none,
+              color: inlineTitleColor,
+            ),
+            largeTitleStyle: theme.textTheme.navLargeTitleTextStyle.copyWith(
+              decoration: TextDecoration.none,
+            ),
+            subtitleStyle: theme.textTheme.tabLabelTextStyle.copyWith(
+              fontSize: 13,
+              decoration: TextDecoration.none,
+              color: CupertinoColors.secondaryLabel.resolveFrom(context),
+            ),
           ),
         ),
       ),
@@ -693,7 +708,6 @@ class _IOS26SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
     required this.searchRowVisibility,
     required this.searchT,
     required this.titleT,
-    required this.effectStrength,
     required this.searchActive,
     required this.morphing,
     required this.onSearchOpen,
@@ -783,7 +797,6 @@ class _IOS26SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
   /// state's trigger animation, NOT by [shrinkOffset]: the fade runs to
   /// completion once fired, instead of being scrubbed by the finger.
   final double titleT;
-  final double effectStrength;
 
   /// True from open-animation start until close-animation start. The
   /// framework hides leading/trailing outright in this window (no fade).
@@ -1005,21 +1018,16 @@ class _IOS26SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
     // the search open, no title and no actions — just the docked field. It
     // therefore shrinks and grows with the collapse and the morph on its own,
     // with no special-casing per configuration.
-    final effectH = height + _effectOverhang;
+    // Fixed, like the "Adaptive wash over the bands" probe: a native view resized
+    // per scroll frame re-renders its masks each frame and lags the titles.
+    final effectH = topPadding + _barH + _effectOverhang;
 
     return Stack(
       clipBehavior: Clip.none,
       fit: StackFit.expand,
       children: [
-        // The covered band of every native control passing under this bar,
-        // drawn as ordinary Flutter pixels UNDER the effect so the shader can
-        // reach them — the one thing a backdrop filter cannot do to a platform
-        // view. Same rectangle as the effect, so the two agree on where the
-        // seam is. See [barSnapshots].
-        // Bounded by the published effect rectangle, not by anything laid out
-        // here — see [BarSnapshotSurface]. It only has to be painted BEFORE
-        // the effect, which is what this position in the stack buys.
-        const Positioned.fill(child: BarSnapshotSurface()),
+        // A native blur, composited above the page: it samples the native
+        // controls passing under the bar live, along with the Flutter content.
         Positioned(
           top: 0,
           left: 0,
@@ -1027,46 +1035,11 @@ class _IOS26SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
           height: effectH,
           child: edgeEffect,
         ),
-        // The bar's REAL rectangle — its own extent, without the effect's
-        // overhang. Two things hang off it, and they are the same idea:
-        //
-        //  * it absorbs taps, because a bar is a surface and a tap on the
-        //    empty space between the title and the actions belongs to it;
-        //  * it is published to the platform side, which cuts every native
-        //    control on this line so the bitmap drawn above it takes over.
-        //
-        // Sized to the extent, it grows and shrinks with the collapse and with
-        // the search row on its own — which is what makes it match the system
-        // bar it stands in for, in every one of its states, without a table of
-        // heights to maintain.
-        //
-        // Only over the header's OWN extent, which is what this Stack is
-        // sized to. The effect above reaches `_effectOverhang` further down so
-        // its blur and wash can fade out instead of ending on a line — that
-        // overhang is decoration lying over the page, and the page keeps its
-        // taps. Sized to the extent, this grows and shrinks with the collapse
-        // and with the search row on its own, which is exactly the behaviour
-        // of the system bar it stands in for.
-        //
-        // Below the actions in the stack, so they are hit-tested first.
-        //
-        // The two are separate rectangles because they answer different
-        // questions. What dissolves is the whole span the effect covers, the
-        // overhang included — a control left crisp there would be the one
-        // thing on the page not fading while the wash is still half on. What
-        // absorbs taps is only the bar's own extent: the overhang is
-        // decoration lying over the page, and the page keeps its taps.
-        Positioned(
-          top: 0,
-          left: 0,
-          right: 0,
-          height: effectH,
-          child: CupertinoEdgeEffectCoverage(
-            atTop: true,
-            strength: effectStrength,
-            child: const IgnorePointer(child: SizedBox.expand()),
-          ),
-        ),
+        // The bar's own extent absorbs taps: a bar is a surface, and a tap on
+        // the empty space between the title and the actions belongs to it. The
+        // effect reaches `_effectOverhang` further down only to fade out; that
+        // overhang lies over the page, and the page keeps its taps. Below the
+        // actions in the stack, so they are hit-tested first.
         const AbsorbPointer(child: SizedBox.expand()),
         ClipRect(
           child: Stack(
@@ -1147,11 +1120,9 @@ class _IOS26SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
                     // has to be live to take first responder.
                     interactive: !searchable || searchActive,
                     onTap: onSearchOpen,
-                    child: CupertinoEdgeEffectExempt(
-                      child: CupertinoSearchRowVisibility(
-                        listenable: searchRowVisibility,
-                        child: searchField!,
-                      ),
+                    child: CupertinoSearchRowVisibility(
+                      listenable: searchRowVisibility,
+                      child: searchField!,
                     ),
                   ),
                 ),
@@ -1167,7 +1138,7 @@ class _IOS26SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
                       offset: Offset((1 - searchT) * 140, 0),
                       child: Transform.scale(
                         scale: 0.7 + 0.3 * searchT,
-                        child: CupertinoEdgeEffectExempt(child: closeButton!),
+                        child: closeButton!,
                       ),
                     ),
                   ),
@@ -1191,67 +1162,70 @@ class _IOS26SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
           left: 0,
           right: 0,
           height: _barH,
-          child: CupertinoEdgeEffectExempt(
-            child: Offstage(
-              offstage: !actionsVisible,
-              child: !centerTitle
-                  ? Padding(
-                      padding: EdgeInsets.only(
-                        left: leading != null ? _kBarItemMargin : 16,
-                        right: _kBarItemMargin,
-                      ),
-                      child: Row(
-                        children: [
-                          if (leading != null) ...[
-                            leading!,
-                            const SizedBox(width: 12),
-                          ],
-                          Expanded(
-                            child: Align(
-                              alignment: Alignment.centerLeft,
-                              child: inlineTitleBlock,
-                            ),
-                          ),
-                          ?trailing,
-                        ],
-                      ),
-                    )
-                  : Stack(
-                      alignment: Alignment.center,
+          child: Offstage(
+            offstage: !actionsVisible,
+            child: !centerTitle
+                ? Padding(
+                    padding: EdgeInsets.only(
+                      left: leading != null ? _kBarItemMargin : 16,
+                      right: _kBarItemMargin,
+                    ),
+                    // Laid out like a Row (leading, title, trailing) but the
+                    // title is painted LAST: painted before the trailing
+                    // native button it would land in the Flutter surface
+                    // under the native views, i.e. under the edge blur.
+                    child: CustomMultiChildLayout(
+                      delegate: _InlineRowLayout(),
                       children: [
-                        // Buttons first, collapsed title LAST — the
-                        // opposite of the large title below, and for the
-                        // opposite reason. The large title scrolls
-                        // *behind* the glass and has to be under it to be
-                        // refracted; the collapsed title sits between the
-                        // buttons and never passes behind them, so
-                        // nothing is lost by painting it on top — and on
-                        // top it stays in the Flutter surface above the
-                        // native views instead of the one under them.
                         if (leading != null)
-                          Align(
-                            alignment: Alignment.centerLeft,
-                            child: Padding(
-                              padding: const EdgeInsets.only(
-                                left: _kBarItemMargin,
-                              ),
-                              child: leading!,
-                            ),
-                          ),
+                          LayoutId(id: #leading, child: leading!),
                         if (trailing != null)
-                          Align(
-                            alignment: Alignment.centerRight,
-                            child: Padding(
-                              padding: const EdgeInsets.only(
-                                right: _kBarItemMargin,
-                              ),
-                              child: trailing!,
-                            ),
+                          LayoutId(id: #trailing, child: trailing!),
+                        LayoutId(
+                          id: #title,
+                          child: Align(
+                            alignment: Alignment.centerLeft,
+                            child: inlineTitleBlock,
                           ),
-                        inlineTitleBlock,
+                        ),
                       ],
                     ),
-            ),
+                  )
+                : Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      // Buttons first, collapsed title LAST — the
+                      // opposite of the large title below, and for the
+                      // opposite reason. The large title scrolls
+                      // *behind* the glass and has to be under it to be
+                      // refracted; the collapsed title sits between the
+                      // buttons and never passes behind them, so
+                      // nothing is lost by painting it on top — and on
+                      // top it stays in the Flutter surface above the
+                      // native views instead of the one under them.
+                      if (leading != null)
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: Padding(
+                            padding: const EdgeInsets.only(
+                              left: _kBarItemMargin,
+                            ),
+                            child: leading!,
+                          ),
+                        ),
+                      if (trailing != null)
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: Padding(
+                            padding: const EdgeInsets.only(
+                              right: _kBarItemMargin,
+                            ),
+                            child: trailing!,
+                          ),
+                        ),
+                      inlineTitleBlock,
+                    ],
+                  ),
           ),
         ),
       ],
@@ -1260,6 +1234,36 @@ class _IOS26SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
 
   @override
   bool shouldRebuild(_IOS26SliverAppBarDelegate oldDelegate) => true;
+}
+
+/// Row geometry — leading, 12pt gap, title filling, trailing — with the title
+/// free to be painted after the buttons.
+class _InlineRowLayout extends MultiChildLayoutDelegate {
+  @override
+  void performLayout(Size size) {
+    final loose = BoxConstraints.loose(size);
+    var left = 0.0;
+    var right = size.width;
+    if (hasChild(#leading)) {
+      final s = layoutChild(#leading, loose);
+      positionChild(#leading, Offset(0, (size.height - s.height) / 2));
+      left = s.width + 12;
+    }
+    if (hasChild(#trailing)) {
+      final s = layoutChild(#trailing, loose);
+      right = size.width - s.width;
+      positionChild(#trailing, Offset(right, (size.height - s.height) / 2));
+    }
+    final width = (right - left).clamp(0.0, size.width);
+    layoutChild(
+      #title,
+      BoxConstraints.tightFor(width: width, height: size.height),
+    );
+    positionChild(#title, Offset(left, 0));
+  }
+
+  @override
+  bool shouldRelayout(_InlineRowLayout oldDelegate) => false;
 }
 
 /// Outer margin of the bar's action items, leading and trailing.
@@ -1338,12 +1342,20 @@ class CupertinoAppBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = CupertinoTheme.of(context);
     if (!isIOS26OrLater) {
       return CupertinoNavigationBar(middle: Text(title), leading: leading);
     }
+    return _EffectBrightness(builder: _buildBar);
+  }
+
+  Widget _buildBar(
+    BuildContext context,
+    Brightness? behind,
+    ValueChanged<Brightness> onBrightnessChanged,
+  ) {
+    final theme = CupertinoTheme.of(context);
     final topPadding = MediaQuery.paddingOf(context).top;
-    final titleStyle = theme.textTheme.navTitleTextStyle.copyWith(
+    final navTitleStyle = theme.textTheme.navTitleTextStyle.copyWith(
       decoration: TextDecoration.none,
     );
     final subtitleStyle = theme.textTheme.tabLabelTextStyle.copyWith(
@@ -1351,18 +1363,32 @@ class CupertinoAppBar extends StatelessWidget {
       decoration: TextDecoration.none,
       color: CupertinoColors.secondaryLabel.resolveFrom(context),
     );
-    final titleBlock = subtitle == null
-        ? Text(title, style: titleStyle)
-        : Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: centerTitle
-                ? CrossAxisAlignment.center
-                : CrossAxisAlignment.start,
-            children: [
-              Text(title, style: titleStyle),
-              Text(subtitle!, style: subtitleStyle),
-            ],
-          );
+    // The title follows the edge effect's wash: white over its dark levels,
+    // like the system's bar items, on the wash's own ~0.5s.
+    final titleBlock = TweenAnimationBuilder<Color?>(
+      tween: ColorTween(
+        end: behind == Brightness.dark
+            ? CupertinoColors.white
+            : navTitleStyle.color,
+      ),
+      duration: const Duration(milliseconds: 500),
+      curve: Curves.easeOutCubic,
+      builder: (context, titleColor, _) {
+        final titleStyle = navTitleStyle.copyWith(color: titleColor);
+        return subtitle == null
+            ? Text(title, style: titleStyle)
+            : Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: centerTitle
+                    ? CrossAxisAlignment.center
+                    : CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: titleStyle),
+                  Text(subtitle!, style: subtitleStyle),
+                ],
+              );
+      },
+    );
     final leadingWidget = leading;
     final trailingRow = Row(
       mainAxisSize: MainAxisSize.min,
@@ -1381,9 +1407,6 @@ class CupertinoAppBar extends StatelessWidget {
           // `hard`: that style IS an edge — an opaque background that stops
           // with the bar — so overhanging would just make the bar look 30
           // points taller.
-          // See the collapsing bar: the native controls' covered pixels, drawn
-          // here so the shader above them can blur them.
-          const Positioned.fill(child: BarSnapshotSurface()),
           Positioned(
             top: 0,
             left: 0,
@@ -1399,91 +1422,100 @@ class CupertinoAppBar extends StatelessWidget {
                 edge: CupertinoScrollEdgeEffectEdge.top,
                 style: scrollEdgeEffect,
                 color: tintColor,
+                onBrightnessChanged: onBrightnessChanged,
               ),
             ),
           ),
-          // Same split as the collapsing bar: the controls dissolve over the
-          // effect's whole span, the overhang included, while only the bar's
-          // own extent takes taps.
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            height:
-                topPadding +
-                44 +
-                (scrollEdgeEffect == CupertinoScrollEdgeEffectStyle.hard
-                    ? 0
-                    : _IOS26SliverAppBarDelegate._effectOverhang),
-            child: const CupertinoEdgeEffectCoverage(
-              atTop: true,
-              child: IgnorePointer(child: SizedBox.expand()),
-            ),
-          ),
+          // The bar's own extent takes taps; the effect's overhang below it
+          // lies over the page, which keeps its taps.
           const AbsorbPointer(child: SizedBox.expand()),
-          // Chrome, not content: these buttons are painted OVER the effect,
-          // so they must not dissolve into it. The native mask is geometric
-          // and cannot tell them from a row scrolled to the same place.
+          // Chrome, painted over the effect.
           Positioned(
             top: topPadding,
             left: 0,
             right: 0,
             height: 44,
-            child: CupertinoEdgeEffectExempt(
-              child: !centerTitle
-                  ? Padding(
-                      padding: EdgeInsets.only(
-                        left: leadingWidget != null ? _kBarItemMargin : 16,
-                        right: _kBarItemMargin,
-                      ),
-                      child: Row(
-                        children: [
-                          if (leadingWidget != null) ...[
-                            leadingWidget,
-                            const SizedBox(width: 12),
-                          ],
-                          Expanded(
-                            child: Align(
-                              alignment: Alignment.centerLeft,
-                              child: titleBlock,
-                            ),
-                          ),
-                          if (trailing.isNotEmpty) trailingRow,
-                        ],
-                      ),
-                    )
-                  : Stack(
-                      alignment: Alignment.center,
-                      // Title painted last, over the native buttons — see the
-                      // collapsing bar's Stack for why.
+            child: !centerTitle
+                ? Padding(
+                    padding: EdgeInsets.only(
+                      left: leadingWidget != null ? _kBarItemMargin : 16,
+                      right: _kBarItemMargin,
+                    ),
+                    child: Row(
                       children: [
-                        if (leadingWidget != null)
-                          Align(
+                        if (leadingWidget != null) ...[
+                          leadingWidget,
+                          const SizedBox(width: 12),
+                        ],
+                        Expanded(
+                          child: Align(
                             alignment: Alignment.centerLeft,
-                            child: Padding(
-                              padding: const EdgeInsets.only(
-                                left: _kBarItemMargin,
-                              ),
-                              child: leadingWidget,
-                            ),
+                            child: titleBlock,
                           ),
-                        if (trailing.isNotEmpty)
-                          Align(
-                            alignment: Alignment.centerRight,
-                            child: Padding(
-                              padding: const EdgeInsets.only(
-                                right: _kBarItemMargin,
-                              ),
-                              child: trailingRow,
-                            ),
-                          ),
-                        titleBlock,
+                        ),
+                        if (trailing.isNotEmpty) trailingRow,
                       ],
                     ),
-            ),
+                  )
+                : Stack(
+                    alignment: Alignment.center,
+                    // Title painted last, over the native buttons — see the
+                    // collapsing bar's Stack for why.
+                    children: [
+                      if (leadingWidget != null)
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: Padding(
+                            padding: const EdgeInsets.only(
+                              left: _kBarItemMargin,
+                            ),
+                            child: leadingWidget,
+                          ),
+                        ),
+                      if (trailing.isNotEmpty)
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: Padding(
+                            padding: const EdgeInsets.only(
+                              right: _kBarItemMargin,
+                            ),
+                            child: trailingRow,
+                          ),
+                        ),
+                      titleBlock,
+                    ],
+                  ),
           ),
         ],
       ),
     );
   }
+}
+
+/// Holds what a bar's edge effect reports about the content behind it, for a
+/// bar that is otherwise stateless.
+class _EffectBrightness extends StatefulWidget {
+  const _EffectBrightness({required this.builder});
+
+  final Widget Function(
+    BuildContext context,
+    Brightness? behind,
+    ValueChanged<Brightness> onBrightnessChanged,
+  )
+  builder;
+
+  @override
+  State<_EffectBrightness> createState() => _EffectBrightnessState();
+}
+
+class _EffectBrightnessState extends State<_EffectBrightness> {
+  Brightness? _behind;
+
+  void _report(Brightness behind) {
+    if (mounted && behind != _behind) setState(() => _behind = behind);
+  }
+
+  @override
+  Widget build(BuildContext context) =>
+      widget.builder(context, _behind, _report);
 }

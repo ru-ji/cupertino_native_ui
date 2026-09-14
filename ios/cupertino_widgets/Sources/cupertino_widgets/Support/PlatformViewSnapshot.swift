@@ -49,13 +49,17 @@ enum PlatformViewSnapshot {
         let bytesPerRow = width * 4
         var pixels = Data(count: bytesPerRow * height)
 
-        // Off for the duration, and restored after. See `afterScreenUpdates`
-        // below for why the two go together.
-        // A cut view is not photographed at all. Lifting the mask and forcing
-        // a screen update (`afterScreenUpdates: true`) put the uncut control on
-        // screen for a frame — the blink while scrolling under a bar. Dart
-        // keeps the bitmap it already holds, taken before the cut.
-        guard view.layer.mask == nil else { return nil }
+        // Only a view fully on screen. Glass is rendered from what is behind
+        // it; laid out off screen (a list's cache extent) there is nothing
+        // behind it and it comes back grey — which is why the bar's bitmap,
+        // taken the moment the view existed, looked worse than the transition
+        // one, taken of a view already on screen. Declining makes Dart retry
+        // every 100ms until the view has scrolled in.
+        // ponytail: polls off-screen views at 10Hz; notify from native on
+        // window entry if that ever shows up in a profile.
+        guard let window = view.window,
+            window.bounds.contains(view.convert(view.bounds, to: window))
+        else { return nil }
 
         let drawn = pixels.withUnsafeMutableBytes { raw -> Bool in
             guard let base = raw.baseAddress,
@@ -82,19 +86,9 @@ enum PlatformViewSnapshot {
             UIGraphicsPushContext(ctx)
             defer { UIGraphicsPopContext() }
 
-            // `afterScreenUpdates: true`, which the cheap path (`false`) cannot
-            // replace here. `false` reuses what is already on screen, and what
-            // is already on screen is very often the CUT view — the picture
-            // that replaces the hidden band would come back missing the band,
-            // and each refresh would take a little more until the control
-            // faded to nothing. Taking the mask off first does not help
-            // either: with `false` the change has not reached the screen yet.
-            //
-            // `true` commits the pending state — mask removed, just above —
-            // and renders fresh. It is the expensive call, and it is affordable
-            // precisely because this is no longer taken on approach: a control
-            // is photographed when it appears and when its state changes, not
-            // while it is moving.
+            // `afterScreenUpdates: false`: a cut view is refused above, so what
+            // is on screen is the whole control, and forcing a screen update
+            // is what used to flash it uncut for a frame.
             //
             // Unlike `layer.render(in:)` it captures `UIVisualEffectView`
             // content, so Liquid Glass survives the round trip. It returns

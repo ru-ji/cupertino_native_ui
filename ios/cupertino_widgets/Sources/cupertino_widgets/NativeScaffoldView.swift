@@ -181,6 +181,9 @@ class NativeScaffoldView: NativeHostingView {
     /// its Flutter content matches the app. Updated by `setBrightness`.
     private var currentIsDark: Bool = false
     private var selectionCancellable: AnyCancellable?
+    /// Debug only: dumps the system scroll edge effect (see
+    /// EdgeEffectIntrospector). Untyped so release builds need no symbol.
+    private var edgeEffectIntrospector: AnyObject?
 
     init(
         frame: CGRect,
@@ -206,9 +209,6 @@ class NativeScaffoldView: NativeHostingView {
 
         super.init()
         _view.backgroundColor = .clear
-        // The scaffold IS the page a bar sits on, not something scrolling
-        // under one: it must never dissolve into an edge effect.
-        _view.masksUnderEdgeEffect = false
 
         channel.setMethodCallHandler { [weak self] call, result in
             self?.handle(call, result: result)
@@ -230,6 +230,14 @@ class NativeScaffoldView: NativeHostingView {
         }
 
         attachContent()
+
+        #if DEBUG
+            // Only on the example's comparison page, whose body is this route:
+            // dumps Apple's own effect so NativeEdgeBlurView can copy it.
+            if model.config.body == "edgeEffectProbe" {
+                edgeEffectIntrospector = EdgeEffectIntrospector(root: _view)
+            }
+        #endif
 
         // Lazily create engines when the user switches tabs — the new
         // tab's engine is spun up on demand so init only blocks on one.

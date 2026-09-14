@@ -1,3 +1,39 @@
+## Unreleased
+
+### The scroll edge effect is native
+
+`CupertinoScrollEdgeEffect` — and with it `CupertinoAppBar`,
+`CupertinoSliverAppBar` and the tab bar's effect — is now a native view on iOS,
+rebuilt from the layers of the system's own `ScrollEdgeEffectView` as read off a
+device:
+
+* **Blur:** Core Animation's `variableBlur` at the system's radius (1pt), on
+  Haze's curve.
+* **Adaptive wash:** the render server measures the luminance under the bar
+  (`_UILumaTrackingBackdropView`, sampling the 44pt bar below the status bar)
+  and the wash settles on three levels — white 85%, black 27%, black 47% — on
+  the system's 0.5s critically damped spring. It starts from the app theme.
+* **Native controls blur live.** The effect is composited above the page, so it
+  samples native views as well as Flutter content.
+* New `onBrightnessChanged`: the app bars turn their title white over dark
+  content, like the system's bar items.
+* Hidden during route transitions (a platform view trails the page by a frame).
+* Off iOS it is still Haze, with the system's measured blur and a fixed wash.
+
+**Action required:** add `<key>FLTDisablePartialRepaint</key><true/>` to the
+app's `Info.plist`. With partial repaint, Flutter leaves the pixels under its
+own overlays uncleared and a stale copy of the bar title glows inside the blur.
+Debug builds warn when the key is missing.
+
+### Removed
+
+The bitmap-and-cut path that stood in for a blur Flutter could not apply to
+native views: `BarSnapshotSurface`, the published edge regions
+(`CupertinoEdgeEffectCoverage`, `CupertinoEdgeEffectExempt`), the native cut and
+its KVO geometry hook, and the `setEdgeEffectRegion`, `setEdgeEffectExempt` and
+`setEdgeCut` channel methods. None were public. Native views still keep a warm
+bitmap for route transitions.
+
 ## 0.1.0 (unreleased)
 
 Naming pass for Flutter familiarity. Every removed name still resolves through

@@ -72,7 +72,19 @@ class NativeTextFieldView: NativeHostingView {
         // `expand: true`. So the default edge pinning is exactly right, and
         // the hugging/centering the button and the switch install would only
         // shrink the field to its placeholder.
-        attach(AnyView(content))
+        // Inset by the paint room Dart grows this view by (`withPaintRoomFilling`,
+        // 16pt a side): the field keeps its size, and its glass rim and shadow
+        // now sit INSIDE the view, where a snapshot can see them. Pinned to the
+        // edges it was cropped to a rectangle under the bar.
+        attach(AnyView(content)) { host, container in
+            let room: CGFloat = 16
+            NSLayoutConstraint.activate([
+                host.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: room),
+                host.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -room),
+                host.topAnchor.constraint(equalTo: container.topAnchor, constant: room),
+                host.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -room),
+            ])
+        }
         // The caret, the selection handles and the magnifier draw outside the
         // field's bounds, so this host must not clip — unlike every other
         // hosted view here, whose content has no business leaving its box.

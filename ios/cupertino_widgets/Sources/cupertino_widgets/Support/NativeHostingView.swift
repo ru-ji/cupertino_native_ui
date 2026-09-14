@@ -130,8 +130,10 @@ class NativeHostingView: NSObject, FlutterPlatformView {
         // retract it.
         host.view.isOpaque = false
         host.view.translatesAutoresizingMaskIntoConstraints = false
-        _view.addSubview(host.view)
-        configureConstraints(host.view, _view)
+        // Into the content view, not the container itself: the edge cut is a
+        // clip view between the two.
+        _view.contentView.addSubview(host.view)
+        configureConstraints(host.view, _view.contentView)
         hostingController = host
         // Subclasses set `isDark` BEFORE calling attach, while the controller
         // is still the old one (or nil), and `didSet` skips unchanged values —
@@ -299,6 +301,26 @@ final class ClearHostingController<Content: View>: UIHostingController<Content> 
 final class HostingContainerView: UIView {
     weak var hostedController: UIHostingController<AnyView>?
 
+    /// Where the hosted view lives. Always the container's size, so moving
+    /// the cut never lays the control out again — only its origin changes.
+    let contentView = UIView()
+
+    /// Sits between the container and [contentView] and does the edge cut by
+    /// clipping. Unclipped (and outset) while no effect covers the view.
+    private let clipView = UIView()
+
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        for view in [clipView, contentView] {
+            view.backgroundColor = nil
+            view.isOpaque = false
+        }
+        clipView.addSubview(contentView)
+        addSubview(clipView)
+    }
+
+    required init?(coder: NSCoder) { fatalError("init(coder:) is not supported") }
+
     /// Never opaque: see the note on the hosted view in `attach`. This box is
     /// mostly empty by design — a control is centred in it, and since the
     /// paint-room change the box is deliberately larger than the control.
@@ -335,100 +357,12 @@ final class HostingContainerView: UIView {
     /// two owners would have them overwrite each other.
     var onLayoutMeasure: (() -> Void)?
 
-    /// Whether this view dissolves under a Flutter scroll edge effect it
-    /// passes beneath. True for the embedded controls, which scroll under
-    /// bars; false for a full-screen host (the scaffold), which IS the page
-    /// the bar sits on rather than something moving under it.
-    var masksUnderEdgeEffect = true {
-        didSet {
-            updateEdgeEffectRegistration()
-            updateGeometryObservers()
-        }
-    }
-
     override func didMoveToWindow() {
         super.didMoveToWindow()
         updateHostParenting()
-        updateEdgeEffectRegistration()
-        updateGeometryObservers()
     }
 
-    override func didMoveToSuperview() {
-        super.didMoveToSuperview()
-        updateGeometryObservers()
-    }
-
-    /// The layers whose geometry the embedder writes to move this view, while
-    /// we are watching them.
-    private var observedLayers: [CALayer] = []
-    private static let geometryKeys = ["transform", "position", "bounds"]
-
-    /// Watches the embedder move this view, so the cut can be recomputed
-    /// inside the very transaction that moves it.
-    ///
-    /// This is the whole answer to the seam. The embedder does not move a
-    /// platform view by laying it out — it writes a transform onto the view
-    /// that wraps it, from a task on this thread, inside a `CATransaction` of
-    /// its own. Nothing calls us. So the mask used to be recomputed on a clock
-    /// of ours (a display link, a run-loop observer), which always read the
-    /// position from BEFORE that write and masked the view where it had been a
-    /// frame ago — while the frame being composited had it somewhere else. The
-    /// difference is the distance scrolled in one frame, and it is the black
-    /// band when it lands low and the pale one when it lands high.
-    ///
-    /// `CALayer` is KVO-compliant for its animatable properties, so observing
-    /// them puts us inside that transaction, at the moment the geometry
-    /// becomes final and before it is committed. The mask set there is
-    /// composited with the position that caused it. Nothing is predicted,
-    /// nothing is compensated, and there is no clock to be wrong about.
-    private func updateGeometryObservers() {
-        stopObservingGeometry()
-        guard window != nil, masksUnderEdgeEffect else { return }
-        // Ours, and the two the embedder owns above it: it has moved the
-        // platform view by transforming one or the other across engine
-        // versions, and watching all three costs one comparison each.
-        var next: UIView? = self
-        for _ in 0..<3 {
-            guard let view = next else { break }
-            observedLayers.append(view.layer)
-            next = view.superview
-        }
-        for layer in observedLayers {
-            for key in Self.geometryKeys {
-                layer.addObserver(self, forKeyPath: key, options: [], context: &Self.observerContext)
-            }
-        }
-    }
-
-    private func stopObservingGeometry() {
-        for layer in observedLayers {
-            for key in Self.geometryKeys {
-                layer.removeObserver(self, forKeyPath: key, context: &Self.observerContext)
-            }
-        }
-        observedLayers.removeAll()
-    }
-
-    private static var observerContext = 0
-
-    override func observeValue(
-        forKeyPath keyPath: String?, of object: Any?,
-        change: [NSKeyValueChangeKey: Any]?, context: UnsafeMutableRawPointer?
-    ) {
-        guard context == &Self.observerContext else {
-            super.observeValue(forKeyPath: keyPath, of: object, change: change, context: context)
-            return
-        }
-        EdgeEffectCoverage.shared.refresh(self)
-    }
-
-    deinit {
-        stopObservingGeometry()
-    }
-
-    private var edgeMask: CALayer?
-
-    /// The rectangle the cut is measured against, in this view's coordinates.
+    /// The rectangle the view is treated as drawing in, in its own coordinates.
     ///
     /// Outset, and that is the whole point: a mask layer is TRANSPARENT
     /// outside its own frame, so a mask sized to the view is a clip. UIKit
@@ -443,58 +377,24 @@ final class HostingContainerView: UIView {
     /// the same pixels.
     let edgeMaskOutset: CGFloat = 24
 
-    /// Hides everything past `visibleFrom` — the band Dart is drawing a bitmap
-    /// of inside the bar.
-    ///
-    /// A mask layer is transparent outside its own frame, which is exactly the
-    /// tool here: the mask IS the part that stays. Solid, no gradient — the
-    /// point is that nothing of the live control shows where its picture is,
-    /// and nothing of the picture is missing where the control shows.
-    func applyEdgeCut(visibleFrom: CGFloat, atTop: Bool) {
-        let full = edgeMaskRect
-        let visible =
-            atTop
-            ? CGRect(
-                x: full.minX, y: visibleFrom, width: full.width,
-                height: max(0, full.maxY - visibleFrom))
-            : CGRect(
-                x: full.minX, y: full.minY, width: full.width,
-                height: max(0, visibleFrom - full.minY))
-        // The embedder writes several geometry properties per frame and each
-        // one calls back here; only the write that actually moves the line
-        // costs anything.
-        if let existing = edgeMask, existing.frame == visible, layer.mask === existing { return }
-        let mask = edgeMask ?? CALayer()
-        edgeMask = mask
+    /// Frames the clip container on the outset box and shifts the content back
+    /// so the control does not move. Unclipped: the outset is room for what a
+    /// control paints past its bounds — a switch's rim, a glass shadow.
+    private func layoutClip() {
+        let rect = edgeMaskRect
         CATransaction.begin()
         CATransaction.setDisableActions(true)
-        mask.backgroundColor = UIColor.white.cgColor
-        // The seam is a hard line on a whole device pixel — Dart snapped the
-        // rectangle before publishing it. Antialiasing the mask's edge would
-        // put a half-covered row back, which is the hairline all over again.
-        mask.edgeAntialiasingMask = []
-        mask.frame = visible
-        layer.mask = mask
+        clipView.clipsToBounds = false
+        clipView.frame = rect
+        contentView.frame = CGRect(
+            x: bounds.minX - rect.minX, y: bounds.minY - rect.minY,
+            width: bounds.width, height: bounds.height)
         CATransaction.commit()
-    }
-
-    /// Drops the cut, for a view no effect covers any more.
-    func clearEdgeEffect() {
-        guard edgeMask != nil else { return }
-        layer.mask = nil
-        edgeMask = nil
-    }
-
-    private func updateEdgeEffectRegistration() {
-        if window != nil, masksUnderEdgeEffect {
-            EdgeEffectCoverage.shared.register(self)
-        } else {
-            EdgeEffectCoverage.shared.unregister(self)
-        }
     }
 
     override func layoutSubviews() {
         super.layoutSubviews()
+        layoutClip()
         onLayout?()
         onLayoutMeasure?()
     }

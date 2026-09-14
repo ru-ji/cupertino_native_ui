@@ -6,8 +6,7 @@ import 'package:flutter/scheduler.dart' show SchedulerBinding;
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
-import 'bar_snapshots.dart';
-import 'edge_effect_coverage.dart';
+import 'native_view_capture.dart';
 
 /// Shared `MethodChannel` + intrinsic-size machinery for widgets that host a
 /// native `UiKitView`. Every `CupertinoNative*` widget re-implemented this
@@ -30,15 +29,7 @@ mixin NativePlatformViewStateMixin<T extends StatefulWidget> on State<T> {
     Future<dynamic> Function(MethodCall call)? onMethodCall,
   }) {
     channel = MethodChannel(channelName);
-    // Bar chrome does not dissolve into the bar's own edge effect: the
-    // buttons are painted OVER it. The mask on the native side is geometric
-    // and cannot tell a leading button from a row that has scrolled up to the
-    // same place, so the widget tree — which knows — says so here.
-    _edgeEffectViewId = id;
-    _exempt = CupertinoEdgeEffectExempt.of(context);
-    if (_exempt) CupertinoEdgeEffectCoverage.setExempt(id, true);
-    // Exempt or not: the bar's own buttons need a ready photo for route
-    // transitions even though they never pass under the effect.
+    // A ready photo for route transitions, taken before one starts.
     _keepBitmapFresh();
     // Always handled here, whether or not the widget wants calls of its own:
     // `intrinsicSize` is pushed by the native view the moment its container
@@ -101,51 +92,26 @@ mixin NativePlatformViewStateMixin<T extends StatefulWidget> on State<T> {
     }
   }
 
-  /// Takes a bitmap of this control the moment it starts passing under a
-  /// scroll edge effect, and hands it to the bar to draw.
+  /// Keeps an up-to-date bitmap of this control on hand, for the route
+  /// transition that swaps it in (see [wrapForTransition]).
   ///
-  /// A `BackdropFilter` cannot reach a platform view, so the pixels are moved
-  /// to where it can: the bar draws the covered band of this bitmap in its own
-  /// layer, under the shader, and only once it holds one is the live view cut
-  /// on the same line. See [barSnapshots].
-  ///
-  /// Frozen, and that is the point rather than a limitation: a control halfway
-  /// under a bar is not one anybody is operating. The capture is refreshed the
-  /// next time it comes back out and goes under again.
-  /// Keeps an up-to-date bitmap of this control on hand, always.
-  ///
-  /// Not when it approaches a bar — **always**, from the moment it can be
-  /// photographed until it goes away. Taking it on approach was the mistake
-  /// that produced every blink: a control announced early is usually still
-  /// off-screen, and an off-screen view has never rendered, which is the one
-  /// state `drawHierarchy` refuses. The picture then only existed after the
-  /// crossing had already happened.
-  ///
-  /// So the trigger is not proximity, it is EXISTENCE. Try as soon as the view
-  /// is created; keep trying while it refuses, which covers the whole of a
-  /// route transition and the frames before the first render; stop at the
-  /// first success. From then on it is retaken only when the control itself
-  /// changes — a switch flipped, a tint changed, a character typed — because
-  /// that is the only thing that can make the picture wrong.
-  ///
-  /// By the time any bar is involved there is nothing left to decide: the band
-  /// inside the bar's rectangle is drawn from the bitmap, the live view is cut
-  /// on the same line, and neither waits on the other.
+  /// Taken as soon as the view can be photographed — a view that has never
+  /// rendered refuses, so it retries every 100ms until the first success —
+  /// then retaken only when the control itself changes.
   void _keepBitmapFresh() {
     if (_warmImage != null) return;
     _captureTimer ??= Timer.periodic(
       const Duration(milliseconds: 100),
-      (_) => _captureIntoBar(),
+      (_) => _refreshWarmBitmap(),
     );
-    _captureIntoBar();
+    _refreshWarmBitmap();
   }
 
-  /// Takes the bitmap and registers it. A refusal is not an error — the view
-  /// has simply not rendered yet, and [_keepBitmapFresh] asks again.
-  Future<void> _captureIntoBar() async {
-    final id = _edgeEffectViewId;
+  /// Takes the bitmap. A refusal is not an error — the view has simply not
+  /// rendered yet, and [_keepBitmapFresh] asks again.
+  Future<void> _refreshWarmBitmap() async {
     final channel = this.channel;
-    if (id == null || channel == null || !mounted) return;
+    if (channel == null || !mounted) return;
     final box = context.findRenderObject() as RenderBox?;
     if (box == null || !box.hasSize || box.size.isEmpty) {
       // TEMPORARY diagnostic. Delete with the Swift-side probes.
@@ -177,23 +143,7 @@ mixin NativePlatformViewStateMixin<T extends StatefulWidget> on State<T> {
     _warmImage?.dispose();
     _warmImage = capture.$1.clone();
     _warmDest = capture.$2;
-    if (_exempt) {
-      capture.$1.dispose();
-      return;
-    }
-    // The bar places the bitmap against this State's box; the native view
-    // sits [withPaintRoom] further out.
-    barSnapshots.add(
-      id,
-      BarSnapshotEntry(
-        capture.$1,
-        box,
-        capture.$2.shift(Offset(-_paintRoom, -_paintRoom)),
-      ),
-    );
-    // The platform side may cut this view from now on: there is something to
-    // put in the band's place.
-    unawaited(setEdgeCut(id, true));
+    capture.$1.dispose();
   }
 
   /// Runs until the first capture succeeds, then stops.
@@ -203,19 +153,8 @@ mixin NativePlatformViewStateMixin<T extends StatefulWidget> on State<T> {
   ui.Image? _warmImage;
   Rect _warmDest = Rect.zero;
 
-  /// How far the native view reaches past this widget's box. See
-  /// [withPaintRoom].
-  double _paintRoom = 0;
-
-  /// Bar chrome: painted over the edge effect, never cut by it.
-  bool _exempt = false;
-
-  /// The platform view id, kept so the edge-effect exemption can be dropped
-  /// when this view goes away and the id is handed to the next one.
-  int? _edgeEffectViewId;
-
-  /// Releases the exemption this view claimed. Mixed into a `State`, so the
-  /// widget's own `dispose` runs this by calling `super.dispose()`.
+  /// Mixed into a `State`, so the widget's own `dispose` runs this by calling
+  /// `super.dispose()`.
   @override
   void dispose() {
     _captureTimer?.cancel();
@@ -228,11 +167,6 @@ mixin NativePlatformViewStateMixin<T extends StatefulWidget> on State<T> {
     _transitionImage = null;
     _warmImage?.dispose();
     _warmImage = null;
-    final id = _edgeEffectViewId;
-    if (id != null) {
-      CupertinoEdgeEffectCoverage.setExempt(id, false);
-      barSnapshots.remove(id);
-    }
     super.dispose();
   }
 
@@ -250,12 +184,10 @@ mixin NativePlatformViewStateMixin<T extends StatefulWidget> on State<T> {
     if (refreshIntrinsicSize) {
       future?.then((_) => requestIntrinsicSize());
     }
-    // The bitmap held for this control is a photograph, and the control just
-    // changed underneath it. Left alone, a switch flipped on its way to the
-    // bar would show its old state above the cut and its new one below.
-    // The bitmap is a photograph and the control just changed underneath it.
+    // The held photo predates this change: retake it, so a transition that
+    // starts now shows the control as it is.
     if (_warmImage != null) {
-      future?.then((_) => _captureIntoBar());
+      future?.then((_) => _refreshWarmBitmap());
     }
   }
 
@@ -322,7 +254,8 @@ mixin NativePlatformViewStateMixin<T extends StatefulWidget> on State<T> {
       _enterRouteTransition();
     } else if (_routeTransitioning &&
         _watchedRouteAnimations.every(
-            (a) => a.status == AnimationStatus.completed)) {
+          (a) => a.status == AnimationStatus.completed,
+        )) {
       _exitRouteTransition();
     }
   }
@@ -464,9 +397,12 @@ mixin NativePlatformViewStateMixin<T extends StatefulWidget> on State<T> {
   /// exact size, the photo comes back with the circle cropped to a grey
   /// square. Only for controls that hug and centre their content natively —
   /// one pinned to fill its box would just draw bigger.
-  Widget withPaintRoom(Widget platformView, double w, double h,
-      {double room = 16}) {
-    _paintRoom = room;
+  Widget withPaintRoom(
+    Widget platformView,
+    double w,
+    double h, {
+    double room = 16,
+  }) {
     return SizedBox(
       width: w,
       height: h,
@@ -477,6 +413,26 @@ mixin NativePlatformViewStateMixin<T extends StatefulWidget> on State<T> {
         maxHeight: h + room * 2,
         child: platformView,
       ),
+    );
+  }
+
+  /// [withPaintRoom] for a control that fills whatever box it is given (a
+  /// text field). The native side must inset its content by the same [room].
+  Widget withPaintRoomFilling(Widget platformView, {double room = 16}) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final size = constraints.biggest;
+        // UiKitView needs a bounded box anyway; unbounded is a layout error
+        // either way, so leave it to surface as one.
+        if (!size.isFinite) return platformView;
+        return OverflowBox(
+          minWidth: size.width + room * 2,
+          maxWidth: size.width + room * 2,
+          minHeight: size.height + room * 2,
+          maxHeight: size.height + room * 2,
+          child: platformView,
+        );
+      },
     );
   }
 }

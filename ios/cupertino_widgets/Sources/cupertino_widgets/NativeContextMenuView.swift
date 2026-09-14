@@ -153,12 +153,10 @@ class NativeContextMenuView: NSObject, FlutterPlatformView, UIContextMenuInterac
     }
 
     private func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
-        // A bitmap of this view, for Flutter to draw while a route
-        // transition runs. See PlatformViewSnapshot.
-        if call.method == "snapshot" {
-            result(PlatformViewSnapshot.capture(view()))
-            return
-        }
+        // No `snapshot` handler, on purpose: this view is a transparent touch
+        // overlay on a child Flutter already paints (and already blurs). A
+        // photo of it only ever showed its empty box under the bar; without a
+        // handler Dart gets MissingPluginException and never registers one.
         switch call.method {
         case "updateContextMenu":
             if let args = call.arguments as? [String: Any] { apply(args) }

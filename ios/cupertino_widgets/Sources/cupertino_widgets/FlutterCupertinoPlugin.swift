@@ -81,6 +81,11 @@ public class FlutterCupertinoPlugin: NSObject, FlutterPlugin {
         registrar.register(
             datePickerFactory,
             withId: "com.example.cupertino_widgets/cupertino_native_date_picker")
+
+        let edgeBlurFactory = NativeEdgeBlurFactory(messenger: registrar.messenger())
+        registrar.register(
+            edgeBlurFactory,
+            withId: "com.example.cupertino_widgets/cupertino_native_edge_blur")
     }
 
     /// Rasterizes an SF Symbol to PNG bytes so Flutter can draw it as a normal
@@ -127,35 +132,6 @@ public class FlutterCupertinoPlugin: NSObject, FlutterPlugin {
                 NativeScaffoldView.prewarm(
                     routes: args?["routes"] as? [String] ?? [],
                     isDark: args?["isDark"] as? Bool ?? false)
-            }
-            result(nil)
-            return
-        }
-        if call.method == "setEdgeEffectRegion" {
-            if #available(iOS 15.0, *), let args = call.arguments as? [String: Any],
-                let id = args["id"] as? Int
-            {
-                EdgeEffectCoverage.shared.setRegion(id: id, args: args["region"] as? [String: Any])
-            }
-            result(nil)
-            return
-        }
-        if call.method == "setEdgeEffectExempt" {
-            if #available(iOS 15.0, *), let args = call.arguments as? [String: Any],
-                let viewId = args["viewId"] as? Int
-            {
-                EdgeEffectCoverage.shared.setExempt(
-                    viewId: Int64(viewId), args["exempt"] as? Bool ?? false)
-            }
-            result(nil)
-            return
-        }
-        if call.method == "setEdgeCut" {
-            if #available(iOS 15.0, *), let args = call.arguments as? [String: Any],
-                let viewId = args["viewId"] as? Int
-            {
-                EdgeEffectCoverage.shared.setCut(
-                    viewId: Int64(viewId), args["cut"] as? Bool ?? false)
             }
             result(nil)
             return

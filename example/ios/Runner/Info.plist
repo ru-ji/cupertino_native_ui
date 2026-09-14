@@ -66,5 +66,10 @@
 			</array>
 		</dict>
 	</dict>
+	<!-- Native blurs (CupertinoNativeEdgeBlur) sample the Flutter surface
+	     beneath them. With partial repaint the pixels under a Flutter overlay
+	     (a bar title) are never cleared, so a stale title gets blurred in. -->
+	<key>FLTDisablePartialRepaint</key>
+	<true/>
 </dict>
 </plist>

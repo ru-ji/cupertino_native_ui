@@ -288,13 +288,10 @@ class _NativeZooProbePageState extends State<NativeZooProbePage> {
             Haze(
               edge: HazeEdge.top,
               sigma: 50,
-              falloff: 1,
-              plateau: .3,
               tint: CupertinoDynamicColor.resolve(
                 CupertinoColors.systemBackground,
                 context,
-              ),
-              tintOpacity: .8,
+              ).withValues(alpha: .8),
             ),
           ),
           _blurProbe(
@@ -377,49 +374,55 @@ class _NativeZooProbePageState extends State<NativeZooProbePage> {
   /// The only question it answers is which of the two the effect reaches. If
   /// the blue Flutter box goes soft and the glass button stays crisp on top,
   /// the effect never saw the native view.
-  Widget _blurProbe(BuildContext context, String label, Widget effect) =>
-      Padding(
-        padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(label, style: rowTitleStyle(context)),
-            const SizedBox(height: 8),
-            SizedBox(
-              height: 160,
-              child: Stack(
-                children: [
-                  Positioned(
-                    top: 12,
-                    left: 0,
-                    child: CupertinoNativeButton(
+  Widget _blurProbe(
+    BuildContext context,
+    String label,
+    Widget effect, {
+    Widget? native,
+  }) => Padding(
+    padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: rowTitleStyle(context)),
+        const SizedBox(height: 8),
+        SizedBox(
+          height: 160,
+          child: Stack(
+            children: [
+              Positioned(
+                top: 12,
+                left: 0,
+                child:
+                    native ??
+                    CupertinoNativeButton(
                       title: 'Native',
                       style: CupertinoNativeButtonStyle.glassProminent,
                       borderShape: CupertinoNativeButtonBorderShape.capsule,
                       onPressed: () {},
                     ),
-                  ),
-                  Positioned(
-                    top: 12,
-                    right: 0,
-                    child: Container(
-                      height: 44,
-                      width: 110,
-                      alignment: Alignment.center,
-                      color: CupertinoColors.activeBlue,
-                      child: const Text(
-                        'Flutter',
-                        style: TextStyle(color: CupertinoColors.white),
-                      ),
-                    ),
-                  ),
-                  Positioned.fill(child: effect),
-                ],
               ),
-            ),
-          ],
+              Positioned(
+                top: 12,
+                right: 0,
+                child: Container(
+                  height: 44,
+                  width: 110,
+                  alignment: Alignment.center,
+                  color: CupertinoColors.activeBlue,
+                  child: const Text(
+                    'Flutter',
+                    style: TextStyle(color: CupertinoColors.white),
+                  ),
+                ),
+              ),
+              Positioned.fill(child: effect),
+            ],
+          ),
         ),
-      );
+      ],
+    ),
+  );
 
   Widget _header(String text) => Padding(
     padding: const EdgeInsets.fromLTRB(16, 24, 16, 6),

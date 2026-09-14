@@ -769,9 +769,10 @@ keeps its taps through it.
 
 ## Scroll Edge Effect
 
-The iOS 26 progressive blur plus gradient scrim where content meets a screen
-edge, with the system's parameters filled in. Place it in a `Stack` behind a
-bar, sized to the region that should melt into the edge.
+iOS 26's scroll edge effect — the progressive blur plus adaptive wash where
+content meets a screen edge. Place it in a `Stack` behind a bar, sized to the
+region that should melt into the edge. `CupertinoAppBar`,
+`CupertinoSliverAppBar` and `CupertinoNativeTabBar` already do.
 
 ```dart
 Stack(children: [
@@ -784,63 +785,49 @@ Stack(children: [
 | Parameter | Type | Default | |
 | --- | --- | --- | --- |
 | `edge` | `CupertinoScrollEdgeEffectEdge` | `.top` | `top` or `bottom`. |
-| `style` | `CupertinoScrollEdgeEffectStyle` | `.soft` | `soft` is the progressive blur plus scrim. `hard` is the system's cut-off: an opaque background ending with the bar, no blur and no fade — the way Flutter's own `AppBar` sits on a `Scaffold`. `automatic` is treated as `soft`. |
-| `color` | `Color?` | — | Tint. Defaults to the resolved system background — pass your page background when it differs. |
-| `intensity` | `double` | `1` | Scales blur and scrim together, 0 to 1. |
+| `style` | `CupertinoScrollEdgeEffectStyle` | `.soft` | `soft` is the progressive blur plus wash. `hard` is the system's cut-off: an opaque background ending with the bar, no blur and no fade. `automatic` is treated as `soft`. |
+| `color` | `Color?` | — | The page background: colour of the bright wash. Defaults to the resolved system background — pass your page background when it differs. |
+| `intensity` | `double` | `1` | Scales blur and wash together, 0 to 1. |
+| `onBrightnessChanged` | `ValueChanged<Brightness>?` | — | Called when the wash flips, with the brightness of the content behind it — for chrome drawn over the effect. The app bars use it to turn their title white over dark content. |
 
-Built on [haze](https://pub.dev/packages/haze): two backdrop layers running a
-separable fragment shader (`ui.ImageFilter.shader`), not a plain Gaussian blur,
-with sampling bounded to the widget's own rectangle so nothing outside it
-smears in.
+> [!IMPORTANT]
+> Add this to your app's `ios/Runner/Info.plist`:
+>
+> ```xml
+> <key>FLTDisablePartialRepaint</key>
+> <true/>
+> ```
+>
+> The effect samples the Flutter surface beneath it. With partial repaint —
+> on by default on iOS — Flutter leaves the pixels under its own overlays
+> uncleared, so a stale copy of the bar's title ghosts inside the blur as a
+> faint glow. Debug builds print a warning when the key is missing.
 
-**Over a native control, the pixels move to the shader.** A backdrop filter
-only ever filters its own render target. Painted over a platform view, the
-shader lands in an overlay layer that the iOS embedder clears to transparent
-before rendering into it — so it filters nothing, and the control would keep
-drawing crisply through the effect while everything around it blurs.
+**Rebuilt from the system's own layers.** On iOS the effect is a native view
+recreating UIKit's `ScrollEdgeEffectView`, whose layers were read off a device:
 
-Flutter cannot sample a `UIView`: those pixels do not exist until iOS composites
-the frame, after Flutter has finished it. So the control is captured natively
-instead (raw BGRA straight into the buffer that crosses the channel, no codec on
-either side), the covered band of that bitmap is drawn *inside the bar* directly
-under the shader — ordinary Flutter pixels, in the shader's own render target —
-and only then is the live view cut on the same line. Below the line the control
-continues, live and interactive; above it, its picture blurs away with the rest
-of the page. It is the trick SwiftUI's tab bar plays with its indicator: the
-icons do not move, the indicator repaints the part it covers.
+- **Blur.** Core Animation's `variableBlur` on a `CABackdropLayer`, at the
+  radius the system's `PocketBlur` uses (1pt), fading on Haze's curve (hold,
+  smootherstep, geometric radius ramp).
+- **Wash.** The render server measures the luminance of what is under the bar,
+  where the system measures it (the 44pt bar below the status bar), through the
+  same `_UILumaTrackingBackdropView` the system uses. The wash settles on one of
+  three levels — white 85% over near-white content, black 27% over mid content,
+  black 47% over dark content — on the system's 0.5s critically damped spring,
+  measured frame by frame. Before the first measurement it follows the app
+  theme.
 
-Both halves are bounded by the *same published rectangle*, not by two
-calculations that agree — deriving it twice is how a band of bare background
-ends up straight across a control.
+It is composited above the page, so it blurs **native controls** under the bar
+as well as Flutter content — live, glass included, with nothing photographed
+and nothing cut. While a route transition runs it is hidden: a platform view
+trails the page it rides by a frame.
 
-Two things follow from it being a photograph. A control is announced to Dart a
-screen before it reaches the bar, so no scroll velocity can outrun the round
-trip; and while it is actually under the effect the picture is retaken every
-100 ms, because a **glass** control's bitmap contains the backdrop it was
-refracting when it was taken, and a frozen one reads as a plate of the wrong
-colour travelling under the bar. Opaque controls have no such problem and are
-captured once, refreshed only when their state changes.
-
-Nothing an app can write sees past its own content: not Metal in a
-`CAMetalLayer`, not SwiftUI's `.layerEffect`, not Flutter's `ImageFilter`.
-`UIVisualEffectView` is the only view UIKit hands the backdrop to — Flutter's own
-engine hit this wall and answered it by reaching into its private view tree for
-the `gaussianBlur` CAFilter, with a runtime bail-out for the day Apple renames
-something. One of those over the whole bar blurs everything below it correctly,
-but it has to *be* the effect rather than sit under `Haze`; one inside each
-control paints that control's box.
-
-**Not the system effect.** `UIScrollEdgeEffect` is a property of a scroll view
-and blurs *that scroll view's own content*. A Flutter page has no `UIScrollView`
-in it, so a native effect hosted over one finds nothing to blur and draws
-nothing at all — measured twice: `.scrollEdgeEffectStyle` on a hosted SwiftUI
-view, and iOS 26's `UIScrollEdgeElementContainerInteraction` pointed at an empty
-`UIScrollView` whose offset Dart drove. (`glassEffect` is the exception that
-makes this worth checking: it samples its backdrop, which is why the glass
-container refracts Flutter content behind it.) The system's adaptive tint —
-which thins over bright, busy content — is therefore out of reach here, and
-available only inside `CupertinoNativeScaffold`, where a real SwiftUI
-`ScrollView` owns the content.
+This relies on private Core Animation and UIKit classes, looked up at runtime.
+Should one disappear, the blur or the adaptive wash is skipped rather than
+crashing (debug builds say which). On other platforms the effect is
+[haze](https://pub.dev/packages/haze) with the system's measured blur and a
+fixed wash. `CupertinoNativeEdgeBlur` exposes the native effect directly, for
+custom radii and fixed washes.
 
 ## Symbol Image
 
@@ -968,9 +955,9 @@ control and wrong from there on.
 
 The best-known consequence of it — a `BackdropFilter` cannot blur a native
 control, because the control's pixels are never in the filter's render target —
-is **not** in this list: see
-[Scroll Edge Effect](#scroll-edge-effect), where the pixels are moved to the
-shader rather than the shader taught to reach them.
+is **not** in this list: the [Scroll Edge Effect](#scroll-edge-effect) is a
+native view composited above the controls instead, which is also why it needs
+`FLTDisablePartialRepaint`.
 
 ## Native views desync during route transitions
 

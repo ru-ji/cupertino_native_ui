@@ -3,8 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'cupertino_scroll_edge_effect.dart';
-import 'internal/bar_snapshots.dart';
-import 'internal/edge_effect_coverage.dart';
 import 'internal/ios_version.dart';
 import 'models/cupertino_native_icon.dart';
 import 'models/cupertino_native_tab.dart';
@@ -382,35 +380,15 @@ class _CupertinoNativeTabBarState extends State<CupertinoNativeTabBar> {
             // as the top effect starts at the notch / Dynamic Island inset
             // rather than under it.
             bottom: -bottomInset,
-            // The three pieces of the effect share ONE rectangle, which is
-            // this Positioned: the shader, the band of native pixels drawn
-            // under it, and the rectangle published to the platform side must
-            // agree on where the cut is or they draw a seam. Mirrors the app
-            // bar's stack, `atTop` flipped.
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                // Under the shader, so the shader can reach it: a backdrop
-                // filter cannot touch a platform view, so a control that has
-                // scrolled under the tab bar hands over a bitmap of its
-                // covered band and is cut on the same line. Without this the
-                // control comes back up crisp through the wash.
-                const BarSnapshotSurface(),
-                CupertinoScrollEdgeEffect(
-                  edge: CupertinoScrollEdgeEffectEdge.bottom,
-                  style: widget.scrollEdgeEffect,
-                ),
-                const CupertinoEdgeEffectCoverage(
-                  atTop: false,
-                  child: IgnorePointer(child: SizedBox.expand()),
-                ),
-              ],
+            // A native blur: it samples the native controls scrolling under
+            // the bar live, along with the Flutter page.
+            child: CupertinoScrollEdgeEffect(
+              edge: CupertinoScrollEdgeEffectEdge.bottom,
+              style: widget.scrollEdgeEffect,
             ),
           ),
-          // The bar is chrome sitting ON the effect, not content passing
-          // under it — and the native mask is geometric, so it cannot tell
-          // the two apart. Exempt or it dissolves itself.
-          CupertinoEdgeEffectExempt(child: bar),
+          // Painted after the effect: the bar sits on it.
+          bar,
         ],
       );
     }

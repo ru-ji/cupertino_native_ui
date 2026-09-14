@@ -25,6 +25,7 @@ export 'src/cupertino_native_glass_group.dart';
 export 'src/cupertino_native_sheet.dart';
 export 'src/cupertino_native_date_picker.dart';
 export 'src/cupertino_scroll_edge_effect.dart';
+export 'src/cupertino_native_edge_blur.dart';
 export 'src/cupertino_app_bar.dart';
 export 'src/models/cupertino_native_bar_item.dart';
 export 'src/models/cupertino_native_tab.dart';

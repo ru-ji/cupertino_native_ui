@@ -1,5 +1,4 @@
 import 'package:cupertino_widgets/cupertino_widgets.dart';
-import 'package:cupertino_widgets/src/internal/edge_effect_coverage.dart';
 import 'package:flutter/cupertino.dart' show OverlayVisibilityMode;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -263,51 +262,17 @@ void main() {
     );
   }, variant: iOS);
 
-  // The rectangle a bar publishes is what the platform side cuts every native
-  // control on, and what the surface inside the bar draws its bitmaps within.
-  // If it stops arriving, or arrives wrong, every SwiftUI view under a bar
-  // goes back to drawing crisp through the blur.
-  //
-  // Tested on the publisher rather than through `CupertinoAppBar`: the bar
-  // only takes its iOS 26 path on a real iOS 26 device (`isIOS26OrLater` reads
-  // the running OS, which a platform override cannot fake), so a widget test
-  // driving the bar would exercise the pre-26 fallback and never reach it.
-  testWidgets('a bar zone publishes its rectangle', (tester) async {
-    final calls = <MethodCall>[];
-    const channel = MethodChannel('com.example.cupertino_widgets/alert');
-    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-        .setMockMethodCallHandler(channel, (call) async {
-          calls.add(call);
-          return null;
-        });
-    addTearDown(
-      () => TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-          .setMockMethodCallHandler(channel, null),
-    );
-
-    await tester.pumpWidget(
-      const MaterialApp(
-        home: Align(
-          alignment: Alignment.topLeft,
-          child: SizedBox(
-            width: 390,
-            height: 91,
-            child: CupertinoEdgeEffectCoverage(
-              atTop: true,
-              child: SizedBox.expand(),
-            ),
-          ),
-        ),
-      ),
-    );
-    await tester.pump();
-
-    final call = calls.singleWhere((c) => c.method == 'setEdgeEffectRegion');
-    final region = (call.arguments as Map)['region'] as Map;
-    expect(region['top'], 0);
-    expect(region['height'], 91);
-    expect(region['width'], 390);
-    expect(region['atTop'], true);
+  // The bars' edge effect is a native view on iOS: pin what it asks Swift
+  // for — the adaptive wash, the system's radius, and the page colour.
+  testWidgets('scroll edge effect runs the adaptive native blur', (
+    tester,
+  ) async {
+    final params = await paramsOf(tester, const CupertinoScrollEdgeEffect());
+    expect(params['adaptive'], true);
+    expect(params['edge'], 'top');
+    expect(params['intensity'], 1.0);
+    expect(params['sigma'], lessThanOrEqualTo(1.0));
+    expect(params['tint'], isNull);
   }, variant: iOS);
 
   // The group is one platform view for several glasses — the only arrangement
