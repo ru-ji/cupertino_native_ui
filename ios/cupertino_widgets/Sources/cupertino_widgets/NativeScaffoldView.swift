@@ -209,6 +209,17 @@ class NativeScaffoldView: NativeHostingView {
 
         super.init()
         _view.backgroundColor = .clear
+        // Before attach: the NavigationStack's large title takes its inset from
+        // the parent's system margins, so never let it go unparented while the
+        // engine briefly takes the view out of the window.
+        _view.keepsParentWhileDetached = true
+        // Before the navigation bar ever lays out with zero margins — see
+        // pinNavigationMargins. Dart also asks once each route slide settles.
+        _view.onLayout = { [weak self] in self?.pinNavigationMargins(layout: false) }
+        _view.onParentingChanged = { [weak self] in
+            guard let self, self.hostingController?.parent != nil else { return }
+            self.watchForNavigationBar()
+        }
 
         channel.setMethodCallHandler { [weak self] call, result in
             self?.handle(call, result: result)
@@ -288,6 +299,73 @@ class NativeScaffoldView: NativeHostingView {
     // force here: overriding the margins by hand meant the inset only landed
     // after a later layout pass (the first scroll), and reaching into the
     // navigation bar's private subviews traps on iOS 26.
+
+    /// Pins the native navigation controller's layout margins to the window's.
+    ///
+    /// UIKit grants system minimum margins only to a view flush with the screen
+    /// edge. This one is moved by the Flutter engine, and a route slide leaves
+    /// it at a fractional x (0.34pt on device) or off screen: it gets zero, and
+    /// the large title sits against the edge until the next scroll. A native
+    /// app never sees this — its navigation controller is always exactly at
+    /// the window edge. So the margins are not derived here, they are set.
+    ///
+    /// `layout`: false from inside a layout pass (only invalidates).
+    @discardableResult
+    private func pinNavigationMargins(layout: Bool) -> Bool {
+        guard let root = hostingController?.view, let window = _view.window else { return false }
+        var found = false
+        let windowMin = window.rootViewController?.systemMinimumLayoutMargins
+        let side = max(windowMin?.leading ?? 0, windowMin?.trailing ?? 0, 16)
+        let margins = NSDirectionalEdgeInsets(top: 0, leading: side, bottom: 0, trailing: side)
+        func visit(_ view: UIView, _ depth: Int) {
+            guard depth < 40 else { return }
+            for subview in view.subviews {
+                if let bar = subview as? UINavigationBar,
+                    let nav = bar.delegate as? UINavigationController
+                {
+                    found = true
+                    if nav.viewRespectsSystemMinimumLayoutMargins
+                        || nav.view.directionalLayoutMargins != margins
+                    {
+                        nav.viewRespectsSystemMinimumLayoutMargins = false
+                        nav.view.directionalLayoutMargins = margins
+                        nav.view.setNeedsLayout()
+                        bar.setNeedsLayout()
+                        if layout {
+                            nav.view.layoutIfNeeded()
+                            bar.layoutIfNeeded()
+                        }
+                    }
+                } else {
+                    visit(subview, depth + 1)
+                }
+            }
+        }
+        visit(root, 0)
+        return found
+    }
+
+    /// Polls for the navigation bar right after parenting. SwiftUI creates it
+    /// in a layout pass of its own — while the route still slides in, off
+    /// screen — and no layout pass of ours follows, so `onLayout` alone pins it
+    /// only after it was seen flush. Stops once pinned, or after 2s.
+    private var marginLink: CADisplayLink?
+    private var marginLinkStart: CFTimeInterval = 0
+
+    private func watchForNavigationBar() {
+        marginLink?.invalidate()
+        marginLinkStart = CACurrentMediaTime()
+        let link = CADisplayLink(target: self, selector: #selector(marginTick))
+        link.add(to: .main, forMode: .common)
+        marginLink = link
+    }
+
+    @objc private func marginTick() {
+        if pinNavigationMargins(layout: true) || CACurrentMediaTime() - marginLinkStart > 2 {
+            marginLink?.invalidate()
+            marginLink = nil
+        }
+    }
 
     // MARK: - Engines
 
@@ -372,6 +450,12 @@ class NativeScaffoldView: NativeHostingView {
 
     private func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
         switch call.method {
+        case "refreshLayoutMargins":
+            // Sent by Dart when a route slide settles. A navigation stack laid
+            // out mid-slide (off screen) got zero system margins and keeps them
+            // until the next scroll: the large title sits flush with the edge.
+            pinNavigationMargins(layout: true)
+            result(nil)
         case "push":
             guard let args = call.arguments as? [String: Any],
                 let route = args["route"] as? String

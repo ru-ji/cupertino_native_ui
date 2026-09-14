@@ -230,7 +230,7 @@ class _CupertinoSliverAppBarState extends State<CupertinoSliverAppBar>
   /// tracked it to an RMS of 0.01, every other curve/duration pair fit worse).
   late final AnimationController _titleCollapse = AnimationController(
     vsync: this,
-    duration: const Duration(milliseconds: 450),
+    duration: const Duration(milliseconds: 400),
   );
 
   late final CurvedAnimation _titleT = CurvedAnimation(
@@ -356,58 +356,6 @@ class _CupertinoSliverAppBarState extends State<CupertinoSliverAppBar>
         _collapsed = past;
       }
       past ? _titleCollapse.forward() : _titleCollapse.reverse();
-    }
-    _letScrollOvertakeCollapse();
-  }
-
-  /// How far the scroll has carried the large title through its own collapse,
-  /// as a 0-1 fraction: 0 at the trigger, 1 once the title has cleared the top
-  /// of the screen.
-  ///
-  /// Cleared, not merely consumed. The header stops shrinking at
-  /// `_bottomScrollOffset + _largeTitleHeight` — but the title is still on
-  /// screen at that point, sitting right under the bar, and it keeps
-  /// travelling up on the leftover scroll (the delegate's `titleOvershoot`).
-  /// Ending the ramp at the shrink point spans about 10pt, which at fling
-  /// speed is one or two frames: the floor stops leading the animation and
-  /// starts replacing it, which is a snap. Carrying it through the overshoot
-  /// gives the ramp the title's real remaining travel, so the floor leads by a
-  /// little and the morph keeps its own pace — done by the time the title
-  /// reaches the edge on an ordinary fast scroll, and still catchable by a
-  /// genuinely violent one, which is how the system behaves.
-  double get _scrollCollapseProgress {
-    final position = _scrollableState?.position;
-    if (position == null || !position.hasPixels) return 0;
-    final start = _collapseTrigger;
-    final end = _bottomScrollOffset + _largeTitleHeight * 2;
-    if (end <= start) return 0;
-    return ((position.pixels - start) / (end - start)).clamp(0.0, 1.0);
-  }
-
-  /// Keeps the collapse from falling behind the scroll that caused it.
-  ///
-  /// The animation owns its own clock, which is right for a deliberate scroll
-  /// — the title collapses at a fixed, system-looking pace whether the finger
-  /// stops or keeps going. A fling outruns that clock: 450ms is longer than a
-  /// fast scroll takes to carry the title off the top of the screen, so the
-  /// title is seen leaving *uncollapsed* and the morph lands somewhere above
-  /// the viewport, which is what makes the collapse look late.
-  ///
-  /// SwiftUI has no such lag because its collapse is scrubbed by the scroll
-  /// offset outright. Rather than give up the timed morph, this lets the
-  /// scroll set a floor under it: the progress may never be behind where the
-  /// title physically is, and `forward(from:)` re-runs the remaining distance
-  /// at the same rate, so what is left of the morph keeps its pace. A slow
-  /// scroll never reaches the floor and the clock still owns the animation.
-  /// One direction only. Expanding, the progress is clamped to 0 the moment
-  /// the scroll crosses back above the trigger, so the same rule there would
-  /// not lead the animation — it would end it, snapping the large title back
-  /// instead of easing it.
-  void _letScrollOvertakeCollapse() {
-    if (!_collapsed) return;
-    final progress = _scrollCollapseProgress;
-    if (progress > _titleCollapse.value) {
-      _titleCollapse.forward(from: progress);
     }
   }
 
@@ -931,14 +879,11 @@ class _IOS26SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
     final largeSubOpacity = !expandedTitle
         ? 0.0
         : (1 - tTitleSub / 0.75).clamp(0.0, 1.0);
-    // The collapsed (inline) title appears only as the large title collapses
-    // on scroll — or permanently when the expanded title is disabled.
-    final inlineT = !expandedTitle
-        ? 1.0
-        : ((tTitle - 0.55) / 0.45).clamp(0.0, 1.0);
-    final inlineSubT = !expandedTitle
-        ? 1.0
-        : ((tTitleSub - 0.55) / 0.45).clamp(0.0, 1.0);
+    // The inline title follows the collapse from its first frame — the curve
+    // measured on the system (see [_titleCollapse]). Gated at 55% it stayed
+    // invisible for ~230ms after the trigger, which read as a late collapse.
+    final inlineT = !expandedTitle ? 1.0 : tTitle;
+    final inlineSubT = !expandedTitle ? 1.0 : tTitleSub;
     final inlineSigma = (1 - inlineT) * 8;
 
     // Search slot geometry: shrinks with the collapse, travels on activation.

@@ -399,6 +399,14 @@ final class HostingContainerView: UIView {
         onLayoutMeasure?()
     }
 
+    /// Keep the controller parented while the view is only temporarily out of
+    /// the window. The iOS engine `removeFromSuperview`s a platform view on any
+    /// frame it is not composited (a route covering it), and re-adds it later.
+    /// Unparented in between, a NavigationStack laid out meanwhile caches zero
+    /// system margins and its large title comes back flush with the screen
+    /// edge. Released in `deinit` instead.
+    var keepsParentWhileDetached = false
+
     func updateHostParenting() {
         guard let host = hostedController else { return }
         if window != nil {
@@ -406,11 +414,17 @@ final class HostingContainerView: UIView {
                 owner.addChild(host)
                 host.didMove(toParent: owner)
             }
-        } else if host.parent != nil {
+        } else if host.parent != nil, !keepsParentWhileDetached {
             host.willMove(toParent: nil)
             host.removeFromParent()
         }
         onParentingChanged?()
+    }
+
+    deinit {
+        guard let host = hostedController, host.parent != nil else { return }
+        host.willMove(toParent: nil)
+        host.removeFromParent()
     }
 
     /// Nearest view controller up the responder chain.

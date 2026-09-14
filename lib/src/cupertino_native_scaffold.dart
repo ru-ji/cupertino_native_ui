@@ -488,6 +488,38 @@ class _CupertinoNativeScaffoldState extends State<CupertinoNativeScaffold>
   void didChangeDependencies() {
     super.didChangeDependencies();
     _syncBrightness();
+    _watchRoute();
+  }
+
+  /// The route whose animations are watched for [_refreshLayoutMargins].
+  ModalRoute<Object?>? _route;
+
+  void _watchRoute() {
+    final route = ModalRoute.of(context);
+    if (identical(route, _route)) return;
+    _unwatchRoute();
+    _route = route;
+    route?.animation?.addStatusListener(_onRouteStatus);
+    route?.secondaryAnimation?.addStatusListener(_onRouteStatus);
+  }
+
+  void _unwatchRoute() {
+    _route?.animation?.removeStatusListener(_onRouteStatus);
+    _route?.secondaryAnimation?.removeStatusListener(_onRouteStatus);
+  }
+
+  /// UIKit derives the large title's inset from where the native view sits
+  /// on screen, and during a route slide it sits off screen: it gets zero and
+  /// keeps it. Once the slide settles, have it derive the margins again.
+  void _onRouteStatus(AnimationStatus status) {
+    if (status.isAnimating) return;
+    channel?.invokeMethod('refreshLayoutMargins');
+  }
+
+  @override
+  void dispose() {
+    _unwatchRoute();
+    super.dispose();
   }
 
   void _syncBrightness() {
