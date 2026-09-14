@@ -863,8 +863,10 @@ class _IOS26SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
   /// the header, while the title and the search row are anchored to its
   /// bottom, so they follow the growth on their own.
   @override
+  // No stretch once the search opens: the header is pinned at a fixed
+  // extent, and a stretch would drag the bottom-anchored field down with it.
   OverScrollHeaderStretchConfiguration? get stretchConfiguration =>
-      _stretchConfiguration;
+      searchT > 0 ? null : _stretchConfiguration;
 
   static final OverScrollHeaderStretchConfiguration _stretchConfiguration =
       OverScrollHeaderStretchConfiguration();
@@ -1041,8 +1043,18 @@ class _IOS26SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
         // overhang lies over the page, and the page keeps its taps. Below the
         // actions in the stack, so they are hit-tested first.
         const AbsorbPointer(child: SizedBox.expand()),
+        // No clip. A composited ClipRect (any holding a native view) is pushed
+        // by the iOS engine onto EVERY platform view prerolled before it in
+        // the frame (PushClipRectToVisitedPlatformViews), so it cut the edge
+        // blur — and the field's shadow — off square at the header's bottom.
+        // It hid nothing: the pinned header starts at the top of the screen.
         ClipRect(
+          clipBehavior: Clip.none,
           child: Stack(
+            // Not the default hardEdge: in search mode the bottom-anchored large
+            // title overflows the header's top, the Stack clips, and that clip
+            // lands on the field, the ✕ and (via the engine) the edge blur.
+            clipBehavior: Clip.none,
             fit: StackFit.expand,
             children: [
               // Painted BEFORE the bar row: the glass leading/trailing
@@ -1187,6 +1199,9 @@ class _IOS26SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
                     ),
                   )
                 : Stack(
+                    // No clip: an overflow would make it a composited clip
+                    // the engine also applies to the native buttons.
+                    clipBehavior: Clip.none,
                     alignment: Alignment.center,
                     children: [
                       // Buttons first, collapsed title LAST — the
@@ -1273,7 +1288,10 @@ class _SearchSlot extends StatelessWidget {
       onTap: interactive ? null : onTap,
       child: AbsorbPointer(
         absorbing: !interactive,
-        child: ClipRect(child: child),
+        // Unclipped: the field squeezes natively, and a clip here would cut its
+        // shadow and interactive swell to a hard box (and, through the engine,
+        // the edge blur under it — see the header's Stack).
+        child: child,
       ),
     );
   }
@@ -1423,6 +1441,9 @@ class CupertinoAppBar extends StatelessWidget {
                     ),
                   )
                 : Stack(
+                    // No clip: an overflow would make it a composited clip
+                    // the engine also applies to the native buttons.
+                    clipBehavior: Clip.none,
                     alignment: Alignment.center,
                     // Title painted last, over the native buttons — see the
                     // collapsing bar's Stack for why.
