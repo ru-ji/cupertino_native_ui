@@ -30,7 +30,7 @@ mixin NativePlatformViewStateMixin<T extends StatefulWidget> on State<T> {
   }) {
     channel = MethodChannel(channelName);
     // A ready photo for route transitions, taken before one starts.
-    _keepBitmapFresh();
+    if (hidesDuringRouteTransition) _keepBitmapFresh();
     // Always handled here, whether or not the widget wants calls of its own:
     // `intrinsicSize` is pushed by the native view the moment its container
     // lays out, and every widget wants that.
@@ -215,7 +215,8 @@ mixin NativePlatformViewStateMixin<T extends StatefulWidget> on State<T> {
   /// False for a full-screen host (the scaffold): it IS the page being
   /// transitioned, not a control riding on one, and a bitmap of it would
   /// freeze the whole page while the route above it slides.
-  bool get hidesDuringRouteTransition => true;
+  // Experiment: photos off, the live view rides the transition.
+  bool get hidesDuringRouteTransition => false;
 
   /// The route animations whose status is being watched.
   List<Animation<double>> _watchedRouteAnimations = const [];
