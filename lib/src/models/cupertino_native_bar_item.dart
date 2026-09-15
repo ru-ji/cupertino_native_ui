@@ -1,6 +1,6 @@
 import 'cupertino_native_icon.dart';
 
-/// An entry on the leading/trailing side of a [CupertinoNativeAppBar]:
+/// An entry on the leading/trailing side of a [CupertinoNativeScaffoldNavigationBar]:
 /// either a single button ([CupertinoNativeBarItem]) or a group of buttons
 /// sharing one glass capsule ([CupertinoNativeBarItemGroup]). Separate
 /// entries render as separate capsules on iOS 26.
@@ -95,7 +95,7 @@ class CupertinoNativeBarItemGroup extends CupertinoNativeBarEntry {
   }
 }
 
-/// A navigation-bar action of a [CupertinoNativeAppBar] — the same thing as
+/// A navigation-bar action of a [CupertinoNativeScaffoldNavigationBar] — the same thing as
 /// [CupertinoNativeBarItem], under the name the native scaffold's bar is
 /// usually described with.
 typedef CupertinoNativeAppBarAction = CupertinoNativeBarItem;

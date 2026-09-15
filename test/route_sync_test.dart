@@ -64,7 +64,7 @@ void main() {
     test('forwards native-initiated stack changes to the router', () {
       final captured = <List<String>>[];
       final sync = CupertinoNativeRouteSync(
-        controller: CupertinoNativeScaffoldController(),
+        controller: CupertinoNativePageScaffoldController(),
         onNativeStackChanged: captured.add,
       );
 
@@ -83,7 +83,7 @@ void main() {
       // No scaffold is attached, so the controller's channel is null and the
       // ops are no-ops — enough to exercise the echo guard.
       final sync = CupertinoNativeRouteSync(
-        controller: CupertinoNativeScaffoldController(),
+        controller: CupertinoNativePageScaffoldController(),
         onNativeStackChanged: captured.add,
       );
       sync.reportNativeStack(['home']);
@@ -106,7 +106,7 @@ void main() {
 
     test('syncTo is a no-op when the stack already matches', () async {
       final sync = CupertinoNativeRouteSync(
-        controller: CupertinoNativeScaffoldController(),
+        controller: CupertinoNativePageScaffoldController(),
       );
       sync.reportNativeStack(['home', 'details']);
       // Safe to call repeatedly from a build method or router listener.

@@ -5,16 +5,16 @@ import 'package:cupertino_widgets/cupertino_widgets.dart';
 /// grouped toolbar items, a tab bar with a search-role tab and
 /// minimize-on-scroll (iOS 26), soft scroll edge effect, and native push/pop
 /// transitions (see ScaffoldHomeBody). Bodies come from `scaffoldRoutes()`
-/// via `CupertinoNativeScaffold.maybeRun` in main() — no entry point needed.
+/// via `CupertinoNativePageScaffold.maybeRun` in main() — no entry point needed.
 class NativeScaffoldDemoPage extends StatelessWidget {
   const NativeScaffoldDemoPage({super.key});
 
   @override
   Widget build(BuildContext context) {
     return SizedBox.expand(
-      child: CupertinoNativeScaffold(
+      child: CupertinoNativePageScaffold(
         scrollEdgeEffect: CupertinoScrollEdgeEffectStyle.soft,
-        appBar: CupertinoNativeAppBar(
+        navigationBar: CupertinoNativeScaffoldNavigationBar(
           title: 'Library',
           subtitle: '128 items',
           titleDisplayMode: CupertinoNativeToolbarTitleDisplayMode.large,
@@ -32,7 +32,6 @@ class NativeScaffoldDemoPage extends StatelessWidget {
           ],
         ),
         tabBar: CupertinoNativeTabBar(
-          value: 'home',
           minimizeBehavior: CupertinoNativeTabBarMinimizeBehavior.onScrollDown,
           // iOS 26 bottom accessory (a persistent bar above the tab bar). It
           // shows its subtitle only in the system's `.expanded` placement.
@@ -42,7 +41,7 @@ class NativeScaffoldDemoPage extends StatelessWidget {
             icon: CupertinoNativeIcon.named('music.note'),
             actionId: 'accessory',
           ),
-          tabs: [
+          items: [
             CupertinoNativeTab(
               title: 'Home',
               icon: CupertinoNativeIcon.symbol(CupertinoSymbols.houseFill),

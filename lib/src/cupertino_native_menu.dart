@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart' show Theme;
 import 'package:flutter/services.dart';
@@ -5,6 +7,7 @@ import 'package:flutter/widgets.dart';
 
 import 'callbacks.dart';
 import 'internal/native_platform_view_mixin.dart';
+import 'internal/scroll_friendly_recognizer.dart';
 import 'models/cupertino_native_button_extra_options.dart';
 import 'models/cupertino_native_menu_item.dart';
 import 'models/cupertino_native_button_style.dart';
@@ -72,17 +75,17 @@ class _CupertinoNativeMenuState extends State<CupertinoNativeMenu>
     _lastIsDark = _isDark;
   }
 
+  String? _sent;
+
   @override
   void didUpdateWidget(covariant CupertinoNativeMenu oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.items != widget.items ||
-        oldWidget.title != widget.title ||
-        oldWidget.systemImage != widget.systemImage ||
-        oldWidget.style != widget.style ||
-        oldWidget.activeColor != widget.activeColor ||
-        oldWidget.textStyle != widget.textStyle) {
-      updateNativeView('updateMenu', _toMap());
-    }
+    // Item lists are usually rebuilt each frame, so compare what would be sent:
+    // an update re-creates the native menu.
+    final sent = jsonEncode(_toMap());
+    if (sent == _sent) return;
+    _sent = sent;
+    updateNativeView('updateMenu', _toMap());
   }
 
   Map<String, dynamic> _toMap() {
@@ -129,6 +132,9 @@ class _CupertinoNativeMenuState extends State<CupertinoNativeMenu>
           creationParams: _toMap(),
           creationParamsCodec: const StandardMessageCodec(),
           onPlatformViewCreated: _onPlatformViewCreated,
+          // The system menu takes over the touch; without a recognizer claiming
+          // it, Flutter never sees it end and every later touch stays blocked.
+          gestureRecognizers: scrollFriendlyGestures,
         ),
       );
 

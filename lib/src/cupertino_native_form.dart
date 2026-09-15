@@ -7,7 +7,7 @@ import 'models/cupertino_native_list_section.dart';
 
 /// A native SwiftUI `Form` with `Section`s — the grouped, settings-style
 /// container used for forms on iOS. Same section/row model as
-/// [CupertinoNativeList]; use [CupertinoNativeListRowType.toggle] rows for
+/// [CupertinoNativeList]; use [CupertinoNativeListTileType.toggle] rows for
 /// native switches.
 ///
 /// ```dart
@@ -16,8 +16,8 @@ import 'models/cupertino_native_list_section.dart';
 ///     CupertinoNativeListSection(
 ///       header: 'Notifications',
 ///       rows: [
-///         CupertinoNativeListRow(
-///           id: 'push', title: 'Push', type: CupertinoNativeListRowType.toggle,
+///         CupertinoNativeListTile(
+///           id: 'push', title: 'Push', type: CupertinoNativeListTileType.toggle,
 ///           toggleValue: true,
 ///         ),
 ///       ],
@@ -40,7 +40,7 @@ class CupertinoNativeForm extends StatelessWidget {
   /// releases); set a value to override.
   final double? cornerRadius;
 
-  final CupertinoNativeListRowCallback? onRowTap;
+  final CupertinoNativeListTileCallback? onRowTap;
   final CupertinoNativeListToggleCallback? onToggle;
 
   const CupertinoNativeForm({

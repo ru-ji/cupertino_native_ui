@@ -11,15 +11,9 @@ struct AdaptiveButtonView: View {
     }
 
     var body: some View {
-        // Using standard SwiftUI Button with Label to preserve system behaviors
 
-        // An explicit size has to reach the LABEL, not just wrap the styled
-        // button. A `Button` is not a flexible view: framing it from the
-        // outside proposes a size it declines and centers itself in, so the
-        // control — and the glass background the style draws around it — stays
-        // at its natural size inside a bigger box. Letting the label fill
-        // instead makes the background stretch, and the outer frame then holds
-        // the whole control to the size that was asked for.
+        // An explicit size has to reach the label, not just frame the button, so
+        // the style's background stretches to it.
         let fills = config.expand == true || config.width != nil || config.height != nil
 
         let button = Button(action: onPressed) {
@@ -28,7 +22,9 @@ struct AdaptiveButtonView: View {
                     to: Label {
                         Text(config.title).font(customFont)
                     } icon: {
+                        // Icon-only buttons are bar items: large image scale, like UIBarButtonItem.
                         IconView(icon: icon)
+                            .imageScale(config.title.isEmpty ? .large : .medium)
                     }
                 )
                 .applyFill(fills, bothAxes: config.height != nil)
@@ -41,7 +37,6 @@ struct AdaptiveButtonView: View {
         // Label style must be applied to the button view hierarchy to affect Label inside
         let labeledButton = button.applyLabelStyle(config.labelStyle)
 
-        // Apply Native Styles using the user's Group { switch } structure
         return Group {
             switch config.style {
             case "filled":
@@ -60,10 +55,7 @@ struct AdaptiveButtonView: View {
                 if #available(iOS 26.0, *) {
                     labeledButton.buttonStyle(.glass).tint(tintColor)
                 } else {
-                    // Nothing hand-rolled below 26: a stacked material with a
-                    // clipShape sat on top of a button style that already draws
-                    // its own background, and ignored `buttonBorderShape`.
-                    // The system's bordered style is the honest approximation.
+                    // Below iOS 26: the system's bordered style.
                     labeledButton.buttonStyle(.bordered).tint(tintColor)
                 }
             case "glassProminent":
@@ -79,17 +71,10 @@ struct AdaptiveButtonView: View {
         }
         .applyControlSize(config.controlSize)
         .applyButtonShape(config.borderShape)
-        // An explicit size from Dart wins over the style's own metrics: paired
-        // with the filling label above, the background (glass included) is
-        // drawn to exactly this frame instead of to whatever padding the style
-        // happens to put around the glyph.
+        // An explicit size from Dart wins over the style's own metrics.
         .applyExplicitSize(width: config.width, height: config.height)
-        // When Flutter transforms (rotates/scales) the platform view, the
-        // engine sets the native view's frame to the transformed BOUNDING BOX
-        // — without this, the button stretches to fill that inflated frame
-        // and its glass/background balloons. fixedSize keeps the button at
-        // its natural size (centered) no matter what frame it's given.
-        // expand:true deliberately fills the frame, so it keeps stretching.
+        // Fixed size when the engine hands over a transformed bounding box, unless
+        // the button expands.
         .applyFixedSize(config.expand != true && config.width == nil && config.height == nil)
     }
 

@@ -1,23 +1,13 @@
-/// Keeps a [CupertinoNativeScaffold]'s native NavigationStack in step with
+/// Keeps a [CupertinoNativePageScaffold]'s native NavigationStack in step with
 /// whatever router the app already uses — GoRouter, auto_route, Beamer, or a
 /// plain imperative [Navigator].
 ///
-/// ## Why a bridge instead of real Navigator support
-///
-/// A scaffold body runs in its **own FlutterEngine**, so it is a separate
-/// isolate with separate memory. A `GoRouter` (or any `Navigator`) built in
-/// the host engine simply does not exist inside a body — there is no object to
-/// share and no `BuildContext` that spans the two. Navigation between scaffold
-/// pages therefore happens on the *native* stack, and the app's router is
-/// mirrored onto it.
-///
-/// That mirroring is what this file provides. The router stays the single
-/// source of truth; the native stack follows it, and native-initiated changes
-/// (the back button, the back-swipe) are reported back so the router can catch
-/// up.
+/// Scaffold bodies run in their own engines, so the app's router cannot drive
+/// them directly: it is mirrored onto the native stack, and native back
+/// navigation is reported back so the router can catch up.
 library;
 
-import 'cupertino_native_scaffold.dart';
+import 'cupertino_native_page_scaffold.dart';
 
 /// One step towards a target stack. A `UINavigationController` can only push
 /// one page or pop its top at a time, so a stack change is expressed as a
@@ -112,20 +102,20 @@ List<String> routesFromLocation(String location) {
 String locationFromRoutes(List<String> routes) =>
     routes.isEmpty ? '/' : '/${routes.join('/')}';
 
-/// Mirrors an app router onto a [CupertinoNativeScaffold]'s native stack.
+/// Mirrors an app router onto a [CupertinoNativePageScaffold]'s native stack.
 ///
-/// Wire it to a scaffold's [CupertinoNativeScaffoldController] and feed it
+/// Wire it to a scaffold's [CupertinoNativePageScaffoldController] and feed it
 /// from both directions:
 ///
 /// ```dart
-/// final controller = CupertinoNativeScaffoldController();
+/// final controller = CupertinoNativePageScaffoldController();
 /// late final sync = CupertinoNativeRouteSync(
 ///   controller: controller,
 ///   // Native back button / back-swipe happened — tell the router.
 ///   onNativeStackChanged: (routes) => context.go(locationFromRoutes(routes)),
 /// );
 ///
-/// CupertinoNativeScaffold(
+/// CupertinoNativePageScaffold(
 ///   controller: controller,
 ///   body: 'library',
 ///   onRouteChanged: sync.reportNativeStack,   // native -> Dart
@@ -143,24 +133,24 @@ class CupertinoNativeRouteSync {
   CupertinoNativeRouteSync({
     required this.controller,
     this.onNativeStackChanged,
-    CupertinoNativeScaffoldPage Function(String route)? pageBuilder,
+    CupertinoNativePageScaffoldPage Function(String route)? pageBuilder,
   }) : pageBuilder =
            pageBuilder ??
-           ((route) => CupertinoNativeScaffoldPage(route: route));
+           ((route) => CupertinoNativePageScaffoldPage(route: route));
 
-  final CupertinoNativeScaffoldController controller;
+  final CupertinoNativePageScaffoldController controller;
 
   /// Called when the *native* stack changed on its own — the back button, the
   /// interactive back-swipe, or a body calling
-  /// [CupertinoNativeScaffold.push]. Drive your router from here.
+  /// [CupertinoNativePageScaffold.push]. Drive your router from here.
   ///
   /// Not called for changes this object made itself via [syncTo].
   final void Function(List<String> routes)? onNativeStackChanged;
 
   /// Builds the page config for a route being pushed — use it to give pushed
   /// pages their navigation bars. Defaults to a bare
-  /// [CupertinoNativeScaffoldPage] with no app bar.
-  final CupertinoNativeScaffoldPage Function(String route) pageBuilder;
+  /// [CupertinoNativePageScaffoldPage] with no app bar.
+  final CupertinoNativePageScaffoldPage Function(String route) pageBuilder;
 
   /// The last stack the native side reported. Starts empty; the scaffold
   /// reports its root as soon as it is created.
@@ -172,7 +162,7 @@ class CupertinoNativeRouteSync {
   /// than user-initiated navigation.
   bool _applying = false;
 
-  /// Feed this to [CupertinoNativeScaffold.onRouteChanged].
+  /// Feed this to [CupertinoNativePageScaffold.onRouteChanged].
   void reportNativeStack(List<String> routes) {
     _nativeStack = List.of(routes);
     if (_applying) return;

@@ -8,14 +8,8 @@ import 'package:flutter/widgets.dart';
 
 import 'native_view_capture.dart';
 
-/// Shared `MethodChannel` + intrinsic-size machinery for widgets that host a
-/// native `UiKitView`. Every `CupertinoNative*` widget re-implemented this
-/// identically; this mixin is the single copy.
-///
-/// Each widget still owns its own `_toMap()` (field set differs per widget),
-/// its own `didUpdateWidget` diff (field list differs), and its own `build()`
-/// (layout/fallback behavior differs per widget) - only the channel wiring
-/// and intrinsic-size request/response plumbing is shared here.
+/// Shared `MethodChannel` and intrinsic-size plumbing for widgets hosting a
+/// native `UiKitView`.
 mixin NativePlatformViewStateMixin<T extends StatefulWidget> on State<T> {
   MethodChannel? channel;
   double? intrinsicWidth;
@@ -60,16 +54,8 @@ mixin NativePlatformViewStateMixin<T extends StatefulWidget> on State<T> {
   /// Asks the native view for its intrinsic content size and rebuilds with it
   /// once available. Safe to call before the channel is ready or after unmount.
   ///
-  /// Only for the window this cannot cover: the native view publishes its size
-  /// from its own layout pass, but a layout that happened before this channel
-  /// existed published into nothing. A couple of attempts close that race.
-  ///
-  /// It used to be the whole mechanism, and it was twelve attempts spread over
-  /// 1.2s — a dozen method calls per view because Dart had no way of knowing
-  /// when SwiftUI had settled, and a view laid out late (during a route
-  /// transition, inside a lazily-built list) could still finish past the last
-  /// attempt and keep a wrong size for good. The view knows when it settles;
-  /// asking it repeatedly was always the wrong way round.
+  /// The native view also pushes its size after each layout; a few attempts
+  /// cover a layout that happened before the channel existed.
   Future<void> requestIntrinsicSize({int attempts = 3}) async {
     for (var attempt = 0; attempt < attempts; attempt++) {
       if (!mounted || channel == null) return;
@@ -114,17 +100,13 @@ mixin NativePlatformViewStateMixin<T extends StatefulWidget> on State<T> {
     if (channel == null || !mounted) return;
     final box = context.findRenderObject() as RenderBox?;
     if (box == null || !box.hasSize || box.size.isEmpty) {
-      // TEMPORARY diagnostic. Delete with the Swift-side probes.
       return;
     }
     (ui.Image, Rect)? capture;
     try {
       capture = await captureNativeView(channel);
     } on MissingPluginException {
-      // This view type has no `snapshot` handler and never will — a context
-      // menu, say. Retrying it every 100ms for the life of the page is a
-      // channel round trip a second, forever, for an answer that cannot
-      // change.
+      // No `snapshot` handler for this view type: stop retrying.
       _captureTimer?.cancel();
       _captureTimer = null;
       return;
@@ -153,8 +135,6 @@ mixin NativePlatformViewStateMixin<T extends StatefulWidget> on State<T> {
   ui.Image? _warmImage;
   Rect _warmDest = Rect.zero;
 
-  /// Mixed into a `State`, so the widget's own `dispose` runs this by calling
-  /// `super.dispose()`.
   @override
   void dispose() {
     _captureTimer?.cancel();
@@ -171,10 +151,6 @@ mixin NativePlatformViewStateMixin<T extends StatefulWidget> on State<T> {
   }
 
   /// Sends updated config to the native view via [method].
-  ///
-  /// [refreshIntrinsicSize] is now only a safety net: a config change that
-  /// resizes the control makes it lay out again, and that layout publishes the
-  /// new size on its own.
   void updateNativeView(
     String method,
     Map<String, dynamic> args, {
@@ -191,31 +167,12 @@ mixin NativePlatformViewStateMixin<T extends StatefulWidget> on State<T> {
     }
   }
 
-  // ---------------------------------------------------------------------------
-  // Route-transition snapshots.
-  //
-  // A platform view is a real UIView composited by UIKit ABOVE the Flutter
-  // surface, moved by the embedder one beat behind the Flutter animation it
-  // belongs to. During a route transition that shows: the bar's native
-  // buttons keep painting above the incoming page, and every native control
-  // lags the page that is carrying it. Flutter cannot composite the UIView
-  // itself, so the control is temporarily replaced by a photograph of it —
-  // ordinary Flutter pixels that slide, fade and clip exactly like the page
-  // they sit on. The official docs spell out the same technique: snapshot the
-  // native view and render it as a texture while the animation runs.
-  //
-  // The widget's own route and its secondary animation are both watched
-  // (push animates the pushed route, Cupertino's parallax animates the
-  // secondary of the covered one), so a widget hides whichever side of a
-  // transition it happens to be on — no observer for the app to install.
-  // ---------------------------------------------------------------------------
+  // Route-transition snapshots: a native view lags the Flutter page during a
+  // transition, so it can be replaced by a photo of itself while the route
+  // animates (see [hidesDuringRouteTransition]).
 
-  /// Whether this widget melts away into a bitmap while its route animates.
-  ///
-  /// False for a full-screen host (the scaffold): it IS the page being
-  /// transitioned, not a control riding on one, and a bitmap of it would
-  /// freeze the whole page while the route above it slides.
-  // Experiment: photos off, the live view rides the transition.
+  /// Whether this widget is replaced by a photo while its route animates.
+  /// Off by default.
   bool get hidesDuringRouteTransition => false;
 
   /// The route animations whose status is being watched.
@@ -288,12 +245,8 @@ mixin NativePlatformViewStateMixin<T extends StatefulWidget> on State<T> {
     _captureRouteSnapshot(attempt: 0);
   }
 
-  /// Photographs the live view and swaps it in. A refusal to capture is not
-  /// an error — the view has not rendered yet (a page being pushed for the
-  /// first time) — and a couple of short retries cover the frames it needs.
-  /// If none lands, the live view simply stays: hiding it with nothing to
-  /// draw in its place would leave a hole, which is worse than the one-frame
-  /// lag this whole path exists to remove.
+  /// Photographs the live view and swaps it in, retrying briefly while it has
+  /// not rendered yet. If no capture lands, the live view stays.
   Future<void> _captureRouteSnapshot({required int attempt}) async {
     final ch = channel;
     if (!_routeTransitioning || !mounted || ch == null) return;
@@ -347,13 +300,8 @@ mixin NativePlatformViewStateMixin<T extends StatefulWidget> on State<T> {
     if (mounted) setState(() {});
   }
 
-  /// Wraps [platformView] so it is replaced by its own photograph while the
-  /// route around it animates. Wrap the sized box, not just the [UiKitView]:
-  /// the bitmap fills whatever the live view would have filled.
-  ///
-  /// The live view is hidden with opacity, the one mutation hybrid
-  /// composition is guaranteed to carry, and only once the bitmap exists —
-  /// there is never a frame with a hole in it.
+  /// Wraps [platformView] so it is replaced by its own photo while the route
+  /// around it animates. Wrap the sized box, not just the [UiKitView].
   Widget wrapForTransition(Widget platformView) {
     if (!hidesDuringRouteTransition) return platformView;
     if (kIsWeb || defaultTargetPlatform != TargetPlatform.iOS) {
@@ -372,8 +320,8 @@ mixin NativePlatformViewStateMixin<T extends StatefulWidget> on State<T> {
           opacity: image == null ? 1 : 0,
           child: IgnorePointer(ignoring: image != null, child: platformView),
         ),
-        // On the rectangle the platform side measured, not the box: the
-        // capture reaches past the view by the cut's outset.
+        // On the rectangle the platform side measured: the capture reaches past
+        // the view.
         if (image != null)
           Positioned(
             left: dest.left,
@@ -390,14 +338,8 @@ mixin NativePlatformViewStateMixin<T extends StatefulWidget> on State<T> {
     );
   }
 
-  /// Lays a `w`x`h` control out in a `w`x`h` slot, but gives its native view
-  /// [room] points more on every side, the control centred in it.
-  ///
-  /// iOS cannot capture what a view paints outside its own bounds, and a
-  /// glass circle, its rim and its shadow all do: boxed to the control's
-  /// exact size, the photo comes back with the circle cropped to a grey
-  /// square. Only for controls that hug and centre their content natively —
-  /// one pinned to fill its box would just draw bigger.
+  /// Lays a `w`x`h` control out in a `w`x`h` slot but gives its native view
+  /// [room] points more on every side, so its rim and shadow are not cropped.
   Widget withPaintRoom(
     Widget platformView,
     double w,

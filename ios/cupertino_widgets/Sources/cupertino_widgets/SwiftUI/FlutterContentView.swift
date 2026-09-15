@@ -4,20 +4,17 @@ import UIKit
 
 /// Embeds an auto-resizable FlutterEngine view controller inside SwiftUI.
 ///
-/// Contract (per the engine's auto-resize implementation): the DART side
-/// drives the size — the engine lays the root widget out with unbounded
-/// constraints, the top-level widget must have explicit dimensions (the
-/// scaffold wraps bodies in a screen-wide SizedBox), and the FlutterView
-/// sizes itself via its own internal Auto Layout constraints. The host must
-/// NOT constrain the view externally; it only observes the resulting
-/// intrinsic size and mirrors it into SwiftUI so the native ScrollView gets
-/// the full content height.
+/// The Dart side drives the size: the host must not constrain the view, it
+/// only mirrors its intrinsic size into SwiftUI.
 @available(iOS 16.0, *)
 struct FlutterContentView: View {
     let engine: FlutterEngine
     /// Show a native spinner until the engine's first layout reports in.
     /// Off by default (matches CupertinoWidgetsSettings on the Dart side).
     var showLoadingIndicator = false
+    /// Height reserved until Flutter's first layout reports in. Nil: the
+    /// screen height, for page bodies.
+    var placeholderHeight: CGFloat? = nil
 
     @State private var contentSize: CGSize?
     /// Engine-reported "first frame is on screen". Size observation can lag
@@ -43,7 +40,7 @@ struct FlutterContentView: View {
             }
         )
         // Placeholder height until Flutter's first layout reports in.
-        .frame(height: contentSize?.height ?? UIScreen.main.bounds.height)
+        .frame(height: contentSize?.height ?? placeholderHeight ?? UIScreen.main.bounds.height)
         // Native spinner while the body engine renders its first frame, so
         // the page never reads as empty (opt out via showLoadingIndicator).
         .overlay(alignment: .top) {
@@ -109,11 +106,8 @@ final class FlutterHostViewController: UIViewController {
         view.addSubview(flutterController.view)
         flutterController.didMove(toParent: self)
 
-        // The engine's own "first frame is on screen" signal — the
-        // KVO-compliant `displayingFlutterUI` property (FlutterViewController
-        // has no public rendered-callback API). Fires even when size
-        // observation doesn't, so the spinner can never outlive visible
-        // content.
+        // The engine's own first-frame signal, so the spinner never outlives
+        // visible content.
         displayObservation = flutterController.observe(
             \.isDisplayingFlutterUI, options: [.initial, .new]
         ) { [weak self] controller, _ in
@@ -150,11 +144,8 @@ final class FlutterHostViewController: UIViewController {
     private func reportIfChanged(_ size: CGSize) {
         guard size.width > 1, size.height > 1, size != lastReportedSize else { return }
         lastReportedSize = size
-        // Rounded UP to a whole point before it becomes the SwiftUI frame:
-        // a fractional Dart height (947.5) laid out at a snapped-down host
-        // height (947.33) leaves the body a sliver short of its own content,
-        // which Flutter reports as a sub-pixel RenderFlex overflow. Comparison
-        // stays on the raw size, so this never oscillates.
+        // Rounded up to a whole point, so a fractional Dart height never leaves the
+        // body a sliver short.
         onSizeChange?(CGSize(width: size.width, height: size.height.rounded(.up)))
     }
 }

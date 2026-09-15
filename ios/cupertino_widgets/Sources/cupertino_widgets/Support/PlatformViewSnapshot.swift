@@ -4,18 +4,8 @@ import UIKit
 /// A raw-pixel capture of a hosted platform view, for Flutter to draw in its
 /// own layer tree while a route transition runs.
 ///
-/// The embedder positions a platform view on the platform thread, a step
-/// behind the Flutter layer it belongs to, so during a transition the native
-/// view does not follow the slide. Handing Flutter a bitmap lets it draw the
-/// control itself for the length of the animation, where it moves in step with
-/// everything around it.
-///
-/// This runs on the frame a transition starts — already the busiest frame — so
-/// it is kept to a single pass: the view is drawn straight into the buffer that
-/// crosses the channel. No intermediate `UIImage`, and no PNG encode, which
-/// would cost more than the draw itself several times over. Pixels come back as
-/// premultiplied BGRA, which is `ui.PixelFormat.bgra8888` on the Dart side, so
-/// nothing has to be converted or decoded there either.
+/// Drawn straight into the buffer sent over the channel, as premultiplied BGRA
+/// (`ui.PixelFormat.bgra8888` in Dart): no intermediate image, no PNG.
 @available(iOS 15.0, *)
 enum PlatformViewSnapshot {
 
@@ -26,15 +16,8 @@ enum PlatformViewSnapshot {
         let container = view as? HostingContainerView
         let outset = container?.edgeMaskOutset ?? 0
 
-        // The CONTAINER, and its own rectangle grown by the margin the cut
-        // works in.
-        //
-        // `drawHierarchy(in:)` renders a view's hierarchy — anything a subview
-        // paints outside the box it lays out in comes along, which is the only
-        // way to keep the switch's rim or a glass shadow. Rendering the hosted
-        // child instead loses exactly those, because they fall outside the
-        // child and the child is all that is drawn: the switch comes back with
-        // its ends shaved.
+        // The container grown by the outset: `drawHierarchy` then includes what
+        // subviews paint past their box (a switch's rim, a glass shadow).
         let capture = view.bounds.insetBy(dx: -outset, dy: -outset)
         guard capture.width > 0, capture.height > 0 else { return nil }
         let origin = capture.origin
@@ -49,12 +32,8 @@ enum PlatformViewSnapshot {
         let bytesPerRow = width * 4
         var pixels = Data(count: bytesPerRow * height)
 
-        // Only a view fully on screen. Glass is rendered from what is behind
-        // it; laid out off screen (a list's cache extent) there is nothing
-        // behind it and it comes back grey — which is why the bar's bitmap,
-        // taken the moment the view existed, looked worse than the transition
-        // one, taken of a view already on screen. Declining makes Dart retry
-        // every 100ms until the view has scrolled in.
+        // Only a view fully on screen: glass laid out off screen has nothing behind
+        // it and comes back grey. Declining makes Dart retry.
         // ponytail: polls off-screen views at 10Hz; notify from native on
         // window entry if that ever shows up in a profile.
         guard let window = view.window,
@@ -86,19 +65,9 @@ enum PlatformViewSnapshot {
             UIGraphicsPushContext(ctx)
             defer { UIGraphicsPopContext() }
 
-            // `afterScreenUpdates: false`: a cut view is refused above, so what
-            // is on screen is the whole control, and forcing a screen update
-            // is what used to flash it uncut for a frame.
-            //
-            // Unlike `layer.render(in:)` it captures `UIVisualEffectView`
-            // content, so Liquid Glass survives the round trip. It returns
-            // false for a view that has never rendered, which the Dart side
-            // answers by asking again.
-            // `view.bounds`, not the enlarged rectangle: the context has
-            // already been translated so that the enlarged rectangle's origin
-            // is at 0,0. Passing the enlarged one here as well applies the
-            // offset twice — the control lands a margin down and to the right,
-            // and the band drawn in the bar is the empty margin.
+            // `afterScreenUpdates: false` avoids a flash; unlike `layer.render(in:)` it
+            // captures Liquid Glass. `view.bounds`, not the enlarged rectangle: the
+            // context is already translated.
             return view.drawHierarchy(in: view.bounds, afterScreenUpdates: false)
         }
         guard drawn else { return nil }

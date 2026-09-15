@@ -51,13 +51,10 @@ class NativeListView: NativeHostingView {
         messenger: FlutterBinaryMessenger
     ) {
         super.init()
-        // So Dart can exempt this view from an edge effect's mask (bar chrome
-        // is painted over the effect, not under it).
         _view.viewId = viewId
 
         channel = FlutterMethodChannel(
             name: "cupertino_widgets/list_\(viewId)", binaryMessenger: messenger)
-        // Push measurements instead of waiting to be polled.
         sizeChannel = channel
         channel?.setMethodCallHandler { [weak self] call, result in
             self?.handle(call, result: result)
@@ -74,11 +71,9 @@ class NativeListView: NativeHostingView {
     /// as the button's, through the `intrinsicSize()` override below.
     private func setupSwiftUI(with config: ListConfig, isDark: Bool?) {
         shownToggles = Self.toggleValues(in: config)
+        self.isDark = isDark
         attach(AnyView(makeContent(config)))
         _view.backgroundColor = .clear
-        if let isDark = isDark {
-            hostingController?.overrideUserInterfaceStyle = isDark ? .dark : .light
-        }
         scheduleSizeReports()
     }
 
@@ -128,9 +123,7 @@ class NativeListView: NativeHostingView {
                 let isDark = (argsMap["isDark"] as? NSNumber)?.boolValue
                 if Self.toggleValues(in: config) == shownToggles {
                     update(AnyView(makeContent(config)))
-                    if let isDark = isDark {
-                        hostingController?.overrideUserInterfaceStyle = isDark ? .dark : .light
-                    }
+                    if let isDark = isDark { self.isDark = isDark }
                     scheduleSizeReports()
                 } else {
                     setupSwiftUI(with: config, isDark: isDark)

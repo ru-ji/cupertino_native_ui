@@ -1,4 +1,4 @@
-import 'cupertino_native_list_row.dart';
+import 'cupertino_native_list_tile.dart';
 
 /// A `Section` of a [CupertinoNativeList] or [CupertinoNativeForm], with an
 /// optional header/footer and its rows — mirroring SwiftUI's
@@ -6,19 +6,19 @@ import 'cupertino_native_list_row.dart';
 class CupertinoNativeListSection {
   final String? header;
   final String? footer;
-  final List<CupertinoNativeListRow> rows;
+  final List<CupertinoNativeListTile> children;
 
   const CupertinoNativeListSection({
     this.header,
     this.footer,
-    this.rows = const [],
+    this.children = const [],
   });
 
   Map<String, dynamic> toMap() {
     return {
       'header': header,
       'footer': footer,
-      'rows': rows.map((r) => r.toMap()).toList(),
+      'rows': children.map((r) => r.toMap()).toList(),
     };
   }
 }

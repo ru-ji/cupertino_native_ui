@@ -33,13 +33,9 @@ class NativeToggleFactory: NSObject, FlutterPlatformViewFactory {
 class NativeToggleView: NativeHostingView {
     private var channel: FlutterMethodChannel?
 
-    /// The value the hosted switch is actually showing. `AdaptiveToggleView`
-    /// seeds its `@State` from the config once, when it is first hosted, so
-    /// swapping the root view later leaves the switch on the old value — a
-    /// value pushed from Dart would simply never arrive. Rebuilding the
-    /// hosting controller does apply it, but it also cuts the flip animation
-    /// short, so that path is reserved for the case that needs it. The echo of
-    /// a flip the user just made natively takes the cheap path.
+    /// The value the hosted switch shows. `AdaptiveToggleView` seeds its `@State`
+    /// once, so a new value from Dart needs a rebuilt hosting controller; the echo
+    /// of a native flip does not.
     private var shownValue = false
 
     init(
@@ -49,13 +45,10 @@ class NativeToggleView: NativeHostingView {
         messenger: FlutterBinaryMessenger
     ) {
         super.init()
-        // So Dart can exempt this view from an edge effect's mask (bar chrome
-        // is painted over the effect, not under it).
         _view.viewId = viewId
 
         channel = FlutterMethodChannel(
             name: "cupertino_widgets/toggle_\(viewId)", binaryMessenger: messenger)
-        // Push measurements instead of waiting to be polled.
         sizeChannel = channel
         channel?.setMethodCallHandler({
             [weak self] (call: FlutterMethodCall, result: @escaping FlutterResult) in
@@ -79,17 +72,8 @@ class NativeToggleView: NativeHostingView {
             attach(AnyView(toggleView))
             return
         }
-        // Otherwise size the hosting view to the switch's own content and
-        // center it, instead of stretching it across the container.
-        //
-        // The default `attach` pins all four edges, so the switch was drawn to
-        // whatever box Flutter had built — which, until the intrinsic size
-        // round trip landed, was the Dart-side default. Stretched past its
-        // natural 51x31 the control drew outside its own bounds; boxed smaller
-        // it was cut. Hugging at required priority keeps it at the size UIKit
-        // gives it, and the `lessThanOrEqualTo` pair keeps it inside the box no
-        // matter what that box turns out to be — so the asynchronous
-        // measurement stops mattering for correctness.
+        // Otherwise hug the switch's own size, centered, and keep it inside the box
+        // whatever size Flutter gives it.
         attach(AnyView(toggleView)) { host, container in
             host.setContentHuggingPriority(.required, for: .horizontal)
             host.setContentHuggingPriority(.required, for: .vertical)
@@ -112,35 +96,11 @@ class NativeToggleView: NativeHostingView {
         )
     }
 
-    /// The switch PAINTS wider than it LAYS OUT, so the measured size has to
-    /// be padded before Flutter builds a box out of it.
-    ///
-    /// Both measurements agree: `sizeThatFits` and `systemLayoutSizeFitting`
-    /// each report 61x28 on iOS 26, while the control draws about 63 across.
-    /// They agree because they answer the same question — how much space does
-    /// this view CLAIM in a layout — and that is not the question we have.
-    /// UIKit controls routinely paint outside their layout bounds: shadows,
-    /// glows, the outer stroke iOS 26 gives the switch. No API reports the
-    /// drawing bounds, so there is nothing better to ask.
-    ///
-    /// Padding the box rather than clipping the view is deliberate. Clipping
-    /// would guarantee containment too, but by shaving whatever spills —
-    /// a shadow at best, the capsule's own edge at worst. A couple of points
-    /// of transparent margin around a centred control cannot be seen; a
-    /// trimmed switch can.
-    ///
-    /// Four, not two: two is the excess the measurements imply (61 reported,
-    /// about 63 drawn) and it clips on a real screen. The margin is not the
-    /// thing to minimise — a point of transparent box around a centred control
-    /// cannot be seen, a shaved capsule edge can.
+    /// The switch paints wider than it lays out (shadow, the iOS 26 outer stroke),
+    /// so the measured size is padded before Flutter builds its box.
     private static let paintOverflow: CGFloat = 4
-    /// Width only, on top of [paintOverflow]. The switch is the one control
-    /// whose drawing overruns its layout box enough to be seen: measured 61,
-    /// drawn about 63, and the outer stroke iOS 26 gives it lands past even
-    /// that. Three more points is the difference between a photograph of the
-    /// whole control and one with its ends shaved — and, on a row flush to the
-    /// screen edge with no padding of its own, between a switch inside the
-    /// screen and one spilling off it.
+    /// Extra width on top of [paintOverflow]: the switch overruns its layout box
+    /// the most.
     private static let extraWidth: CGFloat = 3
 
     override func intrinsicSize() -> [String: Double] {

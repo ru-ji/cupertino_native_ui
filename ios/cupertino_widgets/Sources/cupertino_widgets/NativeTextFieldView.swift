@@ -53,13 +53,10 @@ class NativeTextFieldView: NativeHostingView {
         model = TextFieldModel(config: config ?? TextFieldConfig.empty)
 
         super.init()
-        // So Dart can exempt this view from an edge effect's mask (bar chrome
-        // is painted over the effect, not under it).
         _view.viewId = viewId
 
         setupSwiftUI()
 
-        // Push measurements instead of waiting to be polled.
         sizeChannel = channel
         channel.setMethodCallHandler { [weak self] call, result in
             self?.handle(call, result: result)
@@ -67,15 +64,8 @@ class NativeTextFieldView: NativeHostingView {
     }
 
     private func setupSwiftUI() {
-        // A text field has no natural width to hug: it always fills the box
-        // Flutter gave it, which is the branch the button takes for
-        // `expand: true`. So the default edge pinning is exactly right, and
-        // the hugging/centering the button and the switch install would only
-        // shrink the field to its placeholder.
-        // Inset by the paint room Dart grows this view by (`withPaintRoomFilling`,
-        // 16pt a side): the field keeps its size, and its glass rim and shadow
-        // now sit INSIDE the view, where a snapshot can see them. Pinned to the
-        // edges it was cropped to a rectangle under the bar.
+        // A text field fills the box Flutter gives it, inset by the 16pt paint room
+        // (`withPaintRoomFilling`) so its glass rim and shadow stay inside the view.
         attach(AnyView(content)) { host, container in
             let room: CGFloat = 16
             NSLayoutConstraint.activate([
@@ -134,12 +124,8 @@ class NativeTextFieldView: NativeHostingView {
                     FlutterError(code: "INVALID_ARGS", message: "Invalid arguments", details: nil))
                 return
             }
-            // Where the button and the switch rebuild the hosting controller to
-            // push a new config through, this one assigns it: the field's state
-            // lives in an `ObservableObject` the bridge owns, not in a `@State`
-            // seeded at init, so a plain assignment already reaches the view —
-            // and rebuilding would drop first responder and dismiss the
-            // keyboard mid-edit.
+            // Assigned, not rebuilt: the field's state lives in the model, and
+            // rebuilding would dismiss the keyboard mid-edit.
             model.config = config
             if let text = config.text, text != model.text { model.text = text }
             result(nil)
@@ -170,11 +156,7 @@ class NativeTextFieldView: NativeHostingView {
             model.config = model.config.withIsDark(isDark)
             result(nil)
         case "setContentOpacity":
-            // Scroll-driven fade of the field's *content* — text, placeholder
-            // and prefix/suffix symbols — while the capsule squeezes (Flutter's
-            // Opacity cannot fade platform-view pixels). The glass itself stays
-            // visible and shrinks away with the geometry, like the system
-            // search bar.
+            // Scroll-driven fade of the field's content while the capsule squeezes.
             guard let args = call.arguments as? [String: Any],
                 let opacity = (args["opacity"] as? NSNumber)?.doubleValue
             else {

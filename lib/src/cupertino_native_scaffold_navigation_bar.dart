@@ -1,6 +1,6 @@
 import 'models/cupertino_native_bar_item.dart';
 
-/// How a [CupertinoNativeAppBar] title is displayed, mapped to SwiftUI's
+/// How a [CupertinoNativeScaffoldNavigationBar] title is displayed, mapped to SwiftUI's
 /// `.toolbarTitleDisplayMode(...)` (iOS 17+, with a sensible fallback to
 /// `.navigationBarTitleDisplayMode` below that).
 ///
@@ -36,12 +36,12 @@ enum CupertinoNativeSearchPlacement {
 }
 
 /// Adds a native SwiftUI `.searchable(...)` search field to a
-/// [CupertinoNativeAppBar]. Tapping the field expands it to the top and hides
+/// [CupertinoNativeScaffoldNavigationBar]. Tapping the field expands it to the top and hides
 /// the title automatically (system behavior).
 ///
 /// The suggestions, results and any loading indicator shown below the field
 /// are rendered by your Flutter body: listen to
-/// [CupertinoNativeScaffold.searchState] and rebuild the body accordingly.
+/// [CupertinoNativePageScaffold.searchState] and rebuild the body accordingly.
 class CupertinoNativeSearchField {
   /// Placeholder shown in the empty field (SwiftUI `prompt`).
   final String? placeholder;
@@ -55,19 +55,15 @@ class CupertinoNativeSearchField {
     this.placement = CupertinoNativeSearchPlacement.automatic,
   });
 
-  /// Serialized form embedded in [CupertinoNativeAppBar.toMap].
+  /// Serialized form embedded in [CupertinoNativeScaffoldNavigationBar.toMap].
   Map<String, dynamic> toMap() {
     return {'placeholder': placeholder, 'placement': placement.name};
   }
 }
 
-/// Navigation-bar configuration for a [CupertinoNativeScaffold] page: the
+/// Navigation-bar configuration for a [CupertinoNativePageScaffold] page: the
 /// title, how the title is displayed, and the leading/trailing bar items.
-///
-/// This is a plain immutable config object (not a widget). It is serialized and
-/// handed to the native SwiftUI `NavigationStack`, which owns the actual bar —
-/// there is no standalone `UINavigationBar` widget.
-class CupertinoNativeAppBar {
+class CupertinoNativeScaffoldNavigationBar {
   final String title;
 
   /// Secondary line under the title (SwiftUI `.navigationSubtitle`, iOS 26+;
@@ -88,7 +84,7 @@ class CupertinoNativeAppBar {
   /// When set, the page becomes `.searchable`.
   final CupertinoNativeSearchField? search;
 
-  const CupertinoNativeAppBar({
+  const CupertinoNativeScaffoldNavigationBar({
     required this.title,
     this.subtitle,
     this.titleDisplayMode = CupertinoNativeToolbarTitleDisplayMode.automatic,
@@ -97,7 +93,7 @@ class CupertinoNativeAppBar {
     this.search,
   });
 
-  /// Serialized form consumed by `CupertinoNativeScaffold` to configure each
+  /// Serialized form consumed by `CupertinoNativePageScaffold` to configure each
   /// page's native navigation bar.
   Map<String, dynamic> toMap() {
     return {

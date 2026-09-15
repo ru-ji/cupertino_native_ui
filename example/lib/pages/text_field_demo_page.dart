@@ -50,7 +50,7 @@ class _TextFieldDemoPageState extends State<TextFieldDemoPage> {
                   interactive: _glassInteractive,
                 ),
                 height: 48,
-                prefixIcon: CupertinoNativeIcon.symbol(
+                prefix: CupertinoNativeIcon.symbol(
                   CupertinoSymbols.magnifyingglass,
                 ),
                 clearButtonMode: OverlayVisibilityMode.editing,
@@ -132,12 +132,11 @@ class _TextFieldDemoPageState extends State<TextFieldDemoPage> {
           children: [
             Padding(
               padding: const EdgeInsets.all(16),
-              child: CupertinoNativeButton(
-                title: 'Sign In',
-                style: CupertinoNativeButtonStyle.filled,
-                controlSize: CupertinoNativeControlSize.large,
+              child: CupertinoNativeButton.filled(
                 expand: true,
+                sizeStyle: CupertinoNativeControlSize.large,
                 onPressed: () => _nameController.text = 'Signed in!',
+                child: Text('Sign In'),
               ),
             ),
           ],

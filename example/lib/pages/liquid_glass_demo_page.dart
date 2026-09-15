@@ -30,11 +30,6 @@ class _LiquidGlassDemoPageState extends State<LiquidGlassDemoPage> {
     });
   }
 
-  /// Drives `GlassEffectContainer(spacing:)`, which is both the gap between
-  /// the glasses and the distance at which they start to merge.
-  double _groupSpacing = 4;
-  String? _lastGroupAction;
-
   CupertinoGlassVariant get _variant =>
       _clear ? CupertinoGlassVariant.clear : CupertinoGlassVariant.regular;
 
@@ -47,7 +42,6 @@ class _LiquidGlassDemoPageState extends State<LiquidGlassDemoPage> {
   @override
   Widget build(BuildContext context) {
     return DemoScaffold(
-      largeTitle: false,
       title: 'Liquid Glass',
       children: [
         const SizedBox(height: 20),
@@ -99,6 +93,28 @@ class _LiquidGlassDemoPageState extends State<LiquidGlassDemoPage> {
                   route: 'glassNowPlaying',
                 ),
               ),
+              // Two glass buttons merged into one capsule, like a toolbar group.
+              Positioned(
+                top: 20,
+                left: 20,
+                child: CupertinoNativeGlassGroup(
+                  spacing: 0,
+                  tint: _tint,
+                  clear: _clear,
+                  interactive: _interactive,
+                  onAction: (_) {},
+                  items: [
+                    CupertinoNativeGlassGroupItem(
+                      actionId: 'undo',
+                      icon: CupertinoNativeIcon.named('arrow.uturn.backward'),
+                    ),
+                    CupertinoNativeGlassGroupItem(
+                      actionId: 'redo',
+                      icon: CupertinoNativeIcon.named('arrow.uturn.forward'),
+                    ),
+                  ],
+                ),
+              ),
               // A pressable glass circle — onPressed makes the container a
               // liquid-glass button (tap it to cycle the tint).
               Positioned(
@@ -122,71 +138,6 @@ class _LiquidGlassDemoPageState extends State<LiquidGlassDemoPage> {
               ),
             ],
           ),
-        ),
-        // The one thing separate platform views cannot do. Drag the spacing
-        // down and the three glasses reach for each other and merge, because
-        // they are in ONE host sharing one GlassEffectContainer.
-        SettingsSection(
-          header: 'Group (one host)',
-          footer:
-              'Three glasses in a single platform view. Slide the spacing to '
-              'zero: they stretch towards each other and fuse, then separate. '
-              'Separate glass containers never do this — the merge only '
-              'happens inside one SwiftUI container, and one platform view is '
-              'one container.',
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-              child: Center(
-                child: CupertinoNativeGlassGroup(
-                  spacing: _groupSpacing,
-                  tint: _tint,
-                  clear: _clear,
-                  interactive: _interactive,
-                  onAction: (id) => setState(() => _lastGroupAction = id),
-                  items: [
-                    CupertinoNativeGlassGroupItem(
-                      actionId: 'back',
-                      icon: CupertinoNativeIcon.symbol(
-                        CupertinoSymbols.chevronBackward,
-                        size: 20,
-                      ),
-                    ),
-                    CupertinoNativeGlassGroupItem(
-                      actionId: 'play',
-                      icon: CupertinoNativeIcon.symbol(
-                        CupertinoSymbols.playFill,
-                        size: 20,
-                      ),
-                    ),
-                    CupertinoNativeGlassGroupItem(
-                      actionId: 'forward',
-                      icon: CupertinoNativeIcon.symbol(
-                        CupertinoSymbols.chevronForward,
-                        size: 20,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            SettingsRow(
-              title: 'Spacing',
-              subtitle: _lastGroupAction == null
-                  ? '${_groupSpacing.round()} pt'
-                  : '${_groupSpacing.round()} pt — tapped '
-                        '\u201c$_lastGroupAction\u201d',
-              trailing: SizedBox(
-                width: 160,
-                child: CupertinoNativeSlider(
-                  value: _groupSpacing,
-                  min: 0,
-                  max: 32,
-                  onChanged: (v) => setState(() => _groupSpacing = v),
-                ),
-              ),
-            ),
-          ],
         ),
         SettingsSection(
           header: 'Glass',
@@ -218,13 +169,14 @@ class _LiquidGlassDemoPageState extends State<LiquidGlassDemoPage> {
                 onChanged: (v) => setState(() => _clear = v),
               ),
             ),
-            SettingsRow(title: 'Tint', value: _tints[_tintIndex]),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-              child: CupertinoNativeSegmentedControl(
-                children: _tints,
+            SettingsRow(
+              title: 'Tint',
+              trailing: CupertinoNativePicker<int>(
+                children: {
+                  for (final (i, label) in _tints.indexed) i: Text(label),
+                },
                 groupValue: _tintIndex,
-                onChanged: (v) => setState(() => _tintIndex = v),
+                onValueChanged: (v) => setState(() => _tintIndex = v!),
               ),
             ),
           ],

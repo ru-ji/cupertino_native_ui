@@ -6,13 +6,6 @@ import UIKit
 /// (`UISheetPresentationController`) — the standard page-sheet modal that
 /// pushes the presenting screen back as it rises, with system detents, the
 /// grabber, and the swipe-to-dismiss gesture.
-///
-/// With an `appBar` (and/or `bottom` segments) the sheet gets the scaffold's
-/// native chrome: a pinned navigation bar with title + leading/trailing bar
-/// items (glass circles on iOS 26), an optional `.searchable` field, an
-/// optional segmented control under the bar, and the Flutter body hosted in a
-/// native ScrollView — so the content scrolls under the pinned bar and the
-/// pull-down-at-top gesture collapses the sheet, exactly like system sheets.
 @available(iOS 15.0, *)
 final class NativeSheetManager: NSObject, UIAdaptivePresentationControllerDelegate {
     static let shared = NativeSheetManager()
@@ -85,6 +78,9 @@ final class NativeSheetManager: NSObject, UIAdaptivePresentationControllerDelega
                 res(FlutterMethodNotImplemented)
             }
         }
+        // A pooled engine booted, and pulled its brightness, long before this
+        // sheet: push the app's current one so the body matches the sheet.
+        bodyChannel.invokeMethod("setBrightness", arguments: ["isDark": isDark])
 
         let appBar = (args["appBar"] as? [String: Any]).flatMap {
             decodeConfig(AppBarConfig.self, from: $0)
@@ -217,11 +213,8 @@ struct SheetRootView: View {
     let initialSegment: Int
     let scrollEdgeEffect: String?
     let showLoadingIndicator: Bool
-    /// Sheet background (ARGB) painted behind the whole stack content. The
-    /// NavigationStack draws its own opaque system background (resolved at
-    /// the sheet's *elevated* level in dark mode) over the hosting view's
-    /// backgroundColor, so the color must be re-applied inside the stack or
-    /// the chrome regions read differently from the Flutter body.
+    /// Sheet background (ARGB), re-applied inside the NavigationStack, which
+    /// draws its own opaque background.
     let backgroundColor: Int?
     let onBarAction: (String) -> Void
     let onSegment: (Int) -> Void

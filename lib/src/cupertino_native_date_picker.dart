@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart' show CupertinoDatePickerMode;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart' show Theme;
@@ -7,9 +8,6 @@ import 'package:flutter/widgets.dart';
 
 import 'internal/native_platform_view_mixin.dart';
 
-/// Which components a [CupertinoNativeDatePicker] edits.
-enum CupertinoNativeDatePickerMode { date, time, dateAndTime }
-
 /// The **compact** system date picker: renders as the tappable gray pill used
 /// throughout iOS Settings/Calendar, and pops the native calendar or time
 /// wheel over the app when tapped — overlay, dimming and animations are all
@@ -17,17 +15,17 @@ enum CupertinoNativeDatePickerMode { date, time, dateAndTime }
 ///
 /// ```dart
 /// CupertinoNativeDatePicker(
-///   value: _start,
-///   mode: CupertinoNativeDatePickerMode.dateAndTime,
-///   onChanged: (d) => setState(() => _start = d),
+///   initialDateTime: _start,
+///   mode: CupertinoDatePickerMode.dateAndTime,
+///   onDateTimeChanged: (d) => setState(() => _start = d),
 /// )
 /// ```
 class CupertinoNativeDatePicker extends StatefulWidget {
   const CupertinoNativeDatePicker({
     super.key,
-    required this.value,
-    required this.onChanged,
-    this.mode = CupertinoNativeDatePickerMode.date,
+    required this.onDateTimeChanged,
+    this.initialDateTime,
+    this.mode = CupertinoDatePickerMode.dateAndTime,
     this.minimumDate,
     this.maximumDate,
     this.activeColor,
@@ -35,9 +33,14 @@ class CupertinoNativeDatePicker extends StatefulWidget {
     this.height,
   });
 
-  final DateTime value;
-  final ValueChanged<DateTime>? onChanged;
-  final CupertinoNativeDatePickerMode mode;
+  /// The shown date. Unlike Flutter's wheel, this picker follows it after
+  /// creation too, so it can be driven from state. Defaults to now.
+  final DateTime? initialDateTime;
+  final ValueChanged<DateTime> onDateTimeChanged;
+
+  /// [CupertinoDatePickerMode.monthYear] has no native compact equivalent and
+  /// shows as [CupertinoDatePickerMode.date].
+  final CupertinoDatePickerMode mode;
   final DateTime? minimumDate;
   final DateTime? maximumDate;
 
@@ -60,10 +63,15 @@ class _CupertinoNativeDatePickerState extends State<CupertinoNativeDatePicker>
   // forced on a dark-mode device should still get a light picker.
   bool get _isDark => Theme.of(context).brightness == Brightness.dark;
 
+  late final DateTime _createdAt = DateTime.now();
+  DateTime get _value => widget.initialDateTime ?? _createdAt;
+
   Map<String, dynamic> _toMap() {
     return {
-      'value': widget.value.millisecondsSinceEpoch,
-      'mode': widget.mode.name,
+      'value': _value.millisecondsSinceEpoch,
+      'mode': widget.mode == CupertinoDatePickerMode.monthYear
+          ? CupertinoDatePickerMode.date.name
+          : widget.mode.name,
       'minimumDate': widget.minimumDate?.millisecondsSinceEpoch,
       'maximumDate': widget.maximumDate?.millisecondsSinceEpoch,
       'tint': widget.activeColor?.toARGB32(),
@@ -88,7 +96,7 @@ class _CupertinoNativeDatePickerState extends State<CupertinoNativeDatePicker>
   @override
   void didUpdateWidget(covariant CupertinoNativeDatePicker oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.value != widget.value ||
+    if (oldWidget.initialDateTime != widget.initialDateTime ||
         oldWidget.mode != widget.mode ||
         oldWidget.minimumDate != widget.minimumDate ||
         oldWidget.maximumDate != widget.maximumDate ||
@@ -113,7 +121,7 @@ class _CupertinoNativeDatePickerState extends State<CupertinoNativeDatePicker>
   Future<dynamic> _handleMethodCall(MethodCall call) async {
     if (call.method == 'onChanged') {
       final ms = call.arguments as int;
-      widget.onChanged?.call(DateTime.fromMillisecondsSinceEpoch(ms));
+      widget.onDateTimeChanged(DateTime.fromMillisecondsSinceEpoch(ms));
     }
   }
 
@@ -127,7 +135,7 @@ class _CupertinoNativeDatePickerState extends State<CupertinoNativeDatePicker>
           color: const Color(0x1E787880),
           borderRadius: BorderRadius.circular(8),
         ),
-        child: Text('${widget.value}'),
+        child: Text('$_value'),
       );
     }
 

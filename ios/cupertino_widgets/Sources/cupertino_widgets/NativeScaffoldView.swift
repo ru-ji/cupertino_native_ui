@@ -108,14 +108,9 @@ class NativeScaffoldView: NativeHostingView {
     /// instead of spawning.
     private static var pooledEngines: [String: FlutterEngine] = [:]
 
-    /// Pays engine start-up costs ahead of time (Dart:
-    /// `CupertinoNativeScaffold.prewarm(routes:)`).
-    ///
-    /// With no routes: spawns one hidden `_warmup` engine so the group's
-    /// first-spawn cost (snapshot load, isolate-group creation) is paid.
-    /// With routes: fully boots one engine per route and parks it in the
-    /// pool — the first open of that route skips the entire Dart boot, not
-    /// just the group warm-up.
+    /// Pays engine start-up costs ahead of time
+    /// (Dart: `CupertinoNativePageScaffold.prewarm(routes:)`). With routes, one
+    /// engine per route is fully booted and parked.
     static func prewarm(routes: [String] = [], isDark: Bool = false) {
         if routes.isEmpty {
             guard warmupEngine == nil else { return }
@@ -153,11 +148,8 @@ class NativeScaffoldView: NativeHostingView {
     }
 
     deinit {
-        // Park the root bodies back into the shared pool: re-opening a
-        // scaffold on the same route re-attaches the still-running engine —
-        // Dart state intact, no reload, no spinner — instead of paying a
-        // fresh boot. Bodies still boot lazily on FIRST visit; a parked
-        // engine renders nothing while detached and holds ~a few MB.
+        // Park root bodies back in the shared pool, so reopening the same route
+        // re-attaches the running engine instead of booting a new one.
         for (route, engine) in model.rootEngines {
             engine.viewController = nil
             if Self.pooledEngines[route] == nil {
@@ -181,9 +173,6 @@ class NativeScaffoldView: NativeHostingView {
     /// its Flutter content matches the app. Updated by `setBrightness`.
     private var currentIsDark: Bool = false
     private var selectionCancellable: AnyCancellable?
-    /// Debug only: dumps the system scroll edge effect (see
-    /// EdgeEffectIntrospector). Untyped so release builds need no symbol.
-    private var edgeEffectIntrospector: AnyObject?
 
     init(
         frame: CGRect,
@@ -242,14 +231,6 @@ class NativeScaffoldView: NativeHostingView {
 
         attachContent()
 
-        #if DEBUG
-            // Only on the example's comparison page, whose body is this route:
-            // dumps Apple's own effect so NativeEdgeBlurView can copy it.
-            if model.config.body == "edgeEffectProbe" {
-                edgeEffectIntrospector = EdgeEffectIntrospector(root: _view)
-            }
-        #endif
-
         // Lazily create engines when the user switches tabs — the new
         // tab's engine is spun up on demand so init only blocks on one.
         selectionCancellable = model.$selection
@@ -291,25 +272,11 @@ class NativeScaffoldView: NativeHostingView {
         }
     }
 
-    // The SwiftUI NavigationStack's large title takes its leading inset from
-    // the hosting controller's `systemMinimumLayoutMargins` (16pt, same as
-    // Flutter's `_kNavBarEdgePadding`). Those resolve correctly as long as the
-    // controller is a real child view controller — which `NativeHostingView`
-    // guarantees via `HostingContainerView.updateHostParenting()`. Nothing to
-    // force here: overriding the margins by hand meant the inset only landed
-    // after a later layout pass (the first scroll), and reaching into the
-    // navigation bar's private subviews traps on iOS 26.
 
     /// Pins the native navigation controller's layout margins to the window's.
-    ///
-    /// UIKit grants system minimum margins only to a view flush with the screen
-    /// edge. This one is moved by the Flutter engine, and a route slide leaves
-    /// it at a fractional x (0.34pt on device) or off screen: it gets zero, and
-    /// the large title sits against the edge until the next scroll. A native
-    /// app never sees this — its navigation controller is always exactly at
-    /// the window edge. So the margins are not derived here, they are set.
-    ///
-    /// `layout`: false from inside a layout pass (only invalidates).
+    /// UIKit grants system minimum margins only to a view exactly at the screen
+    /// edge; after a Flutter route slide this one sits at a fractional x or off
+    /// screen and would get zero. `layout`: false inside a layout pass.
     @discardableResult
     private func pinNavigationMargins(layout: Bool) -> Bool {
         guard let root = hostingController?.view, let window = _view.window else { return false }
@@ -416,7 +383,7 @@ class NativeScaffoldView: NativeHostingView {
             }
         }
         // Well-known channel so body isolates can drive navigation
-        // (CupertinoNativeScaffold.push/pop on the Dart side).
+        // (`CupertinoNativePageScaffold.push`/`pop` on the Dart side).
         let bodyChannel = FlutterMethodChannel(
             name: "cupertino_widgets/scaffold_body", binaryMessenger: engine.binaryMessenger)
         bodyChannel.setMethodCallHandler { [weak self] call, result in
@@ -424,6 +391,14 @@ class NativeScaffoldView: NativeHostingView {
         }
         bodyChannels[key] = bodyChannel
         return engine
+    }
+
+    /// Keyboard avoidance follows `resizeToAvoidBottomInset`; the container
+    /// safe area (bars, home indicator) always applies.
+    private func applyKeyboardAvoidance() {
+        guard #available(iOS 16.4, *), let host = hostingController else { return }
+        host.safeAreaRegions =
+            (model.config.resizeToAvoidBottomInset ?? true) ? .all : .container
     }
 
     private func attachContent() {
@@ -435,6 +410,7 @@ class NativeScaffoldView: NativeHostingView {
                             "onBarAction", arguments: ["route": route, "id": actionId])
                     }),
                 keyboardAvoidance: true)
+            applyKeyboardAvoidance()
         } else {
             attach(AnyView(Text("CupertinoNativeScaffold requires iOS 16.0+")))
         }
@@ -504,6 +480,7 @@ class NativeScaffoldView: NativeHostingView {
             {
                 // Bars/tabs update in place; engines are kept as-is.
                 model.config = config
+                applyKeyboardAvoidance()
                 // Seed stack keys for any newly added tabs.
                 if let tabBar = config.tabBar {
                     for tab in tabBar.tabs where model.paths[tab.id] == nil {

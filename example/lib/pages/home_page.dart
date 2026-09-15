@@ -12,9 +12,7 @@ import 'context_menu_demo_page.dart';
 import 'date_picker_demo_page.dart';
 import 'effects_demo_page.dart';
 import 'liquid_glass_demo_page.dart';
-import 'menu_demo_page.dart';
 import 'native_list_form_demo_page.dart';
-import 'edge_effect_probe_page.dart';
 import 'native_scaffold_demo_page.dart';
 import 'native_searchable_demo_page.dart';
 import 'progress_demo_page.dart';
@@ -51,19 +49,15 @@ class HomePage extends StatelessWidget {
             slivers: [
               // The package's own iOS 26 app bar heads the catalog itself; the
               // trailing glass action toggles the whole app's brightness.
-              CupertinoSliverAppBar(
+              CupertinoNativeSliverNavigationBar(
                 largeTitle: 'Cupertino Widgets',
                 trailing: [
-                  CupertinoNativeButton(
-                    icon: CupertinoNativeIcon.named(
-                      isDark ? 'sun.max' : 'moon',
-                    ),
-                    style: CupertinoNativeButtonStyle.glass,
+                  CupertinoNativeButton.glass(
                     borderShape: CupertinoNativeButtonBorderShape.circle,
-                    labelStyle: CupertinoNativeButtonLabelStyle.iconOnly,
                     onPressed: () => MyApp.themeMode.value = isDark
                         ? ThemeMode.light
                         : ThemeMode.dark,
+                    child: CupertinoSymbolImage(isDark ? 'sun.max' : 'moon'),
                   ),
                 ],
                 // Edge effect tinted like the page background.
@@ -109,13 +103,6 @@ class HomePage extends StatelessWidget {
                         ),
                         _row(
                           context,
-                          'Popup Menu',
-                          const MenuDemoPage(),
-                          'ellipsis.circle',
-                          CupertinoColors.systemIndigo,
-                        ),
-                        _row(
-                          context,
                           'Context Menu',
                           const ContextMenuDemoPage(),
                           'hand.point.up.left',
@@ -150,13 +137,6 @@ class HomePage extends StatelessWidget {
                         ),
                         _row(
                           context,
-                          'Scroll Edge Effect',
-                          const EdgeEffectProbePage(),
-                          'square.stack.3d.down.right',
-                          CupertinoColors.systemTeal,
-                        ),
-                        _row(
-                          context,
                           'Native Scaffold',
                           const NativeScaffoldDemoPage(),
                           'iphone',
@@ -178,7 +158,7 @@ class HomePage extends StatelessWidget {
                         ),
                         _row(
                           context,
-                          'App Bar & Edge Effect',
+                          'Navigation Bar',
                           const AppBarDemoPage(),
                           'rectangle.topthird.inset.filled',
                           CupertinoColors.systemIndigo,
@@ -256,9 +236,9 @@ class HomePage extends StatelessWidget {
       title: title,
       icon: SettingsIcon(symbol, color: color),
       showChevron: true,
-      onTap: () => Navigator.of(
-        context,
-      ).push(CupertinoPageRoute(builder: (_) => page, title: 'Back')),
+      onTap: () =>
+          Navigator.of(context)
+              .push(CupertinoPageRoute(builder: (_) => page, title: 'Back')),
     );
   }
 }

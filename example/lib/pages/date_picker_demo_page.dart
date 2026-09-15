@@ -1,4 +1,5 @@
-import 'package:flutter/cupertino.dart' show CupertinoColors;
+import 'package:flutter/cupertino.dart'
+    show CupertinoColors, CupertinoDatePickerMode;
 import 'package:flutter/widgets.dart';
 import 'package:cupertino_widgets/cupertino_widgets.dart';
 
@@ -33,18 +34,18 @@ class _DatePickerDemoPageState extends State<DatePickerDemoPage> {
             SettingsRow(
               title: 'Starts',
               trailing: CupertinoNativeDatePicker(
-                value: _starts,
-                mode: CupertinoNativeDatePickerMode.dateAndTime,
-                onChanged: (d) => setState(() => _starts = d),
+                initialDateTime: _starts,
+                mode: CupertinoDatePickerMode.dateAndTime,
+                onDateTimeChanged: (d) => setState(() => _starts = d),
               ),
             ),
             SettingsRow(
               title: 'Ends',
               trailing: CupertinoNativeDatePicker(
-                value: _ends,
-                mode: CupertinoNativeDatePickerMode.dateAndTime,
+                initialDateTime: _ends,
+                mode: CupertinoDatePickerMode.dateAndTime,
                 minimumDate: _starts,
-                onChanged: (d) => setState(() => _ends = d),
+                onDateTimeChanged: (d) => setState(() => _ends = d),
               ),
             ),
           ],
@@ -58,10 +59,10 @@ class _DatePickerDemoPageState extends State<DatePickerDemoPage> {
             SettingsRow(
               title: 'Wake Up',
               trailing: CupertinoNativeDatePicker(
-                value: _alarm,
-                mode: CupertinoNativeDatePickerMode.time,
+                initialDateTime: _alarm,
+                mode: CupertinoDatePickerMode.time,
                 activeColor: CupertinoColors.systemOrange,
-                onChanged: (d) => setState(() => _alarm = d),
+                onDateTimeChanged: (d) => setState(() => _alarm = d),
               ),
             ),
           ],

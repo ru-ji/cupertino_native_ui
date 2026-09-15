@@ -2,30 +2,9 @@ import Flutter
 import ObjectiveC
 import UIKit
 
-/// **Probe.** A progressive blur drawn by Core Animation, the way UIKit's own
-/// scroll edge effect draws it, with the system's adaptive wash on top.
-///
-/// UIKitCore's `ScrollEdgeEffectView.PocketBlur` is a variable blur whose
-/// radius follows a mask image (`_effectWithVariableBlurRadius:imageMask:`),
-/// i.e. Core Animation's `variableBlur` filter with `inputMaskImage`. This view
-/// does the same on the `CABackdropLayer` inside a `UIVisualEffectView`, so it
-/// samples everything composited beneath it — Flutter's surface and native
-/// controls alike, glass included, live.
-///
-/// Both curves are Haze's (`haze.dart`): the blur holds, falls on a
-/// smootherstep and ramps its radius geometrically; the wash holds for its own
-/// fraction and falls on a smootherstep. The wash is rendered per pixel into
-/// an image with sub-code dither, not as gradient stops, so it has no steps.
-///
-/// Built to avoid the ways a hand-made effect renders nothing inside Flutter:
-///
-/// - **No `layer.mask`, anywhere.** The embedder clips a platform view with a
-///   `maskView` on its container; a masked effect view under that is a nested
-///   mask, which UIKit renders as nothing.
-/// - **Never an alpha on the effect view.** Strength goes into the radius and
-///   the wash images.
-/// - **Filters re-applied** after every layout and trait change, because
-///   `UIVisualEffectView` reinstalls its material filters on its own.
+/// A progressive blur drawn by Core Animation (`variableBlur` on a
+/// `CABackdropLayer`), with the system's adaptive wash on top. It samples
+/// everything composited beneath it, native views included.
 @available(iOS 15.0, *)
 class NativeEdgeBlurFactory: NSObject, FlutterPlatformViewFactory {
     private let messenger: FlutterBinaryMessenger
@@ -86,8 +65,7 @@ final class NativeEdgeBlurPlatformView: NSObject, FlutterPlatformView {
 }
 
 struct EdgeBlurConfig {
-    /// Peak radius at the edge, points. Already fitted to the height by Dart
-    /// (`Haze.fitSigma`), so this and Haze blur the same amount.
+    /// Peak radius at the edge, points.
     var sigma: CGFloat
     var bottom: Bool
     /// ARGB32; its alpha is the peak opacity at the edge. Nil for none.
@@ -95,14 +73,11 @@ struct EdgeBlurConfig {
     var tint: Int?
     /// The system's luma-tracked light/dark wash.
     var adaptive: Bool
-    /// Calibration factor on `inputRadius`, which is not documented to be a
-    /// Gaussian sigma: the factor that makes this match Haze at equal sigma.
+    /// Calibration factor on `inputRadius`.
     var radiusScale: CGFloat
     /// The app theme: what the wash shows before the first luma measurement.
     var isDark: Bool
-    /// 0…1: scales the blur's radius and fades the washes together — the
-    /// system's effect comes up from zero as a collapsing header takes the
-    /// content under it.
+    /// 0…1: scales the blur radius and the washes together.
     var intensity: CGFloat
     var debugPaintRect: Bool
 
@@ -119,21 +94,15 @@ struct EdgeBlurConfig {
     }
 }
 
-/// The curves, shared with `haze.dart` — keep the constants in step.
+/// The blur and wash curves.
 enum EdgeBlurProfile {
     static let blurHold = 0.41
     static let tintHold = 0.35
 
-    /// Peak of the white wash over near-white content, measured frame by
-    /// frame off iOS 26's own soft effect (light mode, 40pt deep): ~84–85%.
-    /// Content hue is not used — equal alpha on R, G and B.
+    /// Peak of the white wash over near-white content.
     static let lightPeak = 0.85
-    /// The dark wash's two levels. The system's LuminanceAdjustment settles
-    /// at three opacities (0.85, 0.6, 0.3); 0.6 is the warm gradient, measured
-    /// at black ~27%. If the darkening scales with (1 - opacity) as that one
-    /// point implies, 0.3 is ~47% — the darker wash seen past the black band.
-    // ponytail: deepDark derived from one measurement; tune by eye against the
-    // system page.
+    /// The dark wash's two levels, for mid and for dark content.
+    // ponytail: deepDark derived from one measurement; tune by eye.
     static let midDark = 0.27
     static let deepDark = 0.47
 
@@ -160,7 +129,7 @@ enum EdgeBlurProfile {
         1 - smootherstep((t - tintHold) / (1 - tintHold))
     }
 
-    /// Fraction of the peak radius at profile `p`, on Haze's geometric ramp
+    /// Fraction of the peak radius at profile `p`, on a geometric ramp
     /// from 1 physical pixel up to `sigmaPx`: equal steps multiply the radius
     /// by the same factor, so every stretch adds the same perceived blur.
     static func radiusFraction(_ p: Double, sigmaPx: Double) -> Double {
@@ -269,9 +238,6 @@ final class EdgeBlurView: UIView {
         if bright == nil { level = config.isDark ? .deep : .light }
         layer.borderWidth = config.debugPaintRect ? 1 : 0
         layer.borderColor = UIColor.red.cgColor
-        #if DEBUG
-            print("[EdgeBlur] apply adaptive=\(config.adaptive) sigma=\(config.sigma) tracker=\(luma != nil)")
-        #endif
         renderedKey = nil
         setNeedsLayout()
     }
@@ -306,9 +272,7 @@ final class EdgeBlurView: UIView {
             wash.isHidden = true
         }
         if config.adaptive {
-            // The bright wash is the page's own background — white unless the
-            // caller says otherwise. Only the colour is used; the peak is the
-            // system's.
+            // The bright wash is white unless a tint is given.
             var red: CGFloat = 1, green: CGFloat = 1, blue: CGFloat = 1, alpha: CGFloat = 1
             if let argb = config.tint {
                 UIColor(argb: argb).getRed(&red, green: &green, blue: &blue, alpha: &alpha)
@@ -336,69 +300,6 @@ final class EdgeBlurView: UIView {
         }
     }
 
-    #if DEBUG
-        /// Why Flutter content drawn above this blur can end up inside it: the
-        /// FlutterView's stacking, bottom to top, and every backdrop layer over
-        /// this rectangle with its capture group. Printed when it changes.
-        private var compositionTimer: Timer?
-        private var lastComposition = ""
-
-        deinit { compositionTimer?.invalidate() }
-
-        override func didMoveToWindow() {
-            super.didMoveToWindow()
-            compositionTimer?.invalidate()
-            guard window != nil else { return }
-            compositionTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
-                self?.dumpComposition()
-            }
-        }
-
-        private func dumpComposition() {
-            guard let window else { return }
-            let mine = convert(bounds, to: window)
-            var lines = ["this blur \(mine.integral)"]
-            var ancestor = superview
-            while let view = ancestor, !String(describing: type(of: view)).hasPrefix("FlutterView") {
-                ancestor = view.superview
-            }
-            if let flutterView = ancestor {
-                for (index, sub) in flutterView.subviews.enumerated() {
-                    var chain: [String] = []
-                    var node: UIView? = sub
-                    while let current = node, chain.count < 4 {
-                        chain.append(String(describing: type(of: current)))
-                        node = current.subviews.first
-                    }
-                    let frame = sub.convert(sub.bounds, to: window).integral
-                    let overlapsMe = frame.intersects(mine) ? " OVERLAPS" : ""
-                    let isMe = isDescendant(of: sub) ? " <- THIS BLUR" : ""
-                    lines.append(
-                        "z\(index) \(chain.joined(separator: ">")) frame=\(frame) alpha=\(sub.alpha) hidden=\(sub.isHidden)\(overlapsMe)\(isMe)")
-                }
-            } else {
-                lines.append("no FlutterView ancestor")
-            }
-            func walk(_ layer: CALayer) {
-                if String(describing: type(of: layer)).contains("Backdrop") {
-                    let frame = layer.convert(layer.bounds, to: window.layer).integral
-                    if frame.intersects(mine) {
-                        let group =
-                            layer.responds(to: NSSelectorFromString("groupName"))
-                            ? String(describing: layer.value(forKey: "groupName")) : "?"
-                        lines.append("backdrop \(type(of: layer)) group=\(group) frame=\(frame)")
-                    }
-                }
-                for sub in layer.sublayers ?? [] { walk(sub) }
-            }
-            walk(window.layer)
-            let dump = lines.joined(separator: "\n")
-            guard dump != lastComposition else { return }
-            lastComposition = dump
-            for line in lines { print("[EdgeBlur] composition \(line)") }
-        }
-    #endif
-
     private func updateLevel() {
         guard let bright else { return }
         // The deep tracker may not have measured yet: mid until it has.
@@ -410,8 +311,7 @@ final class EdgeBlurView: UIView {
         Self.spring(darkWash, to: next.darkOpacity)
     }
 
-    /// The system's transition, measured: a critically damped spring,
-    /// ω ≈ 12.25 rad/s (response ≈ 0.51s) — 50% at +137ms, 90% at +318ms.
+    /// The system's transition: a critically damped spring, response ≈ 0.5s.
     private static func spring(_ layer: CALayer, to value: Float) {
         let from = layer.presentation()?.opacity ?? layer.opacity
         let animation = CASpringAnimation(keyPath: "opacity")
@@ -426,7 +326,7 @@ final class EdgeBlurView: UIView {
     }
 
     /// The wash as premultiplied pixels at the layer's own resolution: alpha
-    /// follows Haze's tint curve per row, with ±0.5 code of dither per pixel —
+    /// follows the tint curve per row, with ±0.5 code of dither per pixel —
     /// a ramp this slow quantises into visible bands otherwise.
     // ponytail: full-resolution RGBA per wash (~3MB each on a 3x bar); a
     // narrower image would stretch the dither into streaks.
@@ -461,15 +361,8 @@ final class EdgeBlurView: UIView {
     }
 }
 
-/// Luminance of what is behind the bar, measured by the render server through
-/// the same `_UILumaTrackingBackdropView` UIKit's scroll pocket uses, reduced
-/// to the system's two states with hysteresis.
-///
-/// Every call here is checked against UIKitCore's own metadata:
-/// `initWithTransitionBoundaries:delegate:frame:` takes `{?=dd}`, an object
-/// and a CGRect; its delegate protocol requires
-/// `backgroundLumaView:didTransitionToLevel:` with an NSUInteger, which is the
-/// only callback that actually arrives.
+/// Luminance of what is behind the bar, measured through the same
+/// `_UILumaTrackingBackdropView` UIKit's scroll pocket uses.
 @available(iOS 15.0, *)
 final class LumaTracker: NSObject {
     private let low: Double
@@ -498,44 +391,7 @@ final class LumaTracker: NSObject {
         // Behind the blur: it measures the content, not our own effect.
         host.insertSubview(view, at: 0)
         trackingView = view
-        #if DEBUG
-            startDiagnostics()
-        #endif
     }
-
-    #if DEBUG
-        /// Why no luma arrives: what the tracking view is made of, and its level
-        /// read directly — in case it measures without calling its delegate.
-        private var diagnostics: Timer?
-        private var lastPoll = ""
-
-        deinit { diagnostics?.invalidate() }
-
-        private func startDiagnostics() {
-            guard let view = trackingView else { return }
-            print(
-                "[EdgeBlur] luma view \(type(of: view)) delegate=\(String(describing: view.value(forKey: "delegate"))) paused=\(String(describing: view.value(forKey: "paused"))) boundaries=\(String(describing: view.value(forKey: "transitionBoundaries")))"
-            )
-            func walk(_ layer: CALayer, _ depth: Int) {
-                var line = String(repeating: "  ", count: depth) + "\(type(of: layer)) frame=\(layer.frame)"
-                for key in ["tracksLuma", "tracksLumaWhileHidden", "lumaSubrect", "lumaUpdateRate", "groupName", "scale"]
-                where layer.responds(to: NSSelectorFromString(key)) {
-                    line += " \(key)=\(String(describing: layer.value(forKey: key)))"
-                }
-                print("[EdgeBlur]   layer \(line)")
-                for sub in layer.sublayers ?? [] { walk(sub, depth + 1) }
-            }
-            walk(view.layer, 0)
-            diagnostics = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { [weak self] _ in
-                guard let self, let view = self.trackingView else { return }
-                let poll =
-                    "level=\(String(describing: view.value(forKey: "backgroundLuminanceLevel"))) window=\(view.window != nil) frame=\(view.frame) paused=\(String(describing: view.value(forKey: "paused")))"
-                guard poll != self.lastPoll else { return }
-                self.lastPoll = poll
-                print("[EdgeBlur] poll \(poll)")
-            }
-        }
-    #endif
 
     private static func makeTrackingView(delegate: NSObject, low: Double, high: Double) -> UIView? {
         let allocSelector = NSSelectorFromString("alloc")
@@ -569,23 +425,14 @@ final class LumaTracker: NSObject {
     }
 
     func remove() {
-        #if DEBUG
-            diagnostics?.invalidate()
-        #endif
         trackingView?.removeFromSuperview()
         trackingView = nil
     }
 
-    /// The only callback `_UILumaTrackingBackdropView` delivers (verified on
-    /// device: `didChangeLuma:` never arrives). With the boundaries passed at
-    /// init, level 1 is content ABOVE them and 2 below — checked on device:
-    /// white bands report 1, black ones 2 — and 0 is "not measured yet".
-    /// UIKit applies the hysteresis itself.
+    /// The only callback `_UILumaTrackingBackdropView` delivers. Level 1 is
+    /// content above the boundaries, 2 below, 0 not measured yet.
     @objc(backgroundLumaView:didTransitionToLevel:)
     func backgroundLumaView(_ source: UIView, didTransitionToLevel level: UInt) {
-        #if DEBUG
-            print("[EdgeBlur] luma \(low)-\(high) level \(level)")
-        #endif
         let next: Bool
         switch level {
         case 1: next = true
@@ -601,15 +448,8 @@ final class LumaTracker: NSObject {
 /// A view whose own layer is Core Animation's `CABackdropLayer`, carrying a
 /// single `variableBlur`.
 ///
-/// Not a `UIVisualEffectView`. On device, the title Flutter draws ABOVE this
-/// blur — in its own overlay view, higher in the stacking, with this layer in
-/// a capture group of its own — still came back blurred inside it. UIKit's
-/// backdrop layer takes part in UIKit's visual-effect capture groups
-/// (`_UIVisualEffectViewBackdropCaptureGroup`); a plain `CABackdropLayer` is
-/// outside that machinery. It also means UIKit never reinstalls its material
-/// filters over ours, so nothing has to be re-applied on layout or traits.
-// ponytail: that the capture groups are the cause is the hypothesis this
-// class tests; the DEBUG log prints the layer's capture flags for the next step.
+/// Not a `UIVisualEffectView`: a plain backdrop layer stays out of UIKit's
+/// capture groups, and UIKit never reinstalls its filters over ours.
 @available(iOS 15.0, *)
 final class BackdropBlurView: UIView {
     override class var layerClass: AnyClass {
@@ -620,9 +460,6 @@ final class BackdropBlurView: UIView {
     /// Kept so the mask can be rebuilt once the real screen scale is known.
     private var sigma: CGFloat = 0
     private var bottom = false
-    #if DEBUG
-        private var logged = false
-    #endif
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -676,19 +513,6 @@ final class BackdropBlurView: UIView {
                 forKey: "groupName")
         }
         CATransaction.commit()
-
-        #if DEBUG
-            if !logged {
-                logged = true
-                let keys = [
-                    "captureOnly", "windowServerAware", "allowsInPlaceFiltering",
-                    "disablesOccludedBackdropBlurs", "ignoresOffscreenGroups",
-                    "usesGlobalGroupNamespace", "scale", "groupName",
-                ]
-                let flags = keys.map { "\($0)=\(String(describing: layer.value(forKey: $0)))" }
-                print("[EdgeBlur] backdrop \(type(of: layer)) \(flags.joined(separator: " "))")
-            }
-        #endif
     }
 
     override func didMoveToWindow() {
@@ -697,7 +521,7 @@ final class BackdropBlurView: UIView {
         configure(sigma: sigma, bottom: bottom)
     }
 
-    /// 1 × 1024, alpha = fraction of `inputRadius` at that row, on Haze's
+    /// 1 × 1024, alpha = fraction of `inputRadius` at that row, on the
     /// blur curve and geometric ramp. Row 0 is the top of the layer.
     private static func maskImage(sigmaPx: Double, bottom: Bool) -> CGImage? {
         let height = 1024

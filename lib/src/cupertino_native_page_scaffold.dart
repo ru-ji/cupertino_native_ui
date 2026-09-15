@@ -7,27 +7,30 @@ import 'package:flutter/services.dart';
 
 import 'callbacks.dart';
 
-import 'cupertino_native_app_bar.dart';
+import 'cupertino_native_scaffold_navigation_bar.dart';
 import 'cupertino_native_tab_bar.dart';
 import 'cupertino_widgets_settings.dart';
 import 'internal/native_platform_view_mixin.dart';
 
-/// A page pushed onto a [CupertinoNativeScaffold]'s native NavigationStack.
-/// [route] must match a builder registered in [CupertinoNativeScaffold.run];
-/// [appBar] configures the destination's navigation bar (title, items).
-class CupertinoNativeScaffoldPage {
+/// A page pushed onto a [CupertinoNativePageScaffold]'s native NavigationStack.
+/// [route] must match a builder registered in [CupertinoNativePageScaffold.run];
+/// [navigationBar] configures the destination's navigation bar (title, items).
+class CupertinoNativePageScaffoldPage {
   final String route;
-  final CupertinoNativeAppBar? appBar;
+  final CupertinoNativeScaffoldNavigationBar? navigationBar;
 
-  const CupertinoNativeScaffoldPage({required this.route, this.appBar});
+  const CupertinoNativePageScaffoldPage({
+    required this.route,
+    this.navigationBar,
+  });
 
   Map<String, dynamic> toMap() {
-    return {'route': route, 'appBar': appBar?.toMap()};
+    return {'route': route, 'appBar': navigationBar?.toMap()};
   }
 }
 
 /// Snapshot of a searchable scaffold page's native search field, delivered to
-/// the body isolate via [CupertinoNativeScaffold.searchState].
+/// the body isolate via [CupertinoNativePageScaffold.searchState].
 ///
 /// - [query]: the current text in the search field.
 /// - [isActive]: whether the user is interacting with the field (SwiftUI's
@@ -61,20 +64,20 @@ class CupertinoNativeSearchState {
       'isSubmitted: $isSubmitted)';
 }
 
-/// Drives a [CupertinoNativeScaffold]'s navigation from the host isolate
+/// Drives a [CupertinoNativePageScaffold]'s navigation from the host isolate
 /// (the widget tree that created the scaffold). Inside body isolates use the
-/// static [CupertinoNativeScaffold.push]/[CupertinoNativeScaffold.pop].
-class CupertinoNativeScaffoldController {
+/// static [CupertinoNativePageScaffold.push]/[CupertinoNativePageScaffold.pop].
+class CupertinoNativePageScaffoldController {
   MethodChannel? _channel;
 
-  Future<void> push(CupertinoNativeScaffoldPage page) async {
+  Future<void> push(CupertinoNativePageScaffoldPage page) async {
     await _channel?.invokeMethod('push', page.toMap());
   }
 
   /// Pushes [route] with no navigation bar of its own — the string-only form
   /// of [push], for when you don't need to configure the destination's bar.
   Future<void> pushNamed(String route) =>
-      push(CupertinoNativeScaffoldPage(route: route));
+      push(CupertinoNativePageScaffoldPage(route: route));
 
   Future<void> pop() async {
     await _channel?.invokeMethod('pop');
@@ -89,22 +92,22 @@ class CupertinoNativeScaffoldController {
 /// transitions with toolbar morphing, and interactive back-swipe.
 ///
 /// Navigation between scaffold pages happens on the NATIVE stack via
-/// [CupertinoNativeScaffoldController.push] (host isolate) or the static
+/// [CupertinoNativePageScaffoldController.push] (host isolate) or the static
 /// [push] (body isolates) — not Flutter's Navigator. Each body runs in its
 /// own FlutterEngine. Register the route builders by calling [maybeRun] at
 /// the top of your `main()` (no entry point needed). Requires iOS 16+.
-class CupertinoNativeScaffold extends StatefulWidget {
+class CupertinoNativePageScaffold extends StatefulWidget {
   /// Root body route when no [tabBar] is given. With a [tabBar], each tab's
   /// `id` doubles as its body route.
   final String? body;
 
   /// Root navigation-bar config (also applied to each tab's root page).
-  final CupertinoNativeAppBar? appBar;
+  final CupertinoNativeScaffoldNavigationBar? navigationBar;
 
   /// Optional native tab bar; enables tabbed mode.
   final CupertinoNativeTabBar? tabBar;
 
-  final CupertinoNativeScaffoldController? controller;
+  final CupertinoNativePageScaffoldController? controller;
   final CupertinoNativeBarActionCallback? onBarAction;
   final ValueChanged<String>? onTabChanged;
 
@@ -123,7 +126,7 @@ class CupertinoNativeScaffold extends StatefulWidget {
   /// push/pop happens — including native back button and back-swipe.
   final CupertinoNativeRouteChangedCallback? onRouteChanged;
 
-  /// Fires on every keystroke in a page's [CupertinoNativeAppBar.search] field.
+  /// Fires on every keystroke in a page's [CupertinoNativeScaffoldNavigationBar.search] field.
   /// [route] is the searchable page's root route.
   final CupertinoNativeSearchCallback? onSearchChanged;
 
@@ -133,10 +136,14 @@ class CupertinoNativeScaffold extends StatefulWidget {
   /// Fires when a search field becomes active/inactive (SwiftUI `isSearching`).
   final CupertinoNativeSearchActiveCallback? onSearchActiveChanged;
 
-  const CupertinoNativeScaffold({
+  /// Whether the content moves up to stay above the on-screen keyboard, like
+  /// [CupertinoPageScaffold.resizeToAvoidBottomInset]. Defaults to true.
+  final bool resizeToAvoidBottomInset;
+
+  const CupertinoNativePageScaffold({
     super.key,
     this.body,
-    this.appBar,
+    this.navigationBar,
     this.tabBar,
     this.controller,
     this.onBarAction,
@@ -149,6 +156,7 @@ class CupertinoNativeScaffold extends StatefulWidget {
     this.onSearchChanged,
     this.onSearchSubmitted,
     this.onSearchActiveChanged,
+    this.resizeToAvoidBottomInset = true,
   }) : assert(
          tabBar != null || body != null,
          'Provide a tabBar (tab ids double as body routes) or a body route',
@@ -172,7 +180,7 @@ class CupertinoNativeScaffold extends StatefulWidget {
       ValueNotifier(const CupertinoNativeSearchState());
 
   /// The enclosing scaffold page's live search state. Only meaningful inside
-  /// body isolates whose [CupertinoNativeAppBar] declares a
+  /// body isolates whose [CupertinoNativeScaffoldNavigationBar] declares a
   /// [CupertinoNativeSearchField]. Drive your body with a
   /// [ValueListenableBuilder] on this to render search suggestions, results
   /// and a loading indicator below the native search bar.
@@ -246,13 +254,11 @@ class CupertinoNativeScaffold extends StatefulWidget {
   ///
   /// ```dart
   /// runApp(const MyApp());
-  /// CupertinoNativeScaffold.prewarm(routes: ['home']);
+  /// CupertinoNativePageScaffold.prewarm(routes: ['home']);
   /// ```
   ///
-  /// Each parked engine holds its isolate in memory (~a few MB), so prewarm
-  /// the routes users actually hit first, not the whole table. Note: debug
-  /// builds JIT-compile Dart on top of all this — judge real latency in
-  /// `--release`.
+  /// Each parked engine holds its isolate in memory, so prewarm only the
+  /// routes users hit first.
   static Future<void> prewarm({List<String> routes = const []}) async {
     if (defaultTargetPlatform != TargetPlatform.iOS) return;
     final isDark =
@@ -269,7 +275,7 @@ class CupertinoNativeScaffold extends StatefulWidget {
   }
 
   /// Call as the FIRST line of `main()`:
-  /// `if (CupertinoNativeScaffold.maybeRun(routes)) return;`
+  /// `if (CupertinoNativePageScaffold.maybeRun(routes)) return;`
   ///
   /// Returns true when this isolate is a scaffold body engine, in which case
   /// the matching route builder has been run and `main()` must not continue
@@ -334,14 +340,14 @@ class CupertinoNativeScaffold extends StatefulWidget {
 
   /// Pushes a page onto the enclosing scaffold's native stack. Only usable
   /// inside body isolates (widgets built via [run]).
-  static Future<void> push(CupertinoNativeScaffoldPage page) {
+  static Future<void> push(CupertinoNativePageScaffoldPage page) {
     return _bodyChannel.invokeMethod('push', page.toMap());
   }
 
   /// Pushes [route] with no navigation bar of its own — the string-only form
   /// of [push]. Only usable inside body isolates.
   static Future<void> pushNamed(String route) =>
-      push(CupertinoNativeScaffoldPage(route: route));
+      push(CupertinoNativePageScaffoldPage(route: route));
 
   /// Pops the enclosing scaffold's native stack. Only usable inside body
   /// isolates; the system back button and back-swipe also pop natively.
@@ -355,7 +361,7 @@ class CupertinoNativeScaffold extends StatefulWidget {
   }
 
   @override
-  State<CupertinoNativeScaffold> createState() =>
+  State<CupertinoNativePageScaffold> createState() =>
       _CupertinoNativeScaffoldState();
 }
 
@@ -375,13 +381,15 @@ class _DynamicEnvWrapperState extends State<_DynamicEnvWrapper>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    CupertinoNativeScaffold._bodyIsDark.addListener(_onBrightnessChanged);
+    CupertinoNativePageScaffold._bodyIsDark.addListener(_onBrightnessChanged);
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    CupertinoNativeScaffold._bodyIsDark.removeListener(_onBrightnessChanged);
+    CupertinoNativePageScaffold._bodyIsDark.removeListener(
+      _onBrightnessChanged,
+    );
     super.dispose();
   }
 
@@ -404,7 +412,7 @@ class _DynamicEnvWrapperState extends State<_DynamicEnvWrapper>
     final platformDispatcher = ui.PlatformDispatcher.instance;
     // Prefer the host app's brightness (pushed from the scaffold) so a body's
     // Flutter content matches the app; fall back to the device brightness.
-    final override = CupertinoNativeScaffold._bodyIsDark.value;
+    final override = CupertinoNativePageScaffold._bodyIsDark.value;
     final brightness = override != null
         ? (override ? ui.Brightness.dark : ui.Brightness.light)
         : platformDispatcher.platformBrightness;
@@ -444,7 +452,7 @@ class _DynamicEnvWrapperState extends State<_DynamicEnvWrapper>
   }
 }
 
-class _CupertinoNativeScaffoldState extends State<CupertinoNativeScaffold>
+class _CupertinoNativeScaffoldState extends State<CupertinoNativePageScaffold>
     with NativePlatformViewStateMixin {
   /// Number of routes on the current native stack (root route + pushed pages).
   /// When > 1, a page is pushed on the native NavigationStack and the Flutter
@@ -452,15 +460,11 @@ class _CupertinoNativeScaffoldState extends State<CupertinoNativeScaffold>
   /// the native back-swipe.
   int _nativeStackDepth = 1;
 
-  /// The scaffold IS the page: it must never be swapped for a photograph
-  /// while a route animates above it — the whole page would freeze mid-slide.
+  /// The scaffold is the page: never replaced by a photo during transitions.
   @override
   bool get hidesDuringRouteTransition => false;
 
-  /// The APP's brightness (its Material theme), propagated to the native
-  /// SwiftUI views so they match the app — e.g. light content when the app is
-  /// light even if the device is in dark mode. Re-synced dynamically when the
-  /// app theme changes (see [didChangeDependencies]/[_syncBrightness]).
+  /// The app's brightness, not the device's, synced to the native views.
   bool get _isDark => Theme.of(context).brightness == Brightness.dark;
   bool? _lastIsDark;
 
@@ -468,7 +472,7 @@ class _CupertinoNativeScaffoldState extends State<CupertinoNativeScaffold>
     final theme = Theme.of(context);
     return {
       'body': widget.body,
-      'appBar': widget.appBar?.toMap(),
+      'appBar': widget.navigationBar?.toMap(),
       'tabBar': widget.tabBar?.toMap(),
       'scrollEdgeEffect': widget.scrollEdgeEffect.name,
       'isDark': _isDark,
@@ -481,6 +485,7 @@ class _CupertinoNativeScaffoldState extends State<CupertinoNativeScaffold>
       'showLoadingIndicator':
           widget.showLoadingIndicator ??
           CupertinoWidgetsSettings.showLoadingIndicator,
+      'resizeToAvoidBottomInset': widget.resizeToAvoidBottomInset,
     };
   }
 
@@ -534,16 +539,14 @@ class _CupertinoNativeScaffoldState extends State<CupertinoNativeScaffold>
   }
 
   @override
-  void didUpdateWidget(covariant CupertinoNativeScaffold oldWidget) {
+  void didUpdateWidget(covariant CupertinoNativePageScaffold oldWidget) {
     super.didUpdateWidget(oldWidget);
     final oldMap = {
       'body': oldWidget.body,
-      'appBar': oldWidget.appBar?.toMap(),
+      'appBar': oldWidget.navigationBar?.toMap(),
       'tabBar': oldWidget.tabBar?.toMap(),
       'scrollEdgeEffect': oldWidget.scrollEdgeEffect.name,
     };
-    // Configs are nested maps of primitives; JSON comparison is a simple
-    // deep-equality check.
     if (jsonEncode(oldMap) != jsonEncode(_toMap())) {
       updateNativeView('updateScaffold', _toMap(), refreshIntrinsicSize: false);
     }
@@ -616,7 +619,9 @@ class _CupertinoNativeScaffoldState extends State<CupertinoNativeScaffold>
   @override
   Widget build(BuildContext context) {
     if (defaultTargetPlatform != TargetPlatform.iOS) {
-      return const Center(child: Text('CupertinoNativeScaffold is iOS only'));
+      return const Center(
+        child: Text('CupertinoNativePageScaffold is iOS only'),
+      );
     }
 
     final platformView = UiKitView(

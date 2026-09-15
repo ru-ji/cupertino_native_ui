@@ -6,20 +6,9 @@ import 'package:flutter/gestures.dart';
 /// A platform-view gesture recognizer that lets a vertical drag reach the
 /// scrollable underneath.
 ///
-/// [EagerGestureRecognizer] wins the arena on the first event, before anyone
-/// can tell a tap from a scroll. That is what a control wants — the touch
-/// arrives instantly — and it costs two things:
-///
-///  * a drag started on a switch or a slider never scrolls the page, because
-///    the control took the gesture before it was one;
-///  * `Scrollable` gets its drag rejected while its hold is still up, which
-///    trips `'_hold == null': is not true` on every such scroll in debug.
-///
-/// This waits instead, exactly as far as UIKit does inside a scroll view: a
-/// touch that stays put, or moves mostly sideways, belongs to the control; one
-/// that runs vertically past the slop belongs to the page. Nothing is claimed
-/// until one of those is true, so the arena resolves the way the finger
-/// actually moved.
+/// Unlike [EagerGestureRecognizer], it waits the way UIKit does inside a scroll
+/// view: a touch that stays put or moves sideways belongs to the control, one
+/// that runs vertically past the slop belongs to the page.
 ///
 /// Not for a control that needs vertical drags of its own — a wheel picker
 /// keeps [EagerGestureRecognizer].
@@ -27,11 +16,8 @@ class ScrollFriendlyPlatformViewRecognizer
     extends OneSequenceGestureRecognizer {
   ScrollFriendlyPlatformViewRecognizer({super.debugOwner});
 
-  /// A finger that has not moved by now is not scrolling. Long-pressing a
-  /// control — the gesture a context menu is built on — never produces a move
-  /// event at all, so without this it would wait for the lift and the native
-  /// view would never see the press. 300ms is UIKit's own
-  /// `delaysContentTouches` window, which is what this is reproducing.
+  /// A finger that has not moved by now is not scrolling (UIKit's
+  /// `delaysContentTouches` window). A long-press never produces a move.
   static const Duration _holdTimeout = Duration(milliseconds: 300);
 
   Offset? _start;
@@ -59,9 +45,8 @@ class ScrollFriendlyPlatformViewRecognizer
 
     if (event is PointerMoveEvent) {
       final delta = event.position - start;
-      // A vertical run past the slop is a scroll: hand it over. Rejecting is
-      // what lets the Scrollable's own recognizer take the sequence, and it
-      // is why the page moves when the finger started on a control.
+      // A vertical run past the slop is a scroll: reject, so the Scrollable
+      // takes it.
       if (delta.dy.abs() > kTouchSlop && delta.dy.abs() > delta.dx.abs()) {
         _finish(GestureDisposition.rejected);
         return;

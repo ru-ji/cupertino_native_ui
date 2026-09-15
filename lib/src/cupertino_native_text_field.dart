@@ -18,14 +18,6 @@ import 'models/cupertino_native_icon.dart';
 /// Flutter `TextField` allows) from a press-and-hold (enter native text
 /// selection, with its handles/magnifier) on the same touch that starts on
 /// the field.
-///
-/// A blanket-eager recognizer would let selection-dragging work but also
-/// swallow every scroll attempt that starts on top of the field. This instead
-/// waits briefly: if the pointer moves past a small slop before the hold
-/// timeout, it rejects so an ancestor scroll recognizer can claim the
-/// gesture; if the pointer stays roughly still past the timeout (or is
-/// released quickly, as a plain tap), it accepts so the native `UITextField`
-/// gets the full gesture (selection, handle-dragging, or tap-to-focus/caret).
 class _NativeTextFieldGestureRecognizer extends OneSequenceGestureRecognizer {
   _NativeTextFieldGestureRecognizer({required this.isSelectionActive});
 
@@ -102,8 +94,7 @@ class _NativeTextFieldGestureRecognizer extends OneSequenceGestureRecognizer {
 /// field fills the available width by default (like Flutter's `TextField`);
 /// pass [width]/[height] to size it explicitly.
 ///
-/// iOS only — a plain Flutter [EditableText]-free fallback renders elsewhere.
-/// Multi-line input (via `UITextView`) is not covered yet.
+/// Single-line only.
 class CupertinoNativeTextField extends StatefulWidget {
   final TextEditingController? controller;
 
@@ -138,35 +129,20 @@ class CupertinoNativeTextField extends StatefulWidget {
   /// Background color. Defaults to transparent (iOS default).
   final Color? backgroundColor;
 
-  /// Corner radius of that background, drawn natively. Ignored when [glass]
-  /// is set (the glass carries its own radius). A radius also gives the text
-  /// the same 16pt horizontal inset the glass variant uses, so it doesn't hug
-  /// the capsule's edge.
+  /// Corner radius of that background. Ignored when [glass] is set.
   final double? cornerRadius;
 
-  /// Renders the field on a **Liquid Glass** background (iOS 26 `UIGlassEffect`;
-  /// an ultra-thin material stands in on earlier versions). The text gets a
-  /// 16pt horizontal inset inside the glass.
-  ///
-  /// Null (the default) renders the plain field.
+  /// Renders the field on Liquid Glass (a material below iOS 26).
   final CupertinoGlass? glass;
 
-  /// Leading SF Symbol inside the field (native `UITextField.leftView`).
-  /// SF Symbols only — Flutter widgets can't be embedded in a native control;
-  /// compose with a Flutter `Row`/`Stack` for arbitrary widgets.
-  final CupertinoNativeIcon? prefixIcon;
+  /// Leading SF Symbol inside the field.
+  final CupertinoNativeIcon? prefix;
 
   /// Trailing SF Symbol inside the field (native `UITextField.rightView`).
-  final CupertinoNativeIcon? suffixIcon;
+  final CupertinoNativeIcon? suffix;
 
-  /// Where the (single) line of text sits within the field's height — useful
-  /// with an explicit [height]. UITextField is single-line; multi-line input
-  /// would use UITextView and is not covered yet.
-  ///
-  /// Takes the same [TextAlignVertical] as [TextField.textAlignVertical].
-  /// `UIControl.contentVerticalAlignment` only has three positions, so the
-  /// continuous [TextAlignVertical.y] is snapped: negative → top, positive →
-  /// bottom, zero → center.
+  /// Where the line of text sits within an explicit [height]: top, center or
+  /// bottom.
   final TextAlignVertical verticalAlignment;
 
   /// iOS autofill/content type hint (e.g. `'password'`, `'username'`,
@@ -181,8 +157,8 @@ class CupertinoNativeTextField extends StatefulWidget {
   /// Called when the field gains focus (e.g. the user taps it).
   final VoidCallback? onTap;
 
-  /// Called when a pointer taps outside the field. A common use is dismissing
-  /// the keyboard: `onTapOutside: (_) => FocusScope.of(context).unfocus()`.
+  /// Called when a pointer taps outside the field. Defaults to unfocusing the
+  /// field, which dismisses the keyboard; pass a callback to replace that.
   final TapRegionCallback? onTapOutside;
 
   /// Explicit size. When null, the field fills the available width and uses its
@@ -192,10 +168,14 @@ class CupertinoNativeTextField extends StatefulWidget {
 
   /// Adopts the parent's height instead of [height]/the intrinsic one, so the
   /// native view physically resizes with its host. Used by
-  /// `CupertinoSliverAppBar.search`, whose collapsing slot squeezes the
+  /// `CupertinoNativeSliverNavigationBar.search`, whose collapsing slot squeezes the
   /// capsule proportionally to the scroll. [height] remains the fallback when
   /// the parent's height is unbounded.
   final bool fillHeight;
+
+  /// Margin kept around the field when it is scrolled above the keyboard,
+  /// like [TextField.scrollPadding].
+  final EdgeInsets scrollPadding;
 
   const CupertinoNativeTextField({
     super.key,
@@ -219,8 +199,8 @@ class CupertinoNativeTextField extends StatefulWidget {
     this.backgroundColor,
     this.cornerRadius,
     this.glass,
-    this.prefixIcon,
-    this.suffixIcon,
+    this.prefix,
+    this.suffix,
     this.verticalAlignment = TextAlignVertical.center,
     this.textContentType,
     this.onChanged,
@@ -231,6 +211,7 @@ class CupertinoNativeTextField extends StatefulWidget {
     this.width,
     this.height,
     this.fillHeight = false,
+    this.scrollPadding = const EdgeInsets.all(20),
   });
 
   @override
@@ -244,9 +225,7 @@ class _CupertinoNativeTextFieldState extends State<CupertinoNativeTextField>
   /// draggable handles). Kept current by the `onSelectionActive` callback.
   bool _selectionActive = false;
 
-  /// The APP's brightness (its Material theme), propagated to the native text
-  /// field so its text color matches the app — not the device, which may be in
-  /// a different mode. Re-synced dynamically when the app theme changes.
+  /// The app's brightness, synced to the native field.
   bool get _isDark => Theme.of(context).brightness == Brightness.dark;
   bool? _lastIsDark;
 
@@ -301,18 +280,14 @@ class _CupertinoNativeTextFieldState extends State<CupertinoNativeTextField>
   }
 
   /// Scrolls the minimum needed to keep the field above the keyboard.
-  /// `keepVisibleAtEnd` only ever scrolls when the field sits beyond the
-  /// bottom edge of the (keyboard-shrunken) viewport — when the field is
-  /// already visible it is a strict no-op, so this never repositions or
-  /// fights a scroll the user did themselves. The jump is instant
-  /// (`duration` zero, Flutter's default): each metrics tick already reflects
-  /// the keyboard's current height, so animating would lag the next tick.
+  /// Instant, and a no-op when the field is already visible.
   void _revealAboveKeyboard() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted || !_focusNode.hasFocus) return;
-      Scrollable.ensureVisible(
-        context,
-        alignmentPolicy: ScrollPositionAlignmentPolicy.keepVisibleAtEnd,
+      final box = context.findRenderObject();
+      if (box is! RenderBox || !box.hasSize) return;
+      box.showOnScreen(
+        rect: widget.scrollPadding.inflateRect(Offset.zero & box.size),
       );
     });
   }
@@ -356,7 +331,7 @@ class _CupertinoNativeTextFieldState extends State<CupertinoNativeTextField>
     channel?.invokeMethod('setBrightness', {'isDark': isDark});
   }
 
-  /// The enclosing [CupertinoSliverAppBar]'s search-row visibility, when this
+  /// The enclosing [CupertinoNativeSliverNavigationBar]'s search-row visibility, when this
   /// field is hosted as its `searchField`. Flutter's `Opacity` can't fade a
   /// platform view's pixels, so the fade is forwarded to the native side.
   ValueListenable<double>? _searchRowVisibility;
@@ -416,8 +391,8 @@ class _CupertinoNativeTextFieldState extends State<CupertinoNativeTextField>
         o.backgroundColor != widget.backgroundColor ||
         o.cornerRadius != widget.cornerRadius ||
         o.glass != widget.glass ||
-        o.prefixIcon != widget.prefixIcon ||
-        o.suffixIcon != widget.suffixIcon ||
+        o.prefix != widget.prefix ||
+        o.suffix != widget.suffix ||
         o.verticalAlignment != widget.verticalAlignment;
   }
 
@@ -461,8 +436,8 @@ class _CupertinoNativeTextFieldState extends State<CupertinoNativeTextField>
           (widget.glass?.variant ?? CupertinoGlassVariant.regular).name,
       'glassInteractive': widget.glass?.interactive ?? true,
       'glassTint': widget.glass?.tint?.toARGB32(),
-      'prefixIcon': widget.prefixIcon?.toMap(),
-      'suffixIcon': widget.suffixIcon?.toMap(),
+      'prefixIcon': widget.prefix?.toMap(),
+      'suffixIcon': widget.suffix?.toMap(),
       'verticalAlignment': verticalAlignmentName(widget.verticalAlignment),
     };
   }
@@ -557,10 +532,15 @@ class _CupertinoNativeTextFieldState extends State<CupertinoNativeTextField>
         sized = SizedBox(height: intrinsicHeight ?? 52, child: platformView);
       }
 
-      Widget content = sized;
-      if (widget.onTapOutside != null) {
-        content = TapRegion(onTapOutside: widget.onTapOutside, child: content);
-      }
+      // A tap outside dismisses the keyboard by default.
+      final content = TapRegion(
+        onTapOutside:
+            widget.onTapOutside ??
+            (_) {
+              if (_focusNode.hasFocus) _focusNode.unfocus();
+            },
+        child: sized,
+      );
       // Host the focus node so `FocusScope.unfocus()` reaches the native field.
       return Focus(
         focusNode: _focusNode,
@@ -569,7 +549,7 @@ class _CupertinoNativeTextFieldState extends State<CupertinoNativeTextField>
       );
     }
 
-    // Fallback for non-iOS: a plain Flutter EditableText-less placeholder.
+    // Fallback for non-iOS.
     return SizedBox(
       width: widget.width,
       height: widget.height ?? 36,

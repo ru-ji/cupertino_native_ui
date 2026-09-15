@@ -10,12 +10,6 @@ import 'cupertino_scroll_edge_effect.dart' show CupertinoScrollEdgeEffectEdge;
 /// edge effect draws it — and, with [adaptiveTint], its luminance-tracked wash.
 /// [CupertinoScrollEdgeEffect] is built on it.
 ///
-/// A Flutter backdrop filter only filters Flutter's own render target, and the
-/// iOS embedder forwards nothing but uniform blurs to platform views. This is
-/// a platform view itself: composited after everything painted before it, so
-/// its backdrop is the Flutter surface AND the native views under it, live.
-/// See `NativeEdgeBlurView.swift` for how it is built and why.
-///
 /// Paint it after the content it should blur and before the chrome on top of
 /// it. The app must set `FLTDisablePartialRepaint` in its `Info.plist`: with
 /// partial repaint, Flutter leaves the pixels under its own overlays uncleared,
@@ -42,17 +36,12 @@ class CupertinoNativeEdgeBlur extends StatefulWidget {
   /// Peak blur at [edge], logical px. Capped so the fade is at least 3 sigma wide.
   final double sigma;
 
-  /// Without [adaptiveTint], the wash colour; its alpha is the peak opacity at
-  /// [edge]. With it, the colour of the bright wash — the page background —
-  /// whose peak is the system's. Null for no fixed wash / a white bright one.
+  /// Without [adaptiveTint], the wash colour (its alpha is the peak opacity).
+  /// With it, the colour of the bright wash; null for white.
   final Color? tint;
 
-  /// The system's adaptive wash instead of a fixed [tint]: the render server
-  /// measures the luminance of what is under the bar, and the wash settles on
-  /// one of three levels — the bright one over near-white content, a light
-  /// dark one over mid content, a deeper one over dark content — cross-fading
-  /// on a 0.5s critically damped spring, the timing measured off iOS 26's own
-  /// effect.
+  /// The system's adaptive wash instead of a fixed [tint]: it follows the
+  /// luminance of the content under the bar, on a 0.5s spring.
   final bool adaptiveTint;
 
   /// 0 (nothing) to 1 (full): scales the blur and the wash together.

@@ -7,32 +7,60 @@ import 'package:flutter/widgets.dart';
 import 'internal/native_platform_view_mixin.dart';
 import 'internal/scroll_friendly_recognizer.dart';
 
-class CupertinoNativeSegmentedControl extends StatefulWidget {
-  final List<String> children;
-  final int groupValue;
-  final ValueChanged<int>? onChanged;
-  final Color? activeColor;
+/// iOS's segmented control, rendered by SwiftUI. Same shape as Flutter's
+/// [CupertinoSlidingSegmentedControl]: [children] maps each value to its
+/// segment label — a [Text], whose string is what the native control shows.
+class CupertinoNativeSlidingSegmentedControl<T extends Object>
+    extends StatefulWidget {
+  CupertinoNativeSlidingSegmentedControl({
+    super.key,
+    required this.children,
+    required this.onValueChanged,
+    this.groupValue,
+    this.thumbColor,
+    this.width,
+    this.height,
+  }) : _menu = false,
+       assert(children.length >= 2),
+       assert(
+         children.values.every((w) => w is Text && w.data != null),
+         'Each segment must be a Text with a string: the native control '
+         'draws labels, not arbitrary widgets.',
+       );
+
+  const CupertinoNativeSlidingSegmentedControl._menu({
+    super.key,
+    required this.children,
+    required this.onValueChanged,
+    this.groupValue,
+    this.thumbColor,
+    this.width,
+    this.height,
+  }) : _menu = true;
+
+  final bool _menu;
+
+  final Map<T, Widget> children;
+  final T? groupValue;
+  final ValueChanged<T?> onValueChanged;
+
+  /// Tint of the selected segment.
+  final Color? thumbColor;
   final double? width;
   final double? height;
 
-  const CupertinoNativeSegmentedControl({
-    super.key,
-    required this.children,
-    required this.groupValue,
-    this.onChanged,
-    this.activeColor,
-    this.width,
-    this.height,
-  });
-
   @override
-  State<CupertinoNativeSegmentedControl> createState() =>
-      _CupertinoNativeSegmentedControlState();
+  State<CupertinoNativeSlidingSegmentedControl<T>> createState() =>
+      _CupertinoNativeSegmentedControlState<T>();
 }
 
-class _CupertinoNativeSegmentedControlState
-    extends State<CupertinoNativeSegmentedControl>
+class _CupertinoNativeSegmentedControlState<T extends Object>
+    extends State<CupertinoNativeSlidingSegmentedControl<T>>
     with NativePlatformViewStateMixin {
+  List<T> get _keys => widget.children.keys.toList();
+  List<String> get _labels =>
+      widget.children.values.map((w) => (w as Text).data!).toList();
+
   bool? _lastIsDark;
 
   // Follows the app's own theme brightness, not the device's — a light app
@@ -54,20 +82,29 @@ class _CupertinoNativeSegmentedControlState
   }
 
   @override
-  void didUpdateWidget(covariant CupertinoNativeSegmentedControl oldWidget) {
+  void didUpdateWidget(
+    covariant CupertinoNativeSlidingSegmentedControl<T> oldWidget,
+  ) {
     super.didUpdateWidget(oldWidget);
-    if (!listEquals(oldWidget.children, widget.children) ||
+    if (!listEquals(oldWidget.children.keys.toList(), _keys) ||
+        !listEquals(
+          oldWidget.children.values.map((w) => (w as Text).data).toList(),
+          _labels,
+        ) ||
         oldWidget.groupValue != widget.groupValue ||
-        oldWidget.activeColor != widget.activeColor) {
+        oldWidget.thumbColor != widget.thumbColor) {
       updateNativeView('updateSegmentedControl', _toMap());
     }
   }
 
   Map<String, dynamic> _toMap() {
     return {
-      'items': widget.children,
-      'selectedIndex': widget.groupValue,
-      'color': widget.activeColor?.toARGB32(),
+      'items': _labels,
+      'style': widget._menu ? 'menu' : 'segmented',
+      'selectedIndex': widget.groupValue == null
+          ? -1
+          : _keys.indexOf(widget.groupValue as T),
+      'color': widget.thumbColor?.toARGB32(),
       'isDark': _isDark,
     };
   }
@@ -83,8 +120,10 @@ class _CupertinoNativeSegmentedControlState
 
   Future<dynamic> _handleMethodCall(MethodCall call) async {
     if (call.method == 'onValueChanged') {
-      final int newValue = call.arguments;
-      widget.onChanged?.call(newValue);
+      final int index = call.arguments;
+      if (index >= 0 && index < _keys.length) {
+        widget.onValueChanged(_keys[index]);
+      }
     }
   }
 
@@ -128,18 +167,18 @@ class _CupertinoNativeSegmentedControlState
       height: 40,
       child: Row(
         mainAxisSize: MainAxisSize.min,
-        children: List.generate(widget.children.length, (index) {
-          final isSelected = widget.groupValue == index;
+        children: List.generate(_keys.length, (index) {
+          final isSelected = widget.groupValue == _keys[index];
           return GestureDetector(
-            onTap: () => widget.onChanged?.call(index),
+            onTap: () => widget.onValueChanged(_keys[index]),
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12),
               color: isSelected
-                  ? (widget.activeColor ?? const Color(0xFF007AFF))
+                  ? (widget.thumbColor ?? const Color(0xFF007AFF))
                   : null,
               child: Center(
                 child: Text(
-                  widget.children[index],
+                  _labels[index],
                   style: TextStyle(
                     color: isSelected
                         ? const Color(0xFFFFFFFF)
@@ -153,4 +192,20 @@ class _CupertinoNativeSegmentedControlState
       ),
     );
   }
+}
+
+/// iOS's menu picker, rendered by SwiftUI: a button showing the selected
+/// value that opens a native menu of the options. Same API as
+/// [CupertinoNativeSlidingSegmentedControl].
+class CupertinoNativePicker<T extends Object>
+    extends CupertinoNativeSlidingSegmentedControl<T> {
+  const CupertinoNativePicker({
+    super.key,
+    required super.children,
+    required super.onValueChanged,
+    super.groupValue,
+    super.thumbColor,
+    super.width,
+    super.height,
+  }) : super._menu();
 }

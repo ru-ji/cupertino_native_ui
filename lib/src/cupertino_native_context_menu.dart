@@ -13,34 +13,28 @@ import 'internal/native_platform_view_mixin.dart';
 import 'models/cupertino_native_menu_item.dart';
 import 'internal/scroll_friendly_recognizer.dart';
 
-/// Wraps arbitrary Flutter content in a native iOS **context menu**
-/// (`UIContextMenuInteraction`): long-press lifts the content with the system
-/// blur and shows a menu built from [items] — the same model
-/// ([CupertinoNativeMenuItem]) the popup [CupertinoNativeMenu] uses.
+/// Wraps Flutter content in a native iOS context menu: a long-press lifts the
+/// content and shows a menu built from [actions], the same model
+/// ([CupertinoNativeMenuItem]) as [CupertinoNativeMenu].
 ///
 /// ```dart
 /// CupertinoNativeContextMenu(
-///   items: [
-///     CupertinoNativeMenuAction(
-///         title: 'Share', systemImage: 'square.and.arrow.up', actionId: 'share'),
-///     CupertinoNativeMenuAction(
-///         title: 'Delete', systemImage: 'trash',
-///         isDestructive: true, actionId: 'delete'),
+///   actions: [
+///     CupertinoNativeMenuAction(title: 'Share', systemImage: 'square.and.arrow.up', actionId: 'share'),
+///     CupertinoNativeMenuAction(title: 'Delete', systemImage: 'trash', isDestructive: true, actionId: 'delete'),
 ///   ],
-///   onAction: (id, _) => handle(id),
-///   child: PhotoCard(),
+///   onAction: (id, _) {},
+///   child: const PhotoCard(),
 /// )
 /// ```
 ///
-/// The lifted preview defaults to the child's own on-screen pixels. Pass
-/// [preview] to show a **different view while the menu is open** — it is
-/// rendered by Flutter off-screen, snapshotted, and handed to the system as
-/// the preview image (static: animations inside it won't play).
+/// Pass [preview] to lift a different widget while the menu is open (a static
+/// snapshot: animations inside it won't play).
 class CupertinoNativeContextMenu extends StatefulWidget {
   const CupertinoNativeContextMenu({
     super.key,
     required this.child,
-    required this.items,
+    required this.actions,
     this.preview,
     this.onAction,
     this.onOpenChanged,
@@ -53,7 +47,7 @@ class CupertinoNativeContextMenu extends StatefulWidget {
   final Widget child;
 
   /// Native menu entries (actions, sections, submenus, toggles).
-  final List<CupertinoNativeMenuItem> items;
+  final List<CupertinoNativeMenuItem> actions;
 
   /// Replacement for the lifted preview while the menu is open. Defaults to a
   /// snapshot of [child].
@@ -67,27 +61,12 @@ class CupertinoNativeContextMenu extends StatefulWidget {
   /// dismissal starts, not when its animation ends.
   final ValueChanged<bool>? onOpenChanged;
 
-  /// Blurs the whole app behind the menu while it is open, on top of the
-  /// system's own backdrop.
-  ///
-  /// Done natively (a `UIVisualEffectView` over the app window), because a
-  /// Flutter-side blur cannot work here: `BackdropFilter` only filters
-  /// Flutter's own surface, so every platform view on the page — including
-  /// the ones this widget uses — stays sharp while everything around it
-  /// blurs, and re-filtering the screen per frame stutters.
+  /// Blurs the whole app behind the menu while it is open, natively over the
+  /// app window.
   final bool blurBackground;
 
-  /// Corner radius of [child], for the lift.
-  ///
-  /// UIKit draws the lifted preview's plate and shadow over the **rectangle**
-  /// of what it lifts unless it is told otherwise, so a child with rounded
-  /// corners shows square ones the moment it comes off the page — the corners
-  /// are transparent in the snapshot but the plate underneath is not. There
-  /// is nothing native to read this from: only the caller knows the shape of
-  /// the Flutter widget it handed over.
-  ///
-  /// 0 (the default) means a square child, which is exactly right for a photo
-  /// tile filling its box.
+  /// Corner radius of [child], so the lifted preview keeps its shape. 0 for a
+  /// square child.
   final double previewCornerRadius;
 
   /// Whether [child] receives touches. Defaults to false so every touch —
@@ -120,8 +99,6 @@ class _CupertinoNativeContextMenuState extends State<CupertinoNativeContextMenu>
 
   bool? _lastIsDark;
 
-  // Follows the app's own theme brightness, not the device's — a light app
-  // forced on a dark-mode device should still get a light menu.
   bool get _isDark => Theme.of(context).brightness == Brightness.dark;
 
   @override
@@ -158,7 +135,7 @@ class _CupertinoNativeContextMenuState extends State<CupertinoNativeContextMenu>
   Map<String, dynamic> _toMap() {
     return {
       'previewCornerRadius': widget.previewCornerRadius,
-      'items': widget.items.map((e) => e.toMap()).toList(),
+      'items': widget.actions.map((e) => e.toMap()).toList(),
       'blurBackground': widget.blurBackground,
       'isDark': _isDark,
     };
@@ -167,7 +144,9 @@ class _CupertinoNativeContextMenuState extends State<CupertinoNativeContextMenu>
   @override
   void didUpdateWidget(covariant CupertinoNativeContextMenu oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.items != widget.items) {
+    if (oldWidget.actions != widget.actions ||
+        oldWidget.blurBackground != widget.blurBackground ||
+        oldWidget.previewCornerRadius != widget.previewCornerRadius) {
       updateNativeView(
         'updateContextMenu',
         _toMap(),
@@ -219,10 +198,8 @@ class _CupertinoNativeContextMenuState extends State<CupertinoNativeContextMenu>
 
   /// Renders a [RepaintBoundary] to a PNG and pushes it to the native side.
   ///
-  /// Flutter has to do this capture itself: the native side can only
-  /// `drawHierarchy` the window, which does not reliably reproduce content
-  /// drawn into Flutter's Metal layer — that is what left text and other
-  /// composited layers out of the lifted preview.
+  /// Flutter captures it itself: a native window snapshot drops content drawn
+  /// into Flutter's Metal layer.
   // ponytail: static snapshot, retaken when the widget changes — re-capture
   // on a timer if live/animated content ever needs to lift accurately.
   void _captureAfterFrame(GlobalKey key, String method) {
@@ -258,7 +235,23 @@ class _CupertinoNativeContextMenuState extends State<CupertinoNativeContextMenu>
 
     return Stack(
       fit: StackFit.passthrough,
+      // No clip: the preview overflows, and a composited clip would also cut
+      // the native views painted before it.
+      clipBehavior: Clip.none,
       children: [
+        if (widget.preview != null)
+          Positioned(
+            left: 0,
+            top: 0,
+            child: IgnorePointer(
+              // ponytail: painted in place but near-invisible so it can be
+              // snapshotted; far off-screen its gradients rasterized blank.
+              child: Opacity(
+                opacity: 0.001,
+                child: RepaintBoundary(key: _previewKey, child: widget.preview),
+              ),
+            ),
+          ),
         Positioned.fill(
           child: RepaintBoundary(
             child: UiKitView(
@@ -285,16 +278,6 @@ class _CupertinoNativeContextMenuState extends State<CupertinoNativeContextMenu>
             child: RepaintBoundary(key: _childKey, child: widget.child),
           ),
         ),
-        // The custom preview is painted far off-screen (never visible, never
-        // hit-tested) purely so its RepaintBoundary has pixels to snapshot.
-        if (widget.preview != null)
-          Positioned(
-            left: -100000,
-            top: 0,
-            child: IgnorePointer(
-              child: RepaintBoundary(key: _previewKey, child: widget.preview),
-            ),
-          ),
       ],
     );
   }

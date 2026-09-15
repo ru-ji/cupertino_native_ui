@@ -1,6 +1,5 @@
 import 'package:flutter/widgets.dart';
 
-import 'pages/edge_effect_probe_page.dart';
 import 'pages/glass_body.dart';
 import 'pages/new_event_sheet_body.dart';
 import 'pages/profile_tab_page.dart';
@@ -9,8 +8,8 @@ import 'pages/search_body.dart';
 import 'pages/search_tab_page.dart';
 import 'pages/settings_tab_page.dart';
 
-/// Route builders for every CupertinoNativeScaffold body (tab roots and
-/// pushed pages alike). Consumed by `CupertinoNativeScaffold.maybeRun` at the
+/// Route builders for every CupertinoNativePageScaffold body (tab roots and
+/// pushed pages alike). Consumed by `CupertinoNativePageScaffold.maybeRun` at the
 /// top of `main()` — no `@pragma('vm:entry-point')` function needed.
 Map<String, Widget Function()> scaffoldRoutes() {
   return {
@@ -24,6 +23,5 @@ Map<String, Widget Function()> scaffoldRoutes() {
     // Hosted inside a glass container (see LiquidGlassDemoPage).
     'glassNowPlaying': () => const GlassNowPlayingBody(),
     'glassCard': () => const GlassCardBody(),
-    'edgeEffectProbe': () => const EdgeEffectProbeBody(),
   };
 }

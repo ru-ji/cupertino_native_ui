@@ -13,14 +13,21 @@ struct AdaptiveSegmentedControlView: View {
         _selectedIndex = State(initialValue: config.selectedIndex)
     }
 
+    @ViewBuilder
     var body: some View {
+        if config.style == "menu" {
+            picker.pickerStyle(.menu).tint(tintColor)
+        } else {
+            picker.pickerStyle(.segmented).applySegmentedTint(tintColor)
+        }
+    }
+
+    private var picker: some View {
         Picker("Options", selection: binding) {
             ForEach(0..<config.items.count, id: \.self) { index in
                 Text(config.items[index]).tag(index)
             }
         }
-        .pickerStyle(.segmented)
-        .applySegmentedTint(tintColor)
     }
 
     var binding: Binding<Int> {

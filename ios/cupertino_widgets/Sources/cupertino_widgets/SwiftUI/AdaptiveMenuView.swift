@@ -11,7 +11,14 @@ struct AdaptiveMenuView: View {
                 MenuItemMapper(item: item, onAction: onAction)
             }
         } label: {
-            if let sysImg = config.systemImage {
+            if let sysImg = config.systemImage, config.labelStyle == "iconOnly" {
+                // A Menu drops the button styles' content insets, so the glyph
+                // gets its own square, like an icon-only Button's.
+                applyCustomTextColor(
+                    to: Image(systemName: sysImg).font(customFont)
+                        .imageScale(.large)
+                        .frame(width: 28, height: 28))
+            } else if let sysImg = config.systemImage {
                 applyCustomTextColor(
                     to: Label(config.title, systemImage: sysImg).font(customFont))
             } else {

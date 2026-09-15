@@ -29,11 +29,8 @@ class NativeLiquidGlassFactory: NSObject, FlutterPlatformViewFactory {
     }
 }
 
-/// Platform view exposing the iOS 26 Liquid Glass material as a backdrop that
-/// Flutter content is composited on top of. On iOS 15–25 it renders an
-/// `ultraThinMaterial` approximation so layouts don't break, but the real
-/// refractive effect is 26-only (see `isLiquidGlassSupported` on the plugin
-/// channel for feature-gating from Dart).
+/// Platform view exposing the iOS 26 Liquid Glass material. Below iOS 26 it
+/// renders an `ultraThinMaterial` approximation.
 @available(iOS 15.0, *)
 class NativeLiquidGlassView: NativeHostingView {
     private var channel: FlutterMethodChannel?
@@ -57,13 +54,10 @@ class NativeLiquidGlassView: NativeHostingView {
         messenger: FlutterBinaryMessenger
     ) {
         super.init()
-        // So Dart can exempt this view from an edge effect's mask (bar chrome
-        // is painted over the effect, not under it).
         _view.viewId = viewId
 
         channel = FlutterMethodChannel(
             name: "cupertino_widgets/liquid_glass_\(viewId)", binaryMessenger: messenger)
-        // Push measurements instead of waiting to be polled.
         sizeChannel = channel
         channel?.setMethodCallHandler({
             [weak self] (call: FlutterMethodCall, result: @escaping FlutterResult) in
@@ -77,34 +71,22 @@ class NativeLiquidGlassView: NativeHostingView {
         }
     }
 
-    /// Attaches the glass the way `NativeButtonView` attaches the button, and
-    /// on the same flag.
-    ///
-    /// `expand` is what Dart sends when a Flutter child or an explicit size —
-    /// not a native icon — is what gives this container its size. The button
-    /// hugs its content because SwiftUI can see that content and measure it; a
-    /// glass container's content is the Flutter child composited on top, which
-    /// the native side never sees.
+    /// Attaches the glass. `expand` means the Flutter box, not a native icon,
+    /// sizes the container.
     private func setupSwiftUI(with config: GlassConfig) {
         lastConfig = config
         // Appearance is owned by the hosting controller: the model-update path
         // below returns early, so the pin must happen before the branch.
         isDark = config.isDark
         let expanded = config.expand == true
-        // Filling the box: nothing here has a size of its own to report, and
-        // measuring anyway produced the 10x10 that a glass circle was briefly
-        // sized to.
+        // Filling the box: nothing to measure.
         measuresIntrinsicSize = !expanded
-        let engine = engine(for: config)
+        // The first engine boot is deferred to the next runloop turn, so the
+        // page transition is not blocked by it.
+        let engine = model == nil ? nil : engine(for: config)
 
-        // The SwiftUI view is built ONCE and fed by an observable model from
-        // then on. Rebuilding the root view — never mind re-attaching, which
-        // tears down the UIHostingController — throws away the view identity
-        // SwiftUI needs to diff and to animate: a tint change would snap, and
-        // a hosted engine's view would be pulled out of the hierarchy and put
-        // back. Publishing the config instead lets SwiftUI redraw only what
-        // moved, and `withAnimation` gives CoreAnimation the transition for
-        // free.
+        // Built once, then fed through an observable model: SwiftUI keeps the view
+        // identity, so changes redraw minimally and can animate.
         if let model, attachedExpanded == expanded {
             model.update(config, engine: engine, animated: config.animated == true)
             return
@@ -112,14 +94,18 @@ class NativeLiquidGlassView: NativeHostingView {
 
         let model = GlassViewModel(config: config, engine: engine)
         self.model = model
+        if config.route != nil {
+            DispatchQueue.main.async { [weak self] in
+                guard let self, let model = self.model, let config = self.lastConfig else { return }
+                model.update(config, engine: self.engine(for: config), animated: false)
+            }
+        }
         attachedExpanded = expanded
         let content = AnyView(
             AdaptiveLiquidGlassView(model: model) { [weak self] in
                 self?.channel?.invokeMethod("pressed", arguments: nil)
             })
 
-        // `expand` is what Dart sends when an explicit size — not a native
-        // icon — gives this container its size: fill the box Flutter built.
         guard !expanded else {
             attach(content)
             return
@@ -210,12 +196,8 @@ class NativeLiquidGlassView: NativeHostingView {
 }
 
 
-/// What the hosted SwiftUI view observes.
-///
-/// Config arrives from Dart as a value; publishing it — rather than rebuilding
-/// the view around a new one — is what keeps SwiftUI's view identity stable,
-/// which is the precondition for both minimal redraws and animated
-/// transitions.
+/// What the hosted SwiftUI view observes. Publishing configs keeps the view
+/// identity stable.
 @available(iOS 15.0, *)
 final class GlassViewModel: ObservableObject {
     @Published private(set) var config: GlassConfig
@@ -252,15 +234,8 @@ struct AdaptiveLiquidGlassView: View {
     private var expand: Bool { config.expand ?? false }
     private var tint: Color? { config.tint.map { Color(argb: $0) } }
 
-    /// A container that fills the box Flutter built is drawn only once that
-    /// box is real. A platform view exists before Flutter has committed its
-    /// layout, and a first pass at a degenerate size paints a shape of that
-    /// size — a flash of wrong geometry on presentation and page transitions.
-    /// An empty frame for one pass is not noticeable; a mis-shaped one is.
-    ///
-    /// Only in that mode: a container that hugs its own content must be free
-    /// to state its size, and `GeometryReader` answers with the space offered
-    /// instead, which would collapse the measurement.
+    /// In filling mode, drawn only once the Flutter box has a real size, to avoid
+    /// a flash of wrong geometry.
     var body: some View {
         if expand {
             GeometryReader { geometry in
@@ -276,16 +251,7 @@ struct AdaptiveLiquidGlassView: View {
     @ViewBuilder
     private var glassBody: some View {
         if #available(iOS 26.0, *) {
-            // The shape Apple's "Applying Liquid Glass to custom views" asks
-            // for, in its order: content, then the padding, then the frame,
-            // then `glassEffect` last — it captures what it wraps and hands
-            // that to the container to render, so nothing that affects
-            // appearance may come after it.
-            //
-            //     Color.white.opacity(0.001)
-            //         .frame(width: 80, height: 80)
-            //         .glassEffect(.regular.interactive(), in: Circle())
-            //
+            // Apple's order: content, padding, frame, then `glassEffect` last.
             GlassEffectContainer {
                 glassSurface
                     .simultaneousGesture(
@@ -302,58 +268,25 @@ struct AdaptiveLiquidGlassView: View {
         }
     }
 
-    /// The material, and what sits on it.
-    ///
-    /// A native icon is `glassEffect` CONTENT — the arrangement Apple
-    /// documents, and the one the icon-only container already renders
-    /// correctly. A hosted engine cannot be. `glassEffect` captures what it
-    /// wraps and hands that to the container to render, and a `FlutterView` is
-    /// a live Metal layer the capture has nothing to sample: the material and
-    /// the body both come out blank. That is the whole difference between the
-    /// glass circle with an `icon`, which draws, and every container with a
-    /// `route`, which drew nothing.
-    ///
-    /// So a hosted body gets the glass BEHIND it instead — the same
-    /// placeholder Apple uses, carrying the effect, as a `background` so it
-    /// takes the body's size in either layout mode. The body is drawn on the
-    /// material rather than captured into it, which costs the refraction of
-    /// the content itself; it keeps its own crisp pixels, and the container
-    /// finally renders.
+    /// The glass and its content: the hosted Flutter view or the native icon,
+    /// with `glassEffect` applied to it directly.
     @available(iOS 26.0, *)
-    @ViewBuilder
     private var glassSurface: some View {
-        if let engine = model.engine, #available(iOS 16.0, *) {
-            FlutterContentView(engine: engine)
-                .padding(insets)
-                .applyGlassExpand(expand)
-                .background {
-                    Color.white.opacity(0.001).glassEffect(glass, in: glassShape)
-                }
-                // The hosted view states its own height and overshoots the box
-                // until Dart's layout reports back; the shape is also the clip.
-                .clipShape(glassShape)
-        } else {
-            content.glassEffect(glass, in: glassShape)
-        }
+        content.glassEffect(glass, in: glassShape)
     }
 
-    /// What the glass is painted around when it is `glassEffect` content: a
-    /// native icon when there is one, and otherwise Apple's own placeholder —
-    /// invisible to the eye, solid to touches. It has to be *something*:
-    /// `EmptyView` is erased from the hierarchy (frame and all, so the glass
-    /// gets a 0×0 shape and paints nothing) and `Color.clear` has no substance
-    /// for `.interactive()` to track, which is a container that renders but
-    /// never responds.
+    /// What the glass wraps: the hosted Flutter view, the native icon, or Apple's
+    /// invisible placeholder so the glass has a shape and `.interactive()`
+    /// something to track.
     @ViewBuilder
     private var base: some View {
-        if let icon = config.icon {
+        if let engine = model.engine, #available(iOS 16.0, *) {
+            // No placeholder height: the glass must not take the screen's
+            // height before Dart reports the content's size.
+            FlutterContentView(engine: engine, placeholderHeight: 0)
+        } else if let icon = config.icon {
             IconView(icon: icon)
         } else {
-            // No content of its own: Apple's placeholder, invisible to the eye
-            // but solid to touches, so `.interactive()` has something to
-            // track. `EmptyView` is erased from the hierarchy (the glass gets
-            // a 0x0 shape and paints nothing) and `Color.clear` has no
-            // substance for the interaction to hold on to.
             Color.white.opacity(0.001)
         }
     }
@@ -364,12 +297,8 @@ struct AdaptiveLiquidGlassView: View {
     /// `getIntrinsicSize` can measure it.
     @ViewBuilder
     private var content: some View {
-        // Padding before the frame, not after: an inset applied last would
-        // push the material *outward* past a size Flutter already reserved,
-        // and on an expanding container it would shrink the glass away from
-        // the box it is meant to fill. Inside, it does what it is for —
-        // spacing a native icon off the glass edge, so the container measures
-        // like a control instead of like a glyph.
+        // Padding before the frame, so it insets the content instead of growing the
+        // glass past the Flutter box.
         base
             .padding(insets)
             .applyGlassExpand(expand)

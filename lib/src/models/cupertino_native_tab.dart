@@ -2,7 +2,7 @@
 // it is removed, so this file necessarily reads it.
 // ignore_for_file: deprecated_member_use_from_same_package
 
-import '../cupertino_native_app_bar.dart';
+import '../cupertino_native_scaffold_navigation_bar.dart';
 import 'cupertino_native_icon.dart';
 
 enum CupertinoNativeTabRole { search }
@@ -27,9 +27,9 @@ class CupertinoNativeTab {
   final CupertinoNativeTabRole? role;
 
   /// Optional native `.searchable` field for this tab (inside
-  /// [CupertinoNativeScaffold]). Most useful on a [CupertinoNativeTabRole.search]
+  /// [CupertinoNativePageScaffold]). Most useful on a [CupertinoNativeTabRole.search]
   /// tab, where iOS presents the tab itself as a search field. Your tab body
-  /// renders the results via [CupertinoNativeScaffold.searchState].
+  /// renders the results via [CupertinoNativePageScaffold.searchState].
   final CupertinoNativeSearchField? search;
 
   const CupertinoNativeTab({

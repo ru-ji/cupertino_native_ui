@@ -11,14 +11,8 @@ class NativeHostingView: NSObject, FlutterPlatformView {
     let _view = HostingContainerView()
     private(set) var hostingController: UIHostingController<AnyView>?
 
-    /// Where measured sizes are pushed. Subclasses assign their own channel
-    /// right after creating it; leaving it nil keeps the view pull-only.
-    ///
-    /// Pushing is the point: Dart used to *poll* for the size — a dozen
-    /// method calls per view, spread over more than a second, because there
-    /// was no way to know when SwiftUI had settled. The view knows exactly
-    /// when: its container just laid out. One message, at the right moment,
-    /// instead of twelve guesses.
+    /// Where measured sizes are pushed. Subclasses assign their channel right
+    /// after creating it; nil keeps the view pull-only.
     var sizeChannel: FlutterMethodChannel?
 
     /// Last size handed to Dart, so an unchanged layout pass sends nothing.
@@ -26,26 +20,13 @@ class NativeHostingView: NSObject, FlutterPlatformView {
     /// One pending measurement at a time; a layout pass can fire many times.
     private var measurementScheduled = false
 
-    /// Whether this view's content has a size worth reporting.
-    ///
-    /// False for a view attached to FILL the box Flutter built. Measuring one
-    /// of those is meaningless — it answers an unbounded proposal with the
-    /// proposal, so `intrinsicSize()` falls back to re-measuring against the
-    /// current bounds and returns a number about the box, not the content.
-    /// Harmless while Dart only ever pulled (it pulled just for the widgets
-    /// that wanted an answer); actively wrong now that the view pushes on its
-    /// own, because it pushes to widgets that never asked.
+    /// Whether this view's content has a size worth reporting. False for a view
+    /// that fills the box Flutter built.
     var measuresIntrinsicSize = true
 
-    /// Which appearance the hosted SwiftUI content must use. `nil` = follow
-    /// the system. Set by subclasses from their config's `isDark` — the app's
-    /// own brightness, not the device's: a light app on a dark-mode phone
-    /// must still host light controls, or the page and the control disagree.
-    ///
-    /// Applied to the hosting controller rather than as a SwiftUI
-    /// `.environment(\.colorScheme)`: the controller-level override also
-    /// reaches what a plain environment does not — `UISwitch`-style UIKit
-    /// internals, popovers a control presents, its text-field cursor.
+    /// Appearance of the hosted content — the app's brightness, not the device's.
+    /// `nil` follows the system. Set on the hosting controller, so UIKit internals
+    /// and presented popovers follow it too.
     var isDark: Bool? {
         didSet {
             guard isDark != oldValue else { return }
@@ -61,6 +42,24 @@ class NativeHostingView: NSObject, FlutterPlatformView {
         default: style = .unspecified
         }
         hostingController?.overrideUserInterfaceStyle = style
+        if let isDark { Self.syncWindowStyle(isDark: isDark) }
+    }
+
+    /// System popovers (compact date picker calendar, UIMenu chrome) are
+    /// presented from the window, not from our controller, so they read the
+    /// window's style. Pin it only while the app's theme differs from the
+    /// device's: a permanent override would freeze Flutter's
+    /// `platformBrightness`, and a `ThemeMode.system` app could never follow
+    /// the device again.
+    static func syncWindowStyle(isDark: Bool) {
+        let device = UIScreen.main.traitCollection.userInterfaceStyle
+        let wanted: UIUserInterfaceStyle = isDark ? .dark : .light
+        let style: UIUserInterfaceStyle = wanted == device ? .unspecified : wanted
+        for case let scene as UIWindowScene in UIApplication.shared.connectedScenes {
+            for window in scene.windows where window.overrideUserInterfaceStyle != style {
+                window.overrideUserInterfaceStyle = style
+            }
+        }
     }
 
     func view() -> UIView {
@@ -106,41 +105,22 @@ class NativeHostingView: NSObject, FlutterPlatformView {
             }
         }
         if #available(iOS 16.0, *) {
-            // Keep `host.view.intrinsicContentSize` in step with the SwiftUI
-            // content. Without it a hosting controller's view does not
-            // republish its size as the content settles, and the content
-            // hugging / compression resistance that the hug-and-center
-            // widgets (button, switch) size themselves with has nothing to
-            // read — the host resolves to an ambiguous size while the SwiftUI
-            // control, which is `fixedSize`, keeps drawing at its own. That is
-            // how a switch ends up painting past its box and off the screen
-            // edge. Harmless where the host's edges are pinned: a required
-            // pin outranks an intrinsic size every time.
+            // Keep `host.view.intrinsicContentSize` in step with the SwiftUI content,
+            // so hug-and-center controls (button, switch) size to it.
             host.sizingOptions = .intrinsicContentSize
         }
         host.view.backgroundColor = nil
-        // A UIView is `isOpaque = true` by DEFAULT, which is a promise to the
-        // render server that every pixel of its bounds is filled. A hosted
-        // control keeps that promise nowhere: a switch is a capsule in a
-        // rectangle, a glass circle is a circle. The compositor is entitled to
-        // skip blending and show the box — which is what surfaces as a faint
-        // rectangle around an embedded control, most visibly where two of
-        // their boxes overlap or a snapshot is taken (the context menu lift).
-        // Clearing the background is not the same statement and does not
-        // retract it.
+        // Not opaque: the control does not fill its box, and an opaque view shows a
+        // faint rectangle around it.
         host.view.isOpaque = false
         host.view.translatesAutoresizingMaskIntoConstraints = false
-        // Into the content view, not the container itself: the edge cut is a
-        // clip view between the two.
+        // Into the content view, not the container itself.
         _view.contentView.addSubview(host.view)
         configureConstraints(host.view, _view.contentView)
         hostingController = host
         // Subclasses set `isDark` BEFORE calling attach, while the controller
         // is still the old one (or nil), and `didSet` skips unchanged values —
         // so without this the new controller follows the phone's theme.
-        applyInterfaceStyle()
-        // Pin the appearance before the host is parented, so the first frame
-        // already draws in the theme Dart asked for.
         applyInterfaceStyle()
         // Keep the controller parented into the view-controller hierarchy for
         // as long as our container is in a window (see HostingContainerView).
@@ -169,11 +149,6 @@ class NativeHostingView: NSObject, FlutterPlatformView {
     }
 
     /// Hands Dart the content's measured size, if it has one and it moved.
-    ///
-    /// Driven by the container's layout pass, which is the moment SwiftUI has
-    /// actually settled — including the late settles (fonts, images, async
-    /// builds, a route transition finishing) that the old retry loop existed
-    /// to catch and often missed anyway.
     func publishIntrinsicSize() {
         guard let sizeChannel else { return }
         let measured = intrinsicSize()
@@ -183,14 +158,6 @@ class NativeHostingView: NSObject, FlutterPlatformView {
         let size = CGSize(width: width, height: height)
         guard size != publishedSize else { return }
         publishedSize = size
-        #if DEBUG
-            // What the view actually reports, rather than what a screenshot
-            // suggests. Fires only when the size changes, so it is one line
-            // per control per layout that moved.
-            print(
-                "[cupertino_widgets] \(type(of: self)) measured "
-                    + "\(String(format: "%.2f", width)) x \(String(format: "%.2f", height))")
-        #endif
         sizeChannel.invokeMethod("intrinsicSize", arguments: measured)
     }
 
@@ -200,24 +167,8 @@ class NativeHostingView: NSObject, FlutterPlatformView {
     }
 
     /// Measures the hosted SwiftUI content's natural size, for `getIntrinsicSize` handlers.
-    ///
-    /// Measured against an unbounded proposal, which is the size SwiftUI gives
-    /// a view left to itself. A control that does not expand — a button, a
-    /// switch — answers with exactly the size UIKit draws it at, so the box
-    /// Flutter builds around it matches the pixels and nothing has to be
-    /// clipped or padded to fit.
-    ///
-    /// A view that *fills*, though — a text field, a labeled switch, a button
-    /// with `expand` — answers an unbounded proposal with the proposal
-    /// itself: `.greatestFiniteMagnitude` in both axes, a number Flutter would
-    /// happily build a box out of. Those are re-measured against the width
-    /// Flutter has already given this view and a compressed height, which is
-    /// the size they will really be laid out at.
-    ///
-    /// A degenerate answer (either axis at zero, which happens when the view
-    /// has not been laid out yet) is reported as zero on both axes: the Dart
-    /// side ignores non-positive sizes and keeps its default until a later
-    /// measurement lands, rather than sizing the box to a bad number.
+    /// A view that fills its box is re-measured against the current width.
+    /// Zero on both axes until it has been laid out.
     func intrinsicSize() -> [String: Double] {
         guard let host = hostingController else { return ["width": 0.0, "height": 0.0] }
         host.view.setNeedsLayout()
@@ -246,16 +197,8 @@ class NativeHostingView: NSObject, FlutterPlatformView {
 
 /// A `UIHostingController` whose view is transparent and stays that way.
 ///
-/// Setting `view.backgroundColor = .clear` once is not enough: the class
-/// re-asserts an opaque background of its own on several occasions — being
-/// added to a parent, a trait change, an appearance transition — and every one
-/// of those puts a rectangle of `systemBackground` behind a control that is
-/// supposed to be a capsule on nothing. It is invisible against a page of the
-/// same colour, which is why it only ever showed up in the wrong theme, or in
-/// the bar where the page behind it is not that colour any more.
-///
-/// Re-asserting it on every layout pass is the cheap durable answer: layout is
-/// the one thing that certainly runs after each of those moments.
+/// UIKit re-asserts an opaque background on several occasions (parenting,
+/// trait changes, appearance transitions), so it is cleared on every layout.
 @available(iOS 15.0, *)
 final class ClearHostingController<Content: View>: UIHostingController<Content> {
     /// Off for the one host that legitimately owns a background: the scaffold
@@ -290,23 +233,16 @@ final class ClearHostingController<Content: View>: UIHostingController<Content> 
 /// Container view that keeps the hosted `UIHostingController` properly
 /// parented as a child view controller of whatever view controller owns the
 /// window it currently lives in (the FlutterViewController, in practice).
-///
-/// Without containment the hosting controller is "unparented": it never
-/// receives appearance/containment callbacks, and when Flutter removes and
-/// re-adds the platform view around route navigation the controller's layout
-/// and safe-area state can come back corrupted (controls remeasure oversized
-/// and overlap). Parenting on window attach — and unparenting on detach — is
-/// the UIKit-sanctioned lifecycle for embedded hosting controllers.
+/// Keeps appearance callbacks, layout and safe-area state correct when
+/// Flutter removes and re-adds the platform view.
 @available(iOS 15.0, *)
 final class HostingContainerView: UIView {
     weak var hostedController: UIHostingController<AnyView>?
 
-    /// Where the hosted view lives. Always the container's size, so moving
-    /// the cut never lays the control out again — only its origin changes.
+    /// Where the hosted view lives; always the container's size.
     let contentView = UIView()
 
-    /// Sits between the container and [contentView] and does the edge cut by
-    /// clipping. Unclipped (and outset) while no effect covers the view.
+    /// Unclipped, outset container, so controls can paint past their bounds.
     private let clipView = UIView()
 
     override init(frame: CGRect) {
@@ -321,9 +257,7 @@ final class HostingContainerView: UIView {
 
     required init?(coder: NSCoder) { fatalError("init(coder:) is not supported") }
 
-    /// Never opaque: see the note on the hosted view in `attach`. This box is
-    /// mostly empty by design — a control is centred in it, and since the
-    /// paint-room change the box is deliberately larger than the control.
+    /// Never opaque: the box is mostly empty around the control.
     override var isOpaque: Bool {
         get { false }
         set {}
@@ -336,9 +270,7 @@ final class HostingContainerView: UIView {
         set {}
     }
 
-    /// The Flutter platform view id, so Dart can name this exact view when it
-    /// exempts it from a scroll edge effect's mask. Set by the owning
-    /// `Native*View` right after `super.init()`.
+    /// The Flutter platform view id.
     var viewId: Int64 = -1
 
     /// Called after every (re)parenting pass. Containment changes make UIKit
@@ -351,10 +283,8 @@ final class HostingContainerView: UIView {
     /// re-assert here too (must not trigger another layout).
     var onLayout: (() -> Void)?
 
-    /// Also called on every layout pass, and kept separate from [onLayout] on
-    /// purpose: that one belongs to whoever owns this view (the scaffold sets
-    /// it), while this one belongs to `NativeHostingView` itself. One hook for
-    /// two owners would have them overwrite each other.
+    /// Also called on every layout pass, for `NativeHostingView` itself;
+    /// [onLayout] belongs to the subclass.
     var onLayoutMeasure: (() -> Void)?
 
     override func didMoveToWindow() {
@@ -362,19 +292,11 @@ final class HostingContainerView: UIView {
         updateHostParenting()
     }
 
-    /// The rectangle the view is treated as drawing in, in its own coordinates.
-    ///
-    /// Outset, and that is the whole point: a mask layer is TRANSPARENT
-    /// outside its own frame, so a mask sized to the view is a clip. UIKit
-    /// controls paint past their bounds — the switch's rim, a glass shadow —
-    /// and a mask laid on exactly those bounds shaved the excess the moment
-    /// the control came near a bar. It looked like the bar was cutting the
-    /// switch, because it was.
+    /// The rectangle the view draws in: its bounds plus [edgeMaskOutset], for
+    /// what controls paint past them (a switch's rim, a glass shadow).
     var edgeMaskRect: CGRect { bounds.insetBy(dx: -edgeMaskOutset, dy: -edgeMaskOutset) }
 
-    /// How far past its own box this view is treated as drawing — used both by
-    /// the cut and by the bitmap that replaces the cut part, so the two cover
-    /// the same pixels.
+    /// How far past its own box this view draws.
     let edgeMaskOutset: CGFloat = 24
 
     /// Frames the clip container on the outset box and shifts the content back

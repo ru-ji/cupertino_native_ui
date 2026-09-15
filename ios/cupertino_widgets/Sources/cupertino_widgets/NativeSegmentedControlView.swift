@@ -48,13 +48,10 @@ class NativeSegmentedControlView: NativeHostingView {
         messenger: FlutterBinaryMessenger
     ) {
         super.init()
-        // So Dart can exempt this view from an edge effect's mask (bar chrome
-        // is painted over the effect, not under it).
         _view.viewId = viewId
 
         channel = FlutterMethodChannel(
             name: "cupertino_widgets/segmented_\(viewId)", binaryMessenger: messenger)
-        // Push measurements instead of waiting to be polled.
         sizeChannel = channel
         channel?.setMethodCallHandler({
             [weak self] (call: FlutterMethodCall, result: @escaping FlutterResult) in

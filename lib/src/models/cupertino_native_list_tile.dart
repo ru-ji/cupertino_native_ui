@@ -1,8 +1,8 @@
 import 'cupertino_native_icon.dart';
 
-/// The kind of a [CupertinoNativeListRow], which decides how it renders inside
+/// The kind of a [CupertinoNativeListTile], which decides how it renders inside
 /// the native SwiftUI `List`/`Form` row.
-enum CupertinoNativeListRowType {
+enum CupertinoNativeListTileType {
   /// A plain row: leading icon, title/subtitle, optional trailing [value] and
   /// disclosure chevron. Reports taps via `onRowTap`.
   label,
@@ -16,38 +16,39 @@ enum CupertinoNativeListRowType {
 }
 
 /// A single row in a [CupertinoNativeListSection].
-class CupertinoNativeListRow {
+class CupertinoNativeListTile {
   /// Stable identifier reported back in `onRowTap` / `onToggle`.
   final String id;
   final String title;
   final String? subtitle;
 
   /// Leading icon (SF Symbol or Flutter glyph).
-  final CupertinoNativeIcon? icon;
+  final CupertinoNativeIcon? leading;
 
-  /// Trailing detail text (right-aligned, secondary color). Ignored for
-  /// [CupertinoNativeListRowType.toggle].
-  final String? value;
+  /// Trailing detail text (right-aligned, secondary color), like
+  /// [CupertinoListTile.additionalInfo]. Ignored for
+  /// [CupertinoNativeListTileType.toggle].
+  final String? additionalInfo;
 
   /// Show a trailing disclosure chevron (`chevron.right`). Ignored for toggle
   /// rows.
   final bool showChevron;
 
-  final CupertinoNativeListRowType type;
+  final CupertinoNativeListTileType type;
 
-  /// Initial on/off state for [CupertinoNativeListRowType.toggle] rows.
+  /// Initial on/off state for [CupertinoNativeListTileType.toggle] rows.
   final bool toggleValue;
 
   final bool enabled;
 
-  const CupertinoNativeListRow({
+  const CupertinoNativeListTile({
     required this.id,
     required this.title,
     this.subtitle,
-    this.icon,
-    this.value,
+    this.leading,
+    this.additionalInfo,
     this.showChevron = false,
-    this.type = CupertinoNativeListRowType.label,
+    this.type = CupertinoNativeListTileType.label,
     this.toggleValue = false,
     this.enabled = true,
   });
@@ -57,8 +58,8 @@ class CupertinoNativeListRow {
       'id': id,
       'title': title,
       'subtitle': subtitle,
-      'icon': icon?.toMap(),
-      'value': value,
+      'icon': leading?.toMap(),
+      'value': additionalInfo,
       'showChevron': showChevron,
       'type': type.name,
       'toggleValue': toggleValue,

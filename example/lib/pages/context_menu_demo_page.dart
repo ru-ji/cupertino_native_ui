@@ -26,6 +26,7 @@ class _ContextMenuDemoPageState extends State<ContextMenuDemoPage> {
 
   String? _lastAction;
   bool _menuOpen = false;
+  bool _blur = true;
 
   List<CupertinoNativeMenuItem> _itemsFor(String title) => [
     CupertinoNativeMenuAction(
@@ -99,6 +100,13 @@ class _ContextMenuDemoPageState extends State<ContextMenuDemoPage> {
               '"Sunset ride" shows a custom preview (a different view) '
               'while its menu is open.',
           children: [
+            SettingsRow(
+              title: 'Blur background',
+              trailing: CupertinoNativeSwitch(
+                value: _blur,
+                onChanged: (v) => setState(() => _blur = v),
+              ),
+            ),
             SettingsRow(title: 'Menu open', value: _menuOpen ? 'Yes' : 'No'),
             SettingsRow(title: 'Last action', value: _lastAction ?? 'None'),
           ],
@@ -110,12 +118,12 @@ class _ContextMenuDemoPageState extends State<ContextMenuDemoPage> {
   Widget _tile((String, Color, Color) photo, {bool custom = false}) {
     final (title, start, end) = photo;
     return CupertinoNativeContextMenu(
-      items: _itemsFor(title),
-      onAction: _onAction,
-      // Blurs the whole page (root overlay), not just this subtree.
-      blurBackground: true,
-      onOpenChanged: (open) => setState(() => _menuOpen = open),
-      // A DIFFERENT view while the menu is open: the photo enlarged with a
+      actions: _itemsFor(title),
+      onAction: _onAction, // Blurs the whole page (root overlay), not just this subtree.
+      blurBackground: _blur,
+      onOpenChanged: (open) => setState(
+        () => _menuOpen = open,
+      ), // A DIFFERENT view while the menu is open: the photo enlarged with a
       // caption bar, instead of the grid tile.
       preview: custom
           ? SizedBox(

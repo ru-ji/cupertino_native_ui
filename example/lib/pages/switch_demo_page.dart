@@ -72,7 +72,7 @@ class _SwitchDemoPageState extends State<SwitchDemoPage> {
               subtitle: 'Delivered even while muted',
               trailing: CupertinoNativeSwitch(
                 value: _critical,
-                activeColor: CupertinoColors.systemRed,
+                activeTrackColor: CupertinoColors.systemRed,
                 onChanged: _notifications
                     ? (v) => setState(() => _critical = v)
                     : null,

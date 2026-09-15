@@ -44,11 +44,7 @@ class _EffectsDemoPageState extends State<EffectsDemoPage> {
     Widget stage = Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        CupertinoNativeButton(
-          title: 'Glass',
-          style: CupertinoNativeButtonStyle.glass,
-          onPressed: () {},
-        ),
+        CupertinoNativeButton.glass(onPressed: () {}, child: Text('Glass')),
         const SizedBox(width: 20),
         CupertinoNativeSwitch(
           value: _toggleValue,
@@ -74,7 +70,6 @@ class _EffectsDemoPageState extends State<EffectsDemoPage> {
     stage = Offstage(offstage: _offstage, child: stage);
 
     return DemoScaffold(
-      largeTitle: false,
       title: 'Widget Effects',
       children: [
         // Fixed-height stage so hiding the natives doesn't reflow the page.

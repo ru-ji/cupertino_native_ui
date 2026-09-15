@@ -109,20 +109,11 @@ class NativeContextMenuView: NSObject, FlutterPlatformView, UIContextMenuInterac
     /// to follows the app's own (possibly forced) theme, not the device's.
     private func applyWindowStyle() {
         guard let isDark else { return }
-        let style: UIUserInterfaceStyle = isDark ? .dark : .light
-        for scene in UIApplication.shared.connectedScenes {
-            guard let windowScene = scene as? UIWindowScene else { continue }
-            for window in windowScene.windows {
-                window.overrideUserInterfaceStyle = style
-            }
-        }
+        NativeHostingView.syncWindowStyle(isDark: isDark)
     }
 
-    /// Blurs the app behind the menu. Lives in the app's own window, so it
-    /// covers everything the app draws — Flutter surfaces AND platform views
-    /// alike — while staying below the context menu's own window. UIKit
-    /// animates the effect on the render server, so nothing is re-filtered
-    /// per frame on the UI thread.
+    /// Blurs the app behind the menu, in the app's own window, so it covers
+    /// Flutter content and native views alike.
     private func setBackgroundBlur(_ on: Bool) {
         guard blurBackground else { return }
         if on {
@@ -153,10 +144,8 @@ class NativeContextMenuView: NSObject, FlutterPlatformView, UIContextMenuInterac
     }
 
     private func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
-        // No `snapshot` handler, on purpose: this view is a transparent touch
-        // overlay on a child Flutter already paints (and already blurs). A
-        // photo of it only ever showed its empty box under the bar; without a
-        // handler Dart gets MissingPluginException and never registers one.
+        // No `snapshot` handler: this is a transparent overlay on a child Flutter
+        // already paints.
         switch call.method {
         case "updateContextMenu":
             if let args = call.arguments as? [String: Any] { apply(args) }
@@ -194,11 +183,6 @@ class NativeContextMenuView: NSObject, FlutterPlatformView, UIContextMenuInterac
         // own render when available; the window snapshot only as a stopgap
         // before the first capture arrives.
         sessionSnapshot = childImage ?? snapshotChild()
-        NSLog(
-            "[ctxmenu] lift source=%@ size=%@ container=%@",
-            childImage != nil ? "flutter" : "window-snapshot",
-            NSCoder.string(for: sessionSnapshot?.size ?? .zero),
-            NSCoder.string(for: container.bounds.size))
         return UIContextMenuConfiguration(
             identifier: nil,
             // A custom preview replaces the lifted content; without one the
@@ -286,14 +270,8 @@ class NativeContextMenuView: NSObject, FlutterPlatformView, UIContextMenuInterac
             container.window != nil,
             container.bounds.width > 0, container.bounds.height > 0
         else {
-            NSLog(
-                "[ctxmenu] targetedPreview NIL (image=%@ window=%@ bounds=%@)",
-                sessionSnapshot == nil ? "nil" : "ok",
-                container.window == nil ? "nil" : "ok",
-                NSCoder.string(for: container.bounds.size))
             return nil
         }
-        NSLog("[ctxmenu] targetedPreview built")
         let imageView = UIImageView(image: image)
         imageView.frame = CGRect(origin: .zero, size: container.bounds.size)
         imageView.contentMode = .scaleAspectFill

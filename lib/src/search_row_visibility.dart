@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart' show ValueListenable;
 import 'package:flutter/widgets.dart';
 
-/// Exposes the enclosing `CupertinoSliverAppBar`'s search-row visibility to
+/// Exposes the enclosing `CupertinoNativeSliverNavigationBar`'s search-row visibility to
 /// the hosted search field: 1 at rest, falling to 0 as the scroll consumes
 /// the row (`NavigationBarBottomMode.automatic`), back to 1 when search is
 /// active.

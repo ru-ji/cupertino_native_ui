@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/cupertino.dart' show CupertinoTheme;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/rendering.dart';
@@ -13,12 +15,8 @@ enum CupertinoGlassGroupShape { circle, capsule, roundedRect }
 
 /// One glass in a group: an icon, a title, or both.
 ///
-/// Configuration rather than a widget, and that is the trade the group makes.
-/// A [CupertinoNativeGlassContainer] takes any Flutter child because it is its
-/// own platform view with the child composited over it. A group's items are
-/// laid out by SwiftUI inside a single host, which is precisely what lets them
-/// share one `GlassEffectContainer` — so they have to be things SwiftUI can
-/// build: a native icon and a label.
+/// Configuration rather than a widget: the items are laid out by SwiftUI in
+/// one host, which is what lets them merge.
 @immutable
 class CupertinoNativeGlassGroupItem {
   const CupertinoNativeGlassGroupItem({
@@ -67,17 +65,6 @@ class CupertinoNativeGlassGroupItem {
 /// then separate again — the effect a row of separate glass buttons cannot
 /// have.
 ///
-/// It cannot be had any other way. `GlassEffectContainer` merges glasses that
-/// live in the same SwiftUI tree, and every `CupertinoNativeGlassContainer` is
-/// its own platform view — a separate tree, a separate hosting controller, a
-/// separate layer. No amount of positioning from Dart makes two of them aware
-/// of one another. Grouping is not an optimisation here; it is the only
-/// arrangement in which the effect exists.
-///
-/// The second thing it buys is quieter but useful: one host is one layer, so
-/// the items cannot overlap or be composited out of order the way neighbouring
-/// platform views can.
-///
 /// ```dart
 /// CupertinoNativeGlassGroup(
 ///   spacing: 4, // small enough that the glasses reach for each other
@@ -119,6 +106,8 @@ class CupertinoNativeGlassGroup extends StatefulWidget {
   /// to be before they merge. In SwiftUI it is one number
   /// (`GlassEffectContainer(spacing:)`), so it is one here: animate it and the
   /// group flows apart and back together.
+  ///
+  /// 0 renders the items as one shared glass, like a toolbar group.
   final double spacing;
 
   final bool vertical;
@@ -143,6 +132,7 @@ class CupertinoNativeGlassGroup extends StatefulWidget {
 class _CupertinoNativeGlassGroupState extends State<CupertinoNativeGlassGroup>
     with NativePlatformViewStateMixin {
   bool _isDark = false;
+  String? _sent;
 
   Map<String, dynamic> _toMap() => {
     'items': widget.items.map((e) => e.toMap()).toList(),
@@ -168,9 +158,11 @@ class _CupertinoNativeGlassGroupState extends State<CupertinoNativeGlassGroup>
   @override
   void didUpdateWidget(covariant CupertinoNativeGlassGroup old) {
     super.didUpdateWidget(old);
-    // Sent on every rebuild rather than diffed field by field: the item list is
-    // the bulk of the payload and comparing it costs about what sending it
-    // does, while a missed change is a group stuck mid-morph.
+    // Compared as JSON: one string compare instead of a field-by-field diff
+    // of the item list, and no channel message for a rebuild that changed nothing.
+    final sent = jsonEncode(_toMap());
+    if (sent == _sent) return;
+    _sent = sent;
     updateNativeView('setConfig', _toMap());
   }
 

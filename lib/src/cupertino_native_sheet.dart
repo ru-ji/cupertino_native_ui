@@ -3,7 +3,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
-import 'cupertino_native_app_bar.dart';
+import 'cupertino_native_scaffold_navigation_bar.dart';
 import 'cupertino_native_tab_bar.dart' show CupertinoScrollEdgeEffectStyle;
 import 'cupertino_widgets_settings.dart';
 
@@ -23,24 +23,18 @@ class CupertinoNativeSheetSegmentedControl {
   final int selectedIndex;
 }
 
-/// Presents a Flutter page as a **native iOS sheet** — the system page-sheet
-/// modal that rises over the app and pushes the previous screen back and down
-/// (what `showCupertinoSheet` imitates, here the real
-/// `UISheetPresentationController`): system detents, grabber, corner radius
-/// and the swipe-to-dismiss gesture are all UIKit's.
+/// Presents a Flutter page as a native iOS sheet
+/// (`UISheetPresentationController`): system detents, grabber and
+/// swipe-to-dismiss.
 ///
-/// With an [CupertinoNativeAppBar] the sheet gets pinned native chrome, like
-/// Safari's Page Menu: title, leading/trailing bar items (glass circles on
-/// iOS 26), an optional native search field ([CupertinoNativeSearchField], as
-/// on the native scaffold), an optional segmented control under the bar
-/// ([CupertinoNativeSheetSegmentedControl]), and the Flutter body hosted in a
-/// native ScrollView — content scrolls under the bar, and pulling down at the
-/// top drags the sheet, the system way.
+/// With a [CupertinoNativeScaffoldNavigationBar] the sheet gets a pinned native
+/// bar, an optional search field and segmented control, and the body scrolls
+/// under it.
 ///
 /// ```dart
 /// await CupertinoNativeSheet.show(
-///   route: 'newEvent', // same route table as CupertinoNativeScaffold bodies
-///   appBar: CupertinoNativeAppBar(
+///   route: 'newEvent', // same route table as CupertinoNativePageScaffold bodies
+///   appBar: CupertinoNativeScaffoldNavigationBar(
 ///     title: 'New Event',
 ///     leading: [
 ///       CupertinoNativeBarItem(
@@ -76,7 +70,7 @@ abstract final class CupertinoNativeSheet {
   /// [dismiss]/[pop], a bar action calling them, or the user's swipe).
   ///
   /// [appBar] pins native chrome above the content; its
-  /// [CupertinoNativeAppBar.search] field reports through [onSearchChanged] /
+  /// [CupertinoNativeScaffoldNavigationBar.search] field reports through [onSearchChanged] /
   /// [onSearchSubmitted]. [bottom] pins a native segmented control under the
   /// bar, reporting through [onBottomChanged]. Bar item taps report their
   /// `actionId` through [onBarAction].
@@ -85,7 +79,7 @@ abstract final class CupertinoNativeSheet {
   /// brightness.
   static Future<void> show({
     required String route,
-    CupertinoNativeAppBar? appBar,
+    CupertinoNativeScaffoldNavigationBar? appBar,
     CupertinoNativeSheetSegmentedControl? bottom,
     List<CupertinoNativeSheetDetent> detents = const [
       CupertinoNativeSheetDetent.large,

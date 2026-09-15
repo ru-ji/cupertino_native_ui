@@ -7,7 +7,7 @@ import '../widgets/settings_ui.dart';
 
 /// Body for the searchable scaffold demo. It runs in its own FlutterEngine
 /// inside the native SwiftUI ScrollView and listens to
-/// [CupertinoNativeScaffold.searchState] — the live snapshot of the native
+/// [CupertinoNativePageScaffold.searchState] — the live snapshot of the native
 /// `.searchable` field — to decide what to render below the search bar:
 ///
 ///  * idle          → the full list
@@ -54,18 +54,18 @@ class _SearchBodyState extends State<SearchBody> {
   @override
   void initState() {
     super.initState();
-    CupertinoNativeScaffold.searchState.addListener(_onSearchChanged);
+    CupertinoNativePageScaffold.searchState.addListener(_onSearchChanged);
   }
 
   @override
   void dispose() {
     _debounce?.cancel();
-    CupertinoNativeScaffold.searchState.removeListener(_onSearchChanged);
+    CupertinoNativePageScaffold.searchState.removeListener(_onSearchChanged);
     super.dispose();
   }
 
   void _onSearchChanged() {
-    final state = CupertinoNativeScaffold.searchState.value;
+    final state = CupertinoNativePageScaffold.searchState.value;
     _debounce?.cancel();
 
     if (state.isActive && state.query.isNotEmpty) {

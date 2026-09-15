@@ -8,4 +8,6 @@ struct SegmentedControlConfig: Codable {
     /// hosted view's appearance so a light app on a dark-mode phone does not
     /// draw dark controls. See `NativeHostingView.isDark`.
     let isDark: Bool?
+    /// "menu" for a menu picker; segmented otherwise.
+    var style: String? = nil
 }

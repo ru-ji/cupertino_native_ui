@@ -7,7 +7,7 @@ import 'package:cupertino_widgets/cupertino_widgets.dart';
 import '../widgets/settings_ui.dart';
 
 /// A music library, built the way an iOS app builds one — and a full workout
-/// for [CupertinoSliverAppBar].
+/// for [CupertinoNativeSliverNavigationBar].
 ///
 /// Everything here is Flutter-drawn on purpose: artwork gradients are what
 /// make the scroll edge effect legible, since its blur samples the Flutter
@@ -109,36 +109,34 @@ class _AppBarDemoPageState extends State<AppBarDemoPage> {
         style: rowTitleStyle(context),
         child: CustomScrollView(
           slivers: [
-            CupertinoSliverAppBar.search(
+            CupertinoNativeSliverNavigationBar.search(
               largeTitle: 'Library',
               subtitle: '128 albums',
               centerTitle: true,
-              leading: CupertinoNativeButton(
-                icon: CupertinoNativeIcon.symbol(
+              leading: CupertinoNativeButton.glass(
+                borderShape: CupertinoNativeButtonBorderShape.circle,
+                onPressed: () => Navigator.pop(context),
+                child: CupertinoSymbolImage.symbol(
                   CupertinoSymbols.chevronBackward,
                 ),
-                style: CupertinoNativeButtonStyle.glass,
-                borderShape: CupertinoNativeButtonBorderShape.circle,
-                labelStyle: CupertinoNativeButtonLabelStyle.iconOnly,
-                onPressed: () => Navigator.pop(context),
               ),
               trailing: [
-                CupertinoNativeButton(
-                  icon: CupertinoNativeIcon.symbol(
-                    CupertinoSymbols.arrowUpArrowDown,
-                  ),
-                  style: CupertinoNativeButtonStyle.glass,
-                  borderShape: CupertinoNativeButtonBorderShape.circle,
-                  labelStyle: CupertinoNativeButtonLabelStyle.iconOnly,
-                  onPressed: () {},
-                ),
-                // A label action is now whatever you want it to be — here the
-                // system's own glass capsule button, whose text is native.
-                CupertinoNativeButton(
-                  title: 'Edit',
-                  style: CupertinoNativeButtonStyle.glass,
-                  borderShape: CupertinoNativeButtonBorderShape.capsule,
-                  onPressed: () {},
+                // Icon-only actions sharing one glass, like a toolbar group.
+                CupertinoNativeGlassGroup(
+                  spacing: 0,
+                  onAction: (_) {},
+                  items: [
+                    CupertinoNativeGlassGroupItem(
+                      actionId: 'sort',
+                      icon: CupertinoNativeIcon.symbol(
+                        CupertinoSymbols.arrowUpArrowDown,
+                      ),
+                    ),
+                    CupertinoNativeGlassGroupItem(
+                      actionId: 'more',
+                      icon: CupertinoNativeIcon.named('ellipsis'),
+                    ),
+                  ],
                 ),
               ],
               searchPlaceholder: 'Artists, Songs, Albums',
@@ -225,9 +223,8 @@ class _AppBarDemoPageState extends State<AppBarDemoPage> {
               children: [
                 Text(
                   'No Results',
-                  style: rowTitleStyle(
-                    context,
-                  ).copyWith(fontSize: 20, fontWeight: FontWeight.w600),
+                  style: rowTitleStyle(context)
+                      .copyWith(fontSize: 20, fontWeight: FontWeight.w600),
                 ),
                 const SizedBox(height: 6),
                 Text(

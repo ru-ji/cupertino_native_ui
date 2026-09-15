@@ -9,7 +9,7 @@ import 'models/cupertino_native_tab.dart';
 
 /// iOS 26 tab-view bottom accessory: a persistent view shown above the tab bar
 /// (like the Music mini-player). Only takes effect inside
-/// `CupertinoNativeScaffold` on iOS 26+. It adapts between the system's
+/// `CupertinoNativePageScaffold` on iOS 26+. It adapts between the system's
 /// `.inline` (single line) and `.expanded` (shows [subtitle]) placements. Taps
 /// report through the scaffold's `onBarAction` with [actionId] and the current
 /// tab's route.
@@ -37,7 +37,7 @@ class CupertinoNativeTabBarAccessory {
 }
 
 /// Mirrors SwiftUI's `tabBarMinimizeBehavior`. Only takes effect inside
-/// `CupertinoNativeScaffold` (iOS 26+), where the scroll view is native.
+/// `CupertinoNativePageScaffold` (iOS 26+), where the scroll view is native.
 enum CupertinoNativeTabBarMinimizeBehavior {
   automatic,
   onScrollDown,
@@ -47,7 +47,7 @@ enum CupertinoNativeTabBarMinimizeBehavior {
 
 /// iOS 26 Liquid Glass scroll-edge-effect style. Used both by the standalone
 /// [CupertinoNativeTabBar] (mapped to the bar's background material) and by
-/// `CupertinoNativeScaffold`'s native scroll views. No effect below iOS 26.
+/// `CupertinoNativePageScaffold`'s native scroll views. No effect below iOS 26.
 enum CupertinoScrollEdgeEffectStyle { automatic, soft, hard }
 
 /// A native iOS tab bar rendered by a bare `UITabBar` in a transparent
@@ -60,11 +60,13 @@ enum CupertinoScrollEdgeEffectStyle { automatic, soft, hard }
 /// iOS 26 pill. With [split] the trailing [rightCount] tabs (e.g. a search
 /// tab) render in their own detached bar.
 class CupertinoNativeTabBar extends StatefulWidget {
-  final List<CupertinoNativeTab> tabs;
+  final List<CupertinoNativeTab> items;
 
-  /// Id of the selected tab (see [CupertinoNativeTab.id]).
-  final String value;
-  final ValueChanged<String>? onChanged;
+  /// Index of the selected tab in [items], like [CupertinoTabBar.currentIndex].
+  final int currentIndex;
+
+  /// Called with the tapped tab's index.
+  final ValueChanged<int>? onTap;
   final Color? activeColor;
   final Color? backgroundColor;
 
@@ -79,7 +81,7 @@ class CupertinoNativeTabBar extends StatefulWidget {
   /// When not split, size the bar to its content width (floating pill).
   final bool shrinkCentered;
 
-  /// Only meaningful when this config is passed to `CupertinoNativeScaffold`.
+  /// Only meaningful when this config is passed to `CupertinoNativePageScaffold`.
   final CupertinoNativeTabBarMinimizeBehavior minimizeBehavior;
 
   /// iOS 26 Liquid Glass scroll-edge-effect style for the bar's background.
@@ -88,14 +90,14 @@ class CupertinoNativeTabBar extends StatefulWidget {
   final CupertinoScrollEdgeEffectStyle scrollEdgeEffect;
 
   /// iOS 26 bottom accessory shown above the tab bar. Only meaningful inside
-  /// `CupertinoNativeScaffold`.
+  /// `CupertinoNativePageScaffold`.
   final CupertinoNativeTabBarAccessory? accessory;
 
   const CupertinoNativeTabBar({
     super.key,
-    required this.tabs,
-    required this.value,
-    this.onChanged,
+    required this.items,
+    this.currentIndex = 0,
+    this.onTap,
     this.activeColor,
     this.backgroundColor,
     this.height,
@@ -108,12 +110,12 @@ class CupertinoNativeTabBar extends StatefulWidget {
     this.accessory,
   });
 
-  /// Serialized form consumed by `CupertinoNativeScaffold` (which renders its
+  /// Serialized form consumed by `CupertinoNativePageScaffold` (which renders its
   /// own SwiftUI tab bar; standalone rendering uses different params).
   Map<String, dynamic> toMap() {
     return {
-      'tabs': tabs.map((e) => e.toMap()).toList(),
-      'selection': value,
+      'tabs': items.map((e) => e.toMap()).toList(),
+      'selection': items[currentIndex.clamp(0, items.length - 1)].id,
       'accentColor': activeColor?.toARGB32(),
       'minimizeBehavior': minimizeBehavior.name,
       'scrollEdgeEffect': scrollEdgeEffect.name,
@@ -145,19 +147,18 @@ class _CupertinoNativeTabBarState extends State<CupertinoNativeTabBar> {
   bool get _isDark => Theme.of(context).brightness == Brightness.dark;
 
   int get _selectedIndex {
-    final idx = widget.tabs.indexWhere((t) => t.id == widget.value);
-    return idx < 0 ? 0 : idx;
+    return widget.currentIndex.clamp(0, widget.items.length - 1);
   }
 
-  List<String> get _labels => widget.tabs.map((t) => t.title).toList();
+  List<String> get _labels => widget.items.map((t) => t.title).toList();
   List<String> get _symbols =>
-      widget.tabs.map((t) => t.resolvedSymbolName ?? '').toList();
+      widget.items.map((t) => t.resolvedSymbolName ?? '').toList();
 
   /// Full icon configs for SwiftUI rendering (supports both SF Symbols and
   /// Flutter glyphs). The standalone UITabBar ignores this and falls back
   /// to the raw SF Symbol strings in [_symbols].
   List<Map<String, dynamic>?> get _iconConfigs =>
-      widget.tabs.map((t) => t.icon?.toMap()).toList();
+      widget.items.map((t) => t.icon?.toMap()).toList();
 
   @override
   void didUpdateWidget(covariant CupertinoNativeTabBar oldWidget) {
@@ -199,9 +200,9 @@ class _CupertinoNativeTabBarState extends State<CupertinoNativeTabBar> {
     if (call.method == 'valueChanged') {
       final args = call.arguments as Map?;
       final idx = (args?['index'] as num?)?.toInt();
-      if (idx != null && idx != _lastIndex && idx < widget.tabs.length) {
+      if (idx != null && idx != _lastIndex && idx < widget.items.length) {
         _lastIndex = idx;
-        widget.onChanged?.call(widget.tabs[idx].id);
+        widget.onTap?.call(idx);
       }
     }
   }
@@ -306,11 +307,11 @@ class _CupertinoNativeTabBarState extends State<CupertinoNativeTabBar> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
-            for (var i = 0; i < widget.tabs.length; i++)
+            for (var i = 0; i < widget.items.length; i++)
               GestureDetector(
-                onTap: () => widget.onChanged?.call(widget.tabs[i].id),
+                onTap: () => widget.onTap?.call(i),
                 child: Text(
-                  widget.tabs[i].title,
+                  widget.items[i].title,
                   style: TextStyle(
                     color: i == _selectedIndex
                         ? (widget.activeColor ?? const Color(0xFF007AFF))
@@ -356,11 +357,8 @@ class _CupertinoNativeTabBarState extends State<CupertinoNativeTabBar> {
       bar = SizedBox(height: h, child: platformView);
     }
 
-    // SwiftUI's scroll-edge effect is bound to native scroll views, so a
-    // standalone bar can't get it from the system. On iOS 26+ draw the
-    // Flutter recreation behind the floating bar when the effect is
-    // explicitly requested: it reaches above the bar and down through the
-    // home-indicator area, melting Flutter content into the screen edge.
+    // The standalone bar draws the scroll edge effect itself when one is
+    // requested (iOS 26+).
     if (isIOS26OrLater &&
         widget.scrollEdgeEffect != CupertinoScrollEdgeEffectStyle.automatic) {
       final bottomInset = MediaQuery.paddingOf(context).bottom;
@@ -370,18 +368,10 @@ class _CupertinoNativeTabBarState extends State<CupertinoNativeTabBar> {
           Positioned(
             left: 0,
             right: 0,
-            // Mirrors the top edge's rule — the effect fades out over one
-            // bar height past the bar's own extent — so it tracks the tab
-            // bar's real height (50 on iOS 26, or whatever `height` sets)
-            // instead of a hardcoded 64.
+            // One bar height above the bar, like the top edge.
             top: -h,
-            // Down to the physical screen edge: the bar floats above the home
-            // indicator, and the strip it leaves is part of the span, exactly
-            // as the top effect starts at the notch / Dynamic Island inset
-            // rather than under it.
+            // Down to the physical screen edge, home indicator area included.
             bottom: -bottomInset,
-            // A native blur: it samples the native controls scrolling under
-            // the bar live, along with the Flutter page.
             child: CupertinoScrollEdgeEffect(
               edge: CupertinoScrollEdgeEffectEdge.bottom,
               style: widget.scrollEdgeEffect,

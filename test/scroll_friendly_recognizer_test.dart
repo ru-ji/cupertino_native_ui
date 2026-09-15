@@ -12,8 +12,7 @@ void main() {
   setUp(() {
     won = [];
     view = ScrollFriendlyPlatformViewRecognizer();
-    drag = VerticalDragGestureRecognizer()
-      ..onStart = (_) => won.add('scroll');
+    drag = VerticalDragGestureRecognizer()..onStart = (_) => won.add('scroll');
   });
 
   tearDown(() {

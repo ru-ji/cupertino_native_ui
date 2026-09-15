@@ -40,13 +40,10 @@ class NativeMenuView: NativeHostingView {
         messenger: FlutterBinaryMessenger
     ) {
         super.init()
-        // So Dart can exempt this view from an edge effect's mask (bar chrome
-        // is painted over the effect, not under it).
         _view.viewId = viewId
 
         channel = FlutterMethodChannel(
             name: "cupertino_widgets/menu_\(viewId)", binaryMessenger: messenger)
-        // Push measurements instead of waiting to be polled.
         sizeChannel = channel
         channel?.setMethodCallHandler({
             [weak self] (call: FlutterMethodCall, result: @escaping FlutterResult) in
@@ -68,21 +65,8 @@ class NativeMenuView: NativeHostingView {
             }
             self?.channel?.invokeMethod("onAction", arguments: args)
         }
+        isDark = config.isDark
         attach(AnyView(menuView))
-        // Follows the app's own (possibly forced) theme, not the device's
-        // system appearance. The UIMenu's blur/vibrancy chrome is presented
-        // in a system overlay window — not in this view's hierarchy — so the
-        // scene's windows need the override too, not just the anchor.
-        if let isDark = config.isDark {
-            let style: UIUserInterfaceStyle = isDark ? .dark : .light
-            hostingController?.overrideUserInterfaceStyle = style
-            for scene in UIApplication.shared.connectedScenes {
-                guard let windowScene = scene as? UIWindowScene else { continue }
-                for window in windowScene.windows {
-                    window.overrideUserInterfaceStyle = style
-                }
-            }
-        }
     }
 
     private func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {

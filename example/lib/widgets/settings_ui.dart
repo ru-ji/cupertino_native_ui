@@ -5,27 +5,21 @@ import 'package:flutter/material.dart' show Scaffold;
 import 'package:flutter/services.dart' show SystemUiOverlayStyle;
 import 'package:flutter/widgets.dart';
 
-/// Shared iOS-Settings-style scaffolding used by every demo page.
-///
-/// The demo pages are styled like real Settings screens (white page, inset
-/// cards, footnote headers/footers) so each native control is shown in the
-/// context it would actually be used in. The page chrome is the package's own
-/// [CupertinoSliverAppBar]; everything else here is custom-drawn: no Material
-/// widgets beyond [Scaffold], only the `CupertinoColors` palette. Every icon
-/// in the app comes from SF Symbols via the plugin, or a `CustomPainter`.
+/// Shared demo page scaffolding: a [CupertinoNativeSliverNavigationBar] page
+/// with inset-grouped sections.
 
 /// Inset-grouped card corner radius, matching iOS 26's Settings app (and the
 /// plugin's native list/form default on iOS 26+).
 const double kCardCornerRadius = 26;
 
-/// A white page under a [CupertinoSliverAppBar], which brings its own back
+/// A white page under a [CupertinoNativeSliverNavigationBar], which brings its own back
 /// button, Liquid Glass actions, scroll edge effect and title collapse.
 class DemoScaffold extends StatelessWidget {
   const DemoScaffold({
     super.key,
     required this.title,
     required this.children,
-    this.largeTitle = true,
+    this.largeTitle = false,
     this.bottomBar,
   });
 
@@ -44,18 +38,16 @@ class DemoScaffold extends StatelessWidget {
   Widget build(BuildContext context) {
     final body = CustomScrollView(
       slivers: [
-        CupertinoSliverAppBar(
+        CupertinoNativeSliverNavigationBar(
           largeTitle: title,
           expandedTitle: largeTitle,
           leading: Navigator.canPop(context)
-              ? CupertinoNativeButton(
-                  icon: CupertinoNativeIcon.symbol(
+              ? CupertinoNativeButton.glass(
+                  borderShape: CupertinoNativeButtonBorderShape.circle,
+                  onPressed: () => Navigator.pop(context),
+                  child: CupertinoSymbolImage.symbol(
                     CupertinoSymbols.chevronBackward,
                   ),
-                  style: CupertinoNativeButtonStyle.glass,
-                  borderShape: CupertinoNativeButtonBorderShape.circle,
-                  labelStyle: CupertinoNativeButtonLabelStyle.iconOnly,
-                  onPressed: () => Navigator.pop(context),
                 )
               : null,
           tintColor: CupertinoColors.systemGroupedBackground,
@@ -249,11 +241,8 @@ class _SettingsRowState extends State<SettingsRow> {
   }
 }
 
-/// A row's leading SF Symbol, tinted — the same thing the native list drew
-/// (`IconView` at the SwiftUI body size, no container). It goes through
-/// [CupertinoSymbolImage] so it lands in Flutter's own layer tree: a platform
-/// view here would leave an unblurred hole in the app bar's scroll edge effect
-/// as the row passes under it.
+/// A row's leading SF Symbol, drawn by [CupertinoSymbolImage] in Flutter's
+/// layer tree.
 class SettingsIcon extends StatelessWidget {
   const SettingsIcon(this.symbol, {super.key, required this.color});
 
@@ -397,8 +386,7 @@ class _SpinnerPainter extends CustomPainter {
       oldDelegate.progress != progress || oldDelegate.color != color;
 }
 
-/// The iOS disclosure chevron, drawn — not an icon-font glyph — so the demo
-/// app renders SF Symbols exclusively through the plugin.
+/// The iOS disclosure chevron, drawn.
 class DisclosureChevron extends StatelessWidget {
   const DisclosureChevron({super.key});
 

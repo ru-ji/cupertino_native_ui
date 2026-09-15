@@ -77,7 +77,11 @@ void main() {
     testWidgets('button sends it as "color"', (tester) async {
       final params = await paramsOf(
         tester,
-        const CupertinoNativeButton(title: 'Save', activeColor: green),
+        const CupertinoNativeButton(
+          color: green,
+          onPressed: null,
+          child: Text('Save'),
+        ),
       );
       expect(params['color'], green.toARGB32());
       expect(params['title'], 'Save');
@@ -86,7 +90,7 @@ void main() {
     testWidgets('switch sends it as "color"', (tester) async {
       final params = await paramsOf(
         tester,
-        const CupertinoNativeSwitch(value: true, activeColor: green),
+        const CupertinoNativeSwitch(value: true, activeTrackColor: green),
       );
       expect(params['color'], green.toARGB32());
       expect(params['value'], true);
@@ -95,10 +99,11 @@ void main() {
     testWidgets('segmented control sends it as "color"', (tester) async {
       final params = await paramsOf(
         tester,
-        const CupertinoNativeSegmentedControl(
-          children: ['A', 'B'],
+        CupertinoNativeSlidingSegmentedControl<int>(
+          children: const {0: Text('A'), 1: Text('B')},
           groupValue: 1,
-          activeColor: green,
+          thumbColor: green,
+          onValueChanged: (_) {},
         ),
       );
       expect(params['color'], green.toARGB32());
@@ -109,7 +114,7 @@ void main() {
     testWidgets('progress indicator sends it as "color"', (tester) async {
       final params = await paramsOf(
         tester,
-        const CupertinoNativeProgressIndicator(value: 0.5, activeColor: green),
+        const CupertinoNativeActivityIndicator(color: green),
       );
       expect(params['color'], green.toARGB32());
     }, variant: iOS);
@@ -118,8 +123,8 @@ void main() {
       final params = await paramsOf(
         tester,
         CupertinoNativeDatePicker(
-          value: DateTime(2026, 1, 1),
-          onChanged: (_) {},
+          initialDateTime: DateTime(2026, 1, 1),
+          onDateTimeChanged: (_) {},
           activeColor: green,
         ),
       );
@@ -134,35 +139,35 @@ void main() {
       final params = await paramsOf(
         tester,
         const CupertinoNativeTabBar(
-          value: 'profile',
+          currentIndex: 1,
           activeColor: green,
-          tabs: [
+          items: [
             CupertinoNativeTab(title: 'Home', id: 'home'),
             CupertinoNativeTab(title: 'Profile', id: 'profile'),
           ],
         ),
       );
       expect(params['tint'], green.toARGB32());
-      // `value` is the Dart name; standalone it travels as an index.
+      // Standalone it travels as `selectedIndex`.
       expect(params['selectedIndex'], 1);
     }, variant: iOS);
 
     test('tab bar nested in a scaffold sends it as "accentColor"', () {
       final map = const CupertinoNativeTabBar(
-        value: 'home',
         activeColor: green,
-        tabs: [CupertinoNativeTab(title: 'Home', id: 'home')],
+        items: [CupertinoNativeTab(title: 'Home', id: 'home')],
       ).toMap();
 
       expect(map['accentColor'], green.toARGB32());
-      // `value` is the Dart name; the channel key stayed `selection`.
+      // `currentIndex` is the Dart name; the scaffold takes the tab's id as
+      // `selection`.
       expect(map['selection'], 'home');
     });
 
     testWidgets('scaffold sends it as "primaryColor"', (tester) async {
       final params = await paramsOf(
         tester,
-        const CupertinoNativeScaffold(body: 'home', activeColor: green),
+        const CupertinoNativePageScaffold(body: 'home', activeColor: green),
       );
       expect(params['primaryColor'], green.toARGB32());
       expect(params['body'], 'home');
@@ -175,7 +180,7 @@ void main() {
           activeColor: green,
           sections: [
             CupertinoNativeListSection(
-              rows: [CupertinoNativeListRow(id: 'a', title: 'Row A')],
+              children: [CupertinoNativeListTile(id: 'a', title: 'Row A')],
             ),
           ],
         ),

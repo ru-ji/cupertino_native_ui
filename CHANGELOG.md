@@ -1,5 +1,35 @@
 ## Unreleased
 
+### Breaking: widgets named after Flutter's Cupertino widgets
+
+Every widget now carries the name of its Flutter counterpart behind the
+`CupertinoNative` prefix, with the same parameter names for what they share.
+No aliases are kept.
+
+| Before | After |
+|---|---|
+| `CupertinoAppBar` / `CupertinoSliverAppBar` | `CupertinoNativeNavigationBar` / `CupertinoNativeSliverNavigationBar` |
+| `CupertinoNativeAppBar` (scaffold config) | `CupertinoNativeScaffoldNavigationBar` |
+| `CupertinoNativeScaffold` (`appBar`) | `CupertinoNativePageScaffold` (`navigationBar`) |
+| `CupertinoNativeSegmentedControl` | `CupertinoNativeSlidingSegmentedControl<T>` — `children: Map<T, Text>`, `onValueChanged`, `thumbColor` |
+| `CupertinoNativeProgressIndicator` | `CupertinoNativeActivityIndicator` (`color`, `radius`, `animating`) and `CupertinoNativeLinearActivityIndicator` (`progress`, `height`, `color`) |
+| `CupertinoNativeAlert` / `CupertinoNativeAlertAction` | `CupertinoNativeAlertDialog` (`content`) / `CupertinoNativeDialogAction` (`child`, `isDefaultAction`, `isDestructiveAction`) |
+| `CupertinoNativeListRow` (`icon`, `value`) / section `rows` | `CupertinoNativeListTile` (`leading`, `additionalInfo`) / section `children` |
+
+* **Button:** the label is `child` — a `Text`, `CupertinoSymbolImage`, `Icon`
+  or a `Row` of them — and the style is the constructor: default,
+  `.filled`, `.tinted`, `.glass`, `.glassProminent`. `activeColor` → `color`,
+  `controlSize` → `sizeStyle`; `title`, `icon`, `systemImage`, `labelStyle`
+  and `textStyle` are gone. `onPressed` is required, as in Flutter.
+* **Switch:** `activeColor` → `activeTrackColor`.
+* **Date picker:** `value` → `initialDateTime`, `onChanged` →
+  `onDateTimeChanged`, `mode` takes Flutter's `CupertinoDatePickerMode`.
+* **Tab bar:** `tabs` → `items`, `value` (tab id) → `currentIndex`,
+  `onChanged` → `onTap` (index).
+* **Text field:** `prefixIcon` / `suffixIcon` → `prefix` / `suffix`.
+* **Context menu:** `items` → `actions`.
+* The deprecated aliases in `legacy_names.dart` are removed.
+
 ### The scroll edge effect is native
 
 `CupertinoScrollEdgeEffect` — and with it `CupertinoAppBar`,
@@ -17,7 +47,8 @@ device:
   samples native views as well as Flutter content.
 * New `onBrightnessChanged`: the app bars turn their title white over dark
   content, like the system's bar items.
-* Hidden during route transitions (a platform view trails the page by a frame).
+* Visible through route transitions; route-transition photos of native
+  controls are off by default.
 * The `haze` dependency is gone; off iOS `soft` draws nothing.
 
 **Action required:** add `<key>FLTDisablePartialRepaint</key><true/>` to the
@@ -31,8 +62,8 @@ The bitmap-and-cut path that stood in for a blur Flutter could not apply to
 native views: `BarSnapshotSurface`, the published edge regions
 (`CupertinoEdgeEffectCoverage`, `CupertinoEdgeEffectExempt`), the native cut and
 its KVO geometry hook, and the `setEdgeEffectRegion`, `setEdgeEffectExempt` and
-`setEdgeCut` channel methods. None were public. Native views still keep a warm
-bitmap for route transitions.
+`setEdgeCut` channel methods. None were public. The route-transition bitmap of
+native views is off by default (`hidesDuringRouteTransition`).
 
 ## 0.1.0 (unreleased)
 

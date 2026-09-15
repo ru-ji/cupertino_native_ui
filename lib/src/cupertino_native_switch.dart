@@ -10,7 +10,7 @@ class CupertinoNativeSwitch extends StatefulWidget {
   final bool value;
   final ValueChanged<bool>? onChanged;
   final String? label;
-  final Color? activeColor;
+  final Color? activeTrackColor;
   final TextStyle? textStyle;
   final double? width;
   final double? height;
@@ -20,7 +20,7 @@ class CupertinoNativeSwitch extends StatefulWidget {
     required this.value,
     this.onChanged,
     this.label,
-    this.activeColor,
+    this.activeTrackColor,
     this.textStyle,
     this.width,
     this.height,
@@ -53,7 +53,7 @@ class _CupertinoNativeSwitchState extends State<CupertinoNativeSwitch>
     super.didUpdateWidget(oldWidget);
     if (oldWidget.value != widget.value ||
         oldWidget.label != widget.label ||
-        oldWidget.activeColor != widget.activeColor ||
+        oldWidget.activeTrackColor != widget.activeTrackColor ||
         oldWidget.textStyle != widget.textStyle) {
       updateNativeView('updateToggle', _toMap());
     }
@@ -63,7 +63,7 @@ class _CupertinoNativeSwitchState extends State<CupertinoNativeSwitch>
     return {
       'value': widget.value,
       'label': widget.label,
-      'color': widget.activeColor?.toARGB32(),
+      'color': widget.activeTrackColor?.toARGB32(),
       'fontSize': widget.textStyle?.fontSize,
       'fontWeight': widget.textStyle?.fontWeight?.value,
       'textColor': widget.textStyle?.color?.toARGB32(),
@@ -148,7 +148,7 @@ class _CupertinoNativeSwitchState extends State<CupertinoNativeSwitch>
           Switch(
             value: widget.value,
             onChanged: widget.onChanged,
-            activeThumbColor: widget.activeColor,
+            activeTrackColor: widget.activeTrackColor,
           ),
         ],
       ),

@@ -70,10 +70,8 @@ class _ProgressDemoPageState extends State<ProgressDemoPage> {
                     ],
                   ),
                   const SizedBox(height: 8),
-                  CupertinoNativeProgressIndicator(
-                    value: _downloadedMb,
-                    total: _totalMb,
-                    style: CupertinoNativeProgressStyle.linear,
+                  CupertinoNativeLinearActivityIndicator(
+                    progress: _downloadedMb / _totalMb,
                   ),
                 ],
               ),
@@ -86,16 +84,13 @@ class _ProgressDemoPageState extends State<ProgressDemoPage> {
           children: [
             SettingsRow(
               title: 'Checking for Updates…',
-              trailing: const CupertinoNativeProgressIndicator(
-                style: CupertinoNativeProgressStyle.circular,
-              ),
+              trailing: const CupertinoNativeActivityIndicator(),
             ),
             SettingsRow(
               title: 'Syncing Photos',
               subtitle: '1,204 items remaining',
-              trailing: const CupertinoNativeProgressIndicator(
-                style: CupertinoNativeProgressStyle.circular,
-                activeColor: CupertinoColors.systemPink,
+              trailing: const CupertinoNativeActivityIndicator(
+                color: CupertinoColors.systemPink,
               ),
             ),
           ],
@@ -106,12 +101,19 @@ class _ProgressDemoPageState extends State<ProgressDemoPage> {
           children: [
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
-              child: const CupertinoNativeProgressIndicator(
-                value: 205,
-                total: 256,
-                label: 'iPhone — 205 GB of 256 GB used',
-                style: CupertinoNativeProgressStyle.linear,
-                activeColor: CupertinoColors.systemOrange,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'iPhone — 205 GB of 256 GB used',
+                    style: footnoteStyle(context),
+                  ),
+                  const SizedBox(height: 8),
+                  const CupertinoNativeLinearActivityIndicator(
+                    progress: 205 / 256,
+                    color: CupertinoColors.systemOrange,
+                  ),
+                ],
               ),
             ),
           ],

@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:cupertino_widgets/cupertino_widgets.dart';
+
 import '../widgets/settings_ui.dart';
 
 /// Body for the scaffold's home tab. Runs in its own FlutterEngine inside the
@@ -44,10 +45,10 @@ class ScaffoldHomeBody extends StatelessWidget {
           child: PillButton(
             label: 'Open Now Playing',
             onTap: () {
-              CupertinoNativeScaffold.push(
-                CupertinoNativeScaffoldPage(
+              CupertinoNativePageScaffold.push(
+                CupertinoNativePageScaffoldPage(
                   route: 'details',
-                  appBar: CupertinoNativeAppBar(
+                  navigationBar: CupertinoNativeScaffoldNavigationBar(
                     title: 'Now Playing',
                     trailing: [
                       CupertinoNativeBarItem(
@@ -171,7 +172,7 @@ class ScaffoldDetailsBody extends StatelessWidget {
           PillButton(
             label: 'Pop Back',
             filled: false,
-            onTap: () => CupertinoNativeScaffold.pop(),
+            onTap: () => CupertinoNativePageScaffold.pop(),
           ),
         ],
       ),

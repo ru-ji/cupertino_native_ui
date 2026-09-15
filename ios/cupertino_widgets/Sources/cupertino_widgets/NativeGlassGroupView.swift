@@ -27,17 +27,8 @@ class NativeGlassGroupFactory: NSObject, FlutterPlatformViewFactory {
 
 /// Several glass controls in ONE platform view, so they can affect each other.
 ///
-/// Every other control in this package is its own platform view, and that is
-/// usually right: Flutter measures it, places it, clips it, routes its touches.
-/// It makes one thing impossible. `GlassEffectContainer` merges two glasses —
-/// the drop that stretches and joins as they approach — only when they are in
-/// the SAME SwiftUI tree, and two platform views are two trees that know
-/// nothing of each other. No amount of positioning from Dart bridges that.
-///
-/// So a group is one host. What it costs is stated in `GlassGroupItemConfig`:
-/// the children become configuration rather than widgets. What it buys, beyond
-/// the merge, is that they can no longer overlap or be composited out of order,
-/// because there is only one layer.
+/// `GlassEffectContainer` merges glasses only within one SwiftUI tree, so a
+/// group is one host.
 @available(iOS 15.0, *)
 class NativeGlassGroupView: NativeHostingView {
     private var channel: FlutterMethodChannel?
@@ -102,10 +93,7 @@ class NativeGlassGroupView: NativeHostingView {
             if let argsMap = call.arguments as? [String: Any],
                 let config = decodeConfig(GlassGroupConfig.self, from: argsMap)
             {
-                // Animated, because this is where the merge happens: spacing
-                // and item changes are what SwiftUI interpolates the shapes
-                // through. Snapping here would show the result and never the
-                // effect.
+                // Animated: this is where the merge happens.
                 if #available(iOS 17.0, *) {
                     withAnimation(.smooth(duration: 0.35)) { model.config = config }
                 } else {
@@ -152,11 +140,23 @@ struct AdaptiveGlassGroupView: View {
     @ViewBuilder
     private var content: some View {
         if #available(iOS 26.0, *) {
-            GlassEffectContainer(spacing: spacing) {
-                stack { item in
-                    button(item)
-                        .glassEffect(glass, in: shape(for: item))
-                        .glassEffectID(item.id, in: namespace)
+            if spacing <= 0 {
+                // No gap: 44pt glasses united into one capsule, like a toolbar
+                // group (`glassEffectUnion`).
+                GlassEffectContainer {
+                    sharedStack { item in
+                        button(item)
+                            .glassEffect(glass, in: Capsule())
+                            .glassEffectUnion(id: "group", namespace: namespace)
+                    }
+                }
+            } else {
+                GlassEffectContainer(spacing: spacing) {
+                    stack { item in
+                        button(item)
+                            .glassEffect(glass, in: shape(for: item))
+                            .glassEffectID(item.id, in: namespace)
+                    }
                 }
             }
         } else {
@@ -182,11 +182,24 @@ struct AdaptiveGlassGroupView: View {
         }
     }
 
+    /// The items of a shared glass, 11pt apart like a toolbar group.
+    @ViewBuilder
+    private func sharedStack<V: View>(
+        @ViewBuilder decorate: @escaping (GlassGroupItemConfig) -> V
+    ) -> some View {
+        if c.vertical == true {
+            VStack(spacing: 11) { ForEach(c.items) { decorate($0) } }
+        } else {
+            HStack(spacing: 11) { ForEach(c.items) { decorate($0) } }
+        }
+    }
+
     /// The content of one glass: a native icon, a title, or both.
-    private func button(_ item: GlassGroupItemConfig) -> some View {
+    private func label(_ item: GlassGroupItemConfig) -> some View {
         let extent = CGFloat(item.height ?? 44)
         return HStack(spacing: 6) {
-            if let icon = item.icon { IconView(icon: icon) }
+            // Bar items draw symbols at the large image scale, like UIBarButtonItem.
+            if let icon = item.icon { IconView(icon: icon).imageScale(.large) }
             if let title = item.title, !title.isEmpty { Text(title) }
         }
         .frame(
@@ -194,6 +207,10 @@ struct AdaptiveGlassGroupView: View {
             height: extent
         )
         .padding(.horizontal, item.title == nil ? 0 : 14)
+    }
+
+    private func button(_ item: GlassGroupItemConfig) -> some View {
+        label(item)
         .opacity(item.enabled == false ? 0.4 : 1)
         .contentShape(Rectangle())
         .onTapGesture { if item.enabled != false { onAction(item.actionId) } }

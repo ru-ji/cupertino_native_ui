@@ -15,16 +15,16 @@ import 'package:cupertino_widgets/cupertino_widgets.dart';
 ///
 /// The list, suggestions, results and loader below the bar are rendered by the
 /// Flutter body (see `SearchBody`), driven by
-/// [CupertinoNativeScaffold.searchState].
+/// [CupertinoNativePageScaffold.searchState].
 class NativeSearchableDemoPage extends StatelessWidget {
   const NativeSearchableDemoPage({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: CupertinoNativeScaffold(
+      body: CupertinoNativePageScaffold(
         body: 'searchBody',
-        appBar: const CupertinoNativeAppBar(
+        navigationBar: const CupertinoNativeScaffoldNavigationBar(
           title: 'CodeSpeedy',
           titleDisplayMode: CupertinoNativeToolbarTitleDisplayMode.large,
           search: CupertinoNativeSearchField(

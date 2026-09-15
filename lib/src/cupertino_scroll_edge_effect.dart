@@ -12,22 +12,9 @@ enum CupertinoScrollEdgeEffectEdge { top, bottom }
 /// iOS 26's **scroll edge effect** — the progressive blur plus adaptive wash
 /// where content meets a screen edge.
 ///
-/// On iOS it is a [CupertinoNativeEdgeBlur] rebuilt from the layers of the
-/// system's own `ScrollEdgeEffectView`, read off a device:
-///
-/// * **blur** — Core Animation's `variableBlur`, at the radius the system's
-///   `PocketBlur` uses (1pt), fading on a smootherstep curve;
-/// * **wash** — the luminance of what is under the bar, measured by the render
-///   server exactly where the system measures it (the 44pt bar below the status
-///   bar), settling on one of three levels — white 85% over near-white
-///   content, black 27% over mid content, black 47% over dark content — on the
-///   system's 0.5s critically damped spring.
-///
-/// It samples native controls as well as Flutter content, live: nothing is
-/// photographed, nothing is cut. The app must set `FLTDisablePartialRepaint`
-/// to true in its `Info.plist` — see [CupertinoNativeEdgeBlur].
-///
-/// Everywhere else `soft` draws nothing.
+/// Built on [CupertinoNativeEdgeBlur], it samples native controls as well as
+/// Flutter content. The app must set `FLTDisablePartialRepaint` in its
+/// `Info.plist`. Other platforms draw nothing for `soft`.
 ///
 /// Place it in a `Stack` behind a bar, sized to the region that should melt
 /// into the edge:
@@ -51,20 +38,14 @@ class CupertinoScrollEdgeEffect extends StatelessWidget {
 
   final CupertinoScrollEdgeEffectEdge edge;
 
-  /// `soft` is the progressive blur plus wash. `hard` is the system's
-  /// cut-off: an opaque background that ends with the bar, no blur and no
-  /// fade — the way Flutter's own `AppBar` sits on a `Scaffold`. `automatic`
-  /// is treated as `soft`, like the system default.
+  /// `soft` is the progressive blur plus wash; `hard` an opaque background that
+  /// ends with the bar. `automatic` is `soft`.
   final CupertinoScrollEdgeEffectStyle style;
 
-  /// The page background: the colour of the bright wash on iOS, and of the
-  /// fixed wash elsewhere. Defaults to the resolved system background — pass
-  /// your page background when it differs (e.g. a grouped background).
+  /// Background of the `hard` style. Defaults to the system background.
   final Color? color;
 
-  /// Scales the whole effect, 0 (nothing) to 1 (full). The system's effect is
-  /// not always on: it comes up from zero as the header takes the content
-  /// under it.
+  /// Kept for API stability: the iOS effect is always at full strength.
   final double intensity;
 
   /// Called when the adaptive wash flips, with the brightness of the content
@@ -73,8 +54,7 @@ class CupertinoScrollEdgeEffect extends StatelessWidget {
   /// iOS only.
   final ValueChanged<Brightness>? onBrightnessChanged;
 
-  /// The system's `PocketBlur` radius, read off a device (`variableBlur`
-  /// `inputRadius`).
+  /// The system's blur radius.
   static const double _radius = 1;
 
   @override
@@ -89,8 +69,7 @@ class CupertinoScrollEdgeEffect extends StatelessWidget {
       return IgnorePointer(child: ColoredBox(color: background));
     }
     if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) {
-      // Exactly the "Adaptive wash over the bands" probe: no tint, no
-      // intensity — always on, white bright wash.
+      // No tint and no intensity: the system's white bright wash, always on.
       return CupertinoNativeEdgeBlur(
         edge: edge,
         sigma: _radius,

@@ -1,4 +1,4 @@
-import 'package:flutter/cupertino.dart' show CupertinoColors;
+import 'package:flutter/cupertino.dart' show CupertinoColors, CupertinoTheme;
 import 'package:flutter/widgets.dart';
 import 'package:cupertino_widgets/cupertino_widgets.dart';
 
@@ -20,8 +20,8 @@ class SheetDemoPage extends StatefulWidget {
 class _SheetDemoPageState extends State<SheetDemoPage> {
   String _last = 'None yet';
 
-  CupertinoNativeAppBar _appBar({bool withSearch = false}) {
-    return CupertinoNativeAppBar(
+  CupertinoNativeScaffoldNavigationBar _appBar({bool withSearch = false}) {
+    return CupertinoNativeScaffoldNavigationBar(
       title: 'New Event',
       titleDisplayMode: CupertinoNativeToolbarTitleDisplayMode.inline,
       leading: [
@@ -48,7 +48,7 @@ class _SheetDemoPageState extends State<SheetDemoPage> {
 
   Future<void> _present({
     required String label,
-    CupertinoNativeAppBar? appBar,
+    CupertinoNativeScaffoldNavigationBar? appBar,
     CupertinoNativeSheetSegmentedControl? bottom,
     List<CupertinoNativeSheetDetent> detents = const [
       CupertinoNativeSheetDetent.medium,
@@ -58,6 +58,7 @@ class _SheetDemoPageState extends State<SheetDemoPage> {
     setState(() => _last = '$label — presented');
     await CupertinoNativeSheet.show(
       route: 'newEvent',
+      isDark: CupertinoTheme.brightnessOf(context) == Brightness.dark,
       appBar: appBar,
       bottom: bottom,
       detents: detents,
@@ -119,15 +120,6 @@ class _SheetDemoPageState extends State<SheetDemoPage> {
               onTap: () => _present(label: 'Bare sheet'),
             ),
           ],
-        ),
-        const SettingsSection(
-          header: 'About',
-          footer:
-              'A real UISheetPresentationController: this page scales '
-              'back as the sheet rises, content scrolls under the pinned bar, '
-              'pull-down-at-top drags the sheet between detents, and the '
-              'show() future completes on dismissal.',
-          children: [SettingsRow(title: 'Content', value: 'Flutter route')],
         ),
       ],
     );

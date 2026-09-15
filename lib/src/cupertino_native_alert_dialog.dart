@@ -2,29 +2,33 @@ import 'package:flutter/material.dart' show Theme;
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
-class CupertinoNativeAlertAction {
-  final String title;
-  final bool isDestructive;
-  final bool isCancel;
+/// A button of a [CupertinoNativeAlertDialog], shaped like Flutter's
+/// [CupertinoDialogAction]. [child] is a [Text]: UIKit draws the label.
+class CupertinoNativeDialogAction {
+  const CupertinoNativeDialogAction({
+    required this.child,
+    this.onPressed,
+    this.isDefaultAction = false,
+    this.isDestructiveAction = false,
+  });
+
+  final Text child;
   final VoidCallback? onPressed;
 
-  const CupertinoNativeAlertAction({
-    required this.title,
-    this.isDestructive = false,
-    this.isCancel = false,
-    this.onPressed,
-  });
+  /// Bold, UIKit's cancel style.
+  final bool isDefaultAction;
+  final bool isDestructiveAction;
 
   Map<String, dynamic> toMap() {
     return {
-      'title': title,
-      'isDestructive': isDestructive,
-      'isCancel': isCancel,
+      'title': child.data ?? '',
+      'isDestructive': isDestructiveAction,
+      'isCancel': isDefaultAction,
     };
   }
 }
 
-class CupertinoNativeAlert {
+class CupertinoNativeAlertDialog {
   static const MethodChannel _channel = MethodChannel(
     'com.example.cupertino_widgets/alert',
   );
@@ -32,13 +36,13 @@ class CupertinoNativeAlert {
   static Future<void> show({
     required BuildContext context,
     required String title,
-    String? message,
-    required List<CupertinoNativeAlertAction> actions,
+    String? content,
+    required List<CupertinoNativeDialogAction> actions,
   }) async {
     try {
       final int? index = await _channel.invokeMethod<int>('showAlert', {
         'title': title,
-        'message': message,
+        'message': content,
         'actions': actions.map((a) => a.toMap()).toList(),
         // Follows the app's own (possibly forced) theme, not the device's
         // system appearance — same convention as every other native surface.

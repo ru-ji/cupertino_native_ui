@@ -102,16 +102,8 @@ class CupertinoNativeGlassContainer extends StatefulWidget {
   });
 
   /// A body route whose Flutter content is hosted *inside* the glass.
-  ///
-  /// The container spawns a Flutter engine on this route and applies
-  /// `glassEffect` to the hosted view itself — the SwiftUI arrangement Apple
-  /// documents (`content.glassEffect(...)`). The content is then real glass
-  /// content: drawn above the material, crisp, never lensed at the edges.
-  ///
-  /// The route is registered exactly like a [CupertinoNativeScaffold] body —
-  /// `CupertinoNativeScaffold.maybeRun({'now_playing': () => ...})` in
-  /// `main()`. It runs in its own isolate, so it cannot read the surrounding
-  /// widget tree's state; talk to it over a channel, as scaffold bodies do.
+  /// Registered like a [CupertinoNativePageScaffold] body in `maybeRun`, and
+  /// run in its own isolate.
   final String? route;
 
   final CupertinoGlassShape shape;
@@ -143,13 +135,7 @@ class CupertinoNativeGlassContainer extends StatefulWidget {
   final EdgeInsetsGeometry padding;
 
   /// Whether config changes — tint, variant, shape, corner radius — animate
-  /// on the SwiftUI side instead of snapping.
-  ///
-  /// Dart sends the target once and CoreAnimation interpolates, so the
-  /// transition costs a single message rather than one per frame, and stays
-  /// smooth even while the Dart thread is busy. Size is not part of this:
-  /// [width]/[height] are the Flutter box, so animate them from Dart with a
-  /// `TweenAnimationBuilder` — that path already sends nothing natively.
+  /// Animate [width]/[height] from Dart instead.
   final bool animateChanges;
 
   /// Explicit size. Left null the glass finds its own: a native [icon] or a
@@ -191,12 +177,7 @@ class _CupertinoNativeGlassContainerState
       'interactive': widget.interactive,
       'pressable': widget.onPressed != null,
       'icon': widget.icon?.toMap(),
-      // No width/height here on purpose. The platform view's frame IS the
-      // box Flutter built, so the glass fills it and already has the size the
-      // caller asked for. Restating it natively would mean a channel round
-      // trip per frame of a size animation — and a stale native frame for
-      // every frame that has not landed yet, which is the shape fighting the
-      // box. Animate width/height from Dart and nothing is sent at all.
+      // No width/height: the platform view's frame is already the Flutter box.
       'paddingLeft': _padding.left,
       'paddingTop': _padding.top,
       'paddingRight': _padding.right,
@@ -224,11 +205,7 @@ class _CupertinoNativeGlassContainerState
   }
 
   /// [padding] resolved to concrete insets, for the native side.
-  ///
-  /// A native icon left un-inset measures as the glyph — ~20pt for a 17pt
-  /// symbol — and Flutter would build a 20pt box of glass around it. A
-  /// toolbar draws a 44pt target around the same glyph, and 12 is that
-  /// difference; it stands in only where the caller said nothing.
+  /// An icon gets 12pt by default, so it measures like a 44pt control.
   EdgeInsets get _padding {
     final padding = widget.padding.resolve(TextDirection.ltr);
     final bare =
@@ -361,11 +338,8 @@ class _CupertinoNativeGlassContainerState
         child: content,
       );
     }
-    // 3. Empty. Fill the space offered, the way a `Container` with no child
-    //    does. Where the space is unbounded there is nothing to fill, and the
-    //    zero this used to limit to is why an empty glass never appeared: a box
-    //    of no height paints no material. It falls back to a standard control
-    //    instead — still a number nobody asked for, but a visible one.
+    // 3. Empty: fill the space offered, or a standard 44pt control when it is
+    //    unbounded.
     return LimitedBox(
       maxWidth: _defaultExtent,
       maxHeight: _defaultExtent,

@@ -35,40 +35,40 @@ class _NativeListFormDemoPageState extends State<NativeListFormDemoPage> {
               footer:
                   'Native rows: taps report the row id to Flutter '
                   '(last: $_lastTap).',
-              rows: [
-                CupertinoNativeListRow(
+              children: [
+                CupertinoNativeListTile(
                   id: 'about',
                   title: 'About',
-                  icon: CupertinoNativeIcon.symbol(
+                  leading: CupertinoNativeIcon.symbol(
                     CupertinoSymbols.infoCircleFill,
                     color: CupertinoColors.systemBlue,
                   ),
                   showChevron: true,
                 ),
-                CupertinoNativeListRow(
+                CupertinoNativeListTile(
                   id: 'update',
                   title: 'Software Update',
-                  value: 'iOS 26.0',
-                  icon: CupertinoNativeIcon.symbol(
+                  additionalInfo: 'iOS 26.0',
+                  leading: CupertinoNativeIcon.symbol(
                     CupertinoSymbols.gear,
                     color: CupertinoColors.systemGrey,
                   ),
                   showChevron: true,
                 ),
-                CupertinoNativeListRow(
+                CupertinoNativeListTile(
                   id: 'storage',
                   title: 'iPhone Storage',
                   subtitle: '205 GB of 256 GB used',
-                  icon: const CupertinoNativeIcon.named(
+                  leading: const CupertinoNativeIcon.named(
                     'internaldrive',
                     color: CupertinoColors.systemOrange,
                   ),
                   showChevron: true,
                 ),
-                const CupertinoNativeListRow(
+                const CupertinoNativeListTile(
                   id: 'legal',
                   title: 'Legal & Regulatory',
-                  type: CupertinoNativeListRowType.button,
+                  type: CupertinoNativeListTileType.button,
                 ),
               ],
             ),
@@ -97,36 +97,36 @@ class _NativeListFormDemoPageState extends State<NativeListFormDemoPage> {
                   'Wi-Fi ${_wifi ? 'on' : 'off'} · '
                   'Bluetooth ${_bluetooth ? 'on' : 'off'} · '
                   'Airplane ${_airplane ? 'on' : 'off'}.',
-              rows: [
-                CupertinoNativeListRow(
+              children: [
+                CupertinoNativeListTile(
                   id: 'airplane',
                   title: 'Airplane Mode',
-                  icon: const CupertinoNativeIcon.named(
+                  leading: const CupertinoNativeIcon.named(
                     'airplane',
                     color: CupertinoColors.systemOrange,
                   ),
-                  type: CupertinoNativeListRowType.toggle,
+                  type: CupertinoNativeListTileType.toggle,
                   toggleValue: _airplane,
                 ),
-                CupertinoNativeListRow(
+                CupertinoNativeListTile(
                   id: 'wifi',
                   title: 'Wi-Fi',
                   subtitle: 'FlutterNet',
-                  icon: CupertinoNativeIcon.symbol(
+                  leading: CupertinoNativeIcon.symbol(
                     CupertinoSymbols.wifi,
                     color: CupertinoColors.systemBlue,
                   ),
-                  type: CupertinoNativeListRowType.toggle,
+                  type: CupertinoNativeListTileType.toggle,
                   toggleValue: _wifi,
                 ),
-                CupertinoNativeListRow(
+                CupertinoNativeListTile(
                   id: 'bluetooth',
                   title: 'Bluetooth',
-                  icon: const CupertinoNativeIcon.named(
+                  leading: const CupertinoNativeIcon.named(
                     'dot.radiowaves.left.and.right',
                     color: CupertinoColors.systemBlue,
                   ),
-                  type: CupertinoNativeListRowType.toggle,
+                  type: CupertinoNativeListTileType.toggle,
                   toggleValue: _bluetooth,
                 ),
               ],

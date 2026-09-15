@@ -6,7 +6,7 @@ import 'package:flutter/services.dart';
 
 import '../callbacks.dart';
 
-import '../models/cupertino_native_list_row.dart';
+import '../models/cupertino_native_list_tile.dart';
 import '../models/cupertino_native_list_section.dart';
 import 'native_platform_view_mixin.dart';
 
@@ -37,7 +37,7 @@ class NativeCollectionView extends StatefulWidget {
   /// default (10). Tune this to match your iOS version's Settings app.
   final double? cornerRadius;
 
-  final CupertinoNativeListRowCallback? onRowTap;
+  final CupertinoNativeListTileCallback? onRowTap;
   final CupertinoNativeListToggleCallback? onToggle;
 
   const NativeCollectionView({
@@ -181,17 +181,19 @@ class _NativeCollectionViewState extends State<NativeCollectionView>
           ),
         );
       }
-      for (final row in section.rows) {
+      for (final row in section.children) {
         children.add(
           ListTile(
             title: Text(row.title),
             subtitle: row.subtitle != null ? Text(row.subtitle!) : null,
-            trailing: row.type == CupertinoNativeListRowType.toggle
+            trailing: row.type == CupertinoNativeListTileType.toggle
                 ? Switch(
                     value: row.toggleValue,
                     onChanged: (v) => widget.onToggle?.call(row.id, v),
                   )
-                : (row.value != null ? Text(row.value!) : null),
+                : (row.additionalInfo != null
+                      ? Text(row.additionalInfo!)
+                      : null),
             onTap: () => widget.onRowTap?.call(row.id),
           ),
         );

@@ -26,8 +26,8 @@ enum CupertinoNativeListStyle {
 ///     CupertinoNativeListSection(
 ///       header: 'Languages',
 ///       rows: [
-///         CupertinoNativeListRow(id: 'swift', title: 'Swift', showChevron: true),
-///         CupertinoNativeListRow(id: 'dart', title: 'Dart', showChevron: true),
+///         CupertinoNativeListTile(id: 'swift', title: 'Swift', showChevron: true),
+///         CupertinoNativeListTile(id: 'dart', title: 'Dart', showChevron: true),
 ///       ],
 ///     ),
 ///   ],
@@ -50,7 +50,7 @@ class CupertinoNativeList extends StatelessWidget {
   /// earlier releases); set a value to override.
   final double? cornerRadius;
 
-  final CupertinoNativeListRowCallback? onRowTap;
+  final CupertinoNativeListTileCallback? onRowTap;
   final CupertinoNativeListToggleCallback? onToggle;
 
   const CupertinoNativeList({

@@ -12,7 +12,7 @@ import 'settings_tab_page.dart';
 /// search-role tab; the pages it switches between are plain Flutter.
 ///
 /// Scrolling here is Flutter's, so the native collapse/minimize animations
-/// don't trigger — that's what `CupertinoNativeScaffold` is for.
+/// don't trigger — that's what `CupertinoNativePageScaffold` is for.
 class StandaloneTabBarDemoPage extends StatefulWidget {
   const StandaloneTabBarDemoPage({super.key});
 
@@ -24,17 +24,19 @@ class StandaloneTabBarDemoPage extends StatefulWidget {
 class _StandaloneTabBarDemoPageState extends State<StandaloneTabBarDemoPage> {
   String _selectedTab = 'home';
 
+  /// Tab ids in bar order: the bar speaks indexes, the page switches on ids.
+  static const _tabIds = ['home', 'profile', 'settings', 'search'];
+
   @override
   Widget build(BuildContext context) {
     return DemoScaffold(
       title: 'Tab Bar',
-      largeTitle: false,
       bottomBar: CupertinoNativeTabBar(
-        value: _selectedTab,
+        currentIndex: _tabIds.indexOf(_selectedTab),
         scrollEdgeEffect: CupertinoScrollEdgeEffectStyle.soft,
         split: true,
         rightCount: 1,
-        tabs: [
+        items: [
           CupertinoNativeTab(
             title: 'Home',
             icon: CupertinoNativeIcon.symbol(CupertinoSymbols.houseFill),
@@ -57,7 +59,7 @@ class _StandaloneTabBarDemoPageState extends State<StandaloneTabBarDemoPage> {
             role: CupertinoNativeTabRole.search,
           ),
         ],
-        onChanged: (id) => setState(() => _selectedTab = id),
+        onTap: (i) => setState(() => _selectedTab = _tabIds[i]),
       ),
       children: [_body()],
     );

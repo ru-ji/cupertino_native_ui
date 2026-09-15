@@ -92,13 +92,10 @@ class NativeDatePickerView: NativeHostingView {
             tint: (argsMap["tint"] as? Int).map { Color(argb: $0) }
         )
         super.init()
-        // So Dart can exempt this view from an edge effect's mask (bar chrome
-        // is painted over the effect, not under it).
         _view.viewId = viewId
 
         channel = FlutterMethodChannel(
             name: "cupertino_widgets/date_picker_\(viewId)", binaryMessenger: messenger)
-        // Push measurements instead of waiting to be polled.
         sizeChannel = channel
         channel?.setMethodCallHandler({
             [weak self] (call: FlutterMethodCall, result: @escaping FlutterResult) in
@@ -116,13 +113,8 @@ class NativeDatePickerView: NativeHostingView {
     /// takes for `expand: true`. Its own size comes back through
     /// `getIntrinsicSize`, same round trip as the button's.
     private func setupSwiftUI(isDark: Bool?) {
+        self.isDark = isDark
         attach(AnyView(AdaptiveDatePickerView(model: model)))
-        // Follows the app's own (possibly forced) theme, not the device's
-        // system appearance — the popped-open calendar/wheel otherwise reads
-        // the window's actual interface style.
-        if let isDark = isDark {
-            hostingController?.overrideUserInterfaceStyle = isDark ? .dark : .light
-        }
     }
 
     private func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
@@ -150,9 +142,7 @@ class NativeDatePickerView: NativeHostingView {
             model.maximumDate = Self.date(from: args["maximumDate"])
             model.tint = (args["tint"] as? Int).map { Color(argb: $0) }
             model.suppressCallback = false
-            if let isDark = args["isDark"] as? Bool {
-                hostingController?.overrideUserInterfaceStyle = isDark ? .dark : .light
-            }
+            if let isDark = args["isDark"] as? Bool { self.isDark = isDark }
             result(nil)
         default:
             result(FlutterMethodNotImplemented)
