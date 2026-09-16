@@ -5,7 +5,7 @@ import UIKit
 /// A progressive blur drawn by Core Animation (`variableBlur` on a
 /// `CABackdropLayer`), with the system's adaptive wash on top. It samples
 /// everything composited beneath it, native views included.
-@available(iOS 15.0, *)
+@available(iOS 26.0, *)
 class NativeEdgeBlurFactory: NSObject, FlutterPlatformViewFactory {
     private let messenger: FlutterBinaryMessenger
 
@@ -27,7 +27,7 @@ class NativeEdgeBlurFactory: NSObject, FlutterPlatformViewFactory {
     }
 }
 
-@available(iOS 15.0, *)
+@available(iOS 26.0, *)
 final class NativeEdgeBlurPlatformView: NSObject, FlutterPlatformView {
     private let edgeView = EdgeBlurView()
     private let channel: FlutterMethodChannel
@@ -64,6 +64,7 @@ final class NativeEdgeBlurPlatformView: NSObject, FlutterPlatformView {
     func view() -> UIView { edgeView }
 }
 
+@available(iOS 26.0, *)
 struct EdgeBlurConfig {
     /// Peak radius at the edge, points.
     var sigma: CGFloat
@@ -95,6 +96,7 @@ struct EdgeBlurConfig {
 }
 
 /// The blur and wash curves.
+@available(iOS 26.0, *)
 enum EdgeBlurProfile {
     static let blurHold = 0.41
     static let tintHold = 0.35
@@ -147,6 +149,7 @@ enum EdgeBlurProfile {
 }
 
 /// The system's luminance adjustment settles on three levels, not two.
+@available(iOS 26.0, *)
 enum WashLevel {
     case light, mid, deep
 
@@ -161,7 +164,7 @@ enum WashLevel {
     }
 }
 
-@available(iOS 15.0, *)
+@available(iOS 26.0, *)
 final class EdgeBlurView: UIView {
     private let blur = BackdropBlurView()
     /// Holds the washes, so `intensity` fades them as one.
@@ -363,7 +366,7 @@ final class EdgeBlurView: UIView {
 
 /// Luminance of what is behind the bar, measured through the same
 /// `_UILumaTrackingBackdropView` UIKit's scroll pocket uses.
-@available(iOS 15.0, *)
+@available(iOS 26.0, *)
 final class LumaTracker: NSObject {
     private let low: Double
     private let high: Double
@@ -450,7 +453,7 @@ final class LumaTracker: NSObject {
 ///
 /// Not a `UIVisualEffectView`: a plain backdrop layer stays out of UIKit's
 /// capture groups, and UIKit never reinstalls its filters over ours.
-@available(iOS 15.0, *)
+@available(iOS 26.0, *)
 final class BackdropBlurView: UIView {
     override class var layerClass: AnyClass {
         NSClassFromString("CABackdropLayer") ?? CALayer.self

@@ -2,7 +2,7 @@ import Flutter
 import SwiftUI
 import UIKit
 
-@available(iOS 15.0, *)
+@available(iOS 26.0, *)
 class NativeTextFieldFactory: NSObject, FlutterPlatformViewFactory {
     private var messenger: FlutterBinaryMessenger
 
@@ -34,7 +34,7 @@ class NativeTextFieldFactory: NSObject, FlutterPlatformViewFactory {
 /// The field itself lives in [AdaptiveTextFieldView]; this class is only the
 /// bridge — it owns the shared [TextFieldModel], forwards edits and focus
 /// changes to Dart, and applies what Dart pushes back over the channel.
-@available(iOS 15.0, *)
+@available(iOS 26.0, *)
 class NativeTextFieldView: NativeHostingView {
     private let channel: FlutterMethodChannel
     private let model: TextFieldModel
@@ -63,17 +63,50 @@ class NativeTextFieldView: NativeHostingView {
         }
     }
 
+    /// Built on first focus and kept: rebuilding it on every focus would
+    /// swap the keyboard's accessory under the user.
+    private var accessory: KeyboardAccessoryBar?
+
+    /// Puts the bar on the field's responder. Retried on the next runloop
+    /// turn: `onChange(of: focused)` can fire a hair before UIKit has made the
+    /// backing text field first responder, and there is nothing to install on
+    /// until it has.
+    private func installKeyboardAccessory() {
+        let nodes = model.config.keyboardToolbar ?? []
+        guard !nodes.isEmpty else { return }
+        let bar =
+            accessory
+            ?? KeyboardAccessoryBar(
+                nodes: nodes, isDark: model.config.isDark == true,
+                onEvent: { [weak self] id, value in
+                    self?.channel.invokeMethod(
+                        "onToolbarEvent", arguments: ["id": id, "value": value])
+                })
+        accessory = bar
+        if bar.install(in: _view) { return }
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            _ = bar.install(in: self._view)
+        }
+    }
+
     private func setupSwiftUI() {
         // A text field fills the box Flutter gives it, inset by the 16pt paint room
         // (`withPaintRoomFilling`) so its glass rim and shadow stay inside the view.
         attach(AnyView(content)) { host, container in
             let room: CGFloat = 16
-            NSLayoutConstraint.activate([
+            let insets = [
                 host.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: room),
                 host.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -room),
                 host.topAnchor.constraint(equalTo: container.topAnchor, constant: room),
                 host.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -room),
-            ])
+            ]
+            // Below required: the container is 0x0 until Flutter sizes the
+            // platform view, and 16pt of inset on each side of a zero-width
+            // box is unsatisfiable. At 999 Auto Layout bends them for that one
+            // pass instead of logging a conflict and breaking one at random.
+            for constraint in insets { constraint.priority = .defaultHigh + 1 }
+            NSLayoutConstraint.activate(insets)
         }
         // The caret, the selection handles and the magnifier draw outside the
         // field's bounds, so this host must not clip — unlike every other
@@ -95,6 +128,9 @@ class NativeTextFieldView: NativeHostingView {
             },
             onFocusChange: { [weak self] focused in
                 self?.channel.invokeMethod("onFocusChange", arguments: ["focused": focused])
+                // The accessory belongs to the responder, which only exists
+                // once the field is focused.
+                if focused { self?.installKeyboardAccessory() }
             }
         )
     }

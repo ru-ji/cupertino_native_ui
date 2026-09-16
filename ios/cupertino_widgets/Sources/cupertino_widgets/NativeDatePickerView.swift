@@ -2,7 +2,7 @@ import Flutter
 import SwiftUI
 import UIKit
 
-@available(iOS 15.0, *)
+@available(iOS 26.0, *)
 class NativeDatePickerFactory: NSObject, FlutterPlatformViewFactory {
     private var messenger: FlutterBinaryMessenger
 
@@ -31,7 +31,7 @@ class NativeDatePickerFactory: NSObject, FlutterPlatformViewFactory {
 
 /// Observable state for the SwiftUI DatePicker; mutated from the method
 /// channel, mirrored back to Dart on user edits.
-@available(iOS 15.0, *)
+@available(iOS 26.0, *)
 final class DatePickerModel: ObservableObject {
     @Published var date: Date {
         didSet {
@@ -72,7 +72,7 @@ final class DatePickerModel: ObservableObject {
 /// The compact-style system date picker: renders as a tappable pill that
 /// pops the native calendar / time wheel over the app — the same control as
 /// iOS Settings and Calendar.
-@available(iOS 15.0, *)
+@available(iOS 26.0, *)
 class NativeDatePickerView: NativeHostingView {
     private var channel: FlutterMethodChannel?
     private let model: DatePickerModel
@@ -156,7 +156,7 @@ class NativeDatePickerView: NativeHostingView {
     }
 }
 
-@available(iOS 15.0, *)
+@available(iOS 26.0, *)
 struct AdaptiveDatePickerView: View {
     @ObservedObject var model: DatePickerModel
 

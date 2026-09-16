@@ -2,7 +2,7 @@ import Flutter
 import SwiftUI
 import UIKit
 
-@available(iOS 15.0, *)
+@available(iOS 26.0, *)
 class NativeSegmentedControlFactory: NSObject, FlutterPlatformViewFactory {
     private var messenger: FlutterBinaryMessenger
 
@@ -29,7 +29,7 @@ class NativeSegmentedControlFactory: NSObject, FlutterPlatformViewFactory {
     }
 }
 
-@available(iOS 15.0, *)
+@available(iOS 26.0, *)
 class NativeSegmentedControlView: NativeHostingView {
     private var channel: FlutterMethodChannel?
 

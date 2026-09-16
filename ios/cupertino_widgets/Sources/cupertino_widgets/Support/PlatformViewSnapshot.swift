@@ -6,7 +6,7 @@ import UIKit
 ///
 /// Drawn straight into the buffer sent over the channel, as premultiplied BGRA
 /// (`ui.PixelFormat.bgra8888` in Dart): no intermediate image, no PNG.
-@available(iOS 15.0, *)
+@available(iOS 26.0, *)
 enum PlatformViewSnapshot {
 
     /// Returns `bytes`/`width`/`height`/`rowBytes` for [view], or nil when

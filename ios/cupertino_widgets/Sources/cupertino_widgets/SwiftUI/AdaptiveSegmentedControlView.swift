@@ -1,6 +1,6 @@
 import SwiftUI
 
-@available(iOS 15.0, *)
+@available(iOS 26.0, *)
 struct AdaptiveSegmentedControlView: View {
     let config: SegmentedControlConfig
     let onAction: (Int) -> Void
@@ -48,7 +48,7 @@ struct AdaptiveSegmentedControlView: View {
     }
 }
 
-@available(iOS 15.0, *)
+@available(iOS 26.0, *)
 extension View {
     @ViewBuilder
     func applySegmentedTint(_ color: Color?) -> some View {

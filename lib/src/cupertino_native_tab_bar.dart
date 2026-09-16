@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'cupertino_scroll_edge_effect.dart';
-import 'internal/ios_version.dart';
 import 'models/cupertino_native_icon.dart';
 import 'models/cupertino_native_tab.dart';
 
@@ -47,7 +46,7 @@ enum CupertinoNativeTabBarMinimizeBehavior {
 
 /// iOS 26 Liquid Glass scroll-edge-effect style. Used both by the standalone
 /// [CupertinoNativeTabBar] (mapped to the bar's background material) and by
-/// `CupertinoNativePageScaffold`'s native scroll views. No effect below iOS 26.
+/// `CupertinoNativePageScaffold`'s native scroll views.
 enum CupertinoScrollEdgeEffectStyle { automatic, soft, hard }
 
 /// A native iOS tab bar rendered by a bare `UITabBar` in a transparent
@@ -86,7 +85,7 @@ class CupertinoNativeTabBar extends StatefulWidget {
 
   /// iOS 26 Liquid Glass scroll-edge-effect style for the bar's background.
   /// `soft`/`automatic` use the translucent default; `hard` uses an opaque
-  /// background. No effect below iOS 26.
+  /// background.
   final CupertinoScrollEdgeEffectStyle scrollEdgeEffect;
 
   /// iOS 26 bottom accessory shown above the tab bar. Only meaningful inside
@@ -359,8 +358,7 @@ class _CupertinoNativeTabBarState extends State<CupertinoNativeTabBar> {
 
     // The standalone bar draws the scroll edge effect itself when one is
     // requested (iOS 26+).
-    if (isIOS26OrLater &&
-        widget.scrollEdgeEffect != CupertinoScrollEdgeEffectStyle.automatic) {
+    if (widget.scrollEdgeEffect != CupertinoScrollEdgeEffectStyle.automatic) {
       final bottomInset = MediaQuery.paddingOf(context).bottom;
       bar = Stack(
         clipBehavior: Clip.none,

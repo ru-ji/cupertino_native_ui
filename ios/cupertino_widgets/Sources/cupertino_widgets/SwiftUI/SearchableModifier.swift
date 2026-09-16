@@ -3,12 +3,14 @@ import SwiftUI
 
 /// A scaffold page body that hosts the Flutter engine inside a native
 /// ScrollView. Reused for both searchable roots and pushed pages.
-@available(iOS 16.0, *)
+@available(iOS 26.0, *)
 struct PageScrollBody: View {
     let engine: FlutterEngine?
     let scrollEdgeEffect: String?
     /// Native spinner while the body engine boots / renders its first frame.
     var showLoadingIndicator = false
+    /// Drag down over the keyboard to dismiss it, following the finger.
+    var interactiveKeyboardDismiss = false
     /// Bumped to send the scroll back to the top — the search view opens as
     /// its own thing, not at whatever offset the page was left at.
     var scrollToTopSignal = 0
@@ -32,6 +34,10 @@ struct PageScrollBody: View {
                 // Stays on the ScrollView itself — the edge effect is a
                 // property of the scroll view, not of the reader around it.
                 .applyScrollEdgeEffect(scrollEdgeEffect)
+                // A property of the scroll view, like the edge effect: this
+                // is why interactive dismissal is scaffold-only. An ordinary
+                // Flutter page has no native scroll view to drag.
+                .scrollDismissesKeyboard(interactiveKeyboardDismiss ? .interactively : .automatic)
                 .onChange(of: scrollToTopSignal) { _ in
                     proxy.scrollTo(Self.topAnchor, anchor: .top)
                 }
@@ -55,13 +61,14 @@ struct PageScrollBody: View {
 /// `isSearching` is only delivered to a *descendant* of the view the
 /// `.searchable` modifier is attached to, so this dedicated view reads it in
 /// its own `body` (the searchable modifier is applied to it in `navStack`).
-@available(iOS 16.0, *)
+@available(iOS 26.0, *)
 struct SearchablePageBody: View {
     @Environment(\.isSearching) private var isSearching
 
     let engine: FlutterEngine?
     let scrollEdgeEffect: String?
     var showLoadingIndicator = false
+    var interactiveKeyboardDismiss = false
     let onActiveChange: (Bool) -> Void
 
     @State private var scrollToTopSignal = 0
@@ -71,6 +78,7 @@ struct SearchablePageBody: View {
             engine: engine,
             scrollEdgeEffect: scrollEdgeEffect,
             showLoadingIndicator: showLoadingIndicator,
+            interactiveKeyboardDismiss: interactiveKeyboardDismiss,
             scrollToTopSignal: scrollToTopSignal)
             .onChange(of: isSearching) { newValue in
                 onActiveChange(newValue)
@@ -82,11 +90,11 @@ struct SearchablePageBody: View {
     }
 }
 
-@available(iOS 15.0, *)
+@available(iOS 26.0, *)
 extension View {
     /// Applies an optional `SearchConfig` as a native `.searchable(...)` field.
     /// No-op when `config` is nil.
-    @available(iOS 16.0, *)
+    @available(iOS 26.0, *)
     @ViewBuilder
     func applySearchable(
         _ config: SearchConfig?,
@@ -100,7 +108,20 @@ extension View {
                     placement: searchFieldPlacement(config.placement),
                     prompt: config.placeholder.map { Text($0) }
                 )
+                .applySearchToolbarBehavior(config.toolbarBehavior)
                 .onSubmit(of: .search, onSubmit)
+        } else {
+            self
+        }
+    }
+
+    /// `.searchToolbarBehavior(.minimize)`: a toolbar-placed field collapses
+    /// to a magnifying-glass button while the page scrolls.
+    @available(iOS 26.0, *)
+    @ViewBuilder
+    func applySearchToolbarBehavior(_ raw: String?) -> some View {
+        if raw == "minimize" {
+            self.searchToolbarBehavior(.minimize)
         } else {
             self
         }
@@ -108,8 +129,7 @@ extension View {
 }
 
 /// Maps the Dart `CupertinoNativeSearchPlacement` name to SwiftUI's placement.
-@available(iOS 16.0, *)
-@available(iOS 15.0, *)
+@available(iOS 26.0, *)
 private func searchFieldPlacement(_ raw: String?) -> SearchFieldPlacement {
     switch raw {
     case "toolbar":

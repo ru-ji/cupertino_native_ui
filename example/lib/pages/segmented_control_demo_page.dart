@@ -4,7 +4,7 @@ import 'package:cupertino_widgets/cupertino_widgets.dart';
 import '../widgets/settings_ui.dart';
 
 /// [CupertinoNativeSlidingSegmentedControl] as iOS uses it: straight on the
-/// page, not inside a card. [CupertinoNativePicker] is its menu variant.
+/// page, not inside a card. Its `.menu` constructor is the same options behind a button.
 class SegmentedControlDemoPage extends StatefulWidget {
   const SegmentedControlDemoPage({super.key});
 
@@ -66,7 +66,7 @@ class _SegmentedControlDemoPageState extends State<SegmentedControlDemoPage> {
           children: [
             SettingsRow(
               title: 'Sort By',
-              trailing: CupertinoNativePicker<int>(
+              trailing: CupertinoNativeSlidingSegmentedControl<int>.menu(
                 children: {for (final (i, l) in _sorts.indexed) i: Text(l)},
                 groupValue: _sort,
                 onValueChanged: (v) => setState(() => _sort = v!),

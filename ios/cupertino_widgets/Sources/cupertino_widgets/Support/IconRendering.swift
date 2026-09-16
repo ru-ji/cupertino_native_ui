@@ -7,6 +7,7 @@ import UIKit
 /// A native icon, decoded from `CupertinoNativeIcon.toMap()` on the Dart side.
 /// Exactly one of `sfSymbol` (an SF Symbol name) or `codePoint`+`fontFamily`
 /// (a Flutter glyph from a bundled icon font) is expected to be non-nil.
+@available(iOS 26.0, *)
 struct IconConfig: Codable, Hashable {
     let sfSymbol: String?
     let renderingMode: String?  // "monochrome" | "hierarchical" | "palette" | "multicolor"
@@ -22,7 +23,7 @@ struct IconConfig: Codable, Hashable {
 /// natively. Package-agnostic: it resolves any family declared in the app's
 /// `FontManifest.json`. Results are cached; runs on the main thread only
 /// (platform views and SwiftUI bodies are main-thread).
-@available(iOS 15.0, *)
+@available(iOS 26.0, *)
 final class FlutterIconFontRegistry {
     static let shared = FlutterIconFontRegistry()
 
@@ -88,7 +89,7 @@ final class FlutterIconFontRegistry {
 /// Renders an [IconConfig] as a SwiftUI view: an SF Symbol `Image` or a Flutter
 /// glyph `Text` drawn with the bundled icon font. Used by buttons and toolbar
 /// items so both icon kinds go through one path.
-@available(iOS 15.0, *)
+@available(iOS 26.0, *)
 struct IconView: View {
     let icon: IconConfig
 

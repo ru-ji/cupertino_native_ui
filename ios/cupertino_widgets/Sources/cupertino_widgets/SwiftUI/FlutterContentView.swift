@@ -6,7 +6,7 @@ import UIKit
 ///
 /// The Dart side drives the size: the host must not constrain the view, it
 /// only mirrors its intrinsic size into SwiftUI.
-@available(iOS 16.0, *)
+@available(iOS 26.0, *)
 struct FlutterContentView: View {
     let engine: FlutterEngine
     /// Show a native spinner until the engine's first layout reports in.
@@ -54,7 +54,7 @@ struct FlutterContentView: View {
     }
 }
 
-@available(iOS 16.0, *)
+@available(iOS 26.0, *)
 private struct _FlutterContentRepresentable: UIViewControllerRepresentable {
     let engine: FlutterEngine
     let onSizeChange: (CGSize) -> Void
@@ -76,7 +76,7 @@ private struct _FlutterContentRepresentable: UIViewControllerRepresentable {
 /// Hosts the FlutterViewController WITHOUT any external constraints — the
 /// auto-resizable FlutterView installs its own (FlutterAutoResizeLayoutConstraint)
 /// and publishes the Dart-chosen size through intrinsicContentSize/bounds.
-@available(iOS 15.0, *)
+@available(iOS 26.0, *)
 final class FlutterHostViewController: UIViewController {
     private let flutterController: FlutterViewController
     private var lastReportedSize: CGSize = .zero

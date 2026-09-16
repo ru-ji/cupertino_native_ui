@@ -310,4 +310,60 @@ void main() {
     // The id is also the morph identity on the SwiftUI side.
     expect((items[1] as Map)['actionId'], 'edit');
   }, variant: iOS);
+
+  group('keyboard toolbar lowering', () {
+    testWidgets('widgets become native nodes, in order', variant: iOS, (
+      tester,
+    ) async {
+      final params = await paramsOf(
+        tester,
+        CupertinoNativeTextField(
+          keyboardToolbar: [
+            CupertinoNativeButton(
+              onPressed: () {},
+              child: CupertinoSymbolImage.symbol(CupertinoSymbols.chevronUp),
+            ),
+            const Spacer(),
+            CupertinoNativeButton(
+              onPressed: () {},
+              child: const Text('Done'),
+            ),
+          ],
+        ),
+      );
+
+      final toolbar = params['keyboardToolbar'] as List?;
+      expect(toolbar, isNotNull, reason: 'the key the Swift config reads');
+      expect(toolbar, hasLength(3));
+
+      final first = toolbar![0] as Map;
+      expect(first['type'], 'button');
+      expect(first['id'], 'item0');
+      // ButtonConfig requires a non-null `title` and `style`; a symbol-only
+      // button must still carry the icon the native side draws.
+      final firstButton = first['button'] as Map;
+      expect(firstButton['style'], isNotNull);
+      expect(firstButton['icon'], isNotNull);
+
+      expect((toolbar[1] as Map)['type'], 'spacer');
+
+      final last = toolbar[2] as Map;
+      expect(last['type'], 'button');
+      expect(((last['button'] as Map)['title']), 'Done');
+    });
+
+    testWidgets('a Flutter island carries its route', variant: iOS, (
+      tester,
+    ) async {
+      final params = await paramsOf(
+        tester,
+        const CupertinoNativeTextField(
+          keyboardToolbar: [CupertinoNativeFlutterView('editorBar')],
+        ),
+      );
+      final node = (params['keyboardToolbar'] as List).single as Map;
+      expect(node['type'], 'flutter');
+      expect(node['route'], 'editorBar');
+    });
+  });
 }

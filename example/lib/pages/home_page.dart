@@ -11,7 +11,9 @@ import 'button_demo_page.dart';
 import 'context_menu_demo_page.dart';
 import 'date_picker_demo_page.dart';
 import 'effects_demo_page.dart';
+import 'keyboard_demo_page.dart';
 import 'liquid_glass_demo_page.dart';
+import 'native_body_demo_page.dart';
 import 'native_list_form_demo_page.dart';
 import 'native_scaffold_demo_page.dart';
 import 'native_searchable_demo_page.dart';
@@ -110,6 +112,13 @@ class HomePage extends StatelessWidget {
                         ),
                         _row(
                           context,
+                          'Keyboard',
+                          const KeyboardDemoPage(),
+                          'keyboard',
+                          CupertinoColors.systemTeal,
+                        ),
+                        _row(
+                          context,
                           'Text Field',
                           const TextFieldDemoPage(),
                           'character.cursor.ibeam',
@@ -134,6 +143,13 @@ class HomePage extends StatelessWidget {
                           const StandaloneTabBarDemoPage(),
                           'square.grid.2x2',
                           CupertinoColors.systemPink,
+                        ),
+                        _row(
+                          context,
+                          'Native Body',
+                          const NativeBodyDemoPage(),
+                          'swift',
+                          CupertinoColors.systemOrange,
                         ),
                         _row(
                           context,

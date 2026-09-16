@@ -1,6 +1,6 @@
 import SwiftUI
 
-@available(iOS 15.0, *)
+@available(iOS 26.0, *)
 extension Color {
     /// Decodes a Flutter ARGB32 color integer (as produced by `Color.value` on the Dart side).
     init(argb: Int) {
@@ -12,7 +12,7 @@ extension Color {
     }
 }
 
-@available(iOS 15.0, *)
+@available(iOS 26.0, *)
 extension UIColor {
     /// Decodes a Flutter ARGB32 color integer (as produced by `Color.value` on the Dart side).
     convenience init(argb: Int) {
@@ -24,7 +24,7 @@ extension UIColor {
     }
 }
 
-@available(iOS 15.0, *)
+@available(iOS 26.0, *)
 extension Font.Weight {
     /// Maps the Dart `FontWeight.index` (0 = w100/ultraLight ... 8 = w900/black) to a SwiftUI `Font.Weight`.
     init(weightIndex: Int) {

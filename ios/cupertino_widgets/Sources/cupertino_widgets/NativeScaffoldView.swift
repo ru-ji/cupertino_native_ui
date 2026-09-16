@@ -1,9 +1,9 @@
+import Combine
 import Flutter
 import SwiftUI
 import UIKit
-import Combine
 
-@available(iOS 15.0, *)
+@available(iOS 26.0, *)
 class NativeScaffoldFactory: NSObject, FlutterPlatformViewFactory {
     private var messenger: FlutterBinaryMessenger
 
@@ -32,7 +32,7 @@ class NativeScaffoldFactory: NSObject, FlutterPlatformViewFactory {
 
 /// One entry in a scaffold NavigationStack path. `id` is unique per push so
 /// the same route can be pushed twice and each instance keeps its own engine.
-@available(iOS 15.0, *)
+@available(iOS 26.0, *)
 struct PushedRoute: Hashable {
     let id: UUID
     let route: String
@@ -41,7 +41,7 @@ struct PushedRoute: Hashable {
 
 /// Observable state shared between the platform view (which mutates it from
 /// method-channel calls) and the SwiftUI ScaffoldView (which binds to it).
-@available(iOS 15.0, *)
+@available(iOS 26.0, *)
 class ScaffoldModel: ObservableObject {
     @Published var config: ScaffoldConfig
     @Published var selection: String {
@@ -61,6 +61,13 @@ class ScaffoldModel: ObservableObject {
     @Published var rootEngines: [String: FlutterEngine] = [:]
     @Published var pushedEngines: [UUID: FlutterEngine] = [:]
 
+    /// The SwiftUI-rendered body's live state, when `config.nativeBody` is
+    /// set. Held here so the tree survives config pushes.
+    let bodyModel = NativeBodyModel()
+
+    /// (nodeId, value) from a native body's controls.
+    var onBodyEvent: ((String, Any?) -> Void)?
+
     var onSelectionChanged: ((String) -> Void)?
     var onPathsChanged: (([String: [PushedRoute]], [String: [PushedRoute]]) -> Void)?
     var onSearchChanged: ((String, String) -> Void)?
@@ -78,6 +85,8 @@ class ScaffoldModel: ObservableObject {
 
     init(config: ScaffoldConfig) {
         self.config = config
+        bodyModel.root = config.nativeBody
+        bodyModel.seed(config.nativeBody)
         self.selection = config.tabBar?.selection ?? config.tabBar?.tabs.first?.id ?? ""
         // Seed every stack key up front so NavigationStack's initial binding
         // sync doesn't structurally change the dictionary (which would
@@ -90,7 +99,7 @@ class ScaffoldModel: ObservableObject {
     }
 }
 
-@available(iOS 15.0, *)
+@available(iOS 26.0, *)
 class NativeScaffoldView: NativeHostingView {
     /// One engine group shared by every scaffold instance. Engines spawned
     /// from the same group share the GPU context, font caches and isolate
@@ -190,7 +199,7 @@ class NativeScaffoldView: NativeHostingView {
         } else {
             model = ScaffoldModel(
                 config: ScaffoldConfig(
-                    body: nil, appBar: nil, tabBar: nil,
+                    body: nil, nativeBody: nil, appBar: nil, tabBar: nil,
                     scrollEdgeEffect: nil, isDark: nil,
                     backgroundColor: nil, primaryColor: nil,
                     showLoadingIndicator: nil))
@@ -228,6 +237,10 @@ class NativeScaffoldView: NativeHostingView {
         model.onSearchSubmitted = { [weak self] route, query in
             self?.reportSearch(route: route, query: query, active: nil, submitted: true)
         }
+        model.onBodyEvent = { [weak self] id, value in
+            self?.channel.invokeMethod(
+                "onBodyEvent", arguments: ["id": id, "value": value])
+        }
 
         attachContent()
 
@@ -243,7 +256,8 @@ class NativeScaffoldView: NativeHostingView {
         // SwiftUI matches the Flutter theme (not the device's default).
         // MUST happen after attachContent() which creates hostingController.
         if let argsMap = args as? [String: Any],
-           let isDark = (argsMap["isDark"] as? NSNumber)?.boolValue {
+            let isDark = (argsMap["isDark"] as? NSNumber)?.boolValue
+        {
             // Seed brightness BEFORE createRootEngines() so each body engine's
             // route carries it (?dark=) and its content matches the app.
             currentIsDark = isDark
@@ -267,11 +281,13 @@ class NativeScaffoldView: NativeHostingView {
         // creation returns immediately so the push transition animates
         // jank-free, and by now `currentIsDark` is seeded so the engine's
         // route carries the right brightness.
-        DispatchQueue.main.async { [weak self] in
-            self?.createRootEngines()
+        // A native body has no engine to spawn: the body IS the SwiftUI tree.
+        if model.config.nativeBody == nil {
+            DispatchQueue.main.async { [weak self] in
+                self?.createRootEngines()
+            }
         }
     }
-
 
     /// Pins the native navigation controller's layout margins to the window's.
     /// UIKit grants system minimum margins only to a view exactly at the screen
@@ -369,8 +385,8 @@ class NativeScaffoldView: NativeHostingView {
             // `?dark=` seeds the body's brightness for its very first frame;
             // later changes stream through the scaffold_body channel.
             engine = Self.sharedEngineGroup.makeEngine(
-                    withEntrypoint: nil, libraryURI: nil,
-                    initialRoute: "cn-scaffold://\(route)?dark=\(currentIsDark ? 1 : 0)")
+                withEntrypoint: nil, libraryURI: nil,
+                initialRoute: "cn-scaffold://\(route)?dark=\(currentIsDark ? 1 : 0)")
             // Register this plugin's platform-view factories on the spawned
             // engine so package widgets (buttons, toggles, ...) work inside
             // scaffold bodies too. Guarded: a pooled engine already carries
@@ -396,24 +412,20 @@ class NativeScaffoldView: NativeHostingView {
     /// Keyboard avoidance follows `resizeToAvoidBottomInset`; the container
     /// safe area (bars, home indicator) always applies.
     private func applyKeyboardAvoidance() {
-        guard #available(iOS 16.4, *), let host = hostingController else { return }
+        guard let host = hostingController else { return }
         host.safeAreaRegions =
             (model.config.resizeToAvoidBottomInset ?? true) ? .all : .container
     }
 
     private func attachContent() {
-        if #available(iOS 16.0, *) {
-            attach(
-                AnyView(
-                    ScaffoldView(model: model) { [weak self] route, actionId in
-                        self?.channel.invokeMethod(
-                            "onBarAction", arguments: ["route": route, "id": actionId])
-                    }),
-                keyboardAvoidance: true)
-            applyKeyboardAvoidance()
-        } else {
-            attach(AnyView(Text("CupertinoNativeScaffold requires iOS 16.0+")))
-        }
+        attach(
+            AnyView(
+                ScaffoldView(model: model) { [weak self] route, actionId in
+                    self?.channel.invokeMethod(
+                        "onBarAction", arguments: ["route": route, "id": actionId])
+                }),
+            keyboardAvoidance: true)
+        applyKeyboardAvoidance()
     }
 
     // MARK: - Navigation
@@ -437,7 +449,8 @@ class NativeScaffoldView: NativeHostingView {
                 let route = args["route"] as? String
             else {
                 result(
-                    FlutterError(code: "INVALID_ARGS", message: "push requires a route", details: nil))
+                    FlutterError(
+                        code: "INVALID_ARGS", message: "push requires a route", details: nil))
                 return
             }
             var appBar: AppBarConfig? = nil
@@ -461,17 +474,22 @@ class NativeScaffoldView: NativeHostingView {
             {
                 model.config = ScaffoldConfig(
                     body: model.config.body,
+                    nativeBody: model.config.nativeBody,
                     appBar: AppBarConfig(
                         title: title, subtitle: bar.subtitle,
                         displayMode: bar.displayMode,
                         leading: bar.leading, trailing: bar.trailing,
-                        search: bar.search),
+                        bottom: bar.bottom, search: bar.search),
                     tabBar: model.config.tabBar,
                     scrollEdgeEffect: model.config.scrollEdgeEffect,
                     isDark: model.config.isDark,
                     backgroundColor: model.config.backgroundColor,
                     primaryColor: model.config.primaryColor,
-                    showLoadingIndicator: model.config.showLoadingIndicator)
+                    showLoadingIndicator: model.config.showLoadingIndicator,
+                    // Carried through explicitly: these two have defaults, so
+                    // a rebuild that forgets them silently resets the page.
+                    resizeToAvoidBottomInset: model.config.resizeToAvoidBottomInset,
+                    interactiveKeyboardDismiss: model.config.interactiveKeyboardDismiss)
             }
             result(nil)
         case "updateScaffold":
@@ -480,6 +498,11 @@ class NativeScaffoldView: NativeHostingView {
             {
                 // Bars/tabs update in place; engines are kept as-is.
                 model.config = config
+                // Outside any view update, so pushing field configs here is
+                // safe (see NativeBodyModel.applyConfigs).
+                model.bodyModel.root = config.nativeBody
+                model.bodyModel.seed(config.nativeBody)
+                model.bodyModel.applyConfigs(config.nativeBody)
                 applyKeyboardAvoidance()
                 // Seed stack keys for any newly added tabs.
                 if let tabBar = config.tabBar {
@@ -500,6 +523,18 @@ class NativeScaffoldView: NativeHostingView {
                     hostingController?.view.tintColor = UIColor(argb: tint)
                 }
             }
+            result(nil)
+        case "publishBodyState":
+            // Host → every body isolate. They share no memory, so shared
+            // state travels as data or not at all.
+            for channel in bodyChannels.values {
+                channel.invokeMethod("onHostState", arguments: call.arguments)
+            }
+            result(nil)
+        case "sendBodyAction":
+            // Body → host. Arrives on the body's own channel, goes out on the
+            // scaffold's.
+            channel.invokeMethod("onBodyAction", arguments: call.arguments)
             result(nil)
         case "getBrightness":
             // Bodies pull the app brightness on startup (race-free: this

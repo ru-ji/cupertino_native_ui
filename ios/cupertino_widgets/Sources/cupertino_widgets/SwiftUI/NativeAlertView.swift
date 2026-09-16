@@ -1,15 +1,21 @@
 import Flutter
 import UIKit
 
-@available(iOS 15.0, *)
+@available(iOS 26.0, *)
 class AlertManager {
     static let shared = AlertManager()
 
+    /// `style`: `.alert` for a centred dialog, `.actionSheet` for the sheet
+    /// of choices that rises from the bottom (SwiftUI's `.confirmationDialog`).
+    /// An action sheet on iPad is a popover and needs an anchor: `sourceRect`
+    /// is in window coordinates, and without one it is centred on the screen.
     func show(
         title: String,
         message: String?,
         actions: [[String: Any]],
         isDark: Bool,
+        style: UIAlertController.Style = .alert,
+        sourceRect: CGRect? = nil,
         result: @escaping FlutterResult
     ) {
         // Find the top-most view controller to present the alert
@@ -23,7 +29,7 @@ class AlertManager {
         let alertController = UIAlertController(
             title: title,
             message: message,
-            preferredStyle: .alert
+            preferredStyle: style
         )
         // Follows the app's own (possibly forced) theme, not the device's
         // system appearance — same convention as every other native surface.
@@ -50,6 +56,17 @@ class AlertManager {
         // Ensure we present on the top-most controller
         DispatchQueue.main.async {
             let topController = self.getTopViewController(base: rootVC)
+            // On a regular-width environment UIKit presents an action sheet as
+            // a popover, and a popover without an anchor traps.
+            if let popover = alertController.popoverPresentationController {
+                popover.sourceView = topController?.view
+                popover.sourceRect =
+                    sourceRect
+                    ?? CGRect(
+                        x: (topController?.view.bounds.midX ?? 0),
+                        y: (topController?.view.bounds.midY ?? 0), width: 0, height: 0)
+                if sourceRect == nil { popover.permittedArrowDirections = [] }
+            }
             topController?.present(alertController, animated: true, completion: nil)
         }
     }

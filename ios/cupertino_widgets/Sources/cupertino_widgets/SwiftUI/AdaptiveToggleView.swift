@@ -1,6 +1,6 @@
 import SwiftUI
 
-@available(iOS 15.0, *)
+@available(iOS 26.0, *)
 struct AdaptiveToggleView: View {
     let config: ToggleConfig
     let onAction: (Bool) -> Void
@@ -75,7 +75,7 @@ struct AdaptiveToggleView: View {
     }
 }
 
-@available(iOS 15.0, *)
+@available(iOS 26.0, *)
 extension View {
     @ViewBuilder
     func applyToggleStyle(_ color: Color?) -> some View {

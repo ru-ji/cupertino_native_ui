@@ -2,7 +2,7 @@ import SwiftUI
 
 /// Shared state between the platform view and its SwiftUI body. The platform
 /// view owns it and writes to it from the method channel; the view observes.
-@available(iOS 15.0, *)
+@available(iOS 26.0, *)
 final class TextFieldModel: ObservableObject {
     @Published var config: TextFieldConfig
     @Published var text: String
@@ -27,7 +27,7 @@ final class TextFieldModel: ObservableObject {
 /// rather than `leftView`/`rightView` slots, and the glass goes through the
 /// same `GlassEffectContainer` + `.glassEffect(_:in:)` as every other glass
 /// surface in this package.
-@available(iOS 15.0, *)
+@available(iOS 26.0, *)
 struct AdaptiveTextFieldView: View {
     @ObservedObject var model: TextFieldModel
 
@@ -164,11 +164,7 @@ struct AdaptiveTextFieldView: View {
 
         @ViewBuilder
         private func applied(_ content: Content) -> some View {
-            if #available(iOS 26.0, *) {
-                GlassEffectContainer { content.glassEffect(glass, in: shape) }
-            } else {
-                content.background(.ultraThinMaterial).clipShape(shape)
-            }
+            GlassEffectContainer { content.glassEffect(glass, in: shape) }
         }
 
         @available(iOS 26.0, *)
@@ -264,3 +260,4 @@ struct AdaptiveTextFieldView: View {
         return UITextContentType(rawValue: name)
     }
 }
+

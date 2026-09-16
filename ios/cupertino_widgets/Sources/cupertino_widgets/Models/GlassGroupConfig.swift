@@ -6,7 +6,7 @@ import Foundation
 /// children are declared as data so SwiftUI can arrange them itself, which is
 /// exactly what lets them share one `GlassEffectContainer` — and sharing that
 /// container is the only way two glasses ever merge.
-@available(iOS 15.0, *)
+@available(iOS 26.0, *)
 struct GlassGroupItemConfig: Codable, Hashable, Identifiable {
     /// Sent back to Dart on tap, and the identity SwiftUI morphs along.
     let actionId: String
@@ -21,7 +21,7 @@ struct GlassGroupItemConfig: Codable, Hashable, Identifiable {
     var id: String { actionId }
 }
 
-@available(iOS 15.0, *)
+@available(iOS 26.0, *)
 struct GlassGroupConfig: Codable {
     let items: [GlassGroupItemConfig]
     /// Distance between the glasses AND the radius within which the container

@@ -1,7 +1,7 @@
 import Flutter
 import UIKit
 
-@available(iOS 15.0, *)
+@available(iOS 26.0, *)
 class NativeTabBarFactory: NSObject, FlutterPlatformViewFactory {
     private var messenger: FlutterBinaryMessenger
 
@@ -32,7 +32,7 @@ class NativeTabBarFactory: NSObject, FlutterPlatformViewFactory {
 /// no UITabBarController/TabView wrapper, so nothing paints a content-area
 /// background and Flutter content stays visible around and through the bar.
 /// Technique reproduced from the cupertino_native package.
-@available(iOS 15.0, *)
+@available(iOS 26.0, *)
 class NativeTabBarView: NSObject, FlutterPlatformView, UITabBarDelegate {
     private let channel: FlutterMethodChannel
     private let container: UIView

@@ -11,9 +11,12 @@ public class FlutterCupertinoPlugin: NSObject, FlutterPlugin {
         let instance = FlutterCupertinoPlugin()
         registrar.addMethodCallDelegate(instance, channel: channel)
 
-        // The native views are built on iOS 15+ SwiftUI/UIKit APIs. On older
-        // systems register no platform views: the app still links and runs.
-        guard #available(iOS 15.0, *) else { return }
+        // Every view in this package is built on iOS 26 APIs, but the plugin
+        // itself compiles into whatever deployment target the host app sets —
+        // Flutter's generated registrant calls this unconditionally. On an
+        // older system register nothing: the app links and runs, and calls
+        // get a descriptive error instead of a MissingPluginException.
+        guard #available(iOS 26.0, *) else { return }
 
         // Sheet events (bar actions, segment/search changes) flow back to
         // Dart over the main app's messenger. First registration wins: the
@@ -21,6 +24,12 @@ public class FlutterCupertinoPlugin: NSObject, FlutterPlugin {
         if NativeSheetManager.shared.mainMessenger == nil {
             NativeSheetManager.shared.mainMessenger = registrar.messenger()
         }
+
+        // Frame-by-frame keyboard position. Registered here but idle until
+        // Dart asks for it — the display link costs nothing while paused.
+        // Every engine registers: scaffold bodies are their own isolates and
+        // each needs its own channel to hear the events.
+        NativeKeyboardObserver.shared.register(messenger: registrar.messenger())
 
         let menuFactory = NativeMenuFactory(messenger: registrar.messenger())
         registrar.register(
@@ -30,6 +39,14 @@ public class FlutterCupertinoPlugin: NSObject, FlutterPlugin {
         registrar.register(
             contextMenuFactory,
             withId: "com.example.cupertino_widgets/cupertino_native_context_menu")
+
+        let symbolFactory = NativeSymbolFactory(messenger: registrar.messenger())
+        registrar.register(
+            symbolFactory, withId: "com.example.cupertino_widgets/cupertino_native_symbol")
+
+        let pickerFactory = NativePickerFactory(messenger: registrar.messenger())
+        registrar.register(
+            pickerFactory, withId: "com.example.cupertino_widgets/cupertino_native_picker")
 
         let buttonFactory = NativeButtonFactory(messenger: registrar.messenger())
         registrar.register(
@@ -93,7 +110,7 @@ public class FlutterCupertinoPlugin: NSObject, FlutterPlugin {
     /// views are composited outside Flutter's layer tree, so anything drawn
     /// through one is invisible to a `BackdropFilter` — an icon rendered that
     /// way would punch a hole in the app bar's scroll edge effect.
-    @available(iOS 15.0, *)
+    @available(iOS 26.0, *)
     private static func renderSymbol(name: String, args: [String: Any]) -> FlutterStandardTypedData?
     {
         let size = CGFloat(args["size"] as? Double ?? 17)
@@ -126,47 +143,6 @@ public class FlutterCupertinoPlugin: NSObject, FlutterPlugin {
     }
 
     public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
-        if call.method == "prewarmScaffold" {
-            if #available(iOS 15.0, *) {
-                let args = call.arguments as? [String: Any]
-                NativeScaffoldView.prewarm(
-                    routes: args?["routes"] as? [String] ?? [],
-                    isDark: args?["isDark"] as? Bool ?? false)
-            }
-            result(nil)
-            return
-        }
-        if call.method == "showSheet" {
-            guard #available(iOS 15.0, *) else {
-                result(
-                    FlutterError(
-                        code: "UNSUPPORTED_OS_VERSION",
-                        message: "CupertinoNativeSheet requires iOS 15 or later",
-                        details: nil))
-                return
-            }
-            NativeSheetManager.shared.show(
-                args: call.arguments as? [String: Any] ?? [:], result: result)
-            return
-        }
-        if call.method == "dismissSheet" {
-            if #available(iOS 15.0, *) {
-                NativeSheetManager.shared.dismiss(result: result)
-            } else {
-                result(nil)
-            }
-            return
-        }
-        if call.method == "renderSymbol" {
-            guard #available(iOS 15.0, *), let args = call.arguments as? [String: Any],
-                let name = args["name"] as? String
-            else {
-                result(nil)
-                return
-            }
-            result(FlutterCupertinoPlugin.renderSymbol(name: name, args: args))
-            return
-        }
         if call.method == "isLiquidGlassSupported" {
             if #available(iOS 26.0, *) {
                 result(true)
@@ -175,7 +151,52 @@ public class FlutterCupertinoPlugin: NSObject, FlutterPlugin {
             }
             return
         }
-        if call.method == "showAlert" {
+        guard #available(iOS 26.0, *) else {
+            result(
+                FlutterError(
+                    code: "UNSUPPORTED_OS_VERSION",
+                    message: "cupertino_widgets requires iOS 26 or later",
+                    details: nil))
+            return
+        }
+        if call.method == "prewarmScaffold" {
+            let args = call.arguments as? [String: Any]
+            NativeScaffoldView.prewarm(
+                routes: args?["routes"] as? [String] ?? [],
+                isDark: args?["isDark"] as? Bool ?? false)
+            result(nil)
+            return
+        }
+        if call.method == "showSheet" {
+            NativeSheetManager.shared.show(
+                args: call.arguments as? [String: Any] ?? [:], result: result)
+            return
+        }
+        if call.method == "dismissSheet" {
+            NativeSheetManager.shared.dismiss(result: result)
+            return
+        }
+        if call.method == "renderSymbol" {
+            guard let args = call.arguments as? [String: Any],
+                let name = args["name"] as? String
+            else {
+                result(nil)
+                return
+            }
+            result(FlutterCupertinoPlugin.renderSymbol(name: name, args: args))
+            return
+        }
+        if call.method == "startKeyboardObserver" {
+            NativeKeyboardObserver.shared.start()
+            result(nil)
+            return
+        }
+        if call.method == "stopKeyboardObserver" {
+            NativeKeyboardObserver.shared.stop()
+            result(nil)
+            return
+        }
+        if call.method == "showAlert" || call.method == "showActionSheet" {
             guard let args = call.arguments as? [String: Any],
                 let title = args["title"] as? String,
                 let actions = args["actions"] as? [[String: Any]]
@@ -187,16 +208,17 @@ public class FlutterCupertinoPlugin: NSObject, FlutterPlugin {
             let message = args["message"] as? String
             let isDark = args["isDark"] as? Bool ?? false
 
-            guard #available(iOS 15.0, *) else {
-                result(
-                    FlutterError(
-                        code: "UNSUPPORTED_OS_VERSION",
-                        message: "cupertino_widgets requires iOS 15 or later",
-                        details: nil))
-                return
+            var anchor: CGRect? = nil
+            if let rect = args["sourceRect"] as? [String: Any],
+                let x = rect["x"] as? Double, let y = rect["y"] as? Double,
+                let w = rect["width"] as? Double, let h = rect["height"] as? Double
+            {
+                anchor = CGRect(x: x, y: y, width: w, height: h)
             }
             AlertManager.shared.show(
-                title: title, message: message, actions: actions, isDark: isDark, result: result)
+                title: title, message: message, actions: actions, isDark: isDark,
+                style: call.method == "showActionSheet" ? .actionSheet : .alert,
+                sourceRect: anchor, result: result)
         } else {
             result(FlutterMethodNotImplemented)
         }

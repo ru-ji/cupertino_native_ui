@@ -6,7 +6,7 @@ import SwiftUI
 /// Because the scroll view and the navigation stack are both native, large
 /// titles collapse on scroll, the tab bar can minimize (iOS 26), and pushes
 /// animate with full system transitions including toolbar morphing.
-@available(iOS 16.0, *)
+@available(iOS 26.0, *)
 struct ScaffoldView: View {
     @ObservedObject var model: ScaffoldModel
     let onBarAction: (String, String) -> Void  // (route, actionId)
@@ -28,29 +28,19 @@ struct ScaffoldView: View {
 
     @ViewBuilder
     private func tabbedContent(_ tabBar: TabBarConfig) -> some View {
-        if #available(iOS 18.0, *) {
-            TabView(selection: $model.selection) {
-                ForEach(tabBar.tabs) { tab in
-                    if tab.role == "search" {
-                        Tab(
-                            tab.title, systemImage: tab.resolvedSymbolName ?? "magnifyingglass",
-                            value: tab.id, role: .search
-                        ) {
-                            navStack(key: tab.id, rootRoute: tab.id, search: tab.search)
-                        }
-                    } else {
-                        Tab(tab.title, systemImage: tab.resolvedSymbolName ?? "circle", value: tab.id) {
-                            navStack(key: tab.id, rootRoute: tab.id, search: tab.search)
-                        }
+        TabView(selection: $model.selection) {
+            ForEach(tabBar.tabs) { tab in
+                if tab.role == "search" {
+                    Tab(
+                        tab.title, systemImage: tab.resolvedSymbolName ?? "magnifyingglass",
+                        value: tab.id, role: .search
+                    ) {
+                        navStack(key: tab.id, rootRoute: tab.id, search: tab.search)
                     }
-                }
-            }
-        } else {
-            TabView(selection: $model.selection) {
-                ForEach(tabBar.tabs) { tab in
-                    navStack(key: tab.id, rootRoute: tab.id, search: tab.search)
-                        .tabItem { tabLabel(tab) }
-                        .tag(tab.id)
+                } else {
+                    Tab(tab.title, systemImage: tab.resolvedSymbolName ?? "circle", value: tab.id) {
+                        navStack(key: tab.id, rootRoute: tab.id, search: tab.search)
+                    }
                 }
             }
         }
@@ -83,42 +73,57 @@ struct ScaffoldView: View {
     @ViewBuilder
     private func navStack(key: String, rootRoute: String, search: SearchConfig?) -> some View {
         NavigationStack(path: pathBinding(key)) {
+            pageRoot(rootRoute: rootRoute)
+                .applyAppBar(model.config.appBar) { onBarAction(rootRoute, $0) }
+                .applySearchable(
+                    search,
+                    text: searchBinding(rootRoute)
+                ) {
+                    model.onSearchSubmitted?(rootRoute, model.searchTexts[rootRoute] ?? "")
+                }
+                .navigationDestination(for: PushedRoute.self) { pushed in
+                    PageScrollBody(
+                        engine: model.pushedEngines[pushed.id],
+                        scrollEdgeEffect: model.config.scrollEdgeEffect,
+                        showLoadingIndicator: model.config.showLoadingIndicator ?? false,
+                        interactiveKeyboardDismiss: model.config.interactiveKeyboardDismiss == true
+                    )
+                    .applyAppBar(pushed.appBar) { onBarAction(pushed.route, $0) }
+                }
+        }
+    }
+
+    /// The page's content: a SwiftUI tree described from Dart when the
+    /// scaffold has a `nativeBody`, an embedded FlutterEngine otherwise.
+    ///
+    /// The two cannot be mixed — a native body IS the page, so there is no
+    /// engine under it and nothing goes Flutter → SwiftUI → FlutterView →
+    /// SwiftUI. That nesting is exactly what it exists to remove.
+    @ViewBuilder
+    private func pageRoot(rootRoute: String) -> some View {
+        if model.config.nativeBody != nil {
+            ScrollView {
+                NativeBodyView(model: model.bodyModel) { id, value in
+                    model.onBodyEvent?(id, value)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .applyScrollEdgeEffect(model.config.scrollEdgeEffect)
+            .scrollDismissesKeyboard(
+                model.config.interactiveKeyboardDismiss == true ? .interactively : .automatic)
+        } else {
             SearchablePageBody(
                 engine: model.rootEngines[rootRoute],
                 scrollEdgeEffect: model.config.scrollEdgeEffect,
                 showLoadingIndicator: model.config.showLoadingIndicator ?? false,
+                interactiveKeyboardDismiss: model.config.interactiveKeyboardDismiss == true,
                 onActiveChange: { model.onSearchActiveChanged?(rootRoute, $0) }
             )
-            .applyAppBar(model.config.appBar) { onBarAction(rootRoute, $0) }
-            .applySearchable(
-                search,
-                text: searchBinding(rootRoute)
-            ) {
-                model.onSearchSubmitted?(rootRoute, model.searchTexts[rootRoute] ?? "")
-            }
-            .navigationDestination(for: PushedRoute.self) { pushed in
-                PageScrollBody(
-                    engine: model.pushedEngines[pushed.id],
-                    scrollEdgeEffect: model.config.scrollEdgeEffect,
-                    showLoadingIndicator: model.config.showLoadingIndicator ?? false
-                )
-                .applyAppBar(pushed.appBar) { onBarAction(pushed.route, $0) }
-            }
         }
     }
 }
 
-@ViewBuilder
-@available(iOS 15.0, *)
-func tabLabel(_ tab: TabItemConfig) -> some View {
-    if let img = tab.resolvedSymbolName {
-        Label(tab.title, systemImage: img)
-    } else {
-        Text(tab.title)
-    }
-}
-
-@available(iOS 15.0, *)
+@available(iOS 26.0, *)
 extension View {
     @ViewBuilder
     func applyTabTint(_ argb: Int?) -> some View {
@@ -131,29 +136,21 @@ extension View {
 
     @ViewBuilder
     func applyTabBarMinimizeBehavior(_ behavior: String?) -> some View {
-        if #available(iOS 26.0, *) {
-            switch behavior {
-            case "onScrollDown": self.tabBarMinimizeBehavior(.onScrollDown)
-            case "onScrollUp": self.tabBarMinimizeBehavior(.onScrollUp)
-            case "never": self.tabBarMinimizeBehavior(.never)
-            default: self.tabBarMinimizeBehavior(.automatic)
-            }
-        } else {
-            self
+        switch behavior {
+        case "onScrollDown": self.tabBarMinimizeBehavior(.onScrollDown)
+        case "onScrollUp": self.tabBarMinimizeBehavior(.onScrollUp)
+        case "never": self.tabBarMinimizeBehavior(.never)
+        default: self.tabBarMinimizeBehavior(.automatic)
         }
     }
 
     /// iOS 26 Liquid Glass scroll edge effect style; no-op below 26.
     @ViewBuilder
     func applyScrollEdgeEffect(_ style: String?) -> some View {
-        if #available(iOS 26.0, *) {
-            switch style {
-            case "soft": self.scrollEdgeEffectStyle(.soft, for: .all)
-            case "hard": self.scrollEdgeEffectStyle(.hard, for: .all)
-            default: self
-            }
-        } else {
-            self
+        switch style {
+        case "soft": self.scrollEdgeEffectStyle(.soft, for: .all)
+        case "hard": self.scrollEdgeEffectStyle(.hard, for: .all)
+        default: self
         }
     }
 
@@ -163,7 +160,7 @@ extension View {
     func applyTabBottomAccessory(
         _ config: TabAccessoryConfig?, onTap: @escaping (String) -> Void
     ) -> some View {
-        if #available(iOS 26.0, *), let config = config {
+        if let config = config {
             self.tabViewBottomAccessory {
                 TabBottomAccessoryView(config: config, onTap: onTap)
             }

@@ -3,6 +3,7 @@ import Foundation
 /// One row of a native `List`/`Form` section. `type` selects the row rendering:
 /// "label" (icon + title/subtitle + optional trailing value/chevron),
 /// "toggle" (trailing switch), or "button" (tinted, tappable).
+@available(iOS 26.0, *)
 struct ListRowConfig: Codable, Hashable {
     let id: String
     let title: String
@@ -16,6 +17,7 @@ struct ListRowConfig: Codable, Hashable {
 }
 
 /// A `Section` of a native `List`/`Form`: optional header/footer + rows.
+@available(iOS 26.0, *)
 struct ListSectionConfig: Codable, Hashable {
     let header: String?
     let footer: String?
@@ -23,6 +25,7 @@ struct ListSectionConfig: Codable, Hashable {
 }
 
 /// Creation/update parameters for the native list/form platform view.
+@available(iOS 26.0, *)
 struct ListConfig: Codable, Hashable {
     let variant: String?  // "list" | "form"
     let style: String?    // "automatic" | "plain" | "grouped" | "insetGrouped" | "sidebar"

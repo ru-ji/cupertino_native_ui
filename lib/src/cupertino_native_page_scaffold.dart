@@ -7,6 +7,9 @@ import 'package:flutter/services.dart';
 
 import 'callbacks.dart';
 
+import 'cupertino_native_body.dart';
+import 'cupertino_native_body_bridge.dart';
+import 'cupertino_native_keyboard.dart';
 import 'cupertino_native_scaffold_navigation_bar.dart';
 import 'cupertino_native_tab_bar.dart';
 import 'cupertino_widgets_settings.dart';
@@ -88,14 +91,14 @@ class CupertinoNativePageScaffoldController {
 /// pages are Flutter bodies embedded in native ScrollViews.
 ///
 /// Native behaviors preserved: large-title collapse on scroll, tab bar
-/// minimize (iOS 26), `.search` tab role (iOS 18+), system push/pop
+/// minimize, `.search` tab role, system push/pop
 /// transitions with toolbar morphing, and interactive back-swipe.
 ///
 /// Navigation between scaffold pages happens on the NATIVE stack via
 /// [CupertinoNativePageScaffoldController.push] (host isolate) or the static
 /// [push] (body isolates) — not Flutter's Navigator. Each body runs in its
 /// own FlutterEngine. Register the route builders by calling [maybeRun] at
-/// the top of your `main()` (no entry point needed). Requires iOS 16+.
+/// the top of your `main()` (no entry point needed).
 class CupertinoNativePageScaffold extends StatefulWidget {
   /// Root body route when no [tabBar] is given. With a [tabBar], each tab's
   /// `id` doubles as its body route.
@@ -140,6 +143,40 @@ class CupertinoNativePageScaffold extends StatefulWidget {
   /// [CupertinoPageScaffold.resizeToAvoidBottomInset]. Defaults to true.
   final bool resizeToAvoidBottomInset;
 
+  /// Dragging down over the keyboard dismisses it, following the finger
+  /// (SwiftUI's `.scrollDismissesKeyboard(.interactively)`) — the gesture
+  /// Messages and Mail have.
+  ///
+  /// Scaffold-only, and not by choice: it is a property of the native scroll
+  /// view the bodies ride in. An ordinary Flutter page has no native scroll
+  /// view to drag, so there is nothing to put it on.
+  ///
+  /// Pair it with [CupertinoNativeKeyboard] if something in the body has to
+  /// move with the keyboard while it is dragged — `MediaQuery.viewInsets`
+  /// does not report a drag.
+  final bool interactiveKeyboardDismiss;
+
+  /// A body described from Dart and rendered as **SwiftUI directly**, instead
+  /// of an embedded FlutterEngine.
+  ///
+  /// With it, a control in the body is a real SwiftUI view in the scaffold's
+  /// own hierarchy — no nested FlutterView, no platform view. Without it, the
+  /// body is a Flutter route and a native control there would go Flutter →
+  /// SwiftUI → FlutterView → SwiftUI.
+  ///
+  /// It replaces [body] and the tabs' routes: a native body IS the page, so
+  /// no body engine is spawned at all. The trade is that the body is only
+  /// what [CupertinoNativeBody] can describe — you cannot have both a body
+  /// written in arbitrary Flutter and controls rendering as SwiftUI.
+  ///
+  /// Changes report through [onBodyEvent].
+  final CupertinoNativeBody? nativeBody;
+
+  /// A control in [nativeBody] changed: its node id and the new value. A
+  /// button reports null, a field its text, a toggle a bool, a slider a
+  /// double, a picker an int index.
+  final void Function(String id, Object? value)? onBodyEvent;
+
   const CupertinoNativePageScaffold({
     super.key,
     this.body,
@@ -157,9 +194,13 @@ class CupertinoNativePageScaffold extends StatefulWidget {
     this.onSearchSubmitted,
     this.onSearchActiveChanged,
     this.resizeToAvoidBottomInset = true,
+    this.interactiveKeyboardDismiss = false,
+    this.nativeBody,
+    this.onBodyEvent,
   }) : assert(
-         tabBar != null || body != null,
-         'Provide a tabBar (tab ids double as body routes) or a body route',
+         tabBar != null || body != null || nativeBody != null,
+         'Provide a tabBar (tab ids double as body routes), a body route, or '
+         'a nativeBody',
        );
 
   /// Whether a native spinner shows while a body engine boots and renders
@@ -224,6 +265,8 @@ class CupertinoNativePageScaffold extends StatefulWidget {
           isActive: args?['isActive'] as bool? ?? false,
           isSubmitted: args?['isSubmitted'] as bool? ?? false,
         );
+      } else if (call.method == 'onHostState') {
+        CupertinoNativeBodyBridge.handleHostState(call.arguments);
       } else if (call.method == 'setBrightness') {
         final isDark = (call.arguments as Map?)?['isDark'] as bool?;
         if (isDark != null) _bodyIsDark.value = isDark;
@@ -280,6 +323,17 @@ class CupertinoNativePageScaffold extends StatefulWidget {
   /// Returns true when this isolate is a scaffold body engine, in which case
   /// the matching route builder has been run and `main()` must not continue
   /// to `runApp`. Returns false in the regular app isolate.
+  /// [maybeRun] taking [CupertinoNativeBodyRoute]s, so a body's name is
+  /// written once instead of once here and once at every use site.
+  static bool maybeRunRoutes(List<CupertinoNativeBodyRoute> routes) {
+    return maybeRun({for (final route in routes) route.name: route.builder});
+  }
+
+  /// [prewarm] taking the same declarations.
+  static void prewarmRoutes(List<CupertinoNativeBodyRoute> routes) {
+    prewarm(routes: [for (final route in routes) route.name]);
+  }
+
   static bool maybeRun(Map<String, Widget Function()> builders) {
     final route = ui.PlatformDispatcher.instance.defaultRouteName;
     if (!route.startsWith(_routePrefix)) return false;
@@ -441,9 +495,23 @@ class _DynamicEnvWrapperState extends State<_DynamicEnvWrapper>
                 : ThemeData.light(),
             // Ensure the main widget takes the full width but its natural height.
             // Material provides the default text styles so text isn't white-on-white.
-            child: Material(
-              type: MaterialType.transparency,
-              child: widget.child,
+            //
+            // The width is pinned to the display's: the host FlutterView is
+            // auto-resizable, so it takes the size of the OUTERMOST widget —
+            // a body whose root is a Column would size to its widest child
+            // and sit narrower than the page, with a phantom right margin.
+            // `MediaQuery.size` can't be used for it: that is the view's own
+            // (already shrunk) width, which would only latch the gap in.
+            child: CupertinoNativeKeyboardScope(
+              child: SizedBox(
+                width:
+                    View.of(context).display.size.width /
+                    View.of(context).display.devicePixelRatio,
+                child: Material(
+                  type: MaterialType.transparency,
+                  child: widget.child,
+                ),
+              ),
             ),
           ),
         ),
@@ -486,6 +554,8 @@ class _CupertinoNativeScaffoldState extends State<CupertinoNativePageScaffold>
           widget.showLoadingIndicator ??
           CupertinoWidgetsSettings.showLoadingIndicator,
       'resizeToAvoidBottomInset': widget.resizeToAvoidBottomInset,
+      'interactiveKeyboardDismiss': widget.interactiveKeyboardDismiss,
+      'nativeBody': widget.nativeBody?.toMap(isDark: _isDark),
     };
   }
 
@@ -524,6 +594,9 @@ class _CupertinoNativeScaffoldState extends State<CupertinoNativePageScaffold>
   @override
   void dispose() {
     _unwatchRoute();
+    if (identical(CupertinoNativeBodyBridge.hostChannel, channel)) {
+      CupertinoNativeBodyBridge.hostChannel = null;
+    }
     super.dispose();
   }
 
@@ -546,6 +619,7 @@ class _CupertinoNativeScaffoldState extends State<CupertinoNativePageScaffold>
       'appBar': oldWidget.navigationBar?.toMap(),
       'tabBar': oldWidget.tabBar?.toMap(),
       'scrollEdgeEffect': oldWidget.scrollEdgeEffect.name,
+      'nativeBody': oldWidget.nativeBody?.toMap(isDark: _isDark),
     };
     if (jsonEncode(oldMap) != jsonEncode(_toMap())) {
       updateNativeView('updateScaffold', _toMap(), refreshIntrinsicSize: false);
@@ -559,6 +633,9 @@ class _CupertinoNativeScaffoldState extends State<CupertinoNativePageScaffold>
       onMethodCall: _handleMethodCall,
     );
     widget.controller?._channel = channel;
+    // The bridge publishes through whichever scaffold is mounted; a body has
+    // no channel of its own to the host.
+    CupertinoNativeBodyBridge.hostChannel = channel;
   }
 
   Future<dynamic> _handleMethodCall(MethodCall call) async {
@@ -568,6 +645,17 @@ class _CupertinoNativeScaffoldState extends State<CupertinoNativePageScaffold>
         final String? id = call.arguments['id'];
         if (route != null && id != null) {
           widget.onBarAction?.call(route, id);
+        }
+        break;
+      case 'onBodyAction':
+        CupertinoNativeBodyBridge.handleBodyAction(call.arguments);
+        break;
+      case 'onBodyEvent':
+        {
+          final String? id = call.arguments['id'];
+          if (id != null) {
+            widget.onBodyEvent?.call(id, call.arguments['value']);
+          }
         }
         break;
       case 'onTabChanged':
@@ -638,4 +726,51 @@ class _CupertinoNativeScaffoldState extends State<CupertinoNativePageScaffold>
     // user can pop the scaffold page itself.
     return PopScope(canPop: _nativeStackDepth <= 1, child: platformView);
   }
+}
+
+/// One scaffold body, declared once: its name and how to build it.
+///
+/// The body runs in its own FlutterEngine, so in its own isolate, and the
+/// engine boots by running your `main()` again with the body's name as its
+/// initial route. That is *why* a name exists: `maybeRun` executes in the body
+/// isolate and can only reach builders that are statically part of the
+/// program. A widget written inline in the host's `build()` is an object in
+/// the host's heap, and the body isolate has no way to reach it — which is why
+/// there is no `child:` here, and why generating the name automatically would
+/// not help. The name is not the obstacle; the builder is.
+///
+/// What this type removes is the duplicated string:
+///
+/// ```dart
+/// final homeBody = CupertinoNativeBodyRoute('home', () => const HomeBody());
+/// final profileBody = CupertinoNativeBodyRoute('profile', () => const ProfileBody());
+///
+/// void main() {
+///   if (CupertinoNativePageScaffold.maybeRunRoutes([homeBody, profileBody])) return;
+///   runApp(const MyApp());
+///   CupertinoNativePageScaffold.prewarmRoutes([homeBody]);
+/// }
+///
+/// CupertinoNativePageScaffold(body: homeBody.name)
+/// ```
+///
+/// Declare these at the top level — the body isolate reaches them through
+/// `main()`, so they must exist before `runApp`.
+@immutable
+class CupertinoNativeBodyRoute {
+  const CupertinoNativeBodyRoute(this.name, this.builder);
+
+  /// Identifies the body across the isolate boundary. Also a tab's `id`.
+  final String name;
+
+  /// Runs in the body isolate, not the host's.
+  final Widget Function() builder;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is CupertinoNativeBodyRoute && other.name == name);
+
+  @override
+  int get hashCode => name.hashCode;
 }

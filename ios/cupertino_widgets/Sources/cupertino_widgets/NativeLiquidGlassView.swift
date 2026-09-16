@@ -2,7 +2,7 @@ import Flutter
 import SwiftUI
 import UIKit
 
-@available(iOS 15.0, *)
+@available(iOS 26.0, *)
 class NativeLiquidGlassFactory: NSObject, FlutterPlatformViewFactory {
     private var messenger: FlutterBinaryMessenger
 
@@ -31,7 +31,7 @@ class NativeLiquidGlassFactory: NSObject, FlutterPlatformViewFactory {
 
 /// Platform view exposing the iOS 26 Liquid Glass material. Below iOS 26 it
 /// renders an `ultraThinMaterial` approximation.
-@available(iOS 15.0, *)
+@available(iOS 26.0, *)
 class NativeLiquidGlassView: NativeHostingView {
     private var channel: FlutterMethodChannel?
     /// Engine hosting the `route` body, when the container has one. Spawned
@@ -195,10 +195,9 @@ class NativeLiquidGlassView: NativeHostingView {
     }
 }
 
-
 /// What the hosted SwiftUI view observes. Publishing configs keeps the view
 /// identity stable.
-@available(iOS 15.0, *)
+@available(iOS 26.0, *)
 final class GlassViewModel: ObservableObject {
     @Published private(set) var config: GlassConfig
     /// Engine rendering the `route` body, when there is one.
@@ -225,7 +224,7 @@ final class GlassViewModel: ObservableObject {
     }
 }
 
-@available(iOS 15.0, *)
+@available(iOS 26.0, *)
 struct AdaptiveLiquidGlassView: View {
     @ObservedObject var model: GlassViewModel
     let onPressed: () -> Void
@@ -250,19 +249,9 @@ struct AdaptiveLiquidGlassView: View {
 
     @ViewBuilder
     private var glassBody: some View {
-        if #available(iOS 26.0, *) {
-            // Apple's order: content, padding, frame, then `glassEffect` last.
-            GlassEffectContainer {
-                glassSurface
-                    .simultaneousGesture(
-                        TapGesture().onEnded { if config.pressable == true { onPressed() } })
-            }
-        } else {
-            // Pre-26 approximation: a system material with an optional tint
-            // wash. No refraction — Liquid Glass itself is iOS 26+.
-            fallbackClipped
-                .overlay(iconView)
-                .applyGlassExpand(expand)
+        // Apple's order: content, padding, frame, then `glassEffect` last.
+        GlassEffectContainer {
+            glassSurface
                 .simultaneousGesture(
                     TapGesture().onEnded { if config.pressable == true { onPressed() } })
         }
@@ -280,7 +269,7 @@ struct AdaptiveLiquidGlassView: View {
     /// something to track.
     @ViewBuilder
     private var base: some View {
-        if let engine = model.engine, #available(iOS 16.0, *) {
+        if let engine = model.engine {
             // No placeholder height: the glass must not take the screen's
             // height before Dart reports the content's size.
             FlutterContentView(engine: engine, placeholderHeight: 0)
@@ -312,29 +301,6 @@ struct AdaptiveLiquidGlassView: View {
             trailing: CGFloat(config.paddingRight ?? 0))
     }
 
-    /// The icon alone, for the pre-26 overlay.
-    @ViewBuilder
-    private var iconView: some View {
-        if let icon = config.icon { IconView(icon: icon).padding(insets) }
-    }
-
-    @ViewBuilder
-    private var fallbackClipped: some View {
-        switch config.shape {
-        case "capsule": fallbackMaterial.clipShape(Capsule())
-        case "circle": fallbackMaterial.clipShape(Circle())
-        default:
-            fallbackMaterial.clipShape(
-                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
-        }
-    }
-
-    private var fallbackMaterial: some View {
-        Rectangle()
-            .fill(.ultraThinMaterial)
-            .overlay((tint ?? Color.clear).opacity(0.18))
-    }
-
     private var cornerRadius: CGFloat { CGFloat(config.cornerRadius ?? 26) }
 
     @available(iOS 26.0, *)
@@ -345,7 +311,7 @@ struct AdaptiveLiquidGlassView: View {
         return glass
     }
 
-    @available(iOS 16.0, *)
+    @available(iOS 26.0, *)
     private var glassShape: AnyShape {
         switch config.shape {
         case "capsule":
@@ -358,7 +324,7 @@ struct AdaptiveLiquidGlassView: View {
     }
 }
 
-@available(iOS 15.0, *)
+@available(iOS 26.0, *)
 extension View {
     /// Fills the box Flutter built, in both axes — which is where an explicit
     /// width/height from the caller ends up. Left alone otherwise, so an

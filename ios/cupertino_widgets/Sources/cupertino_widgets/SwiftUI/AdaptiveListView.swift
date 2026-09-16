@@ -8,7 +8,7 @@ import SwiftUI
 /// `VStack` with the standard grouped styling looks the same, supports the same
 /// rows (label / toggle / button), and self-sizes reliably (its
 /// `intrinsicContentSize` is exact) so the Flutter box grows to fit.
-@available(iOS 15.0, *)
+@available(iOS 26.0, *)
 struct AdaptiveListView: View {
     let config: ListConfig
     let onRowTap: (String) -> Void
@@ -37,13 +37,11 @@ struct AdaptiveListView: View {
     private var style: String { config.style ?? "insetGrouped" }
     private var isPlain: Bool { style == "plain" }
     private var isInset: Bool { !isPlain && style != "grouped" }
-    /// Inset-grouped card corner radius, matching the running iOS version's
-    /// Settings app: 26 on iOS 26+ (Liquid Glass concentric corners), 10 on
-    /// earlier releases. Overridable from Dart via `cornerRadius`.
+    /// Inset-grouped card corner radius, matching the Settings app's Liquid
+    /// Glass concentric corners. Overridable from Dart via `cornerRadius`.
     private var cornerRadius: CGFloat {
         if let explicit = config.cornerRadius { return CGFloat(explicit) }
-        if #available(iOS 26.0, *) { return 26 }
-        return 10
+        return 26
     }
 
     var body: some View {
@@ -99,7 +97,9 @@ struct AdaptiveListView: View {
                 }
             }
             .background(isPlain ? Color.clear : Color(.secondarySystemGroupedBackground))
-            .clipShape(RoundedRectangle(cornerRadius: isInset ? cornerRadius : 0, style: .continuous))
+            .clipShape(
+                RoundedRectangle(cornerRadius: isInset ? cornerRadius : 0, style: .continuous)
+            )
             .padding(.horizontal, cardInset)
 
             if let footer = section.footer {
@@ -134,8 +134,11 @@ struct AdaptiveListView: View {
             Button {
                 onRowTap(row.id)
             } label: {
-                HStack { rowLabel(row); Spacer(minLength: 0) }
-                    .contentShape(Rectangle())
+                HStack {
+                    rowLabel(row)
+                    Spacer(minLength: 0)
+                }
+                .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             .foregroundStyle(Color.accentColor)
@@ -191,7 +194,7 @@ struct AdaptiveListView: View {
     }
 }
 
-@available(iOS 15.0, *)
+@available(iOS 26.0, *)
 extension View {
     @ViewBuilder
     func applyListTint(_ argb: Int?) -> some View {

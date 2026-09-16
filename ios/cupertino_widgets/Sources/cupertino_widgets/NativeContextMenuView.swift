@@ -1,7 +1,7 @@
 import Flutter
 import UIKit
 
-@available(iOS 15.0, *)
+@available(iOS 26.0, *)
 class NativeContextMenuFactory: NSObject, FlutterPlatformViewFactory {
     private var messenger: FlutterBinaryMessenger
 
@@ -37,7 +37,7 @@ class NativeContextMenuFactory: NSObject, FlutterPlatformViewFactory {
 /// open" view rendered by Flutter) or, by default, a snapshot of the window
 /// region this surface covers — which is exactly the Flutter child's current
 /// pixels, since the child is composited directly above.
-@available(iOS 15.0, *)
+@available(iOS 26.0, *)
 class NativeContextMenuView: NSObject, FlutterPlatformView, UIContextMenuInteractionDelegate {
     private let channel: FlutterMethodChannel
     private let container = UIView()

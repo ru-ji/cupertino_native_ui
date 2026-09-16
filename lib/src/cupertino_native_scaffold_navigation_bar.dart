@@ -1,14 +1,12 @@
 import 'models/cupertino_native_bar_item.dart';
 
 /// How a [CupertinoNativeScaffoldNavigationBar] title is displayed, mapped to SwiftUI's
-/// `.toolbarTitleDisplayMode(...)` (iOS 17+, with a sensible fallback to
-/// `.navigationBarTitleDisplayMode` below that).
+/// `.toolbarTitleDisplayMode(...)`.
 ///
 /// - [automatic]: inherit the surrounding context (large at a stack root,
 ///   inline once pushed).
 /// - [inline]: always a small centered title.
-/// - [inlineLarge]: an inline title rendered at the large title's size
-///   (iOS 17+; falls back to [large]).
+/// - [inlineLarge]: an inline title rendered at the large title's size.
 /// - [large]: the collapsible large title.
 enum CupertinoNativeToolbarTitleDisplayMode {
   automatic,
@@ -23,7 +21,11 @@ enum CupertinoNativeSearchPlacement {
   /// System default placement for the current context.
   automatic,
 
-  /// In the navigation bar's toolbar area (`.toolbar`).
+  /// In the toolbar (`.toolbar`). On iPhone this is the iOS 26 placement:
+  /// the field docks at the BOTTOM of the screen in its own glass capsule,
+  /// not under the title. Pair it with
+  /// [CupertinoNativeSearchToolbarBehavior.minimize] to have it collapse to a
+  /// magnifying-glass button when the page scrolls.
   toolbar,
 
   /// In a drawer below the navigation bar, revealed on scroll when space is
@@ -33,6 +35,18 @@ enum CupertinoNativeSearchPlacement {
   /// In a drawer below the navigation bar, always visible
   /// (`.navigationBarDrawer(displayMode: .always)`).
   navigationBarDrawerAlways,
+}
+
+/// How a toolbar-placed search field behaves as the page scrolls, mirroring
+/// SwiftUI's `SearchToolbarBehavior`. Only meaningful with
+/// [CupertinoNativeSearchPlacement.toolbar].
+enum CupertinoNativeSearchToolbarBehavior {
+  /// System default for the context.
+  automatic,
+
+  /// The field collapses into a single magnifying-glass button, expanding
+  /// again when tapped — the Liquid Glass bottom-search behaviour.
+  minimize,
 }
 
 /// Adds a native SwiftUI `.searchable(...)` search field to a
@@ -50,14 +64,23 @@ class CupertinoNativeSearchField {
   /// [CupertinoNativeSearchPlacement.automatic].
   final CupertinoNativeSearchPlacement placement;
 
+  /// How a [CupertinoNativeSearchPlacement.toolbar] field reacts to scrolling.
+  /// Ignored for the other placements.
+  final CupertinoNativeSearchToolbarBehavior toolbarBehavior;
+
   const CupertinoNativeSearchField({
     this.placeholder,
     this.placement = CupertinoNativeSearchPlacement.automatic,
+    this.toolbarBehavior = CupertinoNativeSearchToolbarBehavior.automatic,
   });
 
   /// Serialized form embedded in [CupertinoNativeScaffoldNavigationBar.toMap].
   Map<String, dynamic> toMap() {
-    return {'placeholder': placeholder, 'placement': placement.name};
+    return {
+      'placeholder': placeholder,
+      'placement': placement.name,
+      'toolbarBehavior': toolbarBehavior.name,
+    };
   }
 }
 
@@ -80,6 +103,13 @@ class CupertinoNativeScaffoldNavigationBar {
   final List<CupertinoNativeBarEntry> leading;
   final List<CupertinoNativeBarEntry> trailing;
 
+  /// Entries for the bottom toolbar — SwiftUI's `.bottomBar` placement, the
+  /// glass bar that rides above the home indicator in Mail, Safari and Notes.
+  /// Insert a [CupertinoNativeBarSpacer] to split its shared capsule.
+  ///
+  /// Up to 5 entries; extra ones are dropped.
+  final List<CupertinoNativeBarEntry> bottom;
+
   /// Optional native search field attached to this page's navigation bar.
   /// When set, the page becomes `.searchable`.
   final CupertinoNativeSearchField? search;
@@ -90,6 +120,7 @@ class CupertinoNativeScaffoldNavigationBar {
     this.titleDisplayMode = CupertinoNativeToolbarTitleDisplayMode.automatic,
     this.leading = const [],
     this.trailing = const [],
+    this.bottom = const [],
     this.search,
   });
 
@@ -102,6 +133,7 @@ class CupertinoNativeScaffoldNavigationBar {
       'displayMode': titleDisplayMode.name,
       'leading': leading.map((e) => e.toMap()).toList(),
       'trailing': trailing.map((e) => e.toMap()).toList(),
+      'bottom': bottom.map((e) => e.toMap()).toList(),
       'search': search?.toMap(),
     };
   }

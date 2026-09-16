@@ -2,7 +2,7 @@ import Flutter
 import SwiftUI
 import UIKit
 
-@available(iOS 15.0, *)
+@available(iOS 26.0, *)
 class NativeListFactory: NSObject, FlutterPlatformViewFactory {
     private var messenger: FlutterBinaryMessenger
 
@@ -32,7 +32,7 @@ class NativeListFactory: NSObject, FlutterPlatformViewFactory {
 /// Hosts a native SwiftUI `List`/`Form` (see `AdaptiveListView`) as a Flutter
 /// platform view. Self-sizes to its content height (measured against the
 /// Flutter-provided width) so it can sit inside a Flutter scroll view.
-@available(iOS 15.0, *)
+@available(iOS 26.0, *)
 class NativeListView: NativeHostingView {
     private var channel: FlutterMethodChannel?
 
@@ -88,22 +88,18 @@ class NativeListView: NativeHostingView {
     }
 
     private func makeContent(_ config: ListConfig) -> AnyView {
-        if #available(iOS 15.0, *) {
-            return AnyView(
-                AdaptiveListView(
-                    config: config,
-                    onRowTap: { [weak self] id in
-                        self?.channel?.invokeMethod("onRowTap", arguments: ["id": id])
-                    },
-                    onToggle: { [weak self] id, value in
-                        self?.shownToggles[id] = value
-                        self?.channel?.invokeMethod(
-                            "onToggle", arguments: ["id": id, "value": value])
-                    }
-                ))
-        } else {
-            return AnyView(Text("CupertinoNativeList requires iOS 15.0+"))
-        }
+        return AnyView(
+            AdaptiveListView(
+                config: config,
+                onRowTap: { [weak self] id in
+                    self?.channel?.invokeMethod("onRowTap", arguments: ["id": id])
+                },
+                onToggle: { [weak self] id, value in
+                    self?.shownToggles[id] = value
+                    self?.channel?.invokeMethod(
+                        "onToggle", arguments: ["id": id, "value": value])
+                }
+            ))
     }
 
     private func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
@@ -161,17 +157,19 @@ class NativeListView: NativeHostingView {
         if fittingSize.height > 1 && fittingSize.height < 100_000 {
             height = fittingSize.height
         }
-        // Fallback: iOS 16+ sizingOptions == .intrinsicContentSize
-        if height <= 1, #available(iOS 16.0, *) {
+        // Fallback: sizingOptions == .intrinsicContentSize
+        if height <= 1 {
             let intrinsic = host.view.intrinsicContentSize.height
             if intrinsic > 1 && intrinsic < 100_000 { height = intrinsic }
         }
         // Fallback: UIKit auto-layout fitting
         if height <= 1 {
-            height = host.view.systemLayoutSizeFitting(
-                CGSize(width: width, height: UIView.layoutFittingCompressedSize.height),
-                withHorizontalFittingPriority: .required,
-                verticalFittingPriority: .fittingSizeLevel).height
+            height =
+                host.view.systemLayoutSizeFitting(
+                    CGSize(width: width, height: UIView.layoutFittingCompressedSize.height),
+                    withHorizontalFittingPriority: .required,
+                    verticalFittingPriority: .fittingSizeLevel
+                ).height
         }
         return CGSize(width: width, height: height)
     }

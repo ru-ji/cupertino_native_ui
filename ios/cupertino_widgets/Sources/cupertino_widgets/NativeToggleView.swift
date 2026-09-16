@@ -2,7 +2,7 @@ import Flutter
 import SwiftUI
 import UIKit
 
-@available(iOS 15.0, *)
+@available(iOS 26.0, *)
 class NativeToggleFactory: NSObject, FlutterPlatformViewFactory {
     private var messenger: FlutterBinaryMessenger
 
@@ -29,7 +29,7 @@ class NativeToggleFactory: NSObject, FlutterPlatformViewFactory {
     }
 }
 
-@available(iOS 15.0, *)
+@available(iOS 26.0, *)
 class NativeToggleView: NativeHostingView {
     private var channel: FlutterMethodChannel?
 

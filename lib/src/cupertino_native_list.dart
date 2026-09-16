@@ -35,7 +35,7 @@ enum CupertinoNativeListStyle {
 /// )
 /// ```
 ///
-/// By default the list self-sizes to its content (iOS 16+) so it can sit inside
+/// By default the list self-sizes to its content so it can sit inside
 /// a Flutter `Column`/`ListView`. Pass a [height] (optionally with
 /// [scrollable]) to give it a fixed, internally-scrolling region instead.
 class CupertinoNativeList extends StatelessWidget {

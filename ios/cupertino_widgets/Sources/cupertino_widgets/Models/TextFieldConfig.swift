@@ -2,6 +2,7 @@ import Foundation
 
 /// Creation/update parameters for the native text field platform view,
 /// mirroring the customization surface of `CupertinoNativeTextField` on Dart.
+@available(iOS 26.0, *)
 struct TextFieldConfig: Codable {
     var text: String? = nil
     var placeholder: String? = nil
@@ -33,9 +34,18 @@ struct TextFieldConfig: Codable {
     var prefixIcon: IconConfig? = nil  // leading SF Symbol (UITextField.leftView)
     var suffixIcon: IconConfig? = nil  // trailing SF Symbol (UITextField.rightView)
     var verticalAlignment: String? = nil  // "top" | "center" | "bottom"
+    /// The bar that rides above the keyboard while this field is focused —
+    /// the items of a `ToolbarItemGroup(placement: .keyboard)`.
+    ///
+    /// An array, not an optional node: `BodyNodeConfig` already stores a
+    /// `TextFieldConfig?` for its own field nodes, so a `BodyNodeConfig?`
+    /// here would make the two structs recursively contain each other inline
+    /// — a value type of infinite size. An array is a reference to heap
+    /// storage, so the cycle costs nothing.
+    var keyboardToolbar: [BodyNodeConfig]? = nil
 }
 
-@available(iOS 15.0, *)
+@available(iOS 26.0, *)
 extension TextFieldConfig {
     /// A platform view created without arguments still needs a config.
     static let empty = TextFieldConfig()

@@ -1,5 +1,6 @@
 import Foundation
 
+@available(iOS 26.0, *)
 struct SegmentedControlConfig: Codable {
     let items: [String]
     let selectedIndex: Int

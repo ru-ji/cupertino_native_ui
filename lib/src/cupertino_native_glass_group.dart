@@ -82,7 +82,7 @@ class CupertinoNativeGlassGroupItem {
 /// )
 /// ```
 ///
-/// Falls back to a plain material row below iOS 26, and to nothing at all
+/// Falls back to nothing at all
 /// below iOS 16.
 class CupertinoNativeGlassGroup extends StatefulWidget {
   const CupertinoNativeGlassGroup({

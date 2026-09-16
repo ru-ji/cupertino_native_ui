@@ -12,7 +12,6 @@ import 'cupertino_native_tab_bar.dart' show CupertinoScrollEdgeEffectStyle;
 import 'cupertino_native_text_field.dart';
 import 'cupertino_scroll_edge_effect.dart';
 import 'cupertino_symbol_image.dart';
-import 'internal/ios_version.dart';
 import 'models/cupertino_native_icon.dart';
 import 'models/cupertino_symbols.dart';
 import 'search_row_visibility.dart';
@@ -39,9 +38,6 @@ export 'search_row_visibility.dart' show CupertinoSearchRowVisibility;
 /// default: consumed *before* the page starts scrolling, shrinking while its
 /// content fades) or stays visible ([NavigationBarBottomMode.always]).
 ///
-/// Below iOS 26 it falls back to Flutter's [CupertinoSliverNavigationBar]
-/// (its `.search` variant with a [CupertinoSearchTextField] for the search
-/// constructor), ignoring the iOS 26-only styling.
 class CupertinoNativeSliverNavigationBar extends StatefulWidget {
   const CupertinoNativeSliverNavigationBar({
     super.key,
@@ -106,8 +102,7 @@ class CupertinoNativeSliverNavigationBar extends StatefulWidget {
   /// Whether the large title collapses into the bar on scroll. False keeps it
   /// expanded for good — the header never shrinks and no inline title appears,
   /// like the iOS apps whose title stays large — while the scroll edge effect
-  /// still comes up at the point the collapse would have fired. iOS 26+ only;
-  /// the pre-26 fallback bar always collapses.
+  /// still comes up at the point the collapse would have fired.
   final bool collapseTitle;
 
   /// Secondary line — under the large title (like Photos' "3,356 Items") and
@@ -337,8 +332,6 @@ class _CupertinoSliverAppBarState
   /// .automatic) or the large-title region, animate the scroll position to
   /// the nearest edge so the bar never rests half-collapsed.
   void _handleScrollChange() {
-    // Below iOS 26 the fallback CupertinoSliverNavigationBar snaps itself.
-    if (!isIOS26OrLater) return;
     final ScrollPosition? position = _scrollableState?.position;
     if (position == null || !position.hasPixels || position.pixels <= 0.0) {
       return;
@@ -433,40 +426,6 @@ class _CupertinoSliverAppBarState
 
   @override
   Widget build(BuildContext context) {
-    if (!isIOS26OrLater) {
-      final trailingRow = widget.trailing.isEmpty
-          ? null
-          : Row(mainAxisSize: MainAxisSize.min, children: widget.trailing);
-      if (widget._searchable) {
-        // Pre-iOS 26 look: Flutter's own search bar; the iOS 26-only glass
-        // icon properties don't apply here and are ignored.
-        return CupertinoSliverNavigationBar.search(
-          searchField: CupertinoSearchTextField(
-            placeholder: widget.searchPlaceholder,
-            style: widget.searchStyle,
-            onChanged: widget.onSearchChanged,
-          ),
-          bottomMode: widget.bottomMode,
-          largeTitle: Text(widget.largeTitle),
-          leading: widget.leading,
-          trailing: trailingRow,
-        );
-      }
-      return CupertinoSliverNavigationBar(
-        largeTitle: Text(widget.largeTitle),
-        leading: widget.leading,
-        trailing: trailingRow,
-        bottom: widget.bottom == null
-            ? null
-            : PreferredSize(
-                preferredSize: Size.fromHeight(widget.bottomHeight),
-                child: widget.bottom!,
-              ),
-        bottomMode: widget.bottom == null
-            ? null
-            : NavigationBarBottomMode.always,
-      );
-    }
     final theme = CupertinoTheme.of(context);
     final leading = widget.leading;
     final trailing = widget.trailing.isEmpty
@@ -490,12 +449,10 @@ class _CupertinoSliverAppBarState
     // The bottom slot. The field turns to glass while the search is open
     // and, in `always` mode, once the title has collapsed.
     final glassy =
-        isIOS26OrLater &&
-        (widget.searchGlass ||
-            _searchActive ||
-            _controller.value > 0 ||
-            (widget.bottomMode == NavigationBarBottomMode.always &&
-                _collapsed));
+        widget.searchGlass ||
+        _searchActive ||
+        _controller.value > 0 ||
+        (widget.bottomMode == NavigationBarBottomMode.always && _collapsed);
     final Widget? bottomSlot = widget._searchable
         ? CupertinoNativeTextField(
             placeholder: widget.searchPlaceholder,
@@ -1121,7 +1078,7 @@ class _SearchSlot extends StatelessWidget {
 }
 
 /// A pinned, non-collapsing iOS 26 navigation bar. Place it in a `Stack`
-/// over your content. Falls back to [CupertinoNavigationBar] below iOS 26.
+/// over your content.
 class CupertinoNativeNavigationBar extends StatelessWidget {
   const CupertinoNativeNavigationBar({
     super.key,
@@ -1144,9 +1101,6 @@ class CupertinoNativeNavigationBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (!isIOS26OrLater) {
-      return CupertinoNavigationBar(middle: Text(title), leading: leading);
-    }
     return _EffectBrightness(builder: _buildBar);
   }
 

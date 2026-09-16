@@ -23,8 +23,7 @@ class NativeCollectionView extends StatefulWidget {
 
   final List<CupertinoNativeListSection> sections;
 
-  /// Fixed height. When null the view self-sizes to its content (requires
-  /// iOS 16+; falls back to a scrolling region below that).
+  /// Fixed height. When null the view self-sizes to its content.
   final double? height;
 
   /// Let the native list own its scrolling. Defaults to false so the content

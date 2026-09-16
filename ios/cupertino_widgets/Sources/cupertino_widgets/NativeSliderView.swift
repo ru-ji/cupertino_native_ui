@@ -2,7 +2,7 @@ import Flutter
 import SwiftUI
 import UIKit
 
-@available(iOS 15.0, *)
+@available(iOS 26.0, *)
 class NativeSliderFactory: NSObject, FlutterPlatformViewFactory {
     private var messenger: FlutterBinaryMessenger
 
@@ -29,7 +29,7 @@ class NativeSliderFactory: NSObject, FlutterPlatformViewFactory {
     }
 }
 
-@available(iOS 15.0, *)
+@available(iOS 26.0, *)
 class NativeSliderView: NativeHostingView {
     private var channel: FlutterMethodChannel
     private var viewModel = SliderViewModel()

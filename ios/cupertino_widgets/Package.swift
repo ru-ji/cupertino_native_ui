@@ -5,10 +5,13 @@ import PackageDescription
 
 let package = Package(
     name: "cupertino_widgets",
-    // Minimum required to use the package: every native view is built on
-    // iOS 15+ SwiftUI/UIKit APIs.
+    // The floor an app can LINK this package at, not the one it needs to get
+    // anything out of it. Every view here is iOS 26 (Liquid Glass) and is
+    // annotated as such; below 26 the plugin registers nothing and the app
+    // still builds and runs. Declaring 26 here would instead force every
+    // consuming app to raise its own deployment target to 26 just to compile.
     platforms: [
-        .iOS("15.0")
+        .iOS("13.0")
     ],
     products: [
         .library(name: "cupertino-widgets", targets: ["cupertino_widgets"])

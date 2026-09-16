@@ -27,7 +27,7 @@ import 'models/cupertino_native_list_section.dart';
 /// )
 /// ```
 ///
-/// By default the form self-sizes to its content (iOS 16+). Pass a [height]
+/// By default the form self-sizes to its content. Pass a [height]
 /// (optionally with [scrollable]) for a fixed, internally-scrolling region.
 class CupertinoNativeForm extends StatelessWidget {
   final List<CupertinoNativeListSection> sections;

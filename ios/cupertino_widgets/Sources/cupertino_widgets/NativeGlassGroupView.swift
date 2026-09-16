@@ -2,7 +2,7 @@ import Flutter
 import SwiftUI
 import UIKit
 
-@available(iOS 15.0, *)
+@available(iOS 26.0, *)
 class NativeGlassGroupFactory: NSObject, FlutterPlatformViewFactory {
     private var messenger: FlutterBinaryMessenger
 
@@ -29,7 +29,7 @@ class NativeGlassGroupFactory: NSObject, FlutterPlatformViewFactory {
 ///
 /// `GlassEffectContainer` merges glasses only within one SwiftUI tree, so a
 /// group is one host.
-@available(iOS 15.0, *)
+@available(iOS 26.0, *)
 class NativeGlassGroupView: NativeHostingView {
     private var channel: FlutterMethodChannel?
     private let model = GlassGroupModel()
@@ -54,10 +54,6 @@ class NativeGlassGroupView: NativeHostingView {
             let config = decodeConfig(GlassGroupConfig.self, from: argsMap)
         {
             model.config = config
-        }
-        guard #available(iOS 16.0, *) else {
-            attach(AnyView(Color.clear))
-            return
         }
         // Built once and fed by the model from then on. Re-attaching would
         // rebuild the container, and a container rebuilt mid-morph drops the
@@ -94,11 +90,7 @@ class NativeGlassGroupView: NativeHostingView {
                 let config = decodeConfig(GlassGroupConfig.self, from: argsMap)
             {
                 // Animated: this is where the merge happens.
-                if #available(iOS 17.0, *) {
-                    withAnimation(.smooth(duration: 0.35)) { model.config = config }
-                } else {
-                    withAnimation(.easeInOut(duration: 0.35)) { model.config = config }
-                }
+                withAnimation(.smooth(duration: 0.35)) { model.config = config }
                 result(nil)
             } else {
                 result(
@@ -110,7 +102,7 @@ class NativeGlassGroupView: NativeHostingView {
     }
 }
 
-@available(iOS 15.0, *)
+@available(iOS 26.0, *)
 final class GlassGroupModel: ObservableObject {
     @Published var config = GlassGroupConfig(
         items: [], spacing: nil, variant: nil, tint: nil, interactive: nil,
@@ -119,7 +111,7 @@ final class GlassGroupModel: ObservableObject {
 
 /// iOS 16 is the floor: `AnyShape` is what lets one item be a circle and its
 /// neighbour a capsule in the same container.
-@available(iOS 16.0, *)
+@available(iOS 26.0, *)
 struct AdaptiveGlassGroupView: View {
     @ObservedObject var model: GlassGroupModel
     let onAction: (String) -> Void
@@ -139,38 +131,28 @@ struct AdaptiveGlassGroupView: View {
 
     @ViewBuilder
     private var content: some View {
-        if #available(iOS 26.0, *) {
-            if spacing <= 0 {
-                // No gap: 44pt glasses united into one capsule, like a toolbar
-                // group (`glassEffectUnion`).
-                GlassEffectContainer {
-                    sharedStack { item in
-                        button(item)
-                            .glassEffect(glass, in: Capsule())
-                            .glassEffectUnion(id: "group", namespace: namespace)
-                    }
-                }
-            } else {
-                GlassEffectContainer(spacing: spacing) {
-                    stack { item in
-                        button(item)
-                            .glassEffect(glass, in: shape(for: item))
-                            .glassEffectID(item.id, in: namespace)
-                    }
+        if spacing <= 0 {
+            // No gap: 44pt glasses united into one capsule, like a toolbar
+            // group (`glassEffectUnion`).
+            GlassEffectContainer {
+                sharedStack { item in
+                    button(item)
+                        .glassEffect(glass, in: Capsule())
+                        .glassEffectUnion(id: "group", namespace: namespace)
                 }
             }
         } else {
-            // Below 26 there is no merge to have: the same layout, each item on
-            // the closest material the system offers.
-            stack { item in
-                button(item)
-                    .background(.ultraThinMaterial, in: shape(for: item))
+            GlassEffectContainer(spacing: spacing) {
+                stack { item in
+                    button(item)
+                        .glassEffect(glass, in: shape(for: item))
+                        .glassEffectID(item.id, in: namespace)
+                }
             }
         }
     }
 
-    /// One row or one column of items, each passed through `decorate` — the
-    /// only difference between the iOS 26 branch and the fallback.
+    /// One row or one column of items, each passed through `decorate`.
     @ViewBuilder
     private func stack<V: View>(
         @ViewBuilder decorate: @escaping (GlassGroupItemConfig) -> V
@@ -211,9 +193,9 @@ struct AdaptiveGlassGroupView: View {
 
     private func button(_ item: GlassGroupItemConfig) -> some View {
         label(item)
-        .opacity(item.enabled == false ? 0.4 : 1)
-        .contentShape(Rectangle())
-        .onTapGesture { if item.enabled != false { onAction(item.actionId) } }
+            .opacity(item.enabled == false ? 0.4 : 1)
+            .contentShape(Rectangle())
+            .onTapGesture { if item.enabled != false { onAction(item.actionId) } }
     }
 
     @available(iOS 26.0, *)

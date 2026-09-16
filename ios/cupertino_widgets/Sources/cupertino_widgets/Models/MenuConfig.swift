@@ -1,5 +1,6 @@
 import Foundation
 
+@available(iOS 26.0, *)
 enum MenuItemType: String, Codable {
     case action
     case submenu
@@ -7,6 +8,7 @@ enum MenuItemType: String, Codable {
     case toggle
 }
 
+@available(iOS 26.0, *)
 struct MenuItemConfig: Codable, Identifiable {
     var id: String { actionId ?? UUID().uuidString }
     let type: MenuItemType
@@ -20,6 +22,7 @@ struct MenuItemConfig: Codable, Identifiable {
     let items: [MenuItemConfig]?
 }
 
+@available(iOS 26.0, *)
 struct MenuConfiguration: Codable {
     let title: String
     let systemImage: String?

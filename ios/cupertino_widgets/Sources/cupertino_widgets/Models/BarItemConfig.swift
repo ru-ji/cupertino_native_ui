@@ -1,6 +1,7 @@
 import Foundation
 
 /// A single toolbar button that reports taps back to Dart via `actionId`.
+@available(iOS 26.0, *)
 struct BarItemConfig: Codable, Hashable {
     let title: String?
     let icon: IconConfig?
@@ -10,9 +11,12 @@ struct BarItemConfig: Codable, Hashable {
     let glass: Bool?
 }
 
-/// One leading/trailing entry: `type == "item"` is a single button (fields
-/// inline); `type == "group"` is several buttons sharing one glass capsule
-/// (`items`). Separate entries render as separate capsules on iOS 26.
+/// One bar entry: `type == "item"` is a single button (fields inline),
+/// `type == "group"` is several buttons sharing one glass capsule (`items`),
+/// and `type == "spacer"` is a `ToolbarSpacer` — the gap that splits the
+/// shared background into separate capsules. Separate entries render as
+/// separate capsules.
+@available(iOS 26.0, *)
 struct BarEntryConfig: Codable, Hashable {
     let type: String
     let title: String?
@@ -32,6 +36,11 @@ struct BarEntryConfig: Codable, Hashable {
 
     var hidesSharedBackground: Bool { sharedBackgroundVisibility == true }
 
+    /// A `ToolbarSpacer`, not a button. `sharedBackgroundVisibility == true`
+    /// makes it flexible (pushes the sides apart); otherwise it is the fixed
+    /// gap that just breaks the capsule.
+    var isSpacer: Bool { type == "spacer" }
+
     var groupItems: [BarItemConfig] {
         if type == "group" { return items ?? [] }
         if let item = asItem { return [item] }
@@ -41,11 +50,15 @@ struct BarEntryConfig: Codable, Hashable {
 
 /// Navigation-bar configuration shared by the standalone app bar and every
 /// page of the native scaffold.
+@available(iOS 26.0, *)
 struct AppBarConfig: Codable, Hashable {
     let title: String
     let subtitle: String?  // .navigationSubtitle (iOS 26+)
     let displayMode: String?  // "inline" | "large"
     let leading: [BarEntryConfig]?
     let trailing: [BarEntryConfig]?
+    /// Entries for the bottom toolbar (`.bottomBar`) — the glass bar that
+    /// rides above the home indicator in Mail, Safari and Notes.
+    let bottom: [BarEntryConfig]?
     let search: SearchConfig?
 }

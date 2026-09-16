@@ -171,7 +171,7 @@ class _LiquidGlassDemoPageState extends State<LiquidGlassDemoPage> {
             ),
             SettingsRow(
               title: 'Tint',
-              trailing: CupertinoNativePicker<int>(
+              trailing: CupertinoNativeSlidingSegmentedControl<int>.menu(
                 children: {
                   for (final (i, label) in _tints.indexed) i: Text(label),
                 },

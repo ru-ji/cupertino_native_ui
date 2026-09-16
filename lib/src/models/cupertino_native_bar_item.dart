@@ -27,7 +27,7 @@ class CupertinoNativeBarItem extends CupertinoNativeBarEntry {
   /// Whether the button takes the `.glass` style. Only applies with
   /// [sharedBackgroundVisibility]: outside the shared background an unstyled
   /// button reads as plain text, so it is on by default — turn it off for
-  /// exactly that plain look. Ignored below iOS 26.
+  /// exactly that plain look.
   final bool glass;
 
   const CupertinoNativeBarItem({
@@ -99,3 +99,35 @@ class CupertinoNativeBarItemGroup extends CupertinoNativeBarEntry {
 /// [CupertinoNativeBarItem], under the name the native scaffold's bar is
 /// usually described with.
 typedef CupertinoNativeAppBarAction = CupertinoNativeBarItem;
+
+/// A gap between bar entries — SwiftUI's `ToolbarSpacer` (iOS 26).
+///
+/// The toolbar draws one shared glass capsule behind its items; a spacer
+/// breaks it in two, so the entries on either side get their own. Mail's
+/// bottom bar is the canonical use: actions on the left, compose on the
+/// right, a flexible spacer between them.
+class CupertinoNativeBarSpacer extends CupertinoNativeBarEntry {
+  /// Whether the spacer pushes the two sides as far apart as the bar allows
+  /// (true, the default) or is just the fixed gap that breaks the capsule.
+  final bool flexible;
+
+  const CupertinoNativeBarSpacer({this.flexible = true});
+
+  @override
+  Map<String, dynamic> toMap() {
+    return {
+      'type': 'spacer',
+      // Reuses the shared-background key: on the native side a spacer has no
+      // background of its own to hide, so the flag carries the flexibility.
+      'sharedBackgroundVisibility': flexible,
+    };
+  }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is CupertinoNativeBarSpacer && other.flexible == flexible);
+
+  @override
+  int get hashCode => flexible.hashCode;
+}

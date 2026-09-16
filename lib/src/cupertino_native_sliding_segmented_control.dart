@@ -28,7 +28,10 @@ class CupertinoNativeSlidingSegmentedControl<T extends Object>
          'draws labels, not arbitrary widgets.',
        );
 
-  const CupertinoNativeSlidingSegmentedControl._menu({
+  /// The same options behind a button that opens them as a native menu,
+  /// instead of laid out as a strip. For the other picker styles — the wheel,
+  /// the Liquid Glass palette — see `CupertinoNativePicker`.
+  const CupertinoNativeSlidingSegmentedControl.menu({
     super.key,
     required this.children,
     required this.onValueChanged,
@@ -192,20 +195,4 @@ class _CupertinoNativeSegmentedControlState<T extends Object>
       ),
     );
   }
-}
-
-/// iOS's menu picker, rendered by SwiftUI: a button showing the selected
-/// value that opens a native menu of the options. Same API as
-/// [CupertinoNativeSlidingSegmentedControl].
-class CupertinoNativePicker<T extends Object>
-    extends CupertinoNativeSlidingSegmentedControl<T> {
-  const CupertinoNativePicker({
-    super.key,
-    required super.children,
-    required super.onValueChanged,
-    super.groupValue,
-    super.thumbColor,
-    super.width,
-    super.height,
-  }) : super._menu();
 }

@@ -1,4 +1,4 @@
-/// Button border shapes for native iOS buttons (iOS 15+)
+/// Button border shapes for native iOS buttons.
 enum CupertinoNativeButtonBorderShape {
   automatic,
   capsule,

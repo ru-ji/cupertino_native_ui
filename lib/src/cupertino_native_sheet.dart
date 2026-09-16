@@ -77,6 +77,13 @@ abstract final class CupertinoNativeSheet {
   ///
   /// [isDark] pins the sheet's appearance; when null it follows the platform
   /// brightness.
+  ///
+  /// Pass [anchor] to present a **popover** instead: the same engine and the
+  /// same chrome, pointing at the control it came from rather than rising
+  /// from the bottom, and staying a popover on iPhone instead of adapting
+  /// back to a sheet. [detents], [showDragHandle] and [cornerRadius] belong
+  /// to the sheet presentation and are ignored; [preferredSize] sizes the
+  /// popover. See [CupertinoNativePopover] for the direct call.
   static Future<void> show({
     required String route,
     CupertinoNativeScaffoldNavigationBar? appBar,
@@ -95,6 +102,8 @@ abstract final class CupertinoNativeSheet {
     ValueChanged<int>? onBottomChanged,
     ValueChanged<String>? onSearchChanged,
     ValueChanged<String>? onSearchSubmitted,
+    Rect? anchor,
+    Size? preferredSize,
   }) async {
     if (defaultTargetPlatform != TargetPlatform.iOS) return;
 
@@ -122,6 +131,18 @@ abstract final class CupertinoNativeSheet {
             showLoadingIndicator ??
             CupertinoWidgetsSettings.showLoadingIndicator,
         'isDark': dark,
+        if (anchor != null)
+          'sourceRect': {
+            'x': anchor.left,
+            'y': anchor.top,
+            'width': anchor.width,
+            'height': anchor.height,
+          },
+        if (preferredSize != null)
+          'preferredSize': {
+            'width': preferredSize.width,
+            'height': preferredSize.height,
+          },
       });
     } finally {
       _onBarAction = null;

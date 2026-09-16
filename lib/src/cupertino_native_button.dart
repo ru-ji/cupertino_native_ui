@@ -107,8 +107,13 @@ class CupertinoNativeButton extends StatefulWidget {
 }
 
 /// What the native control is told to draw, read off [CupertinoNativeButton.child].
-class _ButtonLabel {
-  _ButtonLabel(Widget child) {
+/// Reads the title, icon and text style out of a button's `child`.
+///
+/// Internal rather than private: the keyboard toolbar lowers a
+/// `CupertinoNativeButton` written inline into a native description, and needs
+/// the same reading of its label.
+class ButtonLabel {
+  ButtonLabel(Widget child) {
     void read(Widget w) {
       switch (w) {
         case Text(:final data?, :final style):
@@ -144,7 +149,7 @@ class _ButtonLabel {
 
 class _CupertinoNativeButtonState extends State<CupertinoNativeButton>
     with NativePlatformViewStateMixin {
-  _ButtonLabel get _label => _ButtonLabel(widget.child);
+  ButtonLabel get _label => ButtonLabel(widget.child);
 
   bool? _lastIsDark;
 
@@ -165,7 +170,7 @@ class _CupertinoNativeButtonState extends State<CupertinoNativeButton>
   @override
   void didUpdateWidget(covariant CupertinoNativeButton oldWidget) {
     super.didUpdateWidget(oldWidget);
-    final old = _ButtonLabel(oldWidget.child);
+    final old = ButtonLabel(oldWidget.child);
     final label = _label;
     if (old.title != label.title ||
         old.icon != label.icon ||

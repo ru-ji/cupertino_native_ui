@@ -4,20 +4,32 @@ import SwiftUI
 /// Each entry gets its own ToolbarItem (own glass capsule on iOS 26); a
 /// "group" entry renders its buttons in one HStack sharing a capsule.
 /// Supports up to 4 entries per side.
-@available(iOS 16.0, *)
+@available(iOS 26.0, *)
 struct AppBarToolbar: ToolbarContent {
     let config: AppBarConfig
     let onAction: (String) -> Void
 
+    /// Split by side, because `@ToolbarContentBuilder` — like every SwiftUI
+    /// result builder — tops out at 10 children per block, and the three
+    /// sides together are 13.
     var body: some ToolbarContent {
-        item(config.leading, 0, .navigationBarLeading)
-        item(config.leading, 1, .navigationBarLeading)
-        item(config.leading, 2, .navigationBarLeading)
-        item(config.leading, 3, .navigationBarLeading)
-        item(config.trailing, 0, .navigationBarTrailing)
-        item(config.trailing, 1, .navigationBarTrailing)
-        item(config.trailing, 2, .navigationBarTrailing)
-        item(config.trailing, 3, .navigationBarTrailing)
+        side(config.leading, .navigationBarLeading)
+        side(config.trailing, .navigationBarTrailing)
+        side(config.bottom, .bottomBar)
+    }
+
+    /// Up to 5 entries per side. A fixed number of slots rather than a
+    /// `ForEach`: `ToolbarContent` has no such thing, so each position is its
+    /// own statically-known item.
+    @ToolbarContentBuilder
+    private func side(
+        _ entries: [BarEntryConfig]?, _ placement: ToolbarItemPlacement
+    ) -> some ToolbarContent {
+        item(entries, 0, placement)
+        item(entries, 1, placement)
+        item(entries, 2, placement)
+        item(entries, 3, placement)
+        item(entries, 4, placement)
     }
 
     /// One toolbar slot, in the two shapes iOS 26 offers.
@@ -35,7 +47,12 @@ struct AppBarToolbar: ToolbarContent {
         _ entries: [BarEntryConfig]?, _ index: Int, _ placement: ToolbarItemPlacement
     ) -> some ToolbarContent {
         if let entry = entry(entries, index) {
-            if #available(iOS 26.0, *), entry.hidesSharedBackground {
+            if entry.isSpacer {
+                // Flexible pushes the two sides of the bar apart; fixed just
+                // breaks the shared capsule between two groups.
+                ToolbarSpacer(
+                    entry.hidesSharedBackground ? .flexible : .fixed, placement: placement)
+            } else if entry.hidesSharedBackground {
                 ToolbarItem(placement: placement) { entryView(entry) }
                     .sharedBackgroundVisibility(.hidden)
             } else {
@@ -49,6 +66,7 @@ struct AppBarToolbar: ToolbarContent {
         return entries[index]
     }
 
+    @available(iOS 26.0, *)
     @ViewBuilder
     private func entryView(_ entry: BarEntryConfig) -> some View {
         let items = entry.groupItems
@@ -64,6 +82,7 @@ struct AppBarToolbar: ToolbarContent {
         }
     }
 
+    @available(iOS 26.0, *)
     @ViewBuilder
     private func barButton(_ item: BarItemConfig, ownBackground: Bool) -> some View {
         applyGlassStyle(to: rawButton(item), enabled: item.glass != false && ownBackground)
@@ -72,15 +91,17 @@ struct AppBarToolbar: ToolbarContent {
     /// `.glass` only where the item left the shared background — inside it the
     /// system already draws the material, and a second one on top of it is the
     /// double capsule.
+    @available(iOS 26.0, *)
     @ViewBuilder
     private func applyGlassStyle(to button: some View, enabled: Bool) -> some View {
-        if #available(iOS 26.0, *), enabled {
+        if enabled {
             button.buttonStyle(.glass)
         } else {
             button
         }
     }
 
+    @available(iOS 26.0, *)
     @ViewBuilder
     private func rawButton(_ item: BarItemConfig) -> some View {
         Button {
@@ -103,11 +124,11 @@ struct AppBarToolbar: ToolbarContent {
     }
 }
 
-@available(iOS 15.0, *)
+@available(iOS 26.0, *)
 extension View {
     /// Applies an optional `AppBarConfig` (title, display mode, toolbar items)
     /// to a navigation destination. No-op when `config` is nil.
-    @available(iOS 16.0, *)
+    @available(iOS 26.0, *)
     @ViewBuilder
     func applyAppBar(_ config: AppBarConfig?, onAction: @escaping (String) -> Void) -> some View {
         if let config = config {
@@ -122,35 +143,25 @@ extension View {
     }
 
     /// SwiftUI `.navigationSubtitle` — iOS 26+; no-op earlier.
-    @available(iOS 16.0, *)
+    @available(iOS 26.0, *)
     @ViewBuilder
     func applyNavigationSubtitle(_ subtitle: String?) -> some View {
-        if let subtitle, #available(iOS 26.0, *) {
+        if let subtitle {
             self.navigationSubtitle(subtitle)
         } else {
             self
         }
     }
 
-    /// Applies the four title display modes. Uses SwiftUI's
-    /// `.toolbarTitleDisplayMode(...)` on iOS 17+, falling back to
-    /// `.navigationBarTitleDisplayMode` below that.
-    @available(iOS 16.0, *)
+    /// Applies the four title display modes.
+    @available(iOS 26.0, *)
     @ViewBuilder
     func applyTitleDisplayMode(_ mode: String?) -> some View {
-        if #available(iOS 17.0, *) {
-            switch mode {
-            case "inline": self.toolbarTitleDisplayMode(.inline)
-            case "inlineLarge": self.toolbarTitleDisplayMode(.inlineLarge)
-            case "large": self.toolbarTitleDisplayMode(.large)
-            default: self.toolbarTitleDisplayMode(.automatic)
-            }
-        } else {
-            switch mode {
-            case "inline": self.navigationBarTitleDisplayMode(.inline)
-            case "large", "inlineLarge": self.navigationBarTitleDisplayMode(.large)
-            default: self.navigationBarTitleDisplayMode(.automatic)
-            }
+        switch mode {
+        case "inline": self.toolbarTitleDisplayMode(.inline)
+        case "inlineLarge": self.toolbarTitleDisplayMode(.inlineLarge)
+        case "large": self.toolbarTitleDisplayMode(.large)
+        default: self.toolbarTitleDisplayMode(.automatic)
         }
     }
 }

@@ -14,7 +14,6 @@ enum CupertinoGlassShape { capsule, circle, roundedRect }
 /// Which Liquid Glass material variant to render (SwiftUI `Glass` /
 /// `UIGlassEffect.Style`): [regular] is the standard adaptive glass,
 /// [clear] is the more transparent variant for media-rich backdrops.
-/// Ignored below iOS 26, where the material fallback has no variants.
 enum CupertinoGlassVariant { regular, clear }
 
 /// Liquid Glass settings for a control that renders *on* glass rather than
@@ -66,19 +65,26 @@ class CupertinoGlass {
 /// (SwiftUI's `.glassEffect`). The glass is a real native view that refracts
 /// whatever is rendered behind it.
 ///
-/// Content goes *inside* the glass — a native [icon], or a Flutter [route]
-/// hosted as a SwiftUI view that `glassEffect` wraps. It is live Flutter:
-/// `setState`, Riverpod, animations, all of it runs normally in there.
+/// Content goes on the glass three ways, in increasing cost:
+///
+/// * **[child]** — an ordinary Flutter widget, drawn by your own engine over
+///   the glass and sizing it. No route, no isolate, nothing to register. This
+///   is what you want.
+/// * **[icon]** — a native SF Symbol, drawn by SwiftUI inside the material.
+/// * **[route]** — Flutter content hosted *inside* the glass as a SwiftUI
+///   view that `glassEffect` wraps, in its own engine. Only for when the
+///   material has to treat the content as part of its own shape; it costs an
+///   isolate and a route registered in `maybeRun`.
 ///
 /// ```dart
 /// CupertinoNativeGlassContainer(
 ///   shape: CupertinoGlassShape.capsule,
-///   route: 'now_playing',
+///   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+///   child: Row(mainAxisSize: MainAxisSize.min, children: [...]),
 /// )
 /// ```
 ///
-/// With neither, it is glass and nothing else — size it and stack whatever you
-/// like over it in Flutter.
+/// With none of the three, it is glass and nothing else.
 ///
 /// **Availability:** the refractive effect requires iOS 26+. On iOS 15–25 the
 /// native side renders a static `ultraThinMaterial` approximation so layouts
@@ -87,6 +93,7 @@ class CupertinoGlass {
 class CupertinoNativeGlassContainer extends StatefulWidget {
   const CupertinoNativeGlassContainer({
     super.key,
+    this.child,
     this.route,
     this.shape = CupertinoGlassShape.roundedRect,
     this.cornerRadius = 26,
@@ -99,11 +106,27 @@ class CupertinoNativeGlassContainer extends StatefulWidget {
     this.width,
     this.height,
     this.animateChanges = false,
-  });
+  }) : assert(
+         child == null || route == null,
+         'Use child (Flutter over the glass) or route (Flutter inside it), '
+         'not both.',
+       );
 
-  /// A body route whose Flutter content is hosted *inside* the glass.
-  /// Registered like a [CupertinoNativePageScaffold] body in `maybeRun`, and
-  /// run in its own isolate.
+  /// An ordinary Flutter widget drawn over the glass, by the engine you are
+  /// already in. It sizes the container (plus [padding]) and needs no route,
+  /// no registration and no second isolate.
+  ///
+  /// It is *over* the material rather than inside it, which is invisible for
+  /// anything that isn't refracted by its own container — that is, almost
+  /// everything. Reach for [route] only when it is not.
+  final Widget? child;
+
+  /// Flutter content hosted *inside* the glass, as a SwiftUI view that
+  /// `glassEffect` wraps. Registered like a [CupertinoNativePageScaffold]
+  /// body in `maybeRun`, and run in its own isolate.
+  ///
+  /// [child] does the same job for far less; prefer it unless the material
+  /// has to treat the content as part of its own shape.
   final String? route;
 
   final CupertinoGlassShape shape;
@@ -316,6 +339,25 @@ class _CupertinoNativeGlassContainerState
         );
       }
       content = box;
+    }
+
+    // A Flutter child rides over the glass and gives it its size: the stack
+    // is as big as the padded child, and the glass fills it.
+    if (widget.child != null) {
+      final stacked = Stack(
+        children: [
+          Positioned.fill(child: content),
+          Padding(padding: widget.padding, child: widget.child),
+        ],
+      );
+      if (widget.width != null || widget.height != null) {
+        return SizedBox(
+          width: widget.width,
+          height: widget.height,
+          child: stacked,
+        );
+      }
+      return stacked;
     }
 
     // Three ways to a size, in order of authority.

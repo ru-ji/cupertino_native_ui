@@ -3,6 +3,7 @@ import Foundation
 /// Liquid Glass container configuration, decoded from Dart the same way every
 /// other control's config is (`decodeConfig` over the creation params /
 /// update arguments) — see `ButtonConfig`.
+@available(iOS 26.0, *)
 struct GlassConfig: Codable, Equatable {
     let shape: String  // "capsule" | "circle" | "roundedRect"
     let cornerRadius: Double?

@@ -1,6 +1,6 @@
 import SwiftUI
 
-@available(iOS 15.0, *)
+@available(iOS 26.0, *)
 class SliderViewModel: ObservableObject {
     @Published var value: Double = 0.0
     @Published var min: Double = 0.0
@@ -10,7 +10,7 @@ class SliderViewModel: ObservableObject {
     @Published var isEnabled: Bool = true
 }
 
-@available(iOS 15.0, *)
+@available(iOS 26.0, *)
 struct AdaptiveSliderView: View {
     @ObservedObject var viewModel: SliderViewModel
     var onChanged: ((Double) -> Void)?
