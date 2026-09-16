@@ -605,14 +605,5 @@ CupertinoSymbolImage.symbol(CupertinoSymbols.star, size: 20, color: CupertinoCol
 The [example](example/) shows every widget and its variants. Run it on an
 iOS 26 device to see Liquid Glass.
 
-## What's next
-
-- Widget titles (`largeTitle`, `middle`) on the navigation bars, like Flutter's.
-- `onChangeStart` / `onChangeEnd` on the slider.
-- More native components.
-
 Contributions are welcome: <https://github.com/ru-ji/cupertino_widgets>
 
-## License
-
-BSD 3-Clause. Copyright 2026 THON Hermès. See [LICENSE](LICENSE).
