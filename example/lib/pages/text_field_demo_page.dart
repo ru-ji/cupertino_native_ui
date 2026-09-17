@@ -129,6 +129,65 @@ class _TextFieldDemoPageState extends State<TextFieldDemoPage> {
           ],
         ),
         SettingsSection(
+          header: 'Keyboard Toolbar',
+          footer:
+              'Focus the field: the bar above the keyboard is SwiftUI\'s '
+              'own ToolbarItemGroup(placement: .keyboard), filled with the '
+              'toolbarActions — native buttons transcribed into SwiftUI. '
+              'The chevrons move focus between the two fields; Done '
+              'dismisses the keyboard.',
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: CupertinoNativeTextField(
+                placeholder: 'Focus me — the bar appears above the keyboard',
+                height: 48,
+                toolbarActions: [
+                  CupertinoNativeButton(
+                    onPressed: () {},
+                    child: CupertinoSymbolImage.symbol(
+                      CupertinoSymbols.chevronUp,
+                    ),
+                  ),
+                  CupertinoNativeButton(
+                    onPressed: () {},
+                    child: CupertinoSymbolImage.symbol(
+                      CupertinoSymbols.chevronDown,
+                    ),
+                  ),
+                  const Spacer(),
+                  CupertinoNativeButton(
+                    onPressed: () =>
+                        FocusManager.instance.primaryFocus?.unfocus(),
+                    child: const Text('Done'),
+                  ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: CupertinoNativeTextField(
+                placeholder: 'The chevron lands here',
+                height: 48,
+                toolbarActions: [
+                  CupertinoNativeButton(
+                    onPressed: () {},
+                    child: CupertinoSymbolImage.symbol(
+                      CupertinoSymbols.chevronUp,
+                    ),
+                  ),
+                  const Spacer(),
+                  CupertinoNativeButton(
+                    onPressed: () =>
+                        FocusManager.instance.primaryFocus?.unfocus(),
+                    child: const Text('Done'),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        SettingsSection(
           children: [
             Padding(
               padding: const EdgeInsets.all(16),

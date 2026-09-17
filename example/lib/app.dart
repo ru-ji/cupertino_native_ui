@@ -1,4 +1,3 @@
-import 'package:cupertino_widgets/cupertino_widgets.dart';
 import 'package:flutter/material.dart';
 
 import 'pages/home_page.dart';
@@ -34,11 +33,6 @@ class MyApp extends StatelessWidget {
           brightness: Brightness.dark,
         ),
         themeMode: mode,
-        // One wrapper, and every widget in the app that already reacts to
-        // `MediaQuery.viewInsets` follows the REAL keyboard instead of the
-        // height Flutter publishes once the animation is over.
-        builder: (context, child) =>
-            CupertinoNativeKeyboardScope(child: child!),
         home: const HomePage(),
       ),
     );

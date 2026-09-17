@@ -1,9 +1,8 @@
-import 'package:flutter/cupertino.dart';
+import 'package:flutter/widgets.dart';
+import 'package:cupertino_widgets/cupertino_widgets.dart';
 
-import '../widgets/settings_ui.dart';
-
-/// Settings tab body — shared with the native scaffold, so drawn Flutter
-/// widgets only (no platform views).
+/// Settings tab body — shared with the native scaffold. A native list, so the
+/// rows are real SwiftUI cells.
 class SettingsTabPage extends StatelessWidget {
   const SettingsTabPage({super.key});
 
@@ -12,30 +11,60 @@ class SettingsTabPage extends StatelessWidget {
     return const Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        SettingsSection(
-          header: 'Preferences',
-          children: [
-            SettingsRow(title: 'Notifications', value: 'On', showChevron: true),
-            SettingsRow(title: 'Sounds & Haptics', showChevron: true),
-            SettingsRow(title: 'Focus', showChevron: true),
-          ],
-        ),
-        SettingsSection(
-          header: 'Privacy',
-          children: [
-            SettingsRow(
-              title: 'Location Services',
-              value: 'While Using',
-              showChevron: true,
+        CupertinoNativeList(
+          sections: [
+            CupertinoNativeListSection(
+              header: 'Preferences',
+              children: [
+                CupertinoNativeListTile(
+                  id: 'notifications',
+                  title: 'Notifications',
+                  additionalInfo: 'On',
+                  showChevron: true,
+                ),
+                CupertinoNativeListTile(
+                  id: 'sounds',
+                  title: 'Sounds & Haptics',
+                  showChevron: true,
+                ),
+                CupertinoNativeListTile(
+                  id: 'focus',
+                  title: 'Focus',
+                  showChevron: true,
+                ),
+              ],
             ),
-            SettingsRow(title: 'Tracking', showChevron: true),
-          ],
-        ),
-        SettingsSection(
-          footer: 'Cupertino Widgets 1.0.0',
-          children: [
-            SettingsRow(title: 'About', showChevron: true),
-            SettingsRow(title: 'Legal & Regulatory', showChevron: true),
+            CupertinoNativeListSection(
+              header: 'Privacy',
+              children: [
+                CupertinoNativeListTile(
+                  id: 'location',
+                  title: 'Location Services',
+                  additionalInfo: 'While Using',
+                  showChevron: true,
+                ),
+                CupertinoNativeListTile(
+                  id: 'tracking',
+                  title: 'Tracking',
+                  showChevron: true,
+                ),
+              ],
+            ),
+            CupertinoNativeListSection(
+              footer: 'Cupertino Widgets 1.0.0',
+              children: [
+                CupertinoNativeListTile(
+                  id: 'about',
+                  title: 'About',
+                  showChevron: true,
+                ),
+                CupertinoNativeListTile(
+                  id: 'legal',
+                  title: 'Legal & Regulatory',
+                  showChevron: true,
+                ),
+              ],
+            ),
           ],
         ),
         SizedBox(height: 24),

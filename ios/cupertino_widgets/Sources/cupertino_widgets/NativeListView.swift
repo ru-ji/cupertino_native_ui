@@ -98,6 +98,11 @@ class NativeListView: NativeHostingView {
                     self?.shownToggles[id] = value
                     self?.channel?.invokeMethod(
                         "onToggle", arguments: ["id": id, "value": value])
+                },
+                onTrailingEvent: { [weak self] rowId, nodeId, value in
+                    self?.channel?.invokeMethod(
+                        "onTrailingEvent",
+                        arguments: ["rowId": rowId, "nodeId": nodeId, "value": value])
                 }
             ))
     }

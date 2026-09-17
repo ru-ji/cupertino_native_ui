@@ -4,7 +4,8 @@ import 'package:cupertino_widgets/cupertino_widgets.dart';
 import '../widgets/settings_ui.dart';
 
 /// [CupertinoNativeButton]: styles, icon and label + icon buttons, sizes and
-/// full width.
+/// full width. The rows are native list cells with the buttons lowered
+/// straight into SwiftUI as trailing controls.
 class ButtonDemoPage extends StatefulWidget {
   const ButtonDemoPage({super.key});
 
@@ -22,194 +23,129 @@ class _ButtonDemoPageState extends State<ButtonDemoPage> {
     return DemoScaffold(
       title: 'Button',
       children: [
-        SettingsSection(
-          header: 'Styles',
-          footer:
-              'glass and glassProminent use the iOS 26 Liquid Glass '
-              'material. Last action: $_lastAction',
-          children: [
-            _buttonRow(
-              'Filled',
-              CupertinoNativeButton.filled(
-                onPressed: () => _did('Filled'),
-                child: Text('Get'),
-              ),
-            ),
-            _buttonRow(
-              'Tinted',
-              CupertinoNativeButton.tinted(
-                onPressed: () => _did('Tinted'),
-                child: Text('Follow'),
-              ),
-            ),
-            _buttonRow(
-              'Glass',
-              CupertinoNativeButton.glass(
-                onPressed: () => _did('Glass'),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  spacing: 6,
-                  children: [
-                    CupertinoSymbolImage.symbol(
-                      CupertinoSymbols.squareAndArrowUp,
-                    ),
-                    Text('Share'),
-                  ],
+        CupertinoNativeList(
+          sections: [
+            CupertinoNativeListSection(
+              header: 'Styles',
+              footer:
+                  'glass and glassProminent use the iOS 26 Liquid Glass '
+                  'material. Last action: $_lastAction',
+              children: [
+                _buttonRow(
+                  'filled',
+                  'Filled',
+                  CupertinoNativeButton.filled(
+                    onPressed: () => _did('Filled'),
+                    child: Text('Get'),
+                  ),
                 ),
-              ),
-            ),
-            _buttonRow(
-              'Glass Prominent',
-              CupertinoNativeButton.glassProminent(
-                color: CupertinoColors.systemPurple,
-                onPressed: () => _did('Glass Prominent'),
-                child: Text('Continue'),
-              ),
-            ),
-            _buttonRow(
-              'Plain',
-              CupertinoNativeButton(
-                onPressed: () => _did('Plain'),
-                child: Text('Not Now'),
-              ),
-            ),
-          ],
-        ),
-        SettingsSection(
-          header: 'Icon',
-          children: [
-            _buttonRow(
-              'Plain',
-              CupertinoNativeButton(
-                onPressed: () => _did('Plain icon'),
-                child: CupertinoSymbolImage.symbol(CupertinoSymbols.heartFill),
-              ),
-            ),
-            _buttonRow(
-              'Filled',
-              CupertinoNativeButton.filled(
-                borderShape: CupertinoNativeButtonBorderShape.circle,
-                onPressed: () => _did('Filled icon'),
-                child: CupertinoSymbolImage.symbol(CupertinoSymbols.heartFill),
-              ),
-            ),
-            _buttonRow(
-              'Tinted',
-              CupertinoNativeButton.tinted(
-                borderShape: CupertinoNativeButtonBorderShape.circle,
-                onPressed: () => _did('Tinted icon'),
-                child: CupertinoSymbolImage.symbol(CupertinoSymbols.heartFill),
-              ),
-            ),
-            _buttonRow(
-              'Glass',
-              CupertinoNativeButton.glass(
-                borderShape: CupertinoNativeButtonBorderShape.circle,
-                onPressed: () => _did('Glass icon'),
-                child: CupertinoSymbolImage.symbol(CupertinoSymbols.heartFill),
-              ),
-            ),
-            _buttonRow(
-              'Glass Prominent',
-              CupertinoNativeButton.glassProminent(
-                borderShape: CupertinoNativeButtonBorderShape.circle,
-                onPressed: () => _did('Glass Prominent icon'),
-                child: CupertinoSymbolImage.symbol(CupertinoSymbols.heartFill),
-              ),
-            ),
-          ],
-        ),
-        SettingsSection(
-          header: 'Label + Icon',
-          children: [
-            _buttonRow(
-              'Plain',
-              CupertinoNativeButton(
-                onPressed: () => _did('Plain label + icon'),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  spacing: 6,
-                  children: [
-                    CupertinoSymbolImage.symbol(
-                      CupertinoSymbols.squareAndArrowUp,
-                    ),
-                    Text('Share'),
-                  ],
+                _buttonRow(
+                  'tinted',
+                  'Tinted',
+                  CupertinoNativeButton.tinted(
+                    onPressed: () => _did('Tinted'),
+                    child: Text('Follow'),
+                  ),
                 ),
-              ),
-            ),
-            _buttonRow(
-              'Filled',
-              CupertinoNativeButton.filled(
-                onPressed: () => _did('Filled label + icon'),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  spacing: 6,
-                  children: [
-                    CupertinoSymbolImage.symbol(
-                      CupertinoSymbols.squareAndArrowUp,
+                _buttonRow(
+                  'glass',
+                  'Glass',
+                  CupertinoNativeButton.glass(
+                    onPressed: () => _did('Glass'),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      spacing: 6,
+                      children: [
+                        CupertinoSymbolImage.symbol(
+                          CupertinoSymbols.squareAndArrowUp,
+                        ),
+                        Text('Share'),
+                      ],
                     ),
-                    Text('Share'),
-                  ],
+                  ),
                 ),
-              ),
+                _buttonRow(
+                  'glassProminent',
+                  'Glass Prominent',
+                  CupertinoNativeButton.glassProminent(
+                    color: CupertinoColors.systemPurple,
+                    onPressed: () => _did('Glass Prominent'),
+                    child: Text('Continue'),
+                  ),
+                ),
+                _buttonRow(
+                  'plain',
+                  'Plain',
+                  CupertinoNativeButton(
+                    onPressed: () => _did('Plain'),
+                    child: Text('Not Now'),
+                  ),
+                ),
+              ],
             ),
-            _buttonRow(
-              'Tinted',
-              CupertinoNativeButton.tinted(
-                onPressed: () => _did('Tinted label + icon'),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  spacing: 6,
-                  children: [
-                    CupertinoSymbolImage.symbol(
-                      CupertinoSymbols.squareAndArrowUp,
-                    ),
-                    Text('Share'),
-                  ],
-                ),
-              ),
+            CupertinoNativeListSection(
+              header: 'Icon',
+              children: [
+                for (final (id, name, make) in _buttonStyles('icon'))
+                  _buttonRow(id, name, make()),
+              ],
             ),
-            _buttonRow(
-              'Glass',
-              CupertinoNativeButton.glass(
-                onPressed: () => _did('Glass label + icon'),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  spacing: 6,
-                  children: [
-                    CupertinoSymbolImage.symbol(
-                      CupertinoSymbols.squareAndArrowUp,
-                    ),
-                    Text('Share'),
-                  ],
-                ),
-              ),
+            CupertinoNativeListSection(
+              header: 'Label + Icon',
+              children: [
+                for (final (id, name, make)
+                    in _buttonStyles('labelIcon', withLabel: true))
+                  _buttonRow(id, name, make()),
+              ],
             ),
-            _buttonRow(
-              'Glass Prominent',
-              CupertinoNativeButton.glassProminent(
-                onPressed: () => _did('Glass Prominent label + icon'),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  spacing: 6,
-                  children: [
-                    CupertinoSymbolImage.symbol(
-                      CupertinoSymbols.squareAndArrowUp,
-                    ),
-                    Text('Share'),
-                  ],
+            CupertinoNativeListSection(
+              header: 'Sizes',
+              children: [
+                _buttonRow(
+                  'large',
+                  'Large',
+                  CupertinoNativeButton.tinted(
+                    sizeStyle: CupertinoNativeControlSize.large,
+                    onPressed: () => _did('Large'),
+                    child: Text('Large'),
+                  ),
                 ),
-              ),
+                _buttonRow(
+                  'regular',
+                  'Regular',
+                  CupertinoNativeButton.tinted(
+                    onPressed: () => _did('Regular'),
+                    child: Text('Regular'),
+                  ),
+                ),
+                _buttonRow(
+                  'small',
+                  'Small',
+                  CupertinoNativeButton.tinted(
+                    sizeStyle: CupertinoNativeControlSize.small,
+                    onPressed: () => _did('Small'),
+                    child: Text('Small'),
+                  ),
+                ),
+                _buttonRow(
+                  'mini',
+                  'Mini',
+                  CupertinoNativeButton.tinted(
+                    sizeStyle: CupertinoNativeControlSize.mini,
+                    onPressed: () => _did('Mini'),
+                    child: Text('Mini'),
+                  ),
+                ),
+              ],
             ),
           ],
         ),
         SettingsSection(
           header: 'Popup Menu',
           children: [
-            _buttonRow(
-              'Glass',
-              CupertinoNativeMenu(
+            SettingsRow(
+              title: 'Glass',
+              trailing: CupertinoNativeMenu(
                 title: 'Sort',
                 systemImage: 'arrow.up.arrow.down',
                 style: CupertinoNativeButtonStyle.glass,
@@ -217,9 +153,9 @@ class _ButtonDemoPageState extends State<ButtonDemoPage> {
                 onAction: (id, _) => _did('Menu $id'),
               ),
             ),
-            _buttonRow(
-              'Icon',
-              CupertinoNativeMenu(
+            SettingsRow(
+              title: 'Icon',
+              trailing: CupertinoNativeMenu(
                 systemImage: 'ellipsis',
                 style: CupertinoNativeButtonStyle.glass,
                 borderShape: CupertinoNativeButtonBorderShape.circle,
@@ -228,50 +164,14 @@ class _ButtonDemoPageState extends State<ButtonDemoPage> {
                 onAction: (id, _) => _did('Menu $id'),
               ),
             ),
-            _buttonRow(
-              'Tinted',
-              CupertinoNativeMenu(
+            SettingsRow(
+              title: 'Tinted',
+              trailing: CupertinoNativeMenu(
                 title: 'Options',
                 style: CupertinoNativeButtonStyle.tinted,
                 labelStyle: CupertinoNativeButtonLabelStyle.titleOnly,
                 items: _menuItems,
                 onAction: (id, _) => _did('Menu $id'),
-              ),
-            ),
-          ],
-        ),
-        SettingsSection(
-          header: 'Sizes',
-          children: [
-            _buttonRow(
-              'Large',
-              CupertinoNativeButton.tinted(
-                sizeStyle: CupertinoNativeControlSize.large,
-                onPressed: () => _did('Large'),
-                child: Text('Large'),
-              ),
-            ),
-            _buttonRow(
-              'Regular',
-              CupertinoNativeButton.tinted(
-                onPressed: () => _did('Regular'),
-                child: Text('Regular'),
-              ),
-            ),
-            _buttonRow(
-              'Small',
-              CupertinoNativeButton.tinted(
-                sizeStyle: CupertinoNativeControlSize.small,
-                onPressed: () => _did('Small'),
-                child: Text('Small'),
-              ),
-            ),
-            _buttonRow(
-              'Mini',
-              CupertinoNativeButton.tinted(
-                sizeStyle: CupertinoNativeControlSize.mini,
-                onPressed: () => _did('Mini'),
-                child: Text('Mini'),
               ),
             ),
           ],
@@ -298,6 +198,74 @@ class _ButtonDemoPageState extends State<ButtonDemoPage> {
     );
   }
 
+  /// The five button styles, as icon buttons and optionally with a label.
+  List<(String, String, Widget Function())> _buttonStyles(
+    String section, {
+    bool withLabel = false,
+  }) {
+    void did(String name) => _did('${withLabel ? 'label + icon ' : ''}$name');
+
+    Widget content() {
+      final icon = CupertinoSymbolImage.symbol(CupertinoSymbols.heartFill);
+      if (!withLabel) return icon;
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        spacing: 6,
+        children: [
+          CupertinoSymbolImage.symbol(CupertinoSymbols.squareAndArrowUp),
+          const Text('Share'),
+        ],
+      );
+    }
+
+    return [
+      (
+        '$section-plain',
+        'Plain',
+        () => CupertinoNativeButton(
+          onPressed: () => did('Plain'),
+          child: content(),
+        ),
+      ),
+      (
+        '$section-filled',
+        'Filled',
+        () => CupertinoNativeButton.filled(
+          borderShape: CupertinoNativeButtonBorderShape.circle,
+          onPressed: () => did('Filled'),
+          child: content(),
+        ),
+      ),
+      (
+        '$section-tinted',
+        'Tinted',
+        () => CupertinoNativeButton.tinted(
+          borderShape: CupertinoNativeButtonBorderShape.circle,
+          onPressed: () => did('Tinted'),
+          child: content(),
+        ),
+      ),
+      (
+        '$section-glass',
+        'Glass',
+        () => CupertinoNativeButton.glass(
+          borderShape: CupertinoNativeButtonBorderShape.circle,
+          onPressed: () => did('Glass'),
+          child: content(),
+        ),
+      ),
+      (
+        '$section-glassProminent',
+        'Glass Prominent',
+        () => CupertinoNativeButton.glassProminent(
+          borderShape: CupertinoNativeButtonBorderShape.circle,
+          onPressed: () => did('Glass Prominent'),
+          child: content(),
+        ),
+      ),
+    ];
+  }
+
   static const _menuItems = <CupertinoNativeMenuItem>[
     CupertinoNativeMenuAction(
       title: 'Share',
@@ -321,7 +289,11 @@ class _ButtonDemoPageState extends State<ButtonDemoPage> {
     ),
   ];
 
-  Widget _buttonRow(String label, Widget button) {
-    return SettingsRow(title: label, trailing: button);
+  static CupertinoNativeListTile _buttonRow(
+    String id,
+    String label,
+    Widget button,
+  ) {
+    return CupertinoNativeListTile(id: id, title: label, trailing: button);
   }
 }

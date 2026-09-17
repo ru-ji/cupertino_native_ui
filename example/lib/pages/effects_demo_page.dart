@@ -74,52 +74,64 @@ class _EffectsDemoPageState extends State<EffectsDemoPage> {
       children: [
         // Fixed-height stage so hiding the natives doesn't reflow the page.
         SizedBox(height: 140, child: Center(child: stage)),
-        SettingsSection(
-          header: 'Effects',
-          footer:
-              'Every effect reaches the UIView through platform-view '
-              'mutators. Note: an inherited Opacity fades the glass button\'s '
-              'label but iOS keeps rendering the glass material itself — use '
-              'Visibility or Offstage to fully hide glass surfaces.',
-          children: [
-            SettingsRow(
-              title: 'Opacity',
-              value: '${(_opacities[_opacityIndex] * 100).round()}%',
-              onTap: () => setState(
-                () => _opacityIndex = (_opacityIndex + 1) % _opacities.length,
-              ),
-            ),
-            SettingsRow(
-              title: 'Visibility',
-              value: _visible ? 'visible' : 'hidden',
-              onTap: () => setState(() => _visible = !_visible),
-            ),
-            SettingsRow(
-              title: 'Offstage',
-              value: _offstage ? 'offstage' : 'on stage',
-              onTap: () => setState(() => _offstage = !_offstage),
-            ),
-            SettingsRow(
-              title: 'Scale',
-              value: '×${_scales[_scaleIndex]}',
-              onTap: () => setState(
-                () => _scaleIndex = (_scaleIndex + 1) % _scales.length,
-              ),
-            ),
-            SettingsRow(
-              title: 'Rotation',
-              value: '${_rotations[_rotationIndex]}°',
-              onTap: () => setState(
-                () => _rotationIndex = (_rotationIndex + 1) % _rotations.length,
-              ),
-            ),
-            SettingsRow(
-              title: 'Translate',
-              value: '${_translations[_translationIndex].round()}px',
-              onTap: () => setState(
-                () => _translationIndex =
-                    (_translationIndex + 1) % _translations.length,
-              ),
+        CupertinoNativeList(
+          onRowTap: (id) => setState(() {
+            switch (id) {
+              case 'opacity':
+                _opacityIndex = (_opacityIndex + 1) % _opacities.length;
+              case 'visibility':
+                _visible = !_visible;
+              case 'offstage':
+                _offstage = !_offstage;
+              case 'scale':
+                _scaleIndex = (_scaleIndex + 1) % _scales.length;
+              case 'rotation':
+                _rotationIndex = (_rotationIndex + 1) % _rotations.length;
+              case 'translate':
+                _translationIndex =
+                    (_translationIndex + 1) % _translations.length;
+            }
+          }),
+          sections: [
+            CupertinoNativeListSection(
+              header: 'Effects',
+              footer:
+                  'Every effect reaches the UIView through platform-view '
+                  'mutators. Note: an inherited Opacity fades the glass button\'s '
+                  'label but iOS keeps rendering the glass material itself — use '
+                  'Visibility or Offstage to fully hide glass surfaces.',
+              children: [
+                CupertinoNativeListTile(
+                  id: 'opacity',
+                  title: 'Opacity',
+                  additionalInfo: '${(_opacities[_opacityIndex] * 100).round()}%',
+                ),
+                CupertinoNativeListTile(
+                  id: 'visibility',
+                  title: 'Visibility',
+                  additionalInfo: _visible ? 'visible' : 'hidden',
+                ),
+                CupertinoNativeListTile(
+                  id: 'offstage',
+                  title: 'Offstage',
+                  additionalInfo: _offstage ? 'offstage' : 'on stage',
+                ),
+                CupertinoNativeListTile(
+                  id: 'scale',
+                  title: 'Scale',
+                  additionalInfo: '×${_scales[_scaleIndex]}',
+                ),
+                CupertinoNativeListTile(
+                  id: 'rotation',
+                  title: 'Rotation',
+                  additionalInfo: '${_rotations[_rotationIndex]}°',
+                ),
+                CupertinoNativeListTile(
+                  id: 'translate',
+                  title: 'Translate',
+                  additionalInfo: '${_translations[_translationIndex].round()}px',
+                ),
+              ],
             ),
           ],
         ),

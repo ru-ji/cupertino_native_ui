@@ -40,6 +40,12 @@ class NativeTextFieldView: NativeHostingView {
     private let model: TextFieldModel
     private var focusCommandId = 0
 
+    /// The last `updateTextField` arguments actually applied. A push that
+    /// changed nothing is dropped: assigning the same config bumps
+    /// `configRevision`, which re-evaluates the SwiftUI body and reseeds the
+    /// keyboard toolbar for no reason.
+    private var lastAppliedArgs: [String: Any]?
+
     init(
         frame: CGRect,
         viewIdentifier viewId: Int64,
@@ -60,33 +66,6 @@ class NativeTextFieldView: NativeHostingView {
         sizeChannel = channel
         channel.setMethodCallHandler { [weak self] call, result in
             self?.handle(call, result: result)
-        }
-    }
-
-    /// Built on first focus and kept: rebuilding it on every focus would
-    /// swap the keyboard's accessory under the user.
-    private var accessory: KeyboardAccessoryBar?
-
-    /// Puts the bar on the field's responder. Retried on the next runloop
-    /// turn: `onChange(of: focused)` can fire a hair before UIKit has made the
-    /// backing text field first responder, and there is nothing to install on
-    /// until it has.
-    private func installKeyboardAccessory() {
-        let nodes = model.config.keyboardToolbar ?? []
-        guard !nodes.isEmpty else { return }
-        let bar =
-            accessory
-            ?? KeyboardAccessoryBar(
-                nodes: nodes, isDark: model.config.isDark == true,
-                onEvent: { [weak self] id, value in
-                    self?.channel.invokeMethod(
-                        "onToolbarEvent", arguments: ["id": id, "value": value])
-                })
-        accessory = bar
-        if bar.install(in: _view) { return }
-        DispatchQueue.main.async { [weak self] in
-            guard let self else { return }
-            _ = bar.install(in: self._view)
         }
     }
 
@@ -128,9 +107,10 @@ class NativeTextFieldView: NativeHostingView {
             },
             onFocusChange: { [weak self] focused in
                 self?.channel.invokeMethod("onFocusChange", arguments: ["focused": focused])
-                // The accessory belongs to the responder, which only exists
-                // once the field is focused.
-                if focused { self?.installKeyboardAccessory() }
+            },
+            onToolbarEvent: { [weak self] id, value in
+                self?.channel.invokeMethod(
+                    "onToolbarEvent", arguments: ["id": id, "value": value])
             }
         )
     }
@@ -160,6 +140,15 @@ class NativeTextFieldView: NativeHostingView {
                     FlutterError(code: "INVALID_ARGS", message: "Invalid arguments", details: nil))
                 return
             }
+            // Nothing visible moved: skip the model assignment and its
+            // downstream body re-evaluation (see lastAppliedArgs).
+            if let last = lastAppliedArgs,
+                NSDictionary(dictionary: dict).isEqual(to: last)
+            {
+                result(nil)
+                return
+            }
+            lastAppliedArgs = dict
             // Assigned, not rebuilt: the field's state lives in the model, and
             // rebuilding would dismiss the keyboard mid-edit.
             model.config = config

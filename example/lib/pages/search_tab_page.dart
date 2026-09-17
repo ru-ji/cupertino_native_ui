@@ -1,10 +1,8 @@
-import 'package:flutter/cupertino.dart';
-
-import '../widgets/settings_ui.dart';
+import 'package:flutter/widgets.dart';
+import 'package:cupertino_widgets/cupertino_widgets.dart';
 
 /// Search tab body. Under the native scaffold this sits below a real
 /// search-role tab (the system search field); here it lists trending queries.
-/// Drawn Flutter widgets only — it is also used as a scaffold body.
 class SearchTabPage extends StatelessWidget {
   const SearchTabPage({super.key});
 
@@ -22,19 +20,23 @@ class SearchTabPage extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(32, 20, 32, 8),
-          child: Text('TRENDING', style: footnoteStyle(context)),
+        const Padding(
+          padding: EdgeInsets.fromLTRB(32, 20, 32, 8),
+          child: Text('TRENDING'),
         ),
-        SettingsSection(
-          children: [
-            for (final (query, category) in _trending)
-              SettingsRow(
-                title: query,
-                subtitle: category,
-                showChevron: true,
-                onTap: () {},
-              ),
+        CupertinoNativeList(
+          sections: [
+            CupertinoNativeListSection(
+              children: [
+                for (final (query, category) in _trending)
+                  CupertinoNativeListTile(
+                    id: query,
+                    title: query,
+                    subtitle: category,
+                    showChevron: true,
+                  ),
+              ],
+            ),
           ],
         ),
         const SizedBox(height: 24),

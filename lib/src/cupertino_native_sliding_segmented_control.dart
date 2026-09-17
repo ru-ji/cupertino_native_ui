@@ -43,6 +43,10 @@ class CupertinoNativeSlidingSegmentedControl<T extends Object>
 
   final bool _menu;
 
+  /// Whether this control renders as a menu behind a button (`.menu`) rather
+  /// than a segmented strip. Read by the widget lowering.
+  bool get isMenu => _menu;
+
   final Map<T, Widget> children;
   final T? groupValue;
   final ValueChanged<T?> onValueChanged;

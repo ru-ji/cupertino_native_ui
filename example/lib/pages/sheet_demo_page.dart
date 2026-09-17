@@ -77,47 +77,62 @@ class _SheetDemoPageState extends State<SheetDemoPage> {
 
   @override
   Widget build(BuildContext context) {
-    final blue = CupertinoColors.activeBlue.resolveFrom(context);
     return DemoScaffold(
       title: 'Sheet',
       children: [
-        SettingsSection(
-          header: 'Present',
-          footer: 'Last event: $_last',
-          children: [
-            SettingsRow(
-              title: 'With App Bar',
-              subtitle: 'Pinned title, ✕ leading, Add trailing — scrollable',
-              titleColor: blue,
-              onTap: () => _present(label: 'App bar sheet', appBar: _appBar()),
-            ),
-            SettingsRow(
-              title: 'With Bottom Segmented Control',
-              subtitle: 'Native segmented pinned under the bar',
-              titleColor: blue,
-              onTap: () => _present(
-                label: 'Segmented sheet',
-                appBar: _appBar(),
-                bottom: const CupertinoNativeSheetSegmentedControl(
-                  segments: ['Event', 'Reminder', 'Call'],
+        CupertinoNativeList(
+          onRowTap: (id) {
+            switch (id) {
+              case 'appBar':
+                _present(label: 'App bar sheet', appBar: _appBar());
+              case 'segmented':
+                _present(
+                  label: 'Segmented sheet',
+                  appBar: _appBar(),
+                  bottom: const CupertinoNativeSheetSegmentedControl(
+                    segments: ['Event', 'Reminder', 'Call'],
+                  ),
+                );
+              case 'search':
+                _present(
+                  label: 'Search sheet',
+                  appBar: _appBar(withSearch: true),
+                  detents: const [CupertinoNativeSheetDetent.large],
+                );
+              case 'bare':
+                _present(label: 'Bare sheet');
+            }
+          },
+          sections: [
+            CupertinoNativeListSection(
+              header: 'Present',
+              footer: 'Last event: $_last',
+              children: const [
+                CupertinoNativeListTile(
+                  id: 'appBar',
+                  title: 'With App Bar',
+                  subtitle: 'Pinned title, ✕ leading, Add trailing — scrollable',
+                  showChevron: true,
                 ),
-              ),
-            ),
-            SettingsRow(
-              title: 'With Search Field',
-              subtitle: 'The scaffold-style native search, in a sheet',
-              titleColor: blue,
-              onTap: () => _present(
-                label: 'Search sheet',
-                appBar: _appBar(withSearch: true),
-                detents: const [CupertinoNativeSheetDetent.large],
-              ),
-            ),
-            SettingsRow(
-              title: 'Bare Sheet',
-              subtitle: 'No chrome — the Flutter body owns everything',
-              titleColor: blue,
-              onTap: () => _present(label: 'Bare sheet'),
+                CupertinoNativeListTile(
+                  id: 'segmented',
+                  title: 'With Bottom Segmented Control',
+                  subtitle: 'Native segmented pinned under the bar',
+                  showChevron: true,
+                ),
+                CupertinoNativeListTile(
+                  id: 'search',
+                  title: 'With Search Field',
+                  subtitle: 'The scaffold-style native search, in a sheet',
+                  showChevron: true,
+                ),
+                CupertinoNativeListTile(
+                  id: 'bare',
+                  title: 'Bare Sheet',
+                  subtitle: 'No chrome — the Flutter body owns everything',
+                  showChevron: true,
+                ),
+              ],
             ),
           ],
         ),

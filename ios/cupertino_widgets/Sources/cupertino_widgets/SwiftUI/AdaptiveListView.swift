@@ -14,17 +14,22 @@ struct AdaptiveListView: View {
     let onRowTap: (String) -> Void
     let onToggle: (String, Bool) -> Void
 
+    /// A lowered trailing control changed — `(rowId, nodeId, value)`.
+    let onTrailingEvent: (String, String, Any?) -> Void
+
     /// User-driven toggle state, seeded once from the config.
     @State private var toggleStates: [String: Bool]
 
     init(
         config: ListConfig,
         onRowTap: @escaping (String) -> Void,
-        onToggle: @escaping (String, Bool) -> Void
+        onToggle: @escaping (String, Bool) -> Void,
+        onTrailingEvent: @escaping (String, String, Any?) -> Void
     ) {
         self.config = config
         self.onRowTap = onRowTap
         self.onToggle = onToggle
+        self.onTrailingEvent = onTrailingEvent
         var initial: [String: Bool] = [:]
         for section in config.sections {
             for row in section.rows where row.type == "toggle" {
@@ -150,6 +155,12 @@ struct AdaptiveListView: View {
                 HStack(spacing: 12) {
                     rowLabel(row)
                     Spacer(minLength: 8)
+                    if let trailing = row.trailing {
+                        TrailingRow(
+                            rowId: row.id,
+                            nodes: trailing,
+                            onEvent: onTrailingEvent)
+                    }
                     if let value = row.value {
                         Text(value).foregroundStyle(.secondary)
                     }
@@ -191,6 +202,43 @@ struct AdaptiveListView: View {
                 onToggle(row.id, newValue)
             }
         )
+    }
+}
+
+/// One row's lowered trailing controls, owning their own state model — the
+/// same `NativeBodyModel` the toolbar and native bodies use, seeded from the
+/// nodes the first time the row appears. A user's touch owns the value from
+/// then on; pushes from Dart cannot fight it mid-gesture.
+@available(iOS 26.0, *)
+struct TrailingRow: View {
+    let rowId: String
+    let nodes: [BodyNodeConfig]
+    let onEvent: (String, String, Any?) -> Void
+
+    @StateObject private var model: NativeBodyModel
+
+    init(
+        rowId: String,
+        nodes: [BodyNodeConfig],
+        onEvent: @escaping (String, String, Any?) -> Void
+    ) {
+        self.rowId = rowId
+        self.nodes = nodes
+        self.onEvent = onEvent
+        let seed = NativeBodyModel()
+        seed.seedAll(nodes)
+        _model = StateObject(wrappedValue: seed)
+    }
+
+    var body: some View {
+        HStack(spacing: 8) {
+            ForEach(Array(nodes.enumerated()), id: \.offset) { index, node in
+                NativeBodyNode(node: node, model: model) { nodeId, value in
+                    onEvent(rowId, nodeId, value)
+                }
+                .id(node.id ?? "\(node.type)-\(index)")
+            }
+        }
     }
 }
 

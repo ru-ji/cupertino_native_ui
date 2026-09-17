@@ -2,8 +2,6 @@ import 'package:flutter/cupertino.dart' show CupertinoColors;
 import 'package:flutter/widgets.dart';
 import 'package:cupertino_widgets/cupertino_widgets.dart';
 
-import '../widgets/settings_ui.dart';
-
 /// Content of the native sheet demo — a "New Event" form. Runs in its own
 /// FlutterEngine hosted in the sheet's native ScrollView, so it must be a
 /// self-sized Column (same contract as scaffold bodies); the sheet's title,
@@ -18,7 +16,6 @@ class NewEventSheetBody extends StatelessWidget {
     final background = CupertinoColors.systemGroupedBackground.resolveFrom(
       context,
     );
-    final blue = CupertinoColors.activeBlue.resolveFrom(context);
 
     return ColoredBox(
       color: background,
@@ -26,67 +23,126 @@ class NewEventSheetBody extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SettingsSection(
-            children: [
-              SettingsRow(title: 'Team Standup'),
-              SettingsRow(title: 'Location', value: 'Cupertino HQ'),
-            ],
-          ),
-          const SettingsSection(
-            children: [
-              SettingsRow(title: 'All-day', value: 'Off'),
-              SettingsRow(title: 'Starts', value: 'Jul 12, 9:41 AM'),
-              SettingsRow(title: 'Ends', value: 'Jul 12, 10:00 AM'),
-              SettingsRow(
-                title: 'Travel Time',
-                value: 'None',
-                showChevron: true,
+          const CupertinoNativeList(
+            sections: [
+              CupertinoNativeListSection(
+                children: [
+                  CupertinoNativeListTile(id: 'title', title: 'Team Standup'),
+                  CupertinoNativeListTile(
+                    id: 'location',
+                    title: 'Location',
+                    additionalInfo: 'Cupertino HQ',
+                  ),
+                ],
+              ),
+              CupertinoNativeListSection(
+                children: [
+                  CupertinoNativeListTile(
+                    id: 'allDay',
+                    title: 'All-day',
+                    additionalInfo: 'Off',
+                  ),
+                  CupertinoNativeListTile(
+                    id: 'starts',
+                    title: 'Starts',
+                    additionalInfo: 'Jul 12, 9:41 AM',
+                  ),
+                  CupertinoNativeListTile(
+                    id: 'ends',
+                    title: 'Ends',
+                    additionalInfo: 'Jul 12, 10:00 AM',
+                  ),
+                  CupertinoNativeListTile(
+                    id: 'travelTime',
+                    title: 'Travel Time',
+                    additionalInfo: 'None',
+                    showChevron: true,
+                  ),
+                ],
+              ),
+              CupertinoNativeListSection(
+                children: [
+                  CupertinoNativeListTile(
+                    id: 'repeat',
+                    title: 'Repeat',
+                    additionalInfo: 'Never',
+                    showChevron: true,
+                  ),
+                  CupertinoNativeListTile(
+                    id: 'calendar',
+                    title: 'Calendar',
+                    additionalInfo: 'Work',
+                    showChevron: true,
+                  ),
+                  CupertinoNativeListTile(
+                    id: 'invitees',
+                    title: 'Invitees',
+                    additionalInfo: '3',
+                    showChevron: true,
+                  ),
+                ],
+              ),
+              CupertinoNativeListSection(
+                children: [
+                  CupertinoNativeListTile(
+                    id: 'alert',
+                    title: 'Alert',
+                    additionalInfo: '10 min before',
+                    showChevron: true,
+                  ),
+                  CupertinoNativeListTile(
+                    id: 'secondAlert',
+                    title: 'Second Alert',
+                    additionalInfo: 'None',
+                    showChevron: true,
+                  ),
+                  CupertinoNativeListTile(
+                    id: 'showAs',
+                    title: 'Show As',
+                    additionalInfo: 'Busy',
+                    showChevron: true,
+                  ),
+                ],
+              ),
+              CupertinoNativeListSection(
+                footer:
+                    'This whole form is Flutter inside a real UIKit sheet: '
+                    'the bar stays pinned while you scroll, and pulling down at '
+                    'the top drags the sheet itself.',
+                children: [
+                  CupertinoNativeListTile(
+                    id: 'url',
+                    title: 'URL',
+                    additionalInfo: 'None',
+                  ),
+                  CupertinoNativeListTile(
+                    id: 'notes',
+                    title: 'Notes',
+                    additionalInfo: 'None',
+                  ),
+                  CupertinoNativeListTile(
+                    id: 'attachments',
+                    title: 'Attachments',
+                    additionalInfo: 'None',
+                    showChevron: true,
+                  ),
+                ],
               ),
             ],
           ),
-          const SettingsSection(
-            children: [
-              SettingsRow(title: 'Repeat', value: 'Never', showChevron: true),
-              SettingsRow(title: 'Calendar', value: 'Work', showChevron: true),
-              SettingsRow(title: 'Invitees', value: '3', showChevron: true),
-            ],
-          ),
-          const SettingsSection(
-            children: [
-              SettingsRow(
-                title: 'Alert',
-                value: '10 min before',
-                showChevron: true,
-              ),
-              SettingsRow(
-                title: 'Second Alert',
-                value: 'None',
-                showChevron: true,
-              ),
-              SettingsRow(title: 'Show As', value: 'Busy', showChevron: true),
-            ],
-          ),
-          const SettingsSection(
-            footer:
-                'This whole form is Flutter inside a real UIKit sheet: '
-                'the bar stays pinned while you scroll, and pulling down at '
-                'the top drags the sheet itself.',
-            children: [
-              SettingsRow(title: 'URL', value: 'None'),
-              SettingsRow(title: 'Notes', value: 'None'),
-              SettingsRow(
-                title: 'Attachments',
-                value: 'None',
-                showChevron: true,
-              ),
-            ],
-          ),
-          SettingsSection(
-            children: [
-              SettingsRow(
-                title: 'Dismiss from Flutter',
-                titleColor: blue,
-                onTap: () => CupertinoNativeSheet.pop(),
+          CupertinoNativeList(
+            onRowTap: (id) {
+              if (id == 'dismiss') CupertinoNativeSheet.pop();
+            },
+            sections: const [
+              CupertinoNativeListSection(
+                children: [
+                  CupertinoNativeListTile(
+                    id: 'dismiss',
+                    title: 'Dismiss from Flutter',
+                    type: CupertinoNativeListTileType.button,
+                  ),
+                ],
               ),
             ],
           ),

@@ -19,7 +19,8 @@ import Foundation
 struct BodyNodeConfig: Codable {
     /// "column" | "row" | "scroll" | "padding" | "spacer" | "divider" |
     /// "text" | "button" | "textField" | "toggle" | "slider" | "picker" |
-    /// "list" | "symbol" | "flutter"
+    /// "segmented" | "datePicker" | "progress" | "list" | "symbol" |
+    /// "flutter" | "glass"
     let type: String
 
     /// For `type == "flutter"`: the body route to host here, registered in
@@ -55,6 +56,34 @@ struct BodyNodeConfig: Codable {
     let picker: PickerConfig?
     let list: ListConfig?
     let symbol: SymbolConfig?
+    let glass: GlassConfig?
+    let segmented: SegmentedControlConfig?
+    let datePicker: DatePickerConfig?
+    let progress: ProgressConfig?
+}
+
+/// A compact `DatePicker` inside a native body: the same control the
+/// standalone platform view renders, driven by `DatePickerModel`.
+@available(iOS 26.0, *)
+struct DatePickerConfig: Codable {
+    let value: Double?  // milliseconds since epoch
+    let minimumDate: Double?
+    let maximumDate: Double?
+    let mode: String?  // "date" | "time" | "dateAndTime"
+    let tint: Int?
+    let isDark: Bool?
+}
+
+/// A native `ProgressView` inside a native body: determinate with `value`,
+/// an indeterminate spinner without.
+@available(iOS 26.0, *)
+struct ProgressConfig: Codable {
+    let value: Double?
+    let total: Double?
+    let label: String?
+    let style: Int?  // 0 automatic | 1 linear | 2 circular
+    let color: Int?
+    let isDark: Bool?
 }
 
 @available(iOS 26.0, *)

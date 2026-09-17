@@ -9,7 +9,7 @@ import 'callbacks.dart';
 
 import 'cupertino_native_body.dart';
 import 'cupertino_native_body_bridge.dart';
-import 'cupertino_native_keyboard.dart';
+import 'cupertino_native_flutter_view.dart';
 import 'cupertino_native_scaffold_navigation_bar.dart';
 import 'cupertino_native_tab_bar.dart';
 import 'cupertino_widgets_settings.dart';
@@ -143,19 +143,6 @@ class CupertinoNativePageScaffold extends StatefulWidget {
   /// [CupertinoPageScaffold.resizeToAvoidBottomInset]. Defaults to true.
   final bool resizeToAvoidBottomInset;
 
-  /// Dragging down over the keyboard dismisses it, following the finger
-  /// (SwiftUI's `.scrollDismissesKeyboard(.interactively)`) — the gesture
-  /// Messages and Mail have.
-  ///
-  /// Scaffold-only, and not by choice: it is a property of the native scroll
-  /// view the bodies ride in. An ordinary Flutter page has no native scroll
-  /// view to drag, so there is nothing to put it on.
-  ///
-  /// Pair it with [CupertinoNativeKeyboard] if something in the body has to
-  /// move with the keyboard while it is dragged — `MediaQuery.viewInsets`
-  /// does not report a drag.
-  final bool interactiveKeyboardDismiss;
-
   /// A body described from Dart and rendered as **SwiftUI directly**, instead
   /// of an embedded FlutterEngine.
   ///
@@ -194,7 +181,6 @@ class CupertinoNativePageScaffold extends StatefulWidget {
     this.onSearchSubmitted,
     this.onSearchActiveChanged,
     this.resizeToAvoidBottomInset = true,
-    this.interactiveKeyboardDismiss = false,
     this.nativeBody,
     this.onBodyEvent,
   }) : assert(
@@ -502,15 +488,13 @@ class _DynamicEnvWrapperState extends State<_DynamicEnvWrapper>
             // and sit narrower than the page, with a phantom right margin.
             // `MediaQuery.size` can't be used for it: that is the view's own
             // (already shrunk) width, which would only latch the gap in.
-            child: CupertinoNativeKeyboardScope(
-              child: SizedBox(
-                width:
-                    View.of(context).display.size.width /
-                    View.of(context).display.devicePixelRatio,
-                child: Material(
-                  type: MaterialType.transparency,
-                  child: widget.child,
-                ),
+            child: SizedBox(
+              width:
+                  View.of(context).display.size.width /
+                  View.of(context).display.devicePixelRatio,
+              child: Material(
+                type: MaterialType.transparency,
+                child: widget.child,
               ),
             ),
           ),
@@ -554,7 +538,6 @@ class _CupertinoNativeScaffoldState extends State<CupertinoNativePageScaffold>
           widget.showLoadingIndicator ??
           CupertinoWidgetsSettings.showLoadingIndicator,
       'resizeToAvoidBottomInset': widget.resizeToAvoidBottomInset,
-      'interactiveKeyboardDismiss': widget.interactiveKeyboardDismiss,
       'nativeBody': widget.nativeBody?.toMap(isDark: _isDark),
     };
   }
@@ -614,17 +597,25 @@ class _CupertinoNativeScaffoldState extends State<CupertinoNativePageScaffold>
   @override
   void didUpdateWidget(covariant CupertinoNativePageScaffold oldWidget) {
     super.didUpdateWidget(oldWidget);
-    final oldMap = {
-      'body': oldWidget.body,
-      'appBar': oldWidget.navigationBar?.toMap(),
-      'tabBar': oldWidget.tabBar?.toMap(),
-      'scrollEdgeEffect': oldWidget.scrollEdgeEffect.name,
-      'nativeBody': oldWidget.nativeBody?.toMap(isDark: _isDark),
-    };
-    if (jsonEncode(oldMap) != jsonEncode(_toMap())) {
-      updateNativeView('updateScaffold', _toMap(), refreshIntrinsicSize: false);
-    }
+    // One serialization per update, compared against the config actually
+    // sent — the body tree can be large, so it is encoded only when it has
+    // to be and pushed only when it moved.
+    final map = _toMap();
+    final json = jsonEncode(map);
+    if (json == _lastScaffoldJson) return;
+    updateNativeView('updateScaffold', map);
+    // A push that never reached the native side (no channel yet) is not
+    // counted as sent; the creation callback re-syncs.
+    if (channel != null) _lastScaffoldJson = json;
   }
+
+  /// The config last pushed over the channel, encoded. Only set for pushes
+  /// that actually went out.
+  String? _lastScaffoldJson;
+
+  /// The creation params, captured on the first build and never rebuilt —
+  /// `UiKitView` only reads them at creation.
+  Map<String, dynamic>? _creationParams;
 
   Future<void> _onPlatformViewCreated(int id) async {
     setUpChannel(
@@ -636,6 +627,11 @@ class _CupertinoNativeScaffoldState extends State<CupertinoNativePageScaffold>
     // The bridge publishes through whichever scaffold is mounted; a body has
     // no channel of its own to the host.
     CupertinoNativeBodyBridge.hostChannel = channel;
+    // The creation params were memoized from the first build; push the live
+    // config once so nothing that changed mid-creation is lost.
+    final map = _toMap();
+    _lastScaffoldJson = jsonEncode(map);
+    updateNativeView('updateScaffold', map);
   }
 
   Future<dynamic> _handleMethodCall(MethodCall call) async {
@@ -715,7 +711,9 @@ class _CupertinoNativeScaffoldState extends State<CupertinoNativePageScaffold>
     final platformView = UiKitView(
       viewType: 'com.example.cupertino_widgets/cupertino_native_scaffold',
       layoutDirection: TextDirection.ltr,
-      creationParams: _toMap(),
+      // Memoized: the body tree is serialized once for creation; every later
+      // change goes over `updateScaffold`, not through a rebuilt map.
+      creationParams: _creationParams ??= _toMap(),
       creationParamsCodec: const StandardMessageCodec(),
       onPlatformViewCreated: _onPlatformViewCreated,
     );
@@ -754,6 +752,11 @@ class _CupertinoNativeScaffoldState extends State<CupertinoNativePageScaffold>
 /// CupertinoNativePageScaffold(body: homeBody.name)
 /// ```
 ///
+/// The same object feeds every surface that hosts Flutter inside a native
+/// view — a scaffold body, a tab id, a toolbar action via [island], a glass
+/// container's `route:` (through [name]). Declare once, use anywhere: the
+/// name is written in exactly one place.
+///
 /// Declare these at the top level — the body isolate reaches them through
 /// `main()`, so they must exist before `runApp`.
 @immutable
@@ -765,6 +768,20 @@ class CupertinoNativeBodyRoute {
 
   /// Runs in the body isolate, not the host's.
   final Widget Function() builder;
+
+  /// This route hosted as a Flutter island — the widget to put in a
+  /// `toolbarActions` list (or anywhere else that reads a
+  /// [CupertinoNativeFlutterView]).
+  ///
+  /// ```dart
+  /// CupertinoNativeTextField(
+  ///   toolbarActions: [
+  ///     editorBar.island,
+  ///     CupertinoNativeButton(onPressed: _done, child: const Text('Done')),
+  ///   ],
+  /// )
+  /// ```
+  CupertinoNativeFlutterView get island => CupertinoNativeFlutterView(name);
 
   @override
   bool operator ==(Object other) =>

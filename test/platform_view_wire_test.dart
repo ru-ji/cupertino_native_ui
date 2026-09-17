@@ -311,14 +311,14 @@ void main() {
     expect((items[1] as Map)['actionId'], 'edit');
   }, variant: iOS);
 
-  group('keyboard toolbar lowering', () {
+  group('toolbarActions lowering', () {
     testWidgets('widgets become native nodes, in order', variant: iOS, (
       tester,
     ) async {
       final params = await paramsOf(
         tester,
         CupertinoNativeTextField(
-          keyboardToolbar: [
+          toolbarActions: [
             CupertinoNativeButton(
               onPressed: () {},
               child: CupertinoSymbolImage.symbol(CupertinoSymbols.chevronUp),
@@ -358,12 +358,99 @@ void main() {
       final params = await paramsOf(
         tester,
         const CupertinoNativeTextField(
-          keyboardToolbar: [CupertinoNativeFlutterView('editorBar')],
+          toolbarActions: [CupertinoNativeFlutterView('editorBar')],
         ),
       );
       final node = (params['keyboardToolbar'] as List).single as Map;
       expect(node['type'], 'flutter');
       expect(node['route'], 'editorBar');
+    });
+
+    testWidgets('a list row trailing lowers to native nodes', variant: iOS, (
+      tester,
+    ) async {
+      final params = await paramsOf(
+        tester,
+        CupertinoNativeList(
+          sections: [
+            CupertinoNativeListSection(
+              header: 'Connectivity',
+              children: [
+                CupertinoNativeListTile(
+                  id: 'airplane',
+                  title: 'Airplane Mode',
+                  trailing: CupertinoNativeSwitch(
+                    value: true,
+                    onChanged: (_) {},
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      );
+
+      final rows = ((params['sections'] as List).single as Map)['rows'] as List;
+      final row = rows.single as Map;
+      expect(row['id'], 'airplane');
+      final trailing = row['trailing'] as List;
+      expect(trailing, hasLength(1));
+      final node = trailing.single as Map;
+      expect(node['type'], 'toggle');
+      expect(node['id'], 'item0');
+      expect((node['toggle'] as Map)['value'], isTrue);
+    });
+
+    testWidgets('containers lower recursively, ids stay unique', variant: iOS, (
+      tester,
+    ) async {
+      final params = await paramsOf(
+        tester,
+        CupertinoNativeTextField(
+          toolbarActions: [
+            CupertinoNativeGlassContainer(
+              shape: CupertinoGlassShape.capsule,
+              child: Row(
+                children: [
+                  CupertinoNativeButton(
+                    onPressed: () {},
+                    child: const Text('B'),
+                  ),
+                  const SizedBox(width: 8),
+                  CupertinoNativeButton(
+                    onPressed: () {},
+                    child: const Text('Done'),
+                  ),
+                ],
+              ),
+            ),
+            const Spacer(),
+          ],
+        ),
+      );
+
+      final toolbar = params['keyboardToolbar'] as List;
+      expect(toolbar, hasLength(2));
+
+      // The glass container is a native glass node holding the lowered Row.
+      final glass = toolbar[0] as Map;
+      expect(glass['type'], 'glass');
+      expect((glass['glass'] as Map)['shape'], 'capsule');
+      final children = glass['children'] as List;
+      expect(children, hasLength(1));
+      expect((children[0] as Map)['type'], 'row');
+
+      final row = (children[0] as Map)['children'] as List;
+      expect(row, hasLength(3));
+      // Ids are paths: item0.0.0 … — unique at any depth. Non-interactive
+      // nodes (the spacer) carry none.
+      expect((row[0] as Map)['id'], 'item0.0.0');
+      expect((row[2] as Map)['id'], 'item0.0.2');
+      expect((row[0] as Map)['type'], 'button');
+      expect((row[1] as Map)['type'], 'spacer');
+      expect((row[2] as Map)['type'], 'button');
+
+      expect((toolbar[1] as Map)['type'], 'spacer');
     });
   });
 }

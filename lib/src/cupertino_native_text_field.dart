@@ -10,7 +10,7 @@ import 'package:flutter/widgets.dart';
 
 import 'cupertino_native_glass_container.dart'
     show CupertinoGlass, CupertinoGlassVariant;
-import 'internal/keyboard_toolbar_lowering.dart';
+import 'internal/widget_lowering.dart';
 import 'internal/native_platform_view_mixin.dart';
 import 'internal/text_field_wire.dart';
 import 'search_row_visibility.dart';
@@ -134,7 +134,7 @@ class CupertinoNativeTextField extends StatefulWidget {
   /// Corner radius of that background. Ignored when [glass] is set.
   final double? cornerRadius;
 
-  /// Renders the field on Liquid Glass.
+  /// Renders the field on Liquid Glass (a material below iOS 26).
   final CupertinoGlass? glass;
 
   /// Leading SF Symbol inside the field.
@@ -157,36 +157,36 @@ class CupertinoNativeTextField extends StatefulWidget {
   final VoidCallback? onEditingComplete;
 
   /// The bar that rides above the keyboard while this field is focused —
-  /// SwiftUI's `ToolbarItemGroup(placement: .keyboard)`, the row of actions
-  /// Notes and Numbers put there.
+  /// SwiftUI's own `ToolbarItemGroup(placement: .keyboard)`, the row of
+  /// actions Notes and Numbers put there.
   ///
   /// Write the package's own controls, and a [Spacer] where the bar should
   /// break:
   ///
   /// ```dart
-  /// keyboardToolbar: [
+  /// toolbarActions: [
   ///   CupertinoNativeButton(onPressed: _bold, child: const Text('B')),
   ///   const Spacer(),
   ///   CupertinoNativeButton(onPressed: _done, child: const Text('Done')),
   /// ],
   /// ```
   ///
-  /// These widgets are **read, not mounted**. The bar is a SwiftUI
-  /// `ToolbarItemGroup(placement: .keyboard)` living in the keyboard's own
-  /// window, so SwiftUI builds its contents; the package copies what each
-  /// control needs and keeps its callback. Each item's own `onPressed` /
-  /// `onChanged` fires as usual.
-  ///
-  /// Accepted: [CupertinoNativeButton], [CupertinoNativeSwitch],
+  /// These widgets are **read, not mounted**. The bar lives in the keyboard's
+  /// own window, so SwiftUI builds its contents: the package's native views
+  /// ([CupertinoNativeButton], [CupertinoNativeSwitch],
   /// [CupertinoNativePicker], [CupertinoNativeSymbol], [Text], [Spacer],
-  /// [SizedBox] (a fixed gap), and [CupertinoNativeFlutterView] to host your
-  /// own Flutter there — which costs an engine. Anything else asserts.
+  /// [SizedBox], [CupertinoNativeGlassContainer]) are transcribed straight
+  /// into SwiftUI — the same lowering a `CupertinoNativePageScaffold.nativeBody`
+  /// uses — and each keeps its own `onPressed` / `onChanged`. The lowering is
+  /// recursive: a [Row], a [Column] or a [CupertinoNativeGlassContainer] can
+  /// hold further items, and every level follows the same rule. Flutter
+  /// content goes through a [CupertinoNativeFlutterView] — usually a
+  /// `CupertinoNativeBodyRoute.island` — a route hosted in its own engine,
+  /// and only it costs one. Anything else asserts.
   ///
-  /// It belongs to *this* field's responder: it appears when this field is
-  /// focused and not for a Flutter `TextField` elsewhere on the page, which
-  /// has its own. Its content has to be native — the bar lives in the
-  /// keyboard's own window, where a Flutter widget cannot go.
-  final List<Widget> keyboardToolbar;
+  /// The bar belongs to *this* field's responder: it appears when this field
+  /// is focused and not for a Flutter `TextField` elsewhere on the page.
+  final List<Widget> toolbarActions;
 
   /// Called when the field gains focus (e.g. the user taps it).
   final VoidCallback? onTap;
@@ -240,7 +240,7 @@ class CupertinoNativeTextField extends StatefulWidget {
     this.onChanged,
     this.onSubmitted,
     this.onEditingComplete,
-    this.keyboardToolbar = const [],
+    this.toolbarActions = const [],
     this.onTap,
     this.onTapOutside,
     this.width,
@@ -254,9 +254,39 @@ class CupertinoNativeTextField extends StatefulWidget {
       _CupertinoNativeTextFieldState();
 }
 
+/// The live native fields, shared so a field's tap-outside handler can tell
+/// whether the tap landed on another native field of the same route. When it
+/// did, dropping focus right away would dismiss the keyboard and re-present it
+/// for the other field — the non-native flicker. Instead the tap is let
+/// through: the other field's `onFocusChange(true)` report requests Flutter
+/// focus, the traversal unfocuses this field's node, and by then UIKit has
+/// already moved the first responder in one motion, like native.
+class _NativeTextFieldRegistry {
+  static final _NativeTextFieldRegistry instance = _NativeTextFieldRegistry();
+
+  final List<_CupertinoNativeTextFieldState> fields = [];
+
+  void add(_CupertinoNativeTextFieldState field) => fields.add(field);
+
+  void remove(_CupertinoNativeTextFieldState field) => fields.remove(field);
+
+  /// Whether [position] (global) lands on another live field's box on the
+  /// same [route]. Route-scoped so a field on a covered page cannot swallow
+  /// taps meant for the visible one.
+  bool tapsField(Offset position, ModalRoute<dynamic>? route) {
+    for (final field in fields) {
+      if (ModalRoute.of(field.context) != route) continue;
+      final box = field.context.findRenderObject();
+      if (box is! RenderBox || !box.attached || !box.hasSize) continue;
+      final rect = box.localToGlobal(Offset.zero) & box.size;
+      if (rect.contains(position)) return true;
+    }
+    return false;
+  }
+}
+
 class _CupertinoNativeTextFieldState extends State<CupertinoNativeTextField>
-    with NativePlatformViewStateMixin, WidgetsBindingObserver {
-  /// Whether the native field is showing a non-empty selection (and thus its
+    with NativePlatformViewStateMixin, WidgetsBindingObserver {  /// Whether the native field is showing a non-empty selection (and thus its
   /// draggable handles). Kept current by the `onSelectionActive` callback.
   bool _selectionActive = false;
 
@@ -289,6 +319,7 @@ class _CupertinoNativeTextFieldState extends State<CupertinoNativeTextField>
   @override
   void initState() {
     super.initState();
+    _NativeTextFieldRegistry.instance.add(this);
     _lastNativeText = widget.controller?.text ?? '';
     widget.controller?.addListener(_onControllerChanged);
     _focusNode = widget.focusNode ?? _createInternalFocusNode();
@@ -347,10 +378,20 @@ class _CupertinoNativeTextFieldState extends State<CupertinoNativeTextField>
       }
       _focusNode = widget.focusNode ?? _createInternalFocusNode();
     }
-    if (_configChanged(oldWidget)) {
-      updateNativeView('updateTextField', _toMap());
-    }
+    // `_toMap` refreshes the toolbar's callbacks, then the config is pushed
+    // only when it moved. Const widgets skip this method entirely.
+    final map = _toMap();
+    final json = jsonEncode(map);
+    if (json == _lastConfigJson) return;
+    updateNativeView('updateTextField', map);
+    // A push that never reached the native side (no channel yet) is not
+    // counted as sent; the creation callback re-syncs.
+    if (channel != null) _lastConfigJson = json;
   }
+
+  /// The config last pushed over the channel, encoded. Only set for pushes
+  /// that actually went out.
+  String? _lastConfigJson;
 
   @override
   void didChangeDependencies() {
@@ -394,6 +435,7 @@ class _CupertinoNativeTextFieldState extends State<CupertinoNativeTextField>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _NativeTextFieldRegistry.instance.remove(this);
     widget.controller?.removeListener(_onControllerChanged);
     _searchRowVisibility?.removeListener(_onSearchRowVisibilityChanged);
     if (_ownsFocusNode) _focusNode.dispose();
@@ -407,33 +449,9 @@ class _CupertinoNativeTextFieldState extends State<CupertinoNativeTextField>
     channel?.invokeMethod(hasFocus ? 'focus' : 'unfocus');
   }
 
-  bool _configChanged(CupertinoNativeTextField o) {
-    return o.placeholder != widget.placeholder ||
-        o.keyboardType != widget.keyboardType ||
-        o.textInputAction != widget.textInputAction ||
-        o.obscureText != widget.obscureText ||
-        o.autocorrect != widget.autocorrect ||
-        o.enableSuggestions != widget.enableSuggestions ||
-        o.textCapitalization != widget.textCapitalization ||
-        o.textAlign != widget.textAlign ||
-        o.maxLength != widget.maxLength ||
-        o.enabled != widget.enabled ||
-        o.readOnly != widget.readOnly ||
-        o.style != widget.style ||
-        o.cursorColor != widget.cursorColor ||
-        o.clearButtonMode != widget.clearButtonMode ||
-        o.textContentType != widget.textContentType ||
-        o.backgroundColor != widget.backgroundColor ||
-        o.cornerRadius != widget.cornerRadius ||
-        o.glass != widget.glass ||
-        o.prefix != widget.prefix ||
-        o.suffix != widget.suffix ||
-        o.verticalAlignment != widget.verticalAlignment ||
-        // Widgets, so compared by their lowered form: two `const Text('B')`
-        // are equal, two closures never are.
-        jsonEncode(LoweredToolbar(o.keyboardToolbar, isDark: _isDark).nodes) !=
-            jsonEncode(_toolbar.nodes);
-  }
+  /// The creation params, captured on the first build and never rebuilt —
+  /// `UiKitView` only reads them at creation.
+  Map<String, dynamic>? _creationParams;
 
   /// Push programmatic controller edits to native (guarded against the echo
   /// that native change notifications would otherwise cause).
@@ -450,7 +468,7 @@ class _CupertinoNativeTextFieldState extends State<CupertinoNativeTextField>
   LoweredToolbar _toolbar = LoweredToolbar(const [], isDark: false);
 
   Map<String, dynamic> _toMap() {
-    _toolbar = LoweredToolbar(widget.keyboardToolbar, isDark: _isDark);
+    _toolbar = LoweredToolbar(widget.toolbarActions, isDark: _isDark);
     return {
       'text': widget.controller?.text ?? '',
       'placeholder': widget.placeholder,
@@ -500,6 +518,11 @@ class _CupertinoNativeTextFieldState extends State<CupertinoNativeTextField>
       'cupertino_widgets/textfield_$id',
       onMethodCall: _handleMethodCall,
     );
+    // The creation params were memoized from the first build; push the live
+    // config once so nothing that changed mid-creation is lost.
+    final map = _toMap();
+    _lastConfigJson = jsonEncode(map);
+    updateNativeView('updateTextField', map);
     requestIntrinsicSize();
     // The view may be created mid-collapse (or already collapsed); align the
     // native content opacity with the current row visibility right away.
@@ -557,7 +580,9 @@ class _CupertinoNativeTextFieldState extends State<CupertinoNativeTextField>
             viewType:
                 'com.example.cupertino_widgets/cupertino_native_text_field',
             layoutDirection: TextDirection.ltr,
-            creationParams: _toMap(),
+            // Memoized: every later change goes over `updateTextField`, not
+            // through a map rebuilt on every build.
+            creationParams: _creationParams ??= _toMap(),
             creationParamsCodec: const StandardMessageCodec(),
             gestureRecognizers: _gestureRecognizers,
             onPlatformViewCreated: _onPlatformViewCreated,
@@ -583,11 +608,18 @@ class _CupertinoNativeTextFieldState extends State<CupertinoNativeTextField>
         sized = SizedBox(height: intrinsicHeight ?? 52, child: platformView);
       }
 
-      // A tap outside dismisses the keyboard by default.
+      // A tap outside dismisses the keyboard by default — unless it landed on
+      // another native field, whose focus report moves the responder without
+      // a dismiss/re-present round trip (see [_NativeTextFieldRegistry]).
       final content = TapRegion(
-        onTapOutside:
-            widget.onTapOutside ??
-            (_) {
+        onTapOutside: widget.onTapOutside ??
+            (event) {
+              if (_NativeTextFieldRegistry.instance.tapsField(
+                event.position,
+                ModalRoute.of(context),
+              )) {
+                return;
+              }
               if (_focusNode.hasFocus) _focusNode.unfocus();
             },
         child: sized,

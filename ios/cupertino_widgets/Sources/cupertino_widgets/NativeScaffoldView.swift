@@ -486,10 +486,9 @@ class NativeScaffoldView: NativeHostingView {
                     backgroundColor: model.config.backgroundColor,
                     primaryColor: model.config.primaryColor,
                     showLoadingIndicator: model.config.showLoadingIndicator,
-                    // Carried through explicitly: these two have defaults, so
-                    // a rebuild that forgets them silently resets the page.
-                    resizeToAvoidBottomInset: model.config.resizeToAvoidBottomInset,
-                    interactiveKeyboardDismiss: model.config.interactiveKeyboardDismiss)
+                    // Carried through explicitly: it has a default, so a
+                    // rebuild that forgets it silently resets the page.
+                    resizeToAvoidBottomInset: model.config.resizeToAvoidBottomInset)
             }
             result(nil)
         case "updateScaffold":

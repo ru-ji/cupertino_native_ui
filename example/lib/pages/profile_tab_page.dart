@@ -1,9 +1,10 @@
 import 'package:flutter/cupertino.dart';
+import 'package:cupertino_widgets/cupertino_widgets.dart';
 
 import '../widgets/settings_ui.dart';
 
-/// Profile tab body — shared with the native scaffold, so drawn Flutter
-/// widgets only (no platform views).
+/// Profile tab body — shared with the native scaffold. The rows are native
+/// list cells.
 class ProfileTabPage extends StatelessWidget {
   const ProfileTabPage({super.key});
 
@@ -48,17 +49,43 @@ class ProfileTabPage extends StatelessWidget {
         ),
         Text('casey@example.com', style: footnoteStyle(context)),
         const SizedBox(height: 8),
-        const SettingsSection(
-          children: [
-            SettingsRow(title: 'Name', value: 'Casey Rivera'),
-            SettingsRow(title: 'Phone', value: '+1 (555) 010-9265'),
-            SettingsRow(title: 'Member Since', value: 'July 2024'),
-          ],
-        ),
-        const SettingsSection(
-          children: [
-            SettingsRow(title: 'Subscription', value: 'Pro', showChevron: true),
-            SettingsRow(title: 'Devices', value: '3', showChevron: true),
+        const CupertinoNativeList(
+          sections: [
+            CupertinoNativeListSection(
+              children: [
+                CupertinoNativeListTile(
+                  id: 'name',
+                  title: 'Name',
+                  additionalInfo: 'Casey Rivera',
+                ),
+                CupertinoNativeListTile(
+                  id: 'phone',
+                  title: 'Phone',
+                  additionalInfo: '+1 (555) 010-9265',
+                ),
+                CupertinoNativeListTile(
+                  id: 'memberSince',
+                  title: 'Member Since',
+                  additionalInfo: 'July 2024',
+                ),
+              ],
+            ),
+            CupertinoNativeListSection(
+              children: [
+                CupertinoNativeListTile(
+                  id: 'subscription',
+                  title: 'Subscription',
+                  additionalInfo: 'Pro',
+                  showChevron: true,
+                ),
+                CupertinoNativeListTile(
+                  id: 'devices',
+                  title: 'Devices',
+                  additionalInfo: '3',
+                  showChevron: true,
+                ),
+              ],
+            ),
           ],
         ),
         const SizedBox(height: 24),

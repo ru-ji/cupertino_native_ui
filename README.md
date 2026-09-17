@@ -282,20 +282,20 @@ CupertinoNativeTextField(
 | `cornerRadius` | `double?` | — | |
 | `glass` | `CupertinoGlass?` | — | Liquid Glass background. |
 | `textContentType` | `String?` | — | Autofill hint, e.g. `'password'`. |
-| `keyboardToolbar` | `CupertinoNativeBody?` | — | The bar above the keyboard. |
-| `onKeyboardAction` | `void Function(String id, Object? value)?` | — | A `keyboardToolbar` control changed. |
+| `toolbarActions` | `List<Widget>` | `[]` | The bar above the keyboard — see below. |
 | `onChanged` / `onSubmitted` / `onEditingComplete` / `onTap` / `onTapOutside` | | — | |
 | `width` / `height` | `double?` | — | |
 
 #### Keyboard toolbar
 
-The bar above the keyboard — the focused field's `inputAccessoryView`, in a
-`UIInputView` styled like the keyboard. Write the package's own controls, and
-a `Spacer` where the bar should break:
+`toolbarActions` fills the bar above the keyboard while the field is focused —
+SwiftUI's own `ToolbarItemGroup(placement: .keyboard)`, the row of actions
+Notes and Numbers put there. The system draws the bar and moves it with the
+keyboard; the package only says what is in it.
 
 ```dart
 CupertinoNativeTextField(
-  keyboardToolbar: [
+  toolbarActions: [
     CupertinoNativeButton(onPressed: _prev, child: CupertinoSymbolImage('chevron.up')),
     CupertinoNativeButton(onPressed: _next, child: CupertinoSymbolImage('chevron.down')),
     const Spacer(),
@@ -304,42 +304,51 @@ CupertinoNativeTextField(
 )
 ```
 
-Each item keeps its own `onPressed` / `onChanged`, so there is no id to invent
-and no separate callback.
-
 **The widgets are read, not mounted.** The bar lives in the keyboard's own
-`UIWindow`, where Flutter cannot draw, so its contents are built natively: the
-package walks what you wrote, copies what each native control needs, and keeps
-its callback.
+window, where Flutter cannot draw, so its contents are built natively: the
+package's views are transcribed straight into SwiftUI — the same lowering
+`CupertinoNativePageScaffold.nativeBody` uses — and each keeps its own
+`onPressed` / `onChanged`. Accepted: `CupertinoNativeButton`,
+`CupertinoNativeSwitch`, `CupertinoNativePicker`, `CupertinoNativeSymbol`,
+`CupertinoNativeGlassContainer`, `Text`, `Spacer`, `SizedBox` (a fixed gap),
+and `CupertinoNativeFlutterView`. Anything else asserts with that
+explanation.
 
-> SwiftUI's
-> [`ToolbarItemGroup(placement: .keyboard)`](https://developer.apple.com/documentation/swiftui/toolbaritemplacement/keyboard)
-> is the documented way to do this, and it is what this was first built on.
-> It resolves to nothing when the SwiftUI tree is a child
-> `UIHostingController` embedded in a Flutter platform view — which is how
-> every widget here is hosted. `inputAccessoryView` is the UIKit mechanism
-> underneath it and does not care where the hosting controller sits. That is also why only these are accepted —
-`CupertinoNativeButton`, `CupertinoNativeSwitch`, `CupertinoNativePicker`,
-`CupertinoNativeSymbol`, `Text`, `Spacer`, `SizedBox` (a fixed gap), and
-`CupertinoNativeFlutterView`. Anything else asserts with that explanation.
+**The lowering is recursive.** A `Row`, a `Column` or a glass container can
+hold further items, and every level follows the same rule — SwiftUI views
+stay SwiftUI, only Flutter islands cost an engine:
 
-`CupertinoNativeFlutterView('route')` puts your own Flutter in the bar, hosted
-in its own engine — the route is registered in `maybeRun` like a scaffold
-body. It is the expensive item: one view is one isolate. A row of buttons
-costs nothing.
+```dart
+CupertinoNativeTextField(
+  toolbarActions: [
+    CupertinoNativeGlassContainer(
+      shape: CupertinoGlassShape.capsule,
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      child: Row(
+        children: [
+          CupertinoNativeButton(onPressed: _bold, child: const Text('B')),
+          const SizedBox(width: 8),
+          CupertinoNativeButton(onPressed: _done, child: const Text('Done')),
+        ],
+      ),
+    ),
+    const Spacer(),
+  ],
+)
+```
+
+The container above becomes a real Liquid Glass capsule in the bar, with its
+buttons as real SwiftUI buttons inside the material.
+
+Flutter content goes through `CupertinoNativeFlutterView` — usually written as
+a `CupertinoNativeBodyRoute.island` (see
+[Embedding Flutter in SwiftUI](#embedding-flutter-in-swiftui)) — hosted in its
+own engine: the route is registered in `maybeRun` like a scaffold body. It is
+the expensive item: one view is one isolate, and only it costs one. A row of
+native buttons costs nothing.
 
 It belongs to *this* field's responder: it shows when this field is focused,
 and not for a Flutter `TextField` elsewhere on the page.
-
-**On iOS 26 the bar is already Liquid Glass**, so a `.glass` button inside it
-is glass on glass — the same double capsule the navigation bar's
-`sharedBackgroundVisibility` warns about. The system's own bars use plain
-buttons on the shared material.
-
-A field the package does not own gets no bar: the toolbar is *this* field's
-`inputAccessoryView`. Drawing one in Flutter instead is possible but not
-advisable — it would be positioned by us rather than moved by UIKit, so it
-lags the keyboard on open and on close.
 
 ### Date Picker
 
@@ -629,7 +638,6 @@ obstacle, the builder is.
 | `backgroundColor` / `activeColor` | `Color?` | — | |
 | `showLoadingIndicator` | `bool?` | — | |
 | `resizeToAvoidBottomInset` | `bool` | `true` | |
-| `interactiveKeyboardDismiss` | `bool` | `false` | Drag down over the keyboard to dismiss it, following the finger. |
 | `nativeBody` | `CupertinoNativeBody?` | — | A body rendered as SwiftUI directly. Replaces `body` / the tabs' routes. |
 | `onBodyEvent` | `void Function(String id, Object? value)?` | — | A `nativeBody` control changed. |
 
@@ -789,6 +797,173 @@ ordinary Flutter page: it is a modifier on a SwiftUI navigation container, and
 hosting one standalone is the same problem that keeps `navigationTitle` out of
 `CupertinoNativeSliverNavigationBar`.
 
+### Embedding Flutter in SwiftUI
+
+Native surfaces (a scaffold body, a keyboard toolbar, a glass container's
+`route:`) host Flutter in a **separate engine**, and an engine is an isolate:
+a widget built in the host's heap is unreachable from it. That is why there is
+no `child:` there — only *names* cross. The pattern is **declare once, use
+anywhere**:
+
+```dart
+// Declared once, top-level: the body isolate reaches it through main().
+final editorBar = CupertinoNativeBodyRoute('editorBar', () => const EditorBar());
+
+void main() {
+  if (CupertinoNativePageScaffold.maybeRunRoutes([editorBar])) return;
+  runApp(const MyApp());
+}
+
+// The same object feeds every surface that hosts Flutter inside SwiftUI.
+CupertinoNativePageScaffold(body: editorBar.name);
+CupertinoNativeTextField(toolbarActions: [editorBar.island, CupertinoNativeButton(...)]);
+CupertinoNativeGlassContainer(route: editorBar.name);
+```
+
+Three ways to put content in a native view, in increasing cost:
+
+| | Engine | State management | Router |
+| --- | --- | --- | --- |
+| `nativeBody` | none — SwiftUI directly | yours, untouched | native NavigationStack |
+| glass `child:` | the one you're already in | yours, untouched | yours |
+| `CupertinoNativeBodyRoute` | one per route | mirrored via the bridge | any, per island |
+
+**State across the boundary is mirrored, not shared.** The host keeps owning
+the state and publishes a serializable snapshot; bodies read it and send
+actions back. Nothing about how your views manage their own state changes —
+you only add the bridge lines, from whatever manager you already use:
+
+```dart
+// Host: mirror what the islands care about.
+ref.listen(cartProvider, (_, cart) {
+  CupertinoNativeBodyBridge.publish({'count': cart.count});
+});
+CupertinoNativeBodyBridge.onAction = (action, payload) { ... };
+
+// Island: read the mirror, send intents back.
+ValueListenableBuilder(
+  valueListenable: CupertinoNativeBodyBridge.state,
+  builder: (context, state, _) => Text('${state['count']} items'),
+);
+CupertinoNativeBodyBridge.send('addItem', 'sku-42');
+```
+
+A body that boots mid-session has missed earlier publishes — call
+`CupertinoNativeBodyBridge.requestState()` when it starts.
+
+**A complete example** — a cart owned by the host, mirrored into a keyboard
+toolbar island. The host's state manager is whatever you already use; only
+the bridge lines are added, nothing about the views changes:
+
+```dart
+// ---- Shared: what crosses the bridge is DATA --------------------------------
+
+/// The snapshot every island mirrors. Plain data — it must survive
+/// `StandardMessageCodec`.
+class CartSnapshot {
+  const CartSnapshot({required this.count, required this.total});
+
+  final int count;
+  final double total;
+
+  Map<String, Object?> toMap() => {'count': count, 'total': total};
+
+  factory CartSnapshot.fromMap(Map<String, Object?> map) => CartSnapshot(
+        count: (map['count'] as num?)?.toInt() ?? 0,
+        total: (map['total'] as num?)?.toDouble() ?? 0,
+      );
+}
+
+// ---- Host: own the state, mirror it ------------------------------------------
+
+/// The manager you already use — here a plain `ChangeNotifier`. Riverpod,
+/// BLoC, Provider all work: the bridge only needs a listener.
+final cart = ValueNotifier(const CartSnapshot(count: 0, total: 0));
+
+final cartBar = CupertinoNativeBodyRoute('cartBar', () => const CartBar());
+
+void main() {
+  // The island's engine runs this same main() again, in ANOTHER isolate —
+  // which is why the mirror below exists.
+  if (CupertinoNativePageScaffold.maybeRunRoutes([cartBar])) return;
+
+  // Mirror: publish on every change of the state you already have.
+  cart.addListener(() => CupertinoNativeBodyBridge.publish(cart.value.toMap()));
+  // Handle the intents the islands send back.
+  CupertinoNativeBodyBridge.onAction = (action, payload) {
+    switch (action) {
+      case 'add':
+        cart.value = CartSnapshot(
+          count: cart.value.count + 1,
+          total: cart.value.total + ((payload as num?) ?? 0),
+        );
+      case 'clear':
+        cart.value = const CartSnapshot(count: 0, total: 0);
+    }
+  };
+
+  runApp(const MyApp());
+}
+
+// ---- Island: read the mirror, send intents back ------------------------------
+
+class CartBar extends StatefulWidget {
+  const CartBar({super.key});
+
+  @override
+  State<CartBar> createState() => _CartBarState();
+}
+
+class _CartBarState extends State<CartBar> {
+  @override
+  void initState() {
+    super.initState();
+    // The island may have booted mid-session: pull the current snapshot.
+    CupertinoNativeBodyBridge.requestState();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<Map<String, Object?>>(
+      valueListenable: CupertinoNativeBodyBridge.state,
+      builder: (context, state, _) {
+        final cart = CartSnapshot.fromMap(state);
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('${cart.count} items · \$${cart.total.toStringAsFixed(2)}'),
+            TextButton(
+              onPressed: () => CupertinoNativeBodyBridge.send('add', 9.99),
+              child: const Text('Add'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+// The island lives where Flutter is hosted inside SwiftUI — the keyboard bar
+// here. The host owns `cart`; the island never touches it directly.
+CupertinoNativeTextField(toolbarActions: [cartBar.island]);
+```
+
+The flow is always the same: the host **owns** the state and publishes a
+snapshot; each island **mirrors** it through
+`CupertinoNativeBodyBridge.state` and sends **intents** (`send`) that the host
+applies with its own manager — so the state managers never need to know about
+each other, or about the bridge.
+
+**Routers:** inside an island any router works (it is a full Flutter app), but
+it is confined to that island. One router across host and islands is
+impossible — two isolates share no objects. Coordinate through the bridge
+(publish the active route), or use `nativeBody` + the native NavigationStack
+for whole-app navigation and keep routers only where you truly need arbitrary
+Flutter.
+
+Anything crossing the bridge must survive `StandardMessageCodec`: null, bool,
+num, String, Uint8List, List and Map of those.
+
 ### Sheet
 
 ```dart
@@ -839,75 +1014,6 @@ CupertinoNativePopover.show(
 
 Dismiss it with `CupertinoNativeSheet.dismiss()` — same presentation
 underneath.
-
-### Keyboard
-
-Flutter only learns the keyboard's **end** state — `MediaQuery.viewInsets`
-jumps to the final height and Flutter then animates over it on a curve of its
-own. Anything that moves with the keyboard drifts out of step with it, and a
-keyboard dragged down with a finger doesn't move it at all.
-
-`CupertinoNativeKeyboard.metrics` reports the real one, frame by frame: a
-`CADisplayLink` reads the presentation layer of a view pinned to the host's
-`keyboardLayoutGuide` while UIKit animates it, and KVO catches the steps of an
-interactive drag. (The technique is the one
-[react-native-keyboard-controller](https://github.com/kirillzyusko/react-native-keyboard-controller)
-uses; on iOS 26 it needs no private API.)
-
-**Wrap the app once and you are done.** `CupertinoNativeKeyboardScope`
-replaces `MediaQuery.viewInsets.bottom` with the live height, so everything
-that already reacts to it — `Scaffold.resizeToAvoidBottomInset`,
-`CupertinoPageScaffold`, bottom sheets, scroll-into-view — follows the real
-keyboard without knowing this package exists.
-
-```dart
-MaterialApp(
-  builder: (context, child) => CupertinoNativeKeyboardScope(child: child!),
-  home: const HomePage(),
-)
-```
-
-Bodies of a `CupertinoNativePageScaffold` already have it — the package owns
-their root, so there it is automatic.
-
-Read the value directly only when you want something Flutter has no inset for:
-
-```dart
-CupertinoKeyboardAvoider(child: composer)
-
-// or the raw metrics
-ValueListenableBuilder(
-  valueListenable: CupertinoNativeKeyboard.metrics,
-  builder: (context, kb, child) =>
-      Padding(padding: EdgeInsets.only(bottom: kb.height), child: child!),
-  child: composer,
-)
-```
-
-| `CupertinoKeyboardMetrics` | Type | |
-| --- | --- | --- |
-| `height` | `double` | Visible height this frame, mid-animation and mid-drag. |
-| `progress` | `double` | `height / targetHeight`, 0 to 1. |
-| `isAnimating` | `bool` | Moving, by animation or by finger. |
-| `targetHeight` | `double` | Where the current transition is heading. 0 while hiding. |
-| `isVisible` | `bool` | `height > 0`. |
-| `isTracking` | `bool` | Whether the native side has reported anything yet — `height` is 0 before that because nothing has been measured, not because the keyboard is down. |
-
-| `CupertinoKeyboardAvoider` | Type | Default | |
-| --- | --- | --- | --- |
-| `child` | `Widget` | required | |
-| `offset` | `double` | `0` | Extra gap above the keyboard. |
-| `ignoreBottomSafeArea` | `bool` | `false` | Subtract the bottom inset, for a child already inside a `SafeArea` — the keyboard covers the home indicator, so its height already includes it. |
-
-Observation starts with the first listener and stops with the last, so it
-costs nothing when nobody is watching. While the keyboard moves it delivers
-one platform message per frame (up to 120/s); it is idle otherwise. Off iOS
-the metrics stay at zero and `CupertinoKeyboardAvoider` falls back to
-`MediaQuery.viewInsets`.
-
-**Drag to dismiss** is `CupertinoNativePageScaffold.interactiveKeyboardDismiss`,
-and it lives there rather than on a widget because it is a property of the
-native scroll view the bodies ride in — an ordinary Flutter page has none.
 
 ### Scroll Edge Effect
 

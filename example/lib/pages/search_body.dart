@@ -132,15 +132,19 @@ class _SearchBodyState extends State<SearchBody> {
           padding: const EdgeInsets.fromLTRB(32, 16, 32, 8),
           child: Text(header.toUpperCase(), style: footnoteStyle(context)),
         ),
-        SettingsSection(
-          children: [
-            for (final (name, category) in items)
-              SettingsRow(
-                title: name,
-                subtitle: category,
-                showChevron: true,
-                onTap: () {},
-              ),
+        CupertinoNativeList(
+          sections: [
+            CupertinoNativeListSection(
+              children: [
+                for (final (name, category) in items)
+                  CupertinoNativeListTile(
+                    id: name,
+                    title: name,
+                    subtitle: category,
+                    showChevron: true,
+                  ),
+              ],
+            ),
           ],
         ),
         const SizedBox(height: 24),
@@ -157,9 +161,14 @@ class _SearchBodyState extends State<SearchBody> {
           padding: const EdgeInsets.fromLTRB(32, 16, 32, 8),
           child: Text('SUGGESTED', style: footnoteStyle(context)),
         ),
-        SettingsSection(
-          children: [
-            for (final s in _suggestions) SettingsRow(title: s, onTap: () {}),
+        CupertinoNativeList(
+          sections: [
+            CupertinoNativeListSection(
+              children: [
+                for (final s in _suggestions)
+                  CupertinoNativeListTile(id: s, title: s),
+              ],
+            ),
           ],
         ),
         const SizedBox(height: 24),

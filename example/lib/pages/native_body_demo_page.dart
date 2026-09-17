@@ -33,7 +33,6 @@ class _NativeBodyDemoPageState extends State<NativeBodyDemoPage> {
     return SizedBox.expand(
       child: CupertinoNativePageScaffold(
         scrollEdgeEffect: CupertinoScrollEdgeEffectStyle.soft,
-        interactiveKeyboardDismiss: true,
         navigationBar: const CupertinoNativeScaffoldNavigationBar(
           title: 'Native Body',
           subtitle: 'Rendered by SwiftUI',

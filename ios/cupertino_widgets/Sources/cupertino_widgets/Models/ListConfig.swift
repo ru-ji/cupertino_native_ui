@@ -2,9 +2,10 @@ import Foundation
 
 /// One row of a native `List`/`Form` section. `type` selects the row rendering:
 /// "label" (icon + title/subtitle + optional trailing value/chevron),
-/// "toggle" (trailing switch), or "button" (tinted, tappable).
+/// "toggle" (trailing switch), or "button" (tinted, tappable). Any row can
+/// also carry [trailing] — lowered native nodes rendered at the row's end.
 @available(iOS 26.0, *)
-struct ListRowConfig: Codable, Hashable {
+struct ListRowConfig: Codable {
     let id: String
     let title: String
     let subtitle: String?
@@ -14,11 +15,14 @@ struct ListRowConfig: Codable, Hashable {
     let type: String?  // "label" | "toggle" | "button"
     let toggleValue: Bool?
     let enabled: Bool?
+    /// A lowered `CupertinoNativeListTile.trailing` — native nodes (switch,
+    /// slider, button, picker, …) rendered in the row by SwiftUI.
+    let trailing: [BodyNodeConfig]?
 }
 
 /// A `Section` of a native `List`/`Form`: optional header/footer + rows.
 @available(iOS 26.0, *)
-struct ListSectionConfig: Codable, Hashable {
+struct ListSectionConfig: Codable {
     let header: String?
     let footer: String?
     let rows: [ListRowConfig]
@@ -26,7 +30,7 @@ struct ListSectionConfig: Codable, Hashable {
 
 /// Creation/update parameters for the native list/form platform view.
 @available(iOS 26.0, *)
-struct ListConfig: Codable, Hashable {
+struct ListConfig: Codable {
     let variant: String?  // "list" | "form"
     let style: String?    // "automatic" | "plain" | "grouped" | "insetGrouped" | "sidebar"
     let scrollable: Bool?

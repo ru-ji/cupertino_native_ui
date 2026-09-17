@@ -61,16 +61,24 @@ class _SegmentedControlDemoPageState extends State<SegmentedControlDemoPage> {
             onValueChanged: (v) => setState(() => _tinted = v!),
           ),
         ),
-        SettingsSection(
-          header: 'Picker',
-          children: [
-            SettingsRow(
-              title: 'Sort By',
-              trailing: CupertinoNativeSlidingSegmentedControl<int>.menu(
-                children: {for (final (i, l) in _sorts.indexed) i: Text(l)},
-                groupValue: _sort,
-                onValueChanged: (v) => setState(() => _sort = v!),
-              ),
+        CupertinoNativeList(
+          sections: [
+            CupertinoNativeListSection(
+              header: 'Picker',
+              footer:
+                  'The same options behind a button — lowered straight into '
+                  'SwiftUI as the row\'s trailing native menu.',
+              children: [
+                CupertinoNativeListTile(
+                  id: 'sort',
+                  title: 'Sort By',
+                  trailing: CupertinoNativeSlidingSegmentedControl<int>.menu(
+                    children: {for (final (i, l) in _sorts.indexed) i: Text(l)},
+                    groupValue: _sort,
+                    onValueChanged: (v) => setState(() => _sort = v!),
+                  ),
+                ),
+              ],
             ),
           ],
         ),

@@ -14,6 +14,26 @@ final class NativeBodyModel: ObservableObject {
     @Published var toggles: [String: Bool] = [:]
     @Published var sliders: [String: Double] = [:]
     @Published var pickers: [String: Int] = [:]
+    @Published var segmenteds: [String: Int] = [:]
+
+    /// One `DatePickerModel` per date-picker node, so the picker behaves
+    /// exactly as it does standalone (same state, same callbacks).
+    private var dateModels: [String: DatePickerModel] = [:]
+
+    /// Created once per node id and reused. Never reassigned during a view
+    /// update — the model is `@Published`, and writing to it from inside
+    /// `body` is how a SwiftUI update loop starts.
+    func dateModel(for id: String, config: DatePickerConfig) -> DatePickerModel {
+        if let existing = dateModels[id] { return existing }
+        let model = DatePickerModel(
+            date: config.value.map { Date(timeIntervalSince1970: $0 / 1000) } ?? Date(),
+            mode: config.mode ?? "date",
+            minimumDate: config.minimumDate.map { Date(timeIntervalSince1970: $0 / 1000) },
+            maximumDate: config.maximumDate.map { Date(timeIntervalSince1970: $0 / 1000) },
+            tint: config.tint.map { Color(argb: $0) })
+        dateModels[id] = model
+        return model
+    }
 
     /// One `TextFieldModel` per field node, so `AdaptiveTextFieldView` behaves
     /// exactly as it does standalone.
@@ -41,7 +61,7 @@ final class NativeBodyModel: ObservableObject {
         for child in node.children ?? [] { applyConfigs(child) }
     }
 
-    /// Seeds a list of roots, for the keyboard toolbar.
+    /// Seeds a list of roots, for a field's keyboard toolbar.
     func seedAll(_ nodes: [BodyNodeConfig]) {
         for node in nodes { seed(node) }
     }
@@ -55,6 +75,9 @@ final class NativeBodyModel: ObservableObject {
             if let slider = node.slider, sliders[id] == nil { sliders[id] = slider.value }
             if let picker = node.picker, pickers[id] == nil {
                 pickers[id] = picker.selectedIndex
+            }
+            if let segmented = node.segmented, segmenteds[id] == nil {
+                segmenteds[id] = segmented.selectedIndex
             }
         }
         for child in node.children ?? [] { seed(child) }
@@ -81,8 +104,8 @@ struct NativeBodyView: View {
 
 /// One node. Split out from `NativeBodyView` so the recursion has a type to
 /// recurse into — a `View` cannot reference itself inside its own `body`.
-/// Internal rather than private: the keyboard toolbar renders a tree's
-/// top-level nodes straight into a `ToolbarItemGroup` (see `KeyboardToolbar`).
+/// Internal rather than private: the scaffold's page root renders a tree's
+/// top-level node directly.
 @available(iOS 26.0, *)
 struct NativeBodyNode: View {
     let node: BodyNodeConfig
@@ -140,6 +163,14 @@ struct NativeBodyNode: View {
             listView
         case "symbol":
             symbolView
+        case "glass":
+            glassView
+        case "segmented":
+            segmentedView
+        case "datePicker":
+            datePickerView
+        case "progress":
+            progressView
         case "flutter":
             flutterView
         default:
@@ -182,10 +213,7 @@ struct NativeBodyNode: View {
                 onChanged: { onEvent(id, $0) },
                 onSubmitted: { onEvent("\(id).submitted", $0) },
                 onEditingComplete: {},
-                onFocusChange: { onEvent("\(id).focused", $0) },
-                onToolbarEvent: { toolbarId, value in
-                    onEvent("\(id).\(toolbarId)", value)
-                }
+                onFocusChange: { onEvent("\(id).focused", $0) }
             )
             // The standalone platform view is sized by Flutter; here nothing
             // else states a height, so the field would collapse.
@@ -247,7 +275,10 @@ struct NativeBodyNode: View {
             AdaptiveListView(
                 config: config,
                 onRowTap: { onEvent(node.id ?? "list", $0) },
-                onToggle: { rowId, value in onEvent("\(node.id ?? "list").\(rowId)", value) }
+                onToggle: { rowId, value in onEvent("\(node.id ?? "list").\(rowId)", value) },
+                onTrailingEvent: { rowId, itemId, value in
+                    onEvent("\(node.id ?? "list").\(rowId).\(itemId)", value)
+                }
             )
         }
     }
@@ -265,6 +296,58 @@ struct NativeBodyNode: View {
     private var symbolView: some View {
         if let config = node.symbol {
             BodySymbolView(config: config)
+        }
+    }
+
+    @ViewBuilder
+    private var glassView: some View {
+        if let config = node.glass {
+            BodyGlassView(
+                config: config,
+                nodes: children,
+                nodeId: node.id,
+                model: model,
+                onEvent: onEvent
+            )
+        }
+    }
+
+    @ViewBuilder
+    private var segmentedView: some View {
+        if let config = node.segmented, let id = node.id {
+            BodySegmentedView(
+                config: config,
+                selection: Binding(
+                    get: { model.segmenteds[id] ?? config.selectedIndex },
+                    set: { model.segmenteds[id] = $0; onEvent(id, $0) })
+            )
+        }
+    }
+
+    @ViewBuilder
+    private var datePickerView: some View {
+        if let config = node.datePicker, let id = node.id {
+            datePicker(config: config, id: id)
+        }
+    }
+
+    private func datePicker(config: DatePickerConfig, id: String) -> some View {
+        let pickerModel = model.dateModel(for: id, config: config)
+        pickerModel.onChanged = { date in
+            onEvent(id, Int(date.timeIntervalSince1970 * 1000))
+        }
+        return AdaptiveDatePickerView(model: pickerModel)
+    }
+
+    @ViewBuilder
+    private var progressView: some View {
+        if let config = node.progress {
+            AdaptiveProgressView(
+                value: config.value,
+                total: config.total ?? 1,
+                label: config.label,
+                style: config.style ?? 0,
+                color: config.color.map { Color(argb: $0) })
         }
     }
 
@@ -388,6 +471,94 @@ extension View {
         case "footnote": return .footnote
         case "caption": return .caption
         default: return .body
+        }
+    }
+}
+
+/// A Liquid Glass container inside a native body — the same material the
+/// standalone glass platform view renders, but here glass and content are one
+/// SwiftUI tree, so a container nested in a container (a toolbar item, a glass
+/// inside a glass) merges its effect with the tree around it.
+///
+/// Its content sits *inside* the material, so it refracts whatever the glass
+/// itself refracts — unlike the platform view's `child`, which rides over it.
+@available(iOS 26.0, *)
+struct BodyGlassView: View {
+    let config: GlassConfig
+    let nodes: [BodyNodeConfig]
+    let nodeId: String?
+    @ObservedObject var model: NativeBodyModel
+    let onEvent: (String, Any?) -> Void
+
+    var body: some View {
+        GlassEffectContainer {
+            HStack(spacing: 8) {
+                ForEach(Array(nodes.enumerated()), id: \.offset) { index, child in
+                    NativeBodyNode(node: child, model: model, onEvent: onEvent)
+                        .id(child.id ?? "\(child.type)-\(index)")
+                }
+            }
+            .padding(
+                EdgeInsets(
+                    top: CGFloat(config.paddingTop ?? 0),
+                    leading: CGFloat(config.paddingLeft ?? 0),
+                    bottom: CGFloat(config.paddingBottom ?? 0),
+                    trailing: CGFloat(config.paddingRight ?? 0)))
+            .glassEffect(glass, in: shape)
+            .contentShape(shape)
+            .onTapGesture {
+                if config.pressable == true, let nodeId { onEvent(nodeId, nil) }
+            }
+        }
+    }
+
+    @available(iOS 26.0, *)
+    private var glass: Glass {
+        var glass: Glass = config.variant == "clear" ? .clear : .regular
+        if let argb = config.tint { glass = glass.tint(Color(argb: argb)) }
+        if config.interactive != false { glass = glass.interactive() }
+        return glass
+    }
+
+    @available(iOS 26.0, *)
+    private var shape: AnyShape {
+        switch config.shape {
+        case "capsule": return AnyShape(Capsule())
+        case "circle": return AnyShape(Circle())
+        default:
+            return AnyShape(
+                RoundedRectangle(
+                    cornerRadius: CGFloat(config.cornerRadius ?? 26), style: .continuous))
+        }
+    }
+}
+
+/// A segmented control (or menu) inside a native body. Selection lives in
+/// `NativeBodyModel`, so pushes from Dart cannot fight a finger mid-touch —
+/// the same contract as the toggle and picker nodes.
+@available(iOS 26.0, *)
+struct BodySegmentedView: View {
+    let config: SegmentedControlConfig
+    @Binding var selection: Int
+
+    @ViewBuilder
+    var body: some View {
+        if config.style == "menu" {
+            Picker("", selection: $selection) {
+                ForEach(0..<config.items.count, id: \.self) { index in
+                    Text(config.items[index]).tag(index)
+                }
+            }
+            .pickerStyle(.menu)
+            .tint(config.color.map { Color(argb: $0) })
+        } else {
+            Picker("", selection: $selection) {
+                ForEach(0..<config.items.count, id: \.self) { index in
+                    Text(config.items[index]).tag(index)
+                }
+            }
+            .pickerStyle(.segmented)
+            .applySegmentedTint(config.color.map { Color(argb: $0) })
         }
     }
 }

@@ -151,10 +151,16 @@ mixin NativePlatformViewStateMixin<T extends StatefulWidget> on State<T> {
   }
 
   /// Sends updated config to the native view via [method].
+  ///
+  /// Size is not re-requested: the native side pushes its intrinsic size after
+  /// every layout pass (see `NativeHostingView.scheduleMeasurement`), so a
+  /// config push needs no round trip of its own. Pass
+  /// `refreshIntrinsicSize: true` only for the rare change the layout pass
+  /// cannot see.
   void updateNativeView(
     String method,
     Map<String, dynamic> args, {
-    bool refreshIntrinsicSize = true,
+    bool refreshIntrinsicSize = false,
   }) {
     final future = channel?.invokeMethod(method, args);
     if (refreshIntrinsicSize) {

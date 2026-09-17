@@ -139,45 +139,52 @@ class _LiquidGlassDemoPageState extends State<LiquidGlassDemoPage> {
             ],
           ),
         ),
-        SettingsSection(
-          header: 'Glass',
-          footer: switch (_supported) {
-            true =>
-              'This device renders real Liquid Glass (iOS 26+). Touch '
-                  'and hold the shapes — interactive glass shimmers and '
-                  'stretches under your finger. The circle is a glass button: '
-                  'tap it to cycle the tint.',
-            false =>
-              'This device runs iOS 25 or earlier: a static material '
-                  'stands in. The real effect is iOS 26+ only.',
-            null => 'Checking Liquid Glass availability…',
-          },
-          children: [
-            SettingsRow(
-              title: 'Interactive',
-              subtitle: 'Shimmer on touch',
-              trailing: CupertinoNativeSwitch(
-                value: _interactive,
-                onChanged: (v) => setState(() => _interactive = v),
-              ),
-            ),
-            SettingsRow(
-              title: 'Clear variant',
-              subtitle: 'More transparent glass',
-              trailing: CupertinoNativeSwitch(
-                value: _clear,
-                onChanged: (v) => setState(() => _clear = v),
-              ),
-            ),
-            SettingsRow(
-              title: 'Tint',
-              trailing: CupertinoNativeSlidingSegmentedControl<int>.menu(
-                children: {
-                  for (final (i, label) in _tints.indexed) i: Text(label),
-                },
-                groupValue: _tintIndex,
-                onValueChanged: (v) => setState(() => _tintIndex = v!),
-              ),
+        CupertinoNativeList(
+          sections: [
+            CupertinoNativeListSection(
+              header: 'Glass',
+              footer: switch (_supported) {
+                true =>
+                  'This device renders real Liquid Glass (iOS 26+). Touch '
+                      'and hold the shapes — interactive glass shimmers and '
+                      'stretches under your finger. The circle is a glass button: '
+                      'tap it to cycle the tint.',
+                false =>
+                  'This device runs iOS 25 or earlier: a static material '
+                      'stands in. The real effect is iOS 26+ only.',
+                null => 'Checking Liquid Glass availability…',
+              },
+              children: [
+                CupertinoNativeListTile(
+                  id: 'interactive',
+                  title: 'Interactive',
+                  subtitle: 'Shimmer on touch',
+                  trailing: CupertinoNativeSwitch(
+                    value: _interactive,
+                    onChanged: (v) => setState(() => _interactive = v),
+                  ),
+                ),
+                CupertinoNativeListTile(
+                  id: 'clear',
+                  title: 'Clear variant',
+                  subtitle: 'More transparent glass',
+                  trailing: CupertinoNativeSwitch(
+                    value: _clear,
+                    onChanged: (v) => setState(() => _clear = v),
+                  ),
+                ),
+                CupertinoNativeListTile(
+                  id: 'tint',
+                  title: 'Tint',
+                  trailing: CupertinoNativeSlidingSegmentedControl<int>.menu(
+                    children: {
+                      for (final (i, label) in _tints.indexed) i: Text(label),
+                    },
+                    groupValue: _tintIndex,
+                    onValueChanged: (v) => setState(() => _tintIndex = v!),
+                  ),
+                ),
+              ],
             ),
           ],
         ),

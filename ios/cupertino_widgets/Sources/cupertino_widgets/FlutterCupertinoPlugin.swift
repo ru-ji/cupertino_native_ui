@@ -25,12 +25,6 @@ public class FlutterCupertinoPlugin: NSObject, FlutterPlugin {
             NativeSheetManager.shared.mainMessenger = registrar.messenger()
         }
 
-        // Frame-by-frame keyboard position. Registered here but idle until
-        // Dart asks for it — the display link costs nothing while paused.
-        // Every engine registers: scaffold bodies are their own isolates and
-        // each needs its own channel to hear the events.
-        NativeKeyboardObserver.shared.register(messenger: registrar.messenger())
-
         let menuFactory = NativeMenuFactory(messenger: registrar.messenger())
         registrar.register(
             menuFactory, withId: "com.example.cupertino_widgets/cupertino_native_menu")
@@ -184,16 +178,6 @@ public class FlutterCupertinoPlugin: NSObject, FlutterPlugin {
                 return
             }
             result(FlutterCupertinoPlugin.renderSymbol(name: name, args: args))
-            return
-        }
-        if call.method == "startKeyboardObserver" {
-            NativeKeyboardObserver.shared.start()
-            result(nil)
-            return
-        }
-        if call.method == "stopKeyboardObserver" {
-            NativeKeyboardObserver.shared.stop()
-            result(nil)
             return
         }
         if call.method == "showAlert" || call.method == "showActionSheet" {

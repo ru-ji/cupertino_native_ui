@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 
+import 'cupertino_native_glass_container.dart';
 import 'cupertino_native_picker.dart';
 import 'cupertino_native_symbol.dart';
 import 'models/cupertino_native_button_style.dart';
@@ -245,9 +246,9 @@ class CupertinoNativeBody {
          id: id,
          padding: padding,
          payload: {
-           'slider': {
-             'value': value,
-             'min': min,
+            'slider': {
+              'value': value,
+              'min': min,
              'max': max,
              'step': step,
              'color': color,
@@ -322,8 +323,7 @@ class CupertinoNativeBody {
        );
 
   /// A **Flutter island** inside the native tree: real Flutter widgets, in
-  /// their own engine, hosted where SwiftUI puts them — including inside a
-  /// keyboard toolbar, where Flutter otherwise cannot draw.
+  /// their own engine, hosted where SwiftUI puts them.
   ///
   /// [route] is registered in `maybeRun` like a scaffold body, for the same
   /// reason: the island runs in its own isolate, so it is named, not passed.
@@ -335,6 +335,114 @@ class CupertinoNativeBody {
   /// `.button`s.
   CupertinoNativeBody.flutter(String route, {EdgeInsets? padding})
     : this._(type: 'flutter', route: route, padding: padding);
+
+  /// A Liquid Glass container — the same material the standalone
+  /// `CupertinoNativeGlassContainer` platform view renders, but here the
+  /// glass and its content are one SwiftUI tree, so a container nested in a
+  /// container merges its effect with the tree around it.
+  ///
+  /// [children] is what sits *inside* the glass. Give the node an [id] to
+  /// make it pressable: a tap reports `(id, null)`.
+  CupertinoNativeBody.glass({
+    String? id,
+    required List<CupertinoNativeBody> children,
+    CupertinoGlassShape shape = CupertinoGlassShape.roundedRect,
+    double? cornerRadius,
+    CupertinoGlassVariant variant = CupertinoGlassVariant.regular,
+    Color? tint,
+    bool? interactive,
+    bool pressable = false,
+    EdgeInsets? padding,
+    bool expand = false,
+  }) : this._(
+         type: 'glass',
+         id: id,
+         children: children,
+         expand: expand,
+         payload: {
+           'glass': {
+             'shape': shape,
+             'cornerRadius': cornerRadius,
+             'variant': variant,
+             'tint': tint,
+             'interactive': interactive,
+             'pressable': pressable,
+             'paddingLeft': padding?.left,
+             'paddingTop': padding?.top,
+             'paddingRight': padding?.right,
+             'paddingBottom': padding?.bottom,
+           },
+         },
+       );
+
+  /// A segmented control (or menu) row, reporting `(id, int)`.
+  CupertinoNativeBody.segmented({
+    required String id,
+    required List<String> items,
+    required int selectedIndex,
+    String? style,
+    Color? color,
+    EdgeInsets? padding,
+  }) : this._(
+         type: 'segmented',
+         id: id,
+         padding: padding,
+         payload: {
+           'segmented': {
+             'items': items,
+             'selectedIndex': selectedIndex,
+             'style': style,
+             'color': color,
+           },
+         },
+       );
+
+  /// The compact system date picker, reporting `(id, millisecondsSinceEpoch)`.
+  CupertinoNativeBody.datePicker({
+    required String id,
+    DateTime? value,
+    DateTime? minimumDate,
+    DateTime? maximumDate,
+    String? mode,
+    Color? tint,
+    EdgeInsets? padding,
+  }) : this._(
+         type: 'datePicker',
+         id: id,
+         padding: padding,
+         payload: {
+           'datePicker': {
+             'value': value?.millisecondsSinceEpoch,
+             'minimumDate': minimumDate?.millisecondsSinceEpoch,
+             'maximumDate': maximumDate?.millisecondsSinceEpoch,
+             'mode': mode,
+             'tint': tint,
+           },
+         },
+       );
+
+  /// A native `ProgressView` — determinate with [value], or an indeterminate
+  /// spinner with none. [style] is 0 (automatic), 1 (linear) or 2 (circular).
+  CupertinoNativeBody.progress({
+    double? value,
+    double total = 1,
+    String? label,
+    int style = 0,
+    Color? color,
+    EdgeInsets? padding,
+  }) : this._(
+         type: 'progress',
+         padding: padding,
+         payload: {
+           'progress': {
+             'value': value,
+             'total': total,
+             'label': label,
+             'style': style,
+             'color': color,
+           },
+         },
+       );
 
   /// Serialized form consumed by `BodyNodeConfig` on the Swift side.
   ///

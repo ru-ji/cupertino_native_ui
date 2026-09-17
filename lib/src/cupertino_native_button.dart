@@ -109,8 +109,8 @@ class CupertinoNativeButton extends StatefulWidget {
 /// What the native control is told to draw, read off [CupertinoNativeButton.child].
 /// Reads the title, icon and text style out of a button's `child`.
 ///
-/// Internal rather than private: the keyboard toolbar lowers a
-/// `CupertinoNativeButton` written inline into a native description, and needs
+/// Internal rather than private: a field's `toolbarActions` lower a
+/// `CupertinoNativeButton` written inline into a native description, and need
 /// the same reading of its label.
 class ButtonLabel {
   ButtonLabel(Widget child) {

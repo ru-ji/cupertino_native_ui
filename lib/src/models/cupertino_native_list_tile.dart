@@ -1,3 +1,5 @@
+import 'package:flutter/widgets.dart';
+
 import 'cupertino_native_icon.dart';
 
 /// The kind of a [CupertinoNativeListTile], which decides how it renders inside
@@ -41,6 +43,16 @@ class CupertinoNativeListTile {
 
   final bool enabled;
 
+  /// A trailing control, transcribed straight into SwiftUI — the same
+  /// lowering a `toolbarActions` item goes through, so
+  /// `CupertinoNativeSwitch`, `CupertinoNativeSlider`,
+  /// `CupertinoNativeButton`, `CupertinoNativeSlidingSegmentedControl` and
+  /// friends keep their own callbacks and cost no engine. **Read, not
+  /// mounted**: the row is built natively, so only transcribable widgets are
+  /// accepted; Flutter content goes through a `CupertinoNativeFlutterView`
+  /// island.
+  final Widget? trailing;
+
   const CupertinoNativeListTile({
     required this.id,
     required this.title,
@@ -51,6 +63,7 @@ class CupertinoNativeListTile {
     this.type = CupertinoNativeListTileType.label,
     this.toggleValue = false,
     this.enabled = true,
+    this.trailing,
   });
 
   Map<String, dynamic> toMap() {

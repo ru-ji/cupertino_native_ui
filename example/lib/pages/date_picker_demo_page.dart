@@ -25,54 +25,62 @@ class _DatePickerDemoPageState extends State<DatePickerDemoPage> {
     return DemoScaffold(
       title: 'Date Picker',
       children: [
-        SettingsSection(
-          header: 'Event',
-          footer:
-              'Tap a pill — the calendar overlay is the real '
-              'UIDatePicker (compact style); picks stream back to Flutter.',
-          children: [
-            SettingsRow(
-              title: 'Starts',
-              trailing: CupertinoNativeDatePicker(
-                initialDateTime: _starts,
-                mode: CupertinoDatePickerMode.dateAndTime,
-                onDateTimeChanged: (d) => setState(() => _starts = d),
-              ),
+        CupertinoNativeList(
+          sections: [
+            CupertinoNativeListSection(
+              header: 'Event',
+              footer:
+                  'Tap a pill — the calendar overlay is the real '
+                  'UIDatePicker (compact style); picks stream back to Flutter.',
+              children: [
+                CupertinoNativeListTile(
+                  id: 'starts',
+                  title: 'Starts',
+                  trailing: CupertinoNativeDatePicker(
+                    initialDateTime: _starts,
+                    mode: CupertinoDatePickerMode.dateAndTime,
+                    onDateTimeChanged: (d) => setState(() => _starts = d),
+                  ),
+                ),
+                CupertinoNativeListTile(
+                  id: 'ends',
+                  title: 'Ends',
+                  trailing: CupertinoNativeDatePicker(
+                    initialDateTime: _ends,
+                    mode: CupertinoDatePickerMode.dateAndTime,
+                    minimumDate: _starts,
+                    onDateTimeChanged: (d) => setState(() => _ends = d),
+                  ),
+                ),
+              ],
             ),
-            SettingsRow(
-              title: 'Ends',
-              trailing: CupertinoNativeDatePicker(
-                initialDateTime: _ends,
-                mode: CupertinoDatePickerMode.dateAndTime,
-                minimumDate: _starts,
-                onDateTimeChanged: (d) => setState(() => _ends = d),
-              ),
+            CupertinoNativeListSection(
+              header: 'Alarm',
+              footer:
+                  'time mode shows only the hour wheel; tint colors the '
+                  'selection.',
+              children: [
+                CupertinoNativeListTile(
+                  id: 'alarm',
+                  title: 'Wake Up',
+                  trailing: CupertinoNativeDatePicker(
+                    initialDateTime: _alarm,
+                    mode: CupertinoDatePickerMode.time,
+                    activeColor: CupertinoColors.systemOrange,
+                    onDateTimeChanged: (d) => setState(() => _alarm = d),
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
-        SettingsSection(
-          header: 'Alarm',
-          footer:
-              'time mode shows only the hour wheel; tint colors the '
-              'selection.',
-          children: [
-            SettingsRow(
-              title: 'Wake Up',
-              trailing: CupertinoNativeDatePicker(
-                initialDateTime: _alarm,
-                mode: CupertinoDatePickerMode.time,
-                activeColor: CupertinoColors.systemOrange,
-                onDateTimeChanged: (d) => setState(() => _alarm = d),
-              ),
-            ),
-          ],
-        ),
-        SettingsSection(
-          header: 'Summary',
-          children: [
-            SettingsRow(
-              title: 'Duration',
-              value: '${_ends.difference(_starts).inMinutes} min',
+            CupertinoNativeListSection(
+              header: 'Summary',
+              children: [
+                CupertinoNativeListTile(
+                  id: 'duration',
+                  title: 'Duration',
+                  additionalInfo: '${_ends.difference(_starts).inMinutes} min',
+                ),
+              ],
             ),
           ],
         ),

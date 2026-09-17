@@ -20,7 +20,4 @@ struct ScaffoldConfig: Codable {
     let showLoadingIndicator: Bool?  // spinner while a body engine boots; nil = false
     /// False: the keyboard no longer pushes the content up. nil = true.
     var resizeToAvoidBottomInset: Bool? = nil
-    /// True: dragging down over the keyboard dismisses it, following the
-    /// finger (`.scrollDismissesKeyboard(.interactively)`). nil = false.
-    var interactiveKeyboardDismiss: Bool? = nil
 }

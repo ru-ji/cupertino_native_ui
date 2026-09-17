@@ -85,8 +85,7 @@ struct ScaffoldView: View {
                     PageScrollBody(
                         engine: model.pushedEngines[pushed.id],
                         scrollEdgeEffect: model.config.scrollEdgeEffect,
-                        showLoadingIndicator: model.config.showLoadingIndicator ?? false,
-                        interactiveKeyboardDismiss: model.config.interactiveKeyboardDismiss == true
+                        showLoadingIndicator: model.config.showLoadingIndicator ?? false
                     )
                     .applyAppBar(pushed.appBar) { onBarAction(pushed.route, $0) }
                 }
@@ -109,14 +108,11 @@ struct ScaffoldView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
             .applyScrollEdgeEffect(model.config.scrollEdgeEffect)
-            .scrollDismissesKeyboard(
-                model.config.interactiveKeyboardDismiss == true ? .interactively : .automatic)
         } else {
             SearchablePageBody(
                 engine: model.rootEngines[rootRoute],
                 scrollEdgeEffect: model.config.scrollEdgeEffect,
                 showLoadingIndicator: model.config.showLoadingIndicator ?? false,
-                interactiveKeyboardDismiss: model.config.interactiveKeyboardDismiss == true,
                 onActiveChange: { model.onSearchActiveChanged?(rootRoute, $0) }
             )
         }

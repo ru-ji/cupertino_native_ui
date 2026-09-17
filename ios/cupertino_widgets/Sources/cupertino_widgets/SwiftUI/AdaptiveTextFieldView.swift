@@ -4,12 +4,18 @@ import SwiftUI
 /// view owns it and writes to it from the method channel; the view observes.
 @available(iOS 26.0, *)
 final class TextFieldModel: ObservableObject {
-    @Published var config: TextFieldConfig
+    @Published var config: TextFieldConfig {
+        didSet { configRevision &+= 1 }
+    }
     @Published var text: String
     @Published var contentOpacity: Double = 1
 
     /// Bumped by `focus` / `unfocus` so the view can act on a repeated request.
     @Published var focusCommand: (id: Int, focused: Bool)?
+
+    /// Bumped whenever `config` is replaced — the toolbar's declared values
+    /// reseed on it, without comparing configs in `body`.
+    private(set) var configRevision = 0
 
     init(config: TextFieldConfig) {
         self.config = config
@@ -36,7 +42,16 @@ struct AdaptiveTextFieldView: View {
     let onEditingComplete: () -> Void
     let onFocusChange: (Bool) -> Void
 
+    /// A keyboard-toolbar control changed — `(itemId, value)`, value nil for a
+    /// button. Optional: a body field has no toolbar of its own.
+    var onToolbarEvent: ((String, Any?) -> Void)? = nil
+
     @FocusState private var focused: Bool
+
+    /// What the toolbar's own controls own between pushes from Dart — a
+    /// picker's selection, a toggle's value. `NativeBodyModel` is exactly that,
+    /// so the items behave as they do anywhere else.
+    @StateObject private var toolbarModel = NativeBodyModel()
 
     private var c: TextFieldConfig { model.config }
 
@@ -50,8 +65,50 @@ struct AdaptiveTextFieldView: View {
             .onChange(of: model.focusCommand?.id) { _ in
                 if let command = model.focusCommand { focused = command.focused }
             }
-            .onAppear { if c.autofocus == true { focused = true } }
+            .onChange(of: model.configRevision) { _ in seedToolbar() }
+            .onAppear {
+                seedToolbar()
+                if c.autofocus == true { focused = true }
+            }
             .environment(\.colorScheme, c.isDark == true ? .dark : .light)
+    }
+
+    // MARK: - Keyboard toolbar
+
+    /// The bar above the keyboard: SwiftUI's own
+    /// `ToolbarItemGroup(placement: .keyboard)`, attached to the field itself
+    /// — the way a plain SwiftUI `TextField` declares it — and filled with the
+    /// nodes Dart lowered from `toolbarActions`, the same description a native
+    /// body is built from. A `CupertinoNativeButton` written in the list
+    /// becomes a real SwiftUI button here, and a `CupertinoNativeFlutterView`
+    /// becomes a Flutter island in its own engine.
+    ///
+    /// The group is declared unconditionally: an empty one renders nothing,
+    /// and a `keyboard` toolbar that appears and disappears with state is
+    /// exactly the shape SwiftUI drops on some iOS versions.
+    @ToolbarContentBuilder
+    private var keyboardToolbarContent: some ToolbarContent {
+        ToolbarItemGroup(placement: .keyboard) {
+            ForEach(Array(toolbarNodes.enumerated()), id: \.offset) { index, node in
+                NativeBodyNode(
+                    node: node,
+                    model: toolbarModel,
+                    onEvent: { id, value in onToolbarEvent?(id, value) }
+                )
+                .id(node.id ?? "\(node.type)-\(index)")
+            }
+        }
+    }
+
+    private var toolbarNodes: [BodyNodeConfig] {
+        c.keyboardToolbar ?? []
+    }
+
+    /// Seeds the values the toolbar's controls declare. `seed` never clobbers
+    /// what the user has already changed, so a push from Dart cannot fight a
+    /// control mid-touch.
+    private func seedToolbar() {
+        toolbarModel.seedAll(toolbarNodes)
     }
 
     // MARK: - Pieces
@@ -76,6 +133,9 @@ struct AdaptiveTextFieldView: View {
                 TextField("", text: binding, prompt: prompt)
             }
         }
+        // On the field itself, like a plain SwiftUI TextField declares its
+        // own keyboard bar.
+        .toolbar { keyboardToolbarContent }
         .focused($focused)
         .frame(maxWidth: .infinity, alignment: verticalAlignment)
         .font(font)

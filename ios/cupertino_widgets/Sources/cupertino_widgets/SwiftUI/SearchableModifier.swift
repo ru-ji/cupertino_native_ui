@@ -9,8 +9,6 @@ struct PageScrollBody: View {
     let scrollEdgeEffect: String?
     /// Native spinner while the body engine boots / renders its first frame.
     var showLoadingIndicator = false
-    /// Drag down over the keyboard to dismiss it, following the finger.
-    var interactiveKeyboardDismiss = false
     /// Bumped to send the scroll back to the top — the search view opens as
     /// its own thing, not at whatever offset the page was left at.
     var scrollToTopSignal = 0
@@ -34,10 +32,6 @@ struct PageScrollBody: View {
                 // Stays on the ScrollView itself — the edge effect is a
                 // property of the scroll view, not of the reader around it.
                 .applyScrollEdgeEffect(scrollEdgeEffect)
-                // A property of the scroll view, like the edge effect: this
-                // is why interactive dismissal is scaffold-only. An ordinary
-                // Flutter page has no native scroll view to drag.
-                .scrollDismissesKeyboard(interactiveKeyboardDismiss ? .interactively : .automatic)
                 .onChange(of: scrollToTopSignal) { _ in
                     proxy.scrollTo(Self.topAnchor, anchor: .top)
                 }
@@ -68,7 +62,6 @@ struct SearchablePageBody: View {
     let engine: FlutterEngine?
     let scrollEdgeEffect: String?
     var showLoadingIndicator = false
-    var interactiveKeyboardDismiss = false
     let onActiveChange: (Bool) -> Void
 
     @State private var scrollToTopSignal = 0
@@ -78,7 +71,6 @@ struct SearchablePageBody: View {
             engine: engine,
             scrollEdgeEffect: scrollEdgeEffect,
             showLoadingIndicator: showLoadingIndicator,
-            interactiveKeyboardDismiss: interactiveKeyboardDismiss,
             scrollToTopSignal: scrollToTopSignal)
             .onChange(of: isSearching) { newValue in
                 onActiveChange(newValue)

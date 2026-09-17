@@ -92,23 +92,36 @@ class _ContextMenuDemoPageState extends State<ContextMenuDemoPage> {
             ],
           ),
         ),
-        SettingsSection(
-          header: 'Menu',
-          footer:
-              'Touch and hold a photo — the system lifts it with the '
-              'native blur and haptic, and the menu is a real UIMenu. '
-              '"Sunset ride" shows a custom preview (a different view) '
-              'while its menu is open.',
-          children: [
-            SettingsRow(
-              title: 'Blur background',
-              trailing: CupertinoNativeSwitch(
-                value: _blur,
-                onChanged: (v) => setState(() => _blur = v),
-              ),
+        CupertinoNativeList(
+          sections: [
+            CupertinoNativeListSection(
+              header: 'Menu',
+              footer:
+                  'Touch and hold a photo — the system lifts it with the '
+                  'native blur and haptic, and the menu is a real UIMenu. '
+                  '"Sunset ride" shows a custom preview (a different view) '
+                  'while its menu is open.',
+              children: [
+                CupertinoNativeListTile(
+                  id: 'blur',
+                  title: 'Blur background',
+                  trailing: CupertinoNativeSwitch(
+                    value: _blur,
+                    onChanged: (v) => setState(() => _blur = v),
+                  ),
+                ),
+                CupertinoNativeListTile(
+                  id: 'menuOpen',
+                  title: 'Menu open',
+                  additionalInfo: _menuOpen ? 'Yes' : 'No',
+                ),
+                CupertinoNativeListTile(
+                  id: 'lastAction',
+                  title: 'Last action',
+                  additionalInfo: _lastAction ?? 'None',
+                ),
+              ],
             ),
-            SettingsRow(title: 'Menu open', value: _menuOpen ? 'Yes' : 'No'),
-            SettingsRow(title: 'Last action', value: _lastAction ?? 'None'),
           ],
         ),
       ],

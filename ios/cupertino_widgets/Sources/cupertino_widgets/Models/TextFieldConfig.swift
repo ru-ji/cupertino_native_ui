@@ -35,13 +35,8 @@ struct TextFieldConfig: Codable {
     var suffixIcon: IconConfig? = nil  // trailing SF Symbol (UITextField.rightView)
     var verticalAlignment: String? = nil  // "top" | "center" | "bottom"
     /// The bar that rides above the keyboard while this field is focused —
-    /// the items of a `ToolbarItemGroup(placement: .keyboard)`.
-    ///
-    /// An array, not an optional node: `BodyNodeConfig` already stores a
-    /// `TextFieldConfig?` for its own field nodes, so a `BodyNodeConfig?`
-    /// here would make the two structs recursively contain each other inline
-    /// — a value type of infinite size. An array is a reference to heap
-    /// storage, so the cycle costs nothing.
+    /// the items of a `ToolbarItemGroup(placement: .keyboard)`. Dart sends the
+    /// `toolbarActions` list lowered to native nodes, like a native body.
     var keyboardToolbar: [BodyNodeConfig]? = nil
 }
 

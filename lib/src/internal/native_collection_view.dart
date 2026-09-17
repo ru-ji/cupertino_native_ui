@@ -9,6 +9,7 @@ import '../callbacks.dart';
 import '../models/cupertino_native_list_tile.dart';
 import '../models/cupertino_native_list_section.dart';
 import 'native_platform_view_mixin.dart';
+import 'widget_lowering.dart';
 
 /// Shared platform-view implementation behind `CupertinoNativeList` and
 /// `CupertinoNativeForm`. Both render a native SwiftUI `List`/`Form` of
@@ -76,8 +77,51 @@ class _NativeCollectionViewState extends State<NativeCollectionView>
       'tint':
           widget.activeColor?.toARGB32() ??
           theme.colorScheme.primary.toARGB32(),
-      'sections': widget.sections.map((s) => s.toMap()).toList(),
+      'sections': widget.sections.map(_sectionMap).toList(),
     };
+  }
+
+  /// One section, with each row's [CupertinoNativeListTile.trailing] lowered
+  /// to the native nodes SwiftUI renders — and its callbacks kept.
+  Map<String, dynamic> _sectionMap(CupertinoNativeListSection section) {
+    return {
+      ...section.toMap(),
+      'rows': [
+        for (final row in section.children) _rowMap(row),
+      ],
+    };
+  }
+
+  Map<String, dynamic> _rowMap(CupertinoNativeListTile row) {
+    final map = row.toMap();
+    final trailing = row.trailing;
+    if (trailing == null) return map;
+    final lowered = LoweredTrailing(trailing);
+    _trailingCallbacks[row.id] = lowered.callbacks;
+    map['trailing'] = [
+      if (lowered.node != null) lowered.node!.toMap(isDark: _isDark),
+    ];
+    return map;
+  }
+
+  /// rowId → (nodeId → callback), for the lowered trailing controls.
+  final Map<String, Map<String, void Function(Object? value)>> _trailingCallbacks =
+      {};
+
+  /// The config last pushed over the channel, encoded. Only set for pushes
+  /// that actually went out.
+  String? _lastConfigJson;
+
+  /// The creation params, captured on the first build and never rebuilt —
+  /// `UiKitView` only reads them at creation.
+  Map<String, dynamic>? _creationParams;
+
+  void _pushConfig() {
+    final map = _toMap();
+    final json = jsonEncode(map);
+    if (json == _lastConfigJson) return;
+    updateNativeView('updateList', map);
+    if (channel != null) _lastConfigJson = json;
   }
 
   @override
@@ -85,7 +129,7 @@ class _NativeCollectionViewState extends State<NativeCollectionView>
     super.didChangeDependencies();
     // Re-push config if the app toggled light/dark at runtime.
     if (_lastIsDark != null && _lastIsDark != _isDark) {
-      updateNativeView('updateList', _toMap());
+      _pushConfig();
     }
     _lastIsDark = _isDark;
   }
@@ -93,21 +137,7 @@ class _NativeCollectionViewState extends State<NativeCollectionView>
   @override
   void didUpdateWidget(covariant NativeCollectionView oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // Configs are nested maps of primitives; a JSON compare is a simple deep
-    // equality check.
-    if (jsonEncode(_mapOf(oldWidget)) != jsonEncode(_toMap())) {
-      updateNativeView('updateList', _toMap());
-    }
-  }
-
-  Map<String, dynamic> _mapOf(NativeCollectionView w) {
-    return {
-      'variant': w.variant,
-      'style': w.style,
-      'scrollable': w.scrollable,
-      'tint': w.activeColor?.toARGB32(),
-      'sections': w.sections.map((s) => s.toMap()).toList(),
-    };
+    _pushConfig();
   }
 
   Future<void> _onPlatformViewCreated(int id) async {
@@ -116,6 +146,11 @@ class _NativeCollectionViewState extends State<NativeCollectionView>
       'cupertino_widgets/list_$id',
       onMethodCall: _handleMethodCall,
     );
+    // The creation params were built on the first frame; push the live config
+    // once so nothing that changed mid-creation is lost.
+    final map = _toMap();
+    _lastConfigJson = jsonEncode(map);
+    updateNativeView('updateList', map);
     // Give the native view a layout pass so it can measure content height.
     requestIntrinsicSize();
   }
@@ -130,6 +165,14 @@ class _NativeCollectionViewState extends State<NativeCollectionView>
         final id = call.arguments['id'] as String?;
         final value = call.arguments['value'] as bool?;
         if (id != null && value != null) widget.onToggle?.call(id, value);
+        break;
+      case 'onTrailingEvent':
+        // A lowered trailing control changed: (rowId, nodeId, value).
+        final rowId = call.arguments['rowId'] as String?;
+        final nodeId = call.arguments['nodeId'] as String?;
+        if (rowId != null && nodeId != null) {
+          _trailingCallbacks[rowId]?[nodeId]?.call(call.arguments['value']);
+        }
         break;
       case 'onContentSize':
         // Native pushes the measured content height as its layout settles
@@ -153,7 +196,9 @@ class _NativeCollectionViewState extends State<NativeCollectionView>
       UiKitView(
         viewType: 'com.example.cupertino_widgets/cupertino_native_list',
         layoutDirection: TextDirection.ltr,
-        creationParams: _toMap(),
+        // Memoized: every later change goes over `updateList`, not through a
+        // map rebuilt on every build.
+        creationParams: _creationParams ??= _toMap(),
         creationParamsCodec: const StandardMessageCodec(),
         onPlatformViewCreated: _onPlatformViewCreated,
       ),

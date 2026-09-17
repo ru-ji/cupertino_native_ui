@@ -19,58 +19,71 @@ class _AlertDemoPageState extends State<AlertDemoPage> {
 
   @override
   Widget build(BuildContext context) {
-    final blue = CupertinoColors.activeBlue.resolveFrom(context);
-    final red = CupertinoColors.systemRed.resolveFrom(context);
-
     return DemoScaffold(
       title: 'Alert',
       children: [
-        SettingsSection(
-          header: 'Examples',
-          footer: 'Last choice: $_lastChoice',
-          children: [
-            SettingsRow(
-              title: 'Mobile Data Is Off',
-              titleColor: blue,
-              onTap: () => CupertinoNativeAlertDialog.show(
-                context: context,
-                title: 'Mobile Data is Off',
-                content: 'Turn on mobile data or use Wi-Fi to access data.',
-                actions: [
-                  CupertinoNativeDialogAction(
-                    child: Text('Settings'),
-                    onPressed: () => _chose('Settings'),
-                  ),
-                  CupertinoNativeDialogAction(
-                    child: Text('OK'),
-                    onPressed: () => _chose('OK'),
-                  ),
-                ],
-              ),
-            ),
-            SettingsRow(
-              title: 'Erase All Content…',
-              titleColor: red,
-              onTap: () => CupertinoNativeAlertDialog.show(
-                context: context,
-                title: 'Erase All Content and Settings?',
-                content:
-                    'This cannot be undone. All media, data and settings '
-                    'will be erased.',
-                actions: [
-                  CupertinoNativeDialogAction(
-                    child: Text('Cancel'),
-                    onPressed: () => _chose('Cancel'),
-                  ),
-                  CupertinoNativeDialogAction(
-                    child: Text('Erase'),
-                    isDestructiveAction: true,
-                    onPressed: () => _chose('Erase'),
-                  ),
-                ],
-              ),
+        CupertinoNativeList(
+          onRowTap: (id) {
+            if (id == 'mobileData') _showMobileData(context);
+            if (id == 'erase') _showErase(context);
+          },
+          sections: [
+            CupertinoNativeListSection(
+              header: 'Examples',
+              footer: 'Last choice: $_lastChoice',
+              children: const [
+                CupertinoNativeListTile(
+                  id: 'mobileData',
+                  title: 'Mobile Data Is Off',
+                  showChevron: true,
+                ),
+                CupertinoNativeListTile(
+                  id: 'erase',
+                  title: 'Erase All Content…',
+                  showChevron: true,
+                ),
+              ],
             ),
           ],
+        ),
+      ],
+    );
+  }
+
+  void _showMobileData(BuildContext context) {
+    CupertinoNativeAlertDialog.show(
+      context: context,
+      title: 'Mobile Data is Off',
+      content: 'Turn on mobile data or use Wi-Fi to access data.',
+      actions: [
+        CupertinoNativeDialogAction(
+          child: Text('Settings'),
+          onPressed: () => _chose('Settings'),
+        ),
+        CupertinoNativeDialogAction(
+          child: Text('OK'),
+          onPressed: () => _chose('OK'),
+        ),
+      ],
+    );
+  }
+
+  void _showErase(BuildContext context) {
+    CupertinoNativeAlertDialog.show(
+      context: context,
+      title: 'Erase All Content and Settings?',
+      content:
+          'This cannot be undone. All media, data and settings '
+          'will be erased.',
+      actions: [
+        CupertinoNativeDialogAction(
+          child: Text('Cancel'),
+          onPressed: () => _chose('Cancel'),
+        ),
+        CupertinoNativeDialogAction(
+          child: Text('Erase'),
+          isDestructiveAction: true,
+          onPressed: () => _chose('Erase'),
         ),
       ],
     );

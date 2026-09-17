@@ -78,20 +78,26 @@ class _ProgressDemoPageState extends State<ProgressDemoPage> {
             ),
           ],
         ),
-        SettingsSection(
-          header: 'Activity',
-          footer: 'value: null loops the native indeterminate spinner.',
-          children: [
-            SettingsRow(
-              title: 'Checking for Updates…',
-              trailing: const CupertinoNativeActivityIndicator(),
-            ),
-            SettingsRow(
-              title: 'Syncing Photos',
-              subtitle: '1,204 items remaining',
-              trailing: const CupertinoNativeActivityIndicator(
-                color: CupertinoColors.systemPink,
-              ),
+        CupertinoNativeList(
+          sections: [
+            CupertinoNativeListSection(
+              header: 'Activity',
+              footer: 'value: null loops the native indeterminate spinner.',
+              children: [
+                const CupertinoNativeListTile(
+                  id: 'updates',
+                  title: 'Checking for Updates…',
+                  trailing: CupertinoNativeActivityIndicator(),
+                ),
+                const CupertinoNativeListTile(
+                  id: 'photos',
+                  title: 'Syncing Photos',
+                  subtitle: '1,204 items remaining',
+                  trailing: CupertinoNativeActivityIndicator(
+                    color: CupertinoColors.systemPink,
+                  ),
+                ),
+              ],
             ),
           ],
         ),
