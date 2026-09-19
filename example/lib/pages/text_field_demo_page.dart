@@ -19,8 +19,61 @@ class _TextFieldDemoPageState extends State<TextFieldDemoPage> {
   bool _glassClear = false;
   bool _glassInteractive = true;
 
+  /// The two fields that share a keyboard bar, so its chevrons can move the
+  /// focus between them and grey out at the ends.
+  final List<FocusNode> _toolbarFields = [FocusNode(), FocusNode()];
+
+  /// One field's bar: previous / next / done, in a glass capsule — the shape
+  /// the system bar uses on iOS 26.
+  List<Widget> _keyboardToolbar(int index) {
+    void moveTo(int target) => _toolbarFields[target].requestFocus();
+    // Resolved here: the bar is built by SwiftUI from an ARGB value, so an
+    // unresolved CupertinoDynamicColor would ship its light-mode black.
+    final labelColor = CupertinoColors.label.resolveFrom(context);
+    return [
+      // The bar takes the height of what it is given, so the room around the
+      // capsule is this padding — nothing is added natively.
+      Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+        child: CupertinoNativeGlassContainer(
+          shape: CupertinoGlassShape.capsule,
+          interactive: true,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          height: 50,
+          child: Row(
+            children: [
+              CupertinoNativeButton(
+                onPressed: index > 0 ? () => moveTo(index - 1) : null,
+                color: labelColor,
+                child: CupertinoSymbolImage.symbol(CupertinoSymbols.chevronUp),
+              ),
+              CupertinoNativeButton(
+                onPressed: index < _toolbarFields.length - 1
+                    ? () => moveTo(index + 1)
+                    : null,
+                color: labelColor,
+                child: CupertinoSymbolImage.symbol(
+                  CupertinoSymbols.chevronDown,
+                ),
+              ),
+              const Spacer(),
+              CupertinoNativeButton(
+                onPressed: () => FocusManager.instance.primaryFocus?.unfocus(),
+                color: labelColor,
+                child: CupertinoSymbolImage.symbol(CupertinoSymbols.checkmark),
+              ),
+            ],
+          ),
+        ),
+      ),
+    ];
+  }
+
   @override
   void dispose() {
+    for (final node in _toolbarFields) {
+      node.dispose();
+    }
     _nameController.dispose();
     super.dispose();
   }
@@ -131,58 +184,23 @@ class _TextFieldDemoPageState extends State<TextFieldDemoPage> {
         SettingsSection(
           header: 'Keyboard Toolbar',
           footer:
-              'Focus the field: the bar above the keyboard is SwiftUI\'s '
-              'own ToolbarItemGroup(placement: .keyboard), filled with the '
-              'toolbarActions — native buttons transcribed into SwiftUI. '
-              'The chevrons move focus between the two fields; Done '
-              'dismisses the keyboard.',
+              'Focus the field: the bar above the keyboard is the field\'s '
+              'own UIKit input accessory. The chevrons move between the two '
+              'fields and grey out at the ends, like the system bar.',
           children: [
-            Padding(
-              padding: const EdgeInsets.all(12),
+            _FieldRow(
               child: CupertinoNativeTextField(
+                key: const Key('toolbar-field'),
+                focusNode: _toolbarFields[0],
                 placeholder: 'Focus me — the bar appears above the keyboard',
-                height: 48,
-                toolbarActions: [
-                  CupertinoNativeButton(
-                    onPressed: () {},
-                    child: CupertinoSymbolImage.symbol(
-                      CupertinoSymbols.chevronUp,
-                    ),
-                  ),
-                  CupertinoNativeButton(
-                    onPressed: () {},
-                    child: CupertinoSymbolImage.symbol(
-                      CupertinoSymbols.chevronDown,
-                    ),
-                  ),
-                  const Spacer(),
-                  CupertinoNativeButton(
-                    onPressed: () =>
-                        FocusManager.instance.primaryFocus?.unfocus(),
-                    child: const Text('Done'),
-                  ),
-                ],
+                toolbarActions: _keyboardToolbar(0),
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.all(12),
+            _FieldRow(
               child: CupertinoNativeTextField(
+                focusNode: _toolbarFields[1],
                 placeholder: 'The chevron lands here',
-                height: 48,
-                toolbarActions: [
-                  CupertinoNativeButton(
-                    onPressed: () {},
-                    child: CupertinoSymbolImage.symbol(
-                      CupertinoSymbols.chevronUp,
-                    ),
-                  ),
-                  const Spacer(),
-                  CupertinoNativeButton(
-                    onPressed: () =>
-                        FocusManager.instance.primaryFocus?.unfocus(),
-                    child: const Text('Done'),
-                  ),
-                ],
+                toolbarActions: _keyboardToolbar(1),
               ),
             ),
           ],

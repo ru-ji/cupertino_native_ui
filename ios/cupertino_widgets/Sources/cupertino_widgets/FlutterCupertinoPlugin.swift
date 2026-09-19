@@ -50,6 +50,14 @@ public class FlutterCupertinoPlugin: NSObject, FlutterPlugin {
         registrar.register(
             toggleFactory, withId: "com.example.cupertino_widgets/cupertino_native_toggle")
 
+        let checkboxFactory = NativeCheckboxFactory(messenger: registrar.messenger())
+        registrar.register(
+            checkboxFactory, withId: "com.example.cupertino_widgets/cupertino_native_checkbox")
+
+        let radioFactory = NativeRadioFactory(messenger: registrar.messenger())
+        registrar.register(
+            radioFactory, withId: "com.example.cupertino_widgets/cupertino_native_radio")
+
         let segmentedFactory = NativeSegmentedControlFactory(messenger: registrar.messenger())
         registrar.register(
             segmentedFactory, withId: "com.example.cupertino_widgets/cupertino_native_segmented")

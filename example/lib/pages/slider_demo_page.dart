@@ -27,6 +27,8 @@ class _SliderDemoPageState extends State<SliderDemoPage> {
         CupertinoNativeList(
           sections: [
             CupertinoNativeListSection(
+              rowPadding: kSettingsRowPadding,
+              minHeight: kSettingsRowMinHeight,
               header: 'Ringtone and Alerts',
               footer:
                   'The slider is a native UISlider — drag it and the value '
@@ -44,6 +46,8 @@ class _SliderDemoPageState extends State<SliderDemoPage> {
               ],
             ),
             CupertinoNativeListSection(
+              rowPadding: kSettingsRowPadding,
+              minHeight: kSettingsRowMinHeight,
               header: 'Display',
               footer: 'activeColor tints the filled track.',
               children: [
@@ -60,6 +64,8 @@ class _SliderDemoPageState extends State<SliderDemoPage> {
               ],
             ),
             CupertinoNativeListSection(
+              rowPadding: kSettingsRowPadding,
+              minHeight: kSettingsRowMinHeight,
               header: 'Alert Volume',
               footer: 'divisions: 10 snaps the thumb to discrete steps.',
               children: [
@@ -76,6 +82,8 @@ class _SliderDemoPageState extends State<SliderDemoPage> {
               ],
             ),
             CupertinoNativeListSection(
+              rowPadding: kSettingsRowPadding,
+              minHeight: kSettingsRowMinHeight,
               header: 'Managed',
               footer: 'onChanged: null renders the native disabled appearance.',
               children: [

@@ -2,6 +2,8 @@ import 'package:flutter/cupertino.dart' show CupertinoColors;
 import 'package:flutter/widgets.dart';
 import 'package:cupertino_widgets/cupertino_widgets.dart';
 
+import '../widgets/settings_ui.dart';
+
 /// Content of the native sheet demo — a "New Event" form. Runs in its own
 /// FlutterEngine hosted in the sheet's native ScrollView, so it must be a
 /// self-sized Column (same contract as scaffold bodies); the sheet's title,
@@ -26,6 +28,8 @@ class NewEventSheetBody extends StatelessWidget {
           const CupertinoNativeList(
             sections: [
               CupertinoNativeListSection(
+                rowPadding: kSettingsRowPadding,
+                minHeight: kSettingsRowMinHeight,
                 children: [
                   CupertinoNativeListTile(id: 'title', title: 'Team Standup'),
                   CupertinoNativeListTile(
@@ -36,6 +40,8 @@ class NewEventSheetBody extends StatelessWidget {
                 ],
               ),
               CupertinoNativeListSection(
+                rowPadding: kSettingsRowPadding,
+                minHeight: kSettingsRowMinHeight,
                 children: [
                   CupertinoNativeListTile(
                     id: 'allDay',
@@ -61,6 +67,8 @@ class NewEventSheetBody extends StatelessWidget {
                 ],
               ),
               CupertinoNativeListSection(
+                rowPadding: kSettingsRowPadding,
+                minHeight: kSettingsRowMinHeight,
                 children: [
                   CupertinoNativeListTile(
                     id: 'repeat',
@@ -83,6 +91,8 @@ class NewEventSheetBody extends StatelessWidget {
                 ],
               ),
               CupertinoNativeListSection(
+                rowPadding: kSettingsRowPadding,
+                minHeight: kSettingsRowMinHeight,
                 children: [
                   CupertinoNativeListTile(
                     id: 'alert',
@@ -105,6 +115,8 @@ class NewEventSheetBody extends StatelessWidget {
                 ],
               ),
               CupertinoNativeListSection(
+                rowPadding: kSettingsRowPadding,
+                minHeight: kSettingsRowMinHeight,
                 footer:
                     'This whole form is Flutter inside a real UIKit sheet: '
                     'the bar stays pinned while you scroll, and pulling down at '
@@ -136,6 +148,8 @@ class NewEventSheetBody extends StatelessWidget {
             },
             sections: const [
               CupertinoNativeListSection(
+                rowPadding: kSettingsRowPadding,
+                minHeight: kSettingsRowMinHeight,
                 children: [
                   CupertinoNativeListTile(
                     id: 'dismiss',

@@ -289,9 +289,20 @@ CupertinoNativeTextField(
 #### Keyboard toolbar
 
 `toolbarActions` fills the bar above the keyboard while the field is focused —
-SwiftUI's own `ToolbarItemGroup(placement: .keyboard)`, the row of actions
-Notes and Numbers put there. The system draws the bar and moves it with the
-keyboard; the package only says what is in it.
+the row of actions Notes and Numbers put there.
+
+It is the field's real UIKit input accessory (`UITextField.inputAccessoryView`),
+not SwiftUI's `ToolbarItemGroup(placement: .keyboard)`: inside a Flutter
+platform view that placement resolves to nothing, or crashes on the first focus,
+and it offers no control over the bar's material. The accessory makes the
+keyboard taller by the bar's height, so the bar is part of the keyboard's frame
+and moves with it.
+
+**The bar paints nothing, and what shows through it is the app** — the keyboard's
+own material does not extend under the accessory strip. A light keyboard under a
+dark page therefore shows a seam at the bar. One further cost is recorded in
+`docs/native-bugs-analysis.md` §6: the bar is attached when the field takes
+focus, so it lands a frame or two after the keyboard finishes presenting.
 
 ```dart
 CupertinoNativeTextField(

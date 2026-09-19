@@ -26,6 +26,8 @@ class _ButtonDemoPageState extends State<ButtonDemoPage> {
         CupertinoNativeList(
           sections: [
             CupertinoNativeListSection(
+              rowPadding: kSettingsRowPadding,
+              minHeight: kSettingsRowMinHeight,
               header: 'Styles',
               footer:
                   'glass and glassProminent use the iOS 26 Liquid Glass '
@@ -84,6 +86,8 @@ class _ButtonDemoPageState extends State<ButtonDemoPage> {
               ],
             ),
             CupertinoNativeListSection(
+              rowPadding: kSettingsRowPadding,
+              minHeight: kSettingsRowMinHeight,
               header: 'Icon',
               children: [
                 for (final (id, name, make) in _buttonStyles('icon'))
@@ -91,14 +95,20 @@ class _ButtonDemoPageState extends State<ButtonDemoPage> {
               ],
             ),
             CupertinoNativeListSection(
+              rowPadding: kSettingsRowPadding,
+              minHeight: kSettingsRowMinHeight,
               header: 'Label + Icon',
               children: [
-                for (final (id, name, make)
-                    in _buttonStyles('labelIcon', withLabel: true))
+                for (final (id, name, make) in _buttonStyles(
+                  'labelIcon',
+                  withLabel: true,
+                ))
                   _buttonRow(id, name, make()),
               ],
             ),
             CupertinoNativeListSection(
+              rowPadding: kSettingsRowPadding,
+              minHeight: kSettingsRowMinHeight,
               header: 'Sizes',
               children: [
                 _buttonRow(

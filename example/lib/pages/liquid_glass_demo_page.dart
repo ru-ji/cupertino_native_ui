@@ -142,6 +142,8 @@ class _LiquidGlassDemoPageState extends State<LiquidGlassDemoPage> {
         CupertinoNativeList(
           sections: [
             CupertinoNativeListSection(
+              rowPadding: kSettingsRowPadding,
+              minHeight: kSettingsRowMinHeight,
               header: 'Glass',
               footer: switch (_supported) {
                 true =>

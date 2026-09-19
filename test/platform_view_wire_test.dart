@@ -96,6 +96,35 @@ void main() {
       expect(params['value'], true);
     }, variant: iOS);
 
+    testWidgets('checkbox sends it as "color"', (tester) async {
+      final params = await paramsOf(
+        tester,
+        const CupertinoNativeCheckbox(
+          value: true,
+          activeColor: green,
+          label: 'Subscribe',
+        ),
+      );
+      expect(params['color'], green.toARGB32());
+      expect(params['value'], true);
+      expect(params['label'], 'Subscribe');
+      expect(params['enabled'], isFalse, reason: 'onChanged is null: disabled');
+    }, variant: iOS);
+
+    testWidgets('radio sends it as "color"', (tester) async {
+      final params = await paramsOf(
+        tester,
+        CupertinoNativeRadio(
+          value: false,
+          activeColor: green,
+          onChanged: (_) {},
+        ),
+      );
+      expect(params['color'], green.toARGB32());
+      expect(params['value'], false);
+      expect(params['enabled'], true, reason: 'onChanged is set: enabled');
+    }, variant: iOS);
+
     testWidgets('segmented control sends it as "color"', (tester) async {
       final params = await paramsOf(
         tester,
@@ -399,6 +428,58 @@ void main() {
       expect(node['type'], 'toggle');
       expect(node['id'], 'item0');
       expect((node['toggle'] as Map)['value'], isTrue);
+    });
+
+    testWidgets('a checkbox lowers to a native checkbox node', variant: iOS, (
+      tester,
+    ) async {
+      final params = await paramsOf(
+        tester,
+        CupertinoNativeList(
+          sections: [
+            CupertinoNativeListSection(
+              children: [
+                CupertinoNativeListTile(
+                  id: 'newsletter',
+                  title: 'Newsletter',
+                  trailing: CupertinoNativeCheckbox(
+                    value: true,
+                    onChanged: (_) {},
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      );
+
+      final rows = ((params['sections'] as List).single as Map)['rows'] as List;
+      final node = ((rows.single as Map)['trailing'] as List).single as Map;
+      expect(node['type'], 'checkbox');
+      expect(node['id'], 'item0');
+      expect((node['checkbox'] as Map)['value'], isTrue);
+      expect((node['checkbox'] as Map)['enabled'], isTrue);
+    });
+
+    testWidgets('a radio lowers to a native radio node', variant: iOS, (
+      tester,
+    ) async {
+      final params = await paramsOf(
+        tester,
+        CupertinoNativeTextField(
+          toolbarActions: [
+            CupertinoNativeRadio(value: false, onChanged: (_) {}),
+            const Spacer(),
+          ],
+        ),
+      );
+
+      final toolbar = params['keyboardToolbar'] as List;
+      expect(toolbar, hasLength(2));
+      final node = toolbar[0] as Map;
+      expect(node['type'], 'radio');
+      expect(node['id'], 'item0');
+      expect((node['radio'] as Map)['value'], isFalse);
     });
 
     testWidgets('containers lower recursively, ids stay unique', variant: iOS, (

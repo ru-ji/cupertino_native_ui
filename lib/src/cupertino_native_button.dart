@@ -242,6 +242,11 @@ class _CupertinoNativeButtonState extends State<CupertinoNativeButton>
   /// button is.
   bool get _isIconOnly => _label.iconOnly;
 
+  /// Whether this button is a circle — the glass rim extends beyond the
+  /// circle, but the label must not.
+  bool get _isCircle =>
+      widget.borderShape == CupertinoNativeButtonBorderShape.circle;
+
   /// The standard iOS touch target, and the size of a navigation-bar button.
   static const double _standardExtent = 44;
 
@@ -273,7 +278,12 @@ class _CupertinoNativeButtonState extends State<CupertinoNativeButton>
       );
 
       if (_width != null && _height != null) {
-        return withPaintRoom(platformView, _width!, _height!);
+        // Circular buttons: the circle clips, so no extra paint room — the
+        // label stays within the circle. Other shapes (capsule, roundedRect)
+        // benefit from the rim/shadow room.
+        return _isCircle
+            ? SizedBox(width: _width!, height: _height!, child: platformView)
+            : withPaintRoom(platformView, _width!, _height!);
       }
       if (_width != null || _height != null) {
         return SizedBox(width: _width, height: _height, child: platformView);
@@ -288,11 +298,17 @@ class _CupertinoNativeButtonState extends State<CupertinoNativeButton>
         );
       }
 
-      return withPaintRoom(
-        platformView,
-        intrinsicWidth ?? _defaultWidth,
-        intrinsicHeight ?? _defaultHeight,
-      );
+      return _isCircle
+          ? SizedBox(
+              width: intrinsicWidth ?? _defaultWidth,
+              height: intrinsicHeight ?? _defaultHeight,
+              child: platformView,
+            )
+          : withPaintRoom(
+              platformView,
+              intrinsicWidth ?? _defaultWidth,
+              intrinsicHeight ?? _defaultHeight,
+            );
     }
 
     // Fallback for non-iOS

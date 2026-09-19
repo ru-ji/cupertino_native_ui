@@ -207,6 +207,13 @@ class NativeScaffoldView: NativeHostingView {
 
         super.init()
         _view.backgroundColor = .clear
+        // The scaffold fills the full-screen box Flutter gives it; it has no
+        // intrinsic size to publish. Measuring would run `sizeThatFits` (a
+        // forced layout of the whole NavigationStack — bodies, tab bar,
+        // navigation chrome) on every layout pass, which during body-engine
+        // boot is every pass for a while: the freeze. Dart never asks either
+        // (`CupertinoNativePageScaffold` does not call `requestIntrinsicSize`).
+        measuresIntrinsicSize = false
         // Before attach: the NavigationStack's large title takes its inset from
         // the parent's system margins, so never let it go unparented while the
         // engine briefly takes the view out of the window.

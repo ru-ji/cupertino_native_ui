@@ -52,19 +52,26 @@ struct AdaptiveListView: View {
     var body: some View {
         if config.scrollable ?? false {
             ScrollView { sectionsStack }
+                .scrollDismissesKeyboard(.never)
         } else {
             sectionsStack
         }
     }
 
     private var sectionsStack: some View {
-        VStack(spacing: isPlain ? 0 : 22) {
+        // A per-section value wins; otherwise the inset-grouped metrics. These
+        // are composed VStacks, not a real `List`, so SwiftUI adds no margins
+        // of its own — the defaults have to be written here.
+        let effectiveSectionSpacing = config.sections.first(where: { $0.sectionSpacing != nil })?.sectionSpacing.map { CGFloat($0) }
+        let effectiveStackPadding = config.sections.first(where: { $0.stackPadding != nil })?.stackPadding.map { CGFloat($0) }
+
+        return VStack(spacing: effectiveSectionSpacing ?? (isPlain ? 0 : 20)) {
             ForEach(Array(config.sections.enumerated()), id: \.offset) { _, section in
                 sectionView(section)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.vertical, isPlain ? 0 : 14)
+        .padding(.vertical, effectiveStackPadding ?? (isPlain ? 0 : 14))
         .applyListTint(config.tint)
     }
 
@@ -72,7 +79,9 @@ struct AdaptiveListView: View {
 
     @ViewBuilder
     private func sectionView(_ section: ListSectionConfig) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
+        let effectiveMinHeight = section.minHeight.map { CGFloat($0) } ?? 46
+
+        return VStack(alignment: .leading, spacing: 8) {
             if let header = section.header {
                 Text(header.uppercased())
                     .font(.footnote)
@@ -88,24 +97,26 @@ struct AdaptiveListView: View {
                 // snapshots, leaving rows with no divider between them.
                 ForEach(Array(section.rows.enumerated()), id: \.element.id) { index, row in
                     rowView(row)
-                        .frame(minHeight: 44)
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 6)
+                        .frame(minHeight: effectiveMinHeight)
+                        // A caller's rowPadding replaces the default 16/6.
+                        .padding(rowInsets(section.rowPadding))
                         .overlay(alignment: .bottom) {
                             if index < section.rows.count - 1 {
                                 Rectangle()
-                                    .fill(Color(uiColor: .separator))
-                                    .frame(height: 1.0 / UIScreen.main.scale)
+                                    .fill(.separator)
+                                    .frame(height: 1.0)
                                     .padding(.leading, separatorInset(row))
                             }
                         }
                 }
             }
-            .background(isPlain ? Color.clear : Color(.secondarySystemGroupedBackground))
+            .background(
+                isPlain ? AnyShapeStyle(Color.clear) : AnyShapeStyle(.background.tertiary)
+            )
             .clipShape(
                 RoundedRectangle(cornerRadius: isInset ? cornerRadius : 0, style: .continuous)
             )
-            .padding(.horizontal, cardInset)
+            .padding(.horizontal, section.cardInset.map { CGFloat($0) } ?? (isInset ? 16 : 0))
 
             if let footer = section.footer {
                 Text(footer)
@@ -116,7 +127,13 @@ struct AdaptiveListView: View {
         }
     }
 
-    private var cardInset: CGFloat { isInset ? 16 : 0 }
+    private func rowInsets(_ custom: EdgeInsetsDTO?) -> EdgeInsets {
+        guard let custom else { return EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16) }
+        return EdgeInsets(
+            top: CGFloat(custom.top ?? 0), leading: CGFloat(custom.left ?? 0),
+            bottom: CGFloat(custom.bottom ?? 0), trailing: CGFloat(custom.right ?? 0))
+    }
+
     private var textInset: CGFloat { isInset ? 32 : 16 }
     private func separatorInset(_ row: ListRowConfig) -> CGFloat {
         row.icon != nil ? 56 : 16
@@ -149,18 +166,16 @@ struct AdaptiveListView: View {
             .foregroundStyle(Color.accentColor)
             .disabled(!(row.enabled ?? true))
         default:
-            Button {
-                onRowTap(row.id)
-            } label: {
+            // Not a Button: the row often carries lowered interactive controls
+            // (a Toggle, a menu Picker, a checkbox) and a row Button would
+            // swallow their taps — a menu Picker would never open. The tap is
+            // scoped to the label/value/chevron region only, so a trailing
+            // control keeps every touch (a parent contentShape would otherwise
+            // race the Picker's own gesture and the menu would never open).
+            HStack(spacing: 12) {
                 HStack(spacing: 12) {
                     rowLabel(row)
                     Spacer(minLength: 8)
-                    if let trailing = row.trailing {
-                        TrailingRow(
-                            rowId: row.id,
-                            nodes: trailing,
-                            onEvent: onTrailingEvent)
-                    }
                     if let value = row.value {
                         Text(value).foregroundStyle(.secondary)
                     }
@@ -171,8 +186,17 @@ struct AdaptiveListView: View {
                     }
                 }
                 .contentShape(Rectangle())
+                .onTapGesture {
+                    guard row.enabled ?? true else { return }
+                    onRowTap(row.id)
+                }
+                if let trailing = row.trailing {
+                    TrailingRow(
+                        rowId: row.id,
+                        nodes: trailing,
+                        onEvent: onTrailingEvent)
+                }
             }
-            .buttonStyle(.plain)
             .disabled(!(row.enabled ?? true))
         }
     }

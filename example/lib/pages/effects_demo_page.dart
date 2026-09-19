@@ -94,6 +94,8 @@ class _EffectsDemoPageState extends State<EffectsDemoPage> {
           }),
           sections: [
             CupertinoNativeListSection(
+              rowPadding: kSettingsRowPadding,
+              minHeight: kSettingsRowMinHeight,
               header: 'Effects',
               footer:
                   'Every effect reaches the UIView through platform-view '
@@ -104,7 +106,8 @@ class _EffectsDemoPageState extends State<EffectsDemoPage> {
                 CupertinoNativeListTile(
                   id: 'opacity',
                   title: 'Opacity',
-                  additionalInfo: '${(_opacities[_opacityIndex] * 100).round()}%',
+                  additionalInfo:
+                      '${(_opacities[_opacityIndex] * 100).round()}%',
                 ),
                 CupertinoNativeListTile(
                   id: 'visibility',
@@ -129,7 +132,8 @@ class _EffectsDemoPageState extends State<EffectsDemoPage> {
                 CupertinoNativeListTile(
                   id: 'translate',
                   title: 'Translate',
-                  additionalInfo: '${_translations[_translationIndex].round()}px',
+                  additionalInfo:
+                      '${_translations[_translationIndex].round()}px',
                 ),
               ],
             ),

@@ -95,6 +95,8 @@ class _ContextMenuDemoPageState extends State<ContextMenuDemoPage> {
         CupertinoNativeList(
           sections: [
             CupertinoNativeListSection(
+              rowPadding: kSettingsRowPadding,
+              minHeight: kSettingsRowMinHeight,
               header: 'Menu',
               footer:
                   'Touch and hold a photo — the system lifts it with the '

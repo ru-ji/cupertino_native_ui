@@ -12,6 +12,8 @@ final class NativeBodyModel: ObservableObject {
     @Published var root: BodyNodeConfig?
 
     @Published var toggles: [String: Bool] = [:]
+    @Published var checks: [String: Bool] = [:]
+    @Published var radios: [String: Bool] = [:]
     @Published var sliders: [String: Double] = [:]
     @Published var pickers: [String: Int] = [:]
     @Published var segmenteds: [String: Int] = [:]
@@ -72,6 +74,10 @@ final class NativeBodyModel: ObservableObject {
         guard let node = node else { return }
         if let id = node.id {
             if let toggle = node.toggle, toggles[id] == nil { toggles[id] = toggle.value }
+            if let checkbox = node.checkbox, checks[id] == nil {
+                checks[id] = checkbox.value
+            }
+            if let radio = node.radio, radios[id] == nil { radios[id] = radio.value }
             if let slider = node.slider, sliders[id] == nil { sliders[id] = slider.value }
             if let picker = node.picker, pickers[id] == nil {
                 pickers[id] = picker.selectedIndex
@@ -137,6 +143,7 @@ struct NativeBodyNode: View {
                     childViews
                 }
             }
+            .scrollDismissesKeyboard(.never)
         case "padding":
             VStack(spacing: 0) { childViews }
         case "spacer":
@@ -155,6 +162,10 @@ struct NativeBodyNode: View {
             textFieldView
         case "toggle":
             toggleView
+        case "checkbox":
+            checkboxView
+        case "radio":
+            radioView
         case "slider":
             sliderView
         case "picker":
@@ -202,6 +213,7 @@ struct NativeBodyNode: View {
     private var buttonView: some View {
         if let config = node.button, let id = node.id {
             AdaptiveButtonView(config: config) { onEvent(id, nil) }
+                .disabled(config.enabled == false)
         }
     }
 
@@ -235,6 +247,36 @@ struct NativeBodyNode: View {
             )
             .applyBodyTint(config.color)
             .applyBodyLabelsHidden(config.label == nil)
+        }
+    }
+
+    @ViewBuilder
+    private var checkboxView: some View {
+        if let config = node.checkbox, let id = node.id {
+            AdaptiveCheckboxView(
+                config: config,
+                isOn: Binding(
+                    get: { model.checks[id] ?? config.value },
+                    set: { newValue in
+                        model.checks[id] = newValue
+                        onEvent(id, newValue)
+                    })
+            )
+        }
+    }
+
+    @ViewBuilder
+    private var radioView: some View {
+        if let config = node.radio, let id = node.id {
+            AdaptiveRadioView(
+                config: config,
+                isOn: Binding(
+                    get: { model.radios[id] ?? config.value },
+                    set: { newValue in
+                        model.radios[id] = newValue
+                        onEvent(id, newValue)
+                    })
+            )
         }
     }
 
@@ -504,6 +546,9 @@ struct BodyGlassView: View {
                     leading: CGFloat(config.paddingLeft ?? 0),
                     bottom: CGFloat(config.paddingBottom ?? 0),
                     trailing: CGFloat(config.paddingRight ?? 0)))
+            .frame(
+                width: config.width.map { CGFloat($0) },
+                height: config.height.map { CGFloat($0) })
             .glassEffect(glass, in: shape)
             .contentShape(shape)
             .onTapGesture {

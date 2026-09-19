@@ -31,6 +31,8 @@ class _NativeListFormDemoPageState extends State<NativeListFormDemoPage> {
           onRowTap: (id) => setState(() => _lastTap = id),
           sections: [
             CupertinoNativeListSection(
+              rowPadding: kSettingsRowPadding,
+              minHeight: kSettingsRowMinHeight,
               header: 'General',
               footer:
                   'Native rows: taps report the row id to Flutter '
@@ -91,6 +93,8 @@ class _NativeListFormDemoPageState extends State<NativeListFormDemoPage> {
           },
           sections: [
             CupertinoNativeListSection(
+              rowPadding: kSettingsRowPadding,
+              minHeight: kSettingsRowMinHeight,
               header: 'Connectivity',
               footer:
                   'Native Form with toggle rows — '

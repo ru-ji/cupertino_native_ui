@@ -26,6 +26,25 @@ struct ListSectionConfig: Codable {
     let header: String?
     let footer: String?
     let rows: [ListRowConfig]
+    /// Horizontal inset of the section card (inset-grouped/sidebar only).
+    let cardInset: Double?
+    /// Padding inside each row. Nil: SwiftUI decides the row's own padding.
+    let rowPadding: EdgeInsetsDTO?
+    /// Gap between sections in the stack.
+    let sectionSpacing: Double?
+    /// Top+bottom padding around the entire sections stack.
+    let stackPadding: Double?
+    /// Minimum row height.
+    let minHeight: Double?
+}
+
+/// Codable DTO for row padding insets.
+@available(iOS 26.0, *)
+struct EdgeInsetsDTO: Codable {
+    let left: Double?
+    let top: Double?
+    let right: Double?
+    let bottom: Double?
 }
 
 /// Creation/update parameters for the native list/form platform view.

@@ -105,13 +105,16 @@ class _SheetDemoPageState extends State<SheetDemoPage> {
           },
           sections: [
             CupertinoNativeListSection(
+              rowPadding: kSettingsRowPadding,
+              minHeight: kSettingsRowMinHeight,
               header: 'Present',
               footer: 'Last event: $_last',
               children: const [
                 CupertinoNativeListTile(
                   id: 'appBar',
                   title: 'With App Bar',
-                  subtitle: 'Pinned title, ✕ leading, Add trailing — scrollable',
+                  subtitle:
+                      'Pinned title, ✕ leading, Add trailing — scrollable',
                   showChevron: true,
                 ),
                 CupertinoNativeListTile(

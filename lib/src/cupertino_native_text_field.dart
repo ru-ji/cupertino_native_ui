@@ -270,6 +270,15 @@ class _NativeTextFieldRegistry {
 
   void remove(_CupertinoNativeTextFieldState field) => fields.remove(field);
 
+  /// Whether a field other than [field] currently holds Flutter focus — i.e.
+  /// the focus moved between two native fields rather than leaving them.
+  bool anotherFieldHasFocus(_CupertinoNativeTextFieldState field) {
+    for (final other in fields) {
+      if (other != field && other._focusNode.hasFocus) return true;
+    }
+    return false;
+  }
+
   /// Whether [position] (global) lands on another live field's box on the
   /// same [route]. Route-scoped so a field on a covered page cannot swallow
   /// taps meant for the visible one.
@@ -286,7 +295,8 @@ class _NativeTextFieldRegistry {
 }
 
 class _CupertinoNativeTextFieldState extends State<CupertinoNativeTextField>
-    with NativePlatformViewStateMixin, WidgetsBindingObserver {  /// Whether the native field is showing a non-empty selection (and thus its
+    with NativePlatformViewStateMixin, WidgetsBindingObserver {
+  /// Whether the native field is showing a non-empty selection (and thus its
   /// draggable handles). Kept current by the `onSelectionActive` callback.
   bool _selectionActive = false;
 
@@ -352,9 +362,16 @@ class _CupertinoNativeTextFieldState extends State<CupertinoNativeTextField>
       if (!mounted || !_focusNode.hasFocus) return;
       final box = context.findRenderObject();
       if (box is! RenderBox || !box.hasSize) return;
-      box.showOnScreen(
-        rect: widget.scrollPadding.inflateRect(Offset.zero & box.size),
+      // The keyboard's height counts as padding: a page that does not shrink
+      // for the keyboard (`resizeToAvoidBottomInset: false`, the native
+      // behaviour) leaves the field inside the viewport but behind the
+      // keyboard, where `showOnScreen` sees nothing to do.
+      final padding = widget.scrollPadding.copyWith(
+        bottom:
+            widget.scrollPadding.bottom +
+            MediaQuery.viewInsetsOf(context).bottom,
       );
+      box.showOnScreen(rect: padding.inflateRect(Offset.zero & box.size));
     });
   }
 
@@ -446,7 +463,20 @@ class _CupertinoNativeTextFieldState extends State<CupertinoNativeTextField>
   /// native first responder. Native responder ops are idempotent, so this
   /// won't loop with the native `onFocusChange` callback.
   void _onFlutterFocusChange(bool hasFocus) {
-    channel?.invokeMethod(hasFocus ? 'focus' : 'unfocus');
+    if (hasFocus) {
+      channel?.invokeMethod('focus');
+      return;
+    }
+    // Losing focus to another native field is a responder *move*: UIKit swaps
+    // the first responder in one motion and the keyboard stays up. Resigning
+    // here first would close it and the next field would open it again —
+    // which is what the toolbar's chevrons did. Deferred by a microtask
+    // because Flutter unfocuses this node before focusing the next one.
+    scheduleMicrotask(() {
+      if (!mounted || _focusNode.hasFocus) return;
+      if (_NativeTextFieldRegistry.instance.anotherFieldHasFocus(this)) return;
+      channel?.invokeMethod('unfocus');
+    });
   }
 
   /// The creation params, captured on the first build and never rebuilt —
@@ -612,7 +642,8 @@ class _CupertinoNativeTextFieldState extends State<CupertinoNativeTextField>
       // another native field, whose focus report moves the responder without
       // a dismiss/re-present round trip (see [_NativeTextFieldRegistry]).
       final content = TapRegion(
-        onTapOutside: widget.onTapOutside ??
+        onTapOutside:
+            widget.onTapOutside ??
             (event) {
               if (_NativeTextFieldRegistry.instance.tapsField(
                 event.position,

@@ -18,9 +18,9 @@ import Foundation
 @available(iOS 26.0, *)
 struct BodyNodeConfig: Codable {
     /// "column" | "row" | "scroll" | "padding" | "spacer" | "divider" |
-    /// "text" | "button" | "textField" | "toggle" | "slider" | "picker" |
-    /// "segmented" | "datePicker" | "progress" | "list" | "symbol" |
-    /// "flutter" | "glass"
+    /// "text" | "button" | "textField" | "toggle" | "checkbox" | "radio" |
+    /// "slider" | "picker" | "segmented" | "datePicker" | "progress" |
+    /// "list" | "symbol" | "flutter" | "glass"
     let type: String
 
     /// For `type == "flutter"`: the body route to host here, registered in
@@ -52,6 +52,8 @@ struct BodyNodeConfig: Codable {
     let button: ButtonConfig?
     let textField: TextFieldConfig?
     let toggle: ToggleConfig?
+    let checkbox: CheckboxConfig?
+    let radio: RadioConfig?
     let slider: BodySliderConfig?
     let picker: PickerConfig?
     let list: ListConfig?

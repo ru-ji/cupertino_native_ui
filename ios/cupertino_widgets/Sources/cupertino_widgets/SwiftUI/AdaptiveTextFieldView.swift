@@ -13,6 +13,11 @@ final class TextFieldModel: ObservableObject {
     /// Bumped by `focus` / `unfocus` so the view can act on a repeated request.
     @Published var focusCommand: (id: Int, focused: Bool)?
 
+    /// The keyboard accessory for this field, or nil. Set on the backing
+    /// `UITextField` while it is still unfocused, so UIKit presents it in the
+    /// same animation as the keyboard — no `reloadInputViews()`.
+    @Published var accessory: UIView?
+
     /// Bumped whenever `config` is replaced — the toolbar's declared values
     /// reseed on it, without comparing configs in `body`.
     private(set) var configRevision = 0
@@ -23,16 +28,9 @@ final class TextFieldModel: ObservableObject {
     }
 }
 
-/// The package's text field, in SwiftUI end to end — `TextField` /
-/// `SecureField`, not a hosted `UITextField`.
-///
-/// Everything the UIKit version reached for through `UITextField` has a
-/// first-class modifier here: autofill through `textContentType`, the keyboard
-/// through `keyboardType`, the return key through `submitLabel`, focus through
-/// `@FocusState`. Prefix and suffix symbols are ordinary views in an `HStack`
-/// rather than `leftView`/`rightView` slots, and the glass goes through the
-/// same `GlassEffectContainer` + `.glassEffect(_:in:)` as every other glass
-/// surface in this package.
+/// The package's text field: SwiftUI chrome (glass, icons, clear button)
+/// around a `UITextField` — see [BackingTextField] for why the editable part
+/// is UIKit (the keyboard toolbar).
 @available(iOS 26.0, *)
 struct AdaptiveTextFieldView: View {
     @ObservedObject var model: TextFieldModel
@@ -42,16 +40,10 @@ struct AdaptiveTextFieldView: View {
     let onEditingComplete: () -> Void
     let onFocusChange: (Bool) -> Void
 
-    /// A keyboard-toolbar control changed — `(itemId, value)`, value nil for a
-    /// button. Optional: a body field has no toolbar of its own.
-    var onToolbarEvent: ((String, Any?) -> Void)? = nil
-
-    @FocusState private var focused: Bool
-
-    /// What the toolbar's own controls own between pushes from Dart — a
-    /// picker's selection, a toggle's value. `NativeBodyModel` is exactly that,
-    /// so the items behave as they do anywhere else.
-    @StateObject private var toolbarModel = NativeBodyModel()
+    /// Mirrors the backing field's first-responder state. Not `@FocusState`:
+    /// the field is a `UITextField` (see [BackingTextField]), which SwiftUI's
+    /// focus system does not drive.
+    @State private var focused = false
 
     private var c: TextFieldConfig { model.config }
 
@@ -62,53 +54,7 @@ struct AdaptiveTextFieldView: View {
             .background(background)
             .modifier(GlassBackground(config: c))
             .onChange(of: focused) { onFocusChange($0) }
-            .onChange(of: model.focusCommand?.id) { _ in
-                if let command = model.focusCommand { focused = command.focused }
-            }
-            .onChange(of: model.configRevision) { _ in seedToolbar() }
-            .onAppear {
-                seedToolbar()
-                if c.autofocus == true { focused = true }
-            }
             .environment(\.colorScheme, c.isDark == true ? .dark : .light)
-    }
-
-    // MARK: - Keyboard toolbar
-
-    /// The bar above the keyboard: SwiftUI's own
-    /// `ToolbarItemGroup(placement: .keyboard)`, attached to the field itself
-    /// — the way a plain SwiftUI `TextField` declares it — and filled with the
-    /// nodes Dart lowered from `toolbarActions`, the same description a native
-    /// body is built from. A `CupertinoNativeButton` written in the list
-    /// becomes a real SwiftUI button here, and a `CupertinoNativeFlutterView`
-    /// becomes a Flutter island in its own engine.
-    ///
-    /// The group is declared unconditionally: an empty one renders nothing,
-    /// and a `keyboard` toolbar that appears and disappears with state is
-    /// exactly the shape SwiftUI drops on some iOS versions.
-    @ToolbarContentBuilder
-    private var keyboardToolbarContent: some ToolbarContent {
-        ToolbarItemGroup(placement: .keyboard) {
-            ForEach(Array(toolbarNodes.enumerated()), id: \.offset) { index, node in
-                NativeBodyNode(
-                    node: node,
-                    model: toolbarModel,
-                    onEvent: { id, value in onToolbarEvent?(id, value) }
-                )
-                .id(node.id ?? "\(node.type)-\(index)")
-            }
-        }
-    }
-
-    private var toolbarNodes: [BodyNodeConfig] {
-        c.keyboardToolbar ?? []
-    }
-
-    /// Seeds the values the toolbar's controls declare. `seed` never clobbers
-    /// what the user has already changed, so a push from Dart cannot fight a
-    /// control mid-touch.
-    private func seedToolbar() {
-        toolbarModel.seedAll(toolbarNodes)
     }
 
     // MARK: - Pieces
@@ -123,35 +69,17 @@ struct AdaptiveTextFieldView: View {
         .opacity(model.contentOpacity)
     }
 
-    @ViewBuilder
     private var field: some View {
-        let prompt = c.placeholder.map { Text($0) }
-        Group {
-            if c.obscureText == true {
-                SecureField("", text: binding, prompt: prompt)
-            } else {
-                TextField("", text: binding, prompt: prompt)
+        BackingTextField(
+            model: model,
+            text: binding,
+            focused: $focused,
+            onSubmit: {
+                onEditingComplete()
+                onSubmitted(model.text)
             }
-        }
-        // On the field itself, like a plain SwiftUI TextField declares its
-        // own keyboard bar.
-        .toolbar { keyboardToolbarContent }
-        .focused($focused)
+        )
         .frame(maxWidth: .infinity, alignment: verticalAlignment)
-        .font(font)
-        .foregroundStyle(textColor)
-        .tint(cursorColor)
-        .multilineTextAlignment(textAlign)
-        .keyboardType(keyboardType)
-        .submitLabel(submitLabel)
-        .textContentType(contentType)
-        .textInputAutocapitalization(capitalization)
-        .autocorrectionDisabled(c.autocorrect == false)
-        .disabled(c.enabled == false)
-        .onSubmit {
-            onEditingComplete()
-            onSubmitted(model.text)
-        }
     }
 
     /// `readOnly` is enforced here rather than with `.disabled`, which would
@@ -250,74 +178,4 @@ struct AdaptiveTextFieldView: View {
         default: return .center
         }
     }
-
-    private var font: Font {
-        .system(size: CGFloat(c.fontSize ?? 17), weight: weight)
-    }
-
-    private var weight: Font.Weight {
-        switch c.fontWeight ?? 3 {
-        case 0: return .ultraLight
-        case 1: return .thin
-        case 2: return .light
-        case 4: return .medium
-        case 5: return .semibold
-        case 6: return .bold
-        case 7: return .heavy
-        case 8: return .black
-        default: return .regular
-        }
-    }
-
-    private var textColor: Color { c.textColor.map { Color(argb: $0) } ?? .primary }
-    private var cursorColor: Color? { c.cursorColor.map { Color(argb: $0) } }
-
-    private var textAlign: TextAlignment {
-        switch c.textAlign {
-        case "center": return .center
-        case "right", "end": return .trailing
-        default: return .leading
-        }
-    }
-
-    private var keyboardType: UIKeyboardType {
-        switch c.keyboardType {
-        case "number", "numberWithOptions", "datetime": return .numbersAndPunctuation
-        case "phone": return .phonePad
-        case "emailAddress": return .emailAddress
-        case "url": return .URL
-        case "visiblePassword": return .asciiCapable
-        case "name": return .namePhonePad
-        default: return .default
-        }
-    }
-
-    private var submitLabel: SubmitLabel {
-        switch c.textInputAction {
-        case "go": return .go
-        case "search": return .search
-        case "send": return .send
-        case "next": return .next
-        case "done": return .done
-        case "continueAction": return .continue
-        case "join": return .join
-        case "route": return .route
-        default: return .return
-        }
-    }
-
-    private var capitalization: TextInputAutocapitalization {
-        switch c.textCapitalization {
-        case "words": return .words
-        case "sentences": return .sentences
-        case "characters": return .characters
-        default: return .never
-        }
-    }
-
-    private var contentType: UITextContentType? {
-        guard let name = c.textContentType else { return nil }
-        return UITextContentType(rawValue: name)
-    }
 }
-
