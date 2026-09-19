@@ -64,6 +64,8 @@ class _SegmentedControlDemoPageState extends State<SegmentedControlDemoPage> {
         CupertinoNativeList(
           sections: [
             CupertinoNativeListSection(
+              rowPadding: kSettingsRowPadding,
+              minHeight: kSettingsRowMinHeight,
               header: 'Picker',
               footer:
                   'The same options behind a button — lowered straight into '

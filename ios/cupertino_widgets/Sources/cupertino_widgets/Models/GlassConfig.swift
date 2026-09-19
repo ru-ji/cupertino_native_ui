@@ -17,6 +17,10 @@ struct GlassConfig: Codable, Equatable {
     let paddingTop: Double?
     let paddingRight: Double?
     let paddingBottom: Double?
+    /// The container's own size, when the caller asked for one. Nil hugs the
+    /// content.
+    let width: Double?
+    let height: Double?
     /// A scaffold-style body route. When set, the container hosts a Flutter
     /// engine on that route as a SwiftUI view and applies `glassEffect` to
     /// *it* — the content is inside the glass rather than stacked over it.

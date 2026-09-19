@@ -20,6 +20,10 @@ class _SwitchDemoPageState extends State<SwitchDemoPage> {
   bool _notifications = true;
   bool _critical = false;
 
+  bool _agree = false;
+  bool _backup = true;
+  String _color = 'blue';
+
   @override
   Widget build(BuildContext context) {
     return DemoScaffold(
@@ -28,6 +32,8 @@ class _SwitchDemoPageState extends State<SwitchDemoPage> {
         CupertinoNativeList(
           sections: [
             CupertinoNativeListSection(
+              rowPadding: kSettingsRowPadding,
+              minHeight: kSettingsRowMinHeight,
               header: 'Connectivity',
               footer: _airplane
                   ? 'Airplane Mode is on — wireless radios are disabled.'
@@ -65,6 +71,8 @@ class _SwitchDemoPageState extends State<SwitchDemoPage> {
               ],
             ),
             CupertinoNativeListSection(
+              rowPadding: kSettingsRowPadding,
+              minHeight: kSettingsRowMinHeight,
               header: 'Notifications',
               footer: 'activeColor swaps the standard green for any tint.',
               children: [
@@ -91,6 +99,8 @@ class _SwitchDemoPageState extends State<SwitchDemoPage> {
               ],
             ),
             CupertinoNativeListSection(
+              rowPadding: kSettingsRowPadding,
+              minHeight: kSettingsRowMinHeight,
               header: 'Managed',
               footer: 'onChanged: null renders the native disabled appearance.',
               children: [
@@ -99,6 +109,70 @@ class _SwitchDemoPageState extends State<SwitchDemoPage> {
                   title: 'Managed by Profile',
                   trailing: CupertinoNativeSwitch(value: true, onChanged: null),
                 ),
+              ],
+            ),
+            CupertinoNativeListSection(
+              rowPadding: kSettingsRowPadding,
+              minHeight: kSettingsRowMinHeight,
+              header: 'Checkbox',
+              footer:
+                  'CupertinoNativeCheckbox — SwiftUI-drawn, lowered into '
+                  'the row like the switches above.',
+              children: [
+                CupertinoNativeListTile(
+                  id: 'agree',
+                  title: 'I agree to the terms',
+                  subtitle: 'Squared box, springy checkmark',
+                  trailing: CupertinoNativeCheckbox(
+                    value: _agree,
+                    onChanged: (v) => setState(() => _agree = v),
+                  ),
+                ),
+                CupertinoNativeListTile(
+                  id: 'backup',
+                  title: 'Back up to iCloud',
+                  trailing: CupertinoNativeCheckbox(
+                    value: _backup,
+                    activeColor: CupertinoColors.systemGreen,
+                    onChanged: (v) => setState(() => _backup = v),
+                  ),
+                ),
+                const CupertinoNativeListTile(
+                  id: 'locked',
+                  title: 'Locked by admin',
+                  trailing: CupertinoNativeCheckbox(
+                    value: true,
+                    onChanged: null,
+                  ),
+                ),
+              ],
+            ),
+            CupertinoNativeListSection(
+              rowPadding: kSettingsRowPadding,
+              minHeight: kSettingsRowMinHeight,
+              header: 'Radio',
+              footer:
+                  'CupertinoNativeRadio — one selection per group; '
+                  'managing the group state is the app\'s job.',
+              children: [
+                for (final (id, name) in const [
+                  ('blue', 'Blue'),
+                  ('green', 'Green'),
+                  ('orange', 'Orange'),
+                ])
+                  CupertinoNativeListTile(
+                    id: 'radio_$id',
+                    title: name,
+                    trailing: CupertinoNativeRadio(
+                      value: _color == id,
+                      activeColor: id == 'green'
+                          ? CupertinoColors.systemGreen
+                          : id == 'orange'
+                          ? CupertinoColors.systemOrange
+                          : null,
+                      onChanged: (_) => setState(() => _color = id),
+                    ),
+                  ),
               ],
             ),
           ],

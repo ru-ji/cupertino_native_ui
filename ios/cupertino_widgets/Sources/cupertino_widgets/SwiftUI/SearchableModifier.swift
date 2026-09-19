@@ -32,6 +32,9 @@ struct PageScrollBody: View {
                 // Stays on the ScrollView itself — the edge effect is a
                 // property of the scroll view, not of the reader around it.
                 .applyScrollEdgeEffect(scrollEdgeEffect)
+                // A scroll view dismisses the keyboard on scroll by default on
+                // iOS 16+; a field inside a body should keep it.
+                .scrollDismissesKeyboard(.never)
                 .onChange(of: scrollToTopSignal) { _ in
                     proxy.scrollTo(Self.topAnchor, anchor: .top)
                 }

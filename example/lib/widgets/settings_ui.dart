@@ -12,6 +12,15 @@ import 'package:flutter/widgets.dart';
 /// plugin's native list/form default on iOS 26+).
 const double kCardCornerRadius = 26;
 
+/// [SettingsRow]'s metrics, for `CupertinoNativeListSection` so native lists
+/// match the Flutter-drawn sections: 16/8 padding, 46pt tall. Native
+/// `minHeight` excludes the padding, hence 46 - 2 * 8.
+const EdgeInsets kSettingsRowPadding = EdgeInsets.symmetric(
+  horizontal: 16,
+  vertical: 8,
+);
+const double kSettingsRowMinHeight = 30;
+
 /// A white page under a [CupertinoNativeSliverNavigationBar], which brings its own back
 /// button, Liquid Glass actions, scroll edge effect and title collapse.
 class DemoScaffold extends StatelessWidget {
@@ -54,8 +63,12 @@ class DemoScaffold extends StatelessWidget {
         ),
         SliverPadding(
           padding: EdgeInsets.only(
+            // The keyboard inset pads the scroll content instead of shrinking
+            // the page (resizeToAvoidBottomInset: false below), so content
+            // keeps running under the keyboard toolbar like a native app.
             bottom:
                 MediaQuery.paddingOf(context).bottom +
+                MediaQuery.viewInsetsOf(context).bottom +
                 (bottomBar != null ? 88 : 40),
           ),
           sliver: SliverList.list(children: children),
@@ -70,6 +83,7 @@ class DemoScaffold extends StatelessWidget {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
       child: Scaffold(
+        resizeToAvoidBottomInset: false,
         backgroundColor: CupertinoColors.systemGroupedBackground.resolveFrom(
           context,
         ),

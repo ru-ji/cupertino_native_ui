@@ -19,6 +19,14 @@ class NativeHostingView: NSObject, FlutterPlatformView {
     private var publishedSize: CGSize?
     /// One pending measurement at a time; a layout pass can fire many times.
     private var measurementScheduled = false
+    /// Content changed since the last measure: the next layout pass must
+    /// re-measure even if the container's bounds did not move.
+    private var needsMeasure = false
+    /// The container's size at the last measure attempt. The engine re-lays
+    /// out a platform view on every frame it repositions it (a scroll), which
+    /// is `layoutSubviews` with identical bounds — measuring on those passes
+    /// is pure waste, so only a bounds change or [needsMeasure] schedules one.
+    private var lastMeasuredBoundsSize: CGSize?
 
     /// Whether this view's content has a size worth reporting. False for a view
     /// that fills the box Flutter built.
@@ -125,17 +133,26 @@ class NativeHostingView: NSObject, FlutterPlatformView {
         // A re-attach can change the content's size; let the next layout pass
         // say so rather than assuming it did not.
         publishedSize = nil
-        _view.onLayoutMeasure = { [weak self] in self?.scheduleMeasurement() }
+        needsMeasure = true
+        _view.onLayoutMeasure = { [weak self] in self?.layoutPassDidRun() }
     }
 
-    /// Queues a measurement for just after the current layout pass.
+    /// Called from `HostingContainerView.layoutSubviews` — i.e. once per
+    /// engine repositioning, which during a scroll is once per frame with the
+    /// same bounds. Only a bounds change or content marked dirty by
+    /// [attach]/[update] queues a measurement; the rest are free.
     ///
-    /// Never during it: `intrinsicSize()` lays the hosted view out to measure
-    /// it, and driving layout from inside `layoutSubviews` is how a layout
-    /// loop starts. Coalesced, because one pass can call back several times
-    /// and the answer cannot change in between.
-    private func scheduleMeasurement() {
+    /// Never measure during the pass itself: `intrinsicSize()` lays the
+    /// hosted view out to measure it, and driving layout from inside
+    /// `layoutSubviews` is how a layout loop starts. Coalesced, because one
+    /// pass can call back several times and the answer cannot change in
+    /// between.
+    private func layoutPassDidRun() {
         guard sizeChannel != nil, measuresIntrinsicSize, !measurementScheduled else { return }
+        let boundsSize = _view.bounds.size
+        guard needsMeasure || boundsSize != lastMeasuredBoundsSize else { return }
+        needsMeasure = false
+        lastMeasuredBoundsSize = boundsSize
         measurementScheduled = true
         DispatchQueue.main.async { [weak self] in
             guard let self else { return }
@@ -150,7 +167,12 @@ class NativeHostingView: NSObject, FlutterPlatformView {
         let measured = intrinsicSize()
         guard let width = measured["width"], let height = measured["height"],
             width > 0, height > 0
-        else { return }
+        else {
+            // Nothing to report yet (unlaid-out content): ask again on the
+            // next layout pass instead of waiting for a bounds change.
+            needsMeasure = true
+            return
+        }
         let size = CGSize(width: width, height: height)
         guard size != publishedSize else { return }
         publishedSize = size
@@ -160,19 +182,32 @@ class NativeHostingView: NSObject, FlutterPlatformView {
     /// Replaces the currently hosted SwiftUI view's root without re-attaching.
     func update(_ content: AnyView) {
         hostingController?.rootView = content
+        // The new content can size differently (a switch gaining a label);
+        // the next layout pass must re-measure.
+        publishedSize = nil
+        needsMeasure = true
     }
 
     /// Measures the hosted SwiftUI content's natural size, for `getIntrinsicSize` handlers.
     /// A view that fills its box is re-measured against the current width.
     /// Zero on both axes until it has been laid out.
+    ///
+    /// `sizingOptions = .intrinsicContentSize` keeps `intrinsicContentSize` in
+    /// step with the content on every layout pass, so the common path is a
+    /// plain property read — no forced SwiftUI layout (`sizeThatFits`) per
+    /// frame. The forced measure is only the fallback for a view whose first
+    /// layout has not happened yet, or one that fills its box.
     func intrinsicSize() -> [String: Double] {
         guard let host = hostingController else { return ["width": 0.0, "height": 0.0] }
-        host.view.setNeedsLayout()
-        host.view.layoutIfNeeded()
-        var fitting = host.sizeThatFits(
-            in: CGSize(
-                width: CGFloat.greatestFiniteMagnitude,
-                height: CGFloat.greatestFiniteMagnitude))
+        var fitting = host.view.intrinsicContentSize
+        if !Self.isUsable(fitting) {
+            host.view.setNeedsLayout()
+            host.view.layoutIfNeeded()
+            fitting = host.sizeThatFits(
+                in: CGSize(
+                    width: CGFloat.greatestFiniteMagnitude,
+                    height: CGFloat.greatestFiniteMagnitude))
+        }
         if !Self.isUsable(fitting), _view.bounds.width > 0 {
             fitting = host.sizeThatFits(in: CGSize(width: _view.bounds.width, height: 0))
         }
@@ -283,9 +318,20 @@ final class HostingContainerView: UIView {
     /// [onLayout] belongs to the subclass.
     var onLayoutMeasure: (() -> Void)?
 
+    /// Called after every window change, with the window the container now
+    /// lives in (`nil` when it has just been detached).
+    ///
+    /// The iOS engine takes a platform view out of the `FlutterView` on any
+    /// frame it is not composited, and scrolling a field past the viewport is
+    /// enough to stop it being composited. A view outside a window cannot be
+    /// first responder, so UIKit resigns the field and the keyboard closes.
+    /// Owners that hold a responder use this to notice and put it back.
+    var onWindowChanged: ((UIWindow?) -> Void)?
+
     override func didMoveToWindow() {
         super.didMoveToWindow()
         updateHostParenting()
+        onWindowChanged?(window)
     }
 
     /// The rectangle the view draws in: its bounds plus [edgeMaskOutset], for
@@ -298,15 +344,21 @@ final class HostingContainerView: UIView {
     /// Frames the clip container on the outset box and shifts the content back
     /// so the control does not move. Unclipped: the outset is room for what a
     /// control paints past its bounds — a switch's rim, a glass shadow.
+    ///
+    /// Frame equality short-circuits: the engine repositions a platform view
+    /// every frame of a scroll with identical bounds, and assigning unchanged
+    /// frames in a `CATransaction` every frame is compositor work for nothing.
     private func layoutClip() {
         let rect = edgeMaskRect
+        let contentFrame = CGRect(
+            x: bounds.minX - rect.minX, y: bounds.minY - rect.minY,
+            width: bounds.width, height: bounds.height)
+        if clipView.frame == rect && contentView.frame == contentFrame { return }
         CATransaction.begin()
         CATransaction.setDisableActions(true)
         clipView.clipsToBounds = false
         clipView.frame = rect
-        contentView.frame = CGRect(
-            x: bounds.minX - rect.minX, y: bounds.minY - rect.minY,
-            width: bounds.width, height: bounds.height)
+        contentView.frame = contentFrame
         CATransaction.commit()
     }
 

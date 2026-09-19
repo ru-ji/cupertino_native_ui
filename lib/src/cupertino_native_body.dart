@@ -169,6 +169,7 @@ class CupertinoNativeBody {
         CupertinoNativeButtonBorderShape.automatic,
     Color? color,
     bool expand = false,
+    bool enabled = true,
     EdgeInsets? padding,
   }) : this._(
          type: 'button',
@@ -188,6 +189,7 @@ class CupertinoNativeBody {
                  : 'titleAndIcon',
              'expand': expand,
              'color': color,
+             'enabled': enabled,
            },
          },
        );
@@ -228,6 +230,50 @@ class CupertinoNativeBody {
          padding: padding,
          payload: {
            'toggle': {'label': label, 'value': value, 'color': color},
+         },
+       );
+
+  /// A checkbox, reporting `(id, bool)`.
+  CupertinoNativeBody.checkbox({
+    required String id,
+    required bool value,
+    String? label,
+    Color? color,
+    bool enabled = true,
+    EdgeInsets? padding,
+  }) : this._(
+         type: 'checkbox',
+         id: id,
+         padding: padding,
+         payload: {
+           'checkbox': {
+             'label': label,
+             'value': value,
+             'color': color,
+             'enabled': enabled,
+           },
+         },
+       );
+
+  /// A radio button, reporting `(id, bool)`.
+  CupertinoNativeBody.radio({
+    required String id,
+    required bool value,
+    String? label,
+    Color? color,
+    bool enabled = true,
+    EdgeInsets? padding,
+  }) : this._(
+         type: 'radio',
+         id: id,
+         padding: padding,
+         payload: {
+           'radio': {
+             'label': label,
+             'value': value,
+             'color': color,
+             'enabled': enabled,
+           },
          },
        );
 
@@ -353,6 +399,8 @@ class CupertinoNativeBody {
     bool? interactive,
     bool pressable = false,
     EdgeInsets? padding,
+    double? width,
+    double? height,
     bool expand = false,
   }) : this._(
          type: 'glass',
@@ -371,6 +419,8 @@ class CupertinoNativeBody {
              'paddingTop': padding?.top,
              'paddingRight': padding?.right,
              'paddingBottom': padding?.bottom,
+             'width': width,
+             'height': height,
            },
          },
        );
@@ -447,6 +497,21 @@ class CupertinoNativeBody {
   /// Serialized form consumed by `BodyNodeConfig` on the Swift side.
   ///
   /// [isDark] is threaded down the tree: every leaf config carries the app's
+  /// The same node with [insets] around it — what a `Padding` in a lowered
+  /// tree becomes. A node already carrying padding keeps its own.
+  CupertinoNativeBody withPadding(EdgeInsets insets) => CupertinoNativeBody._(
+    type: type,
+    id: id,
+    children: children,
+    spacing: spacing,
+    alignment: alignment,
+    padding: padding ?? insets,
+    extent: extent,
+    expand: expand,
+    route: route,
+    payload: payload,
+  );
+
   /// brightness, the same as when the control is a standalone platform view.
   Map<String, dynamic> toMap({required bool isDark}) {
     return {

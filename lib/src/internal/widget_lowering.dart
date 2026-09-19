@@ -3,10 +3,12 @@ import 'package:flutter/widgets.dart';
 import '../cupertino_native_activity_indicator.dart';
 import '../cupertino_native_body.dart';
 import '../cupertino_native_button.dart';
+import '../cupertino_native_checkbox.dart';
 import '../cupertino_native_date_picker.dart';
 import '../cupertino_native_flutter_view.dart';
 import '../cupertino_native_glass_container.dart';
 import '../cupertino_native_picker.dart';
+import '../cupertino_native_radio.dart';
 import '../cupertino_native_slider.dart';
 import '../cupertino_native_sliding_segmented_control.dart';
 import '../cupertino_native_switch.dart';
@@ -63,6 +65,9 @@ CupertinoNativeBody? lowerWidgetNode(
         sizeStyle: widget.sizeStyle,
         borderShape: widget.borderShape,
         color: widget.color,
+        // A null `onPressed` is a disabled button, the way it is everywhere
+        // else in Flutter — greyed out rather than silently inert.
+        enabled: onPressed != null,
       );
 
     case CupertinoNativeSwitch():
@@ -75,6 +80,32 @@ CupertinoNativeBody? lowerWidgetNode(
         value: widget.value,
         label: widget.label,
         color: widget.activeTrackColor,
+      );
+
+    case CupertinoNativeCheckbox():
+      final onChanged = widget.onChanged;
+      if (onChanged != null) {
+        callbacks[id] = (value) => onChanged(value as bool? ?? false);
+      }
+      return CupertinoNativeBody.checkbox(
+        id: id,
+        value: widget.value,
+        label: widget.label,
+        color: widget.activeColor,
+        enabled: onChanged != null,
+      );
+
+    case CupertinoNativeRadio():
+      final onChanged = widget.onChanged;
+      if (onChanged != null) {
+        callbacks[id] = (value) => onChanged(value as bool? ?? false);
+      }
+      return CupertinoNativeBody.radio(
+        id: id,
+        value: widget.value,
+        label: widget.label,
+        color: widget.activeColor,
+        enabled: onChanged != null,
       );
 
     case CupertinoNativePicker():
@@ -142,6 +173,11 @@ CupertinoNativeBody? lowerWidgetNode(
 
     case CupertinoNativeSlidingSegmentedControl():
       final keys = widget.children.keys.toList();
+      // Read through a dynamic receiver: the widget is matched raw here (T is
+      // dynamic), so a typed field read would check the callback against
+      // `void Function(dynamic)` and reject a closure declared with T's real
+      // type (covariant generic field access).
+      final dynamic onValueChanged = (widget as dynamic).onValueChanged;
       final selected = widget.groupValue == null
           ? -1
           : keys.indexOf(widget.groupValue as Object);
@@ -150,7 +186,7 @@ CupertinoNativeBody? lowerWidgetNode(
         if (index >= 0 && index < keys.length) {
           // The callback is a ValueChanged<T>; the original key, not the
           // index, is what it expects.
-          (widget.onValueChanged as dynamic)(keys[index]);
+          Function.apply(onValueChanged as Function, [keys[index]]);
         }
       };
       return CupertinoNativeBody.segmented(
@@ -187,7 +223,13 @@ CupertinoNativeBody? lowerWidgetNode(
       );
 
     case Padding(:final child?):
-      return lowerWidgetNode(child, id, callbacks);
+      // The insets ride on the child's node — dropping them here is what made
+      // a `Padding` around a toolbar item do nothing.
+      return lowerWidgetNode(
+        child,
+        id,
+        callbacks,
+      )?.withPadding(widget.padding.resolve(TextDirection.ltr));
 
     case Row():
       return CupertinoNativeBody.row(
@@ -208,13 +250,13 @@ CupertinoNativeBody? lowerWidgetNode(
         'This content cannot hold a ${widget.runtimeType}. The surface is '
         'built by SwiftUI in a window Flutter cannot draw, so its items are '
         'read rather than mounted. Use the package\'s own controls — '
-        'CupertinoNativeButton, CupertinoNativeSwitch, CupertinoNativeSlider, '
-        'CupertinoNativePicker, CupertinoNativeSegmentedControl, '
-        'CupertinoNativeDatePicker, CupertinoNativeActivityIndicator, '
-        'CupertinoNativeSymbol, CupertinoNativeTextField, '
-        'CupertinoNativeGlassContainer, Text, Spacer, Row or Column — or '
-        'CupertinoNativeFlutterView(route) to host your own Flutter there, '
-        'which costs an engine.',
+        'CupertinoNativeButton, CupertinoNativeSwitch, CupertinoNativeCheckbox, '
+        'CupertinoNativeRadio, CupertinoNativeSlider, CupertinoNativePicker, '
+        'CupertinoNativeSegmentedControl, CupertinoNativeDatePicker, '
+        'CupertinoNativeActivityIndicator, CupertinoNativeSymbol, '
+        'CupertinoNativeTextField, CupertinoNativeGlassContainer, Text, '
+        'Spacer, Row or Column — or CupertinoNativeFlutterView(route) to host '
+        'your own Flutter there, which costs an engine.',
       );
       return null;
   }
@@ -285,6 +327,8 @@ CupertinoNativeBody lowerGlassContainer(
     interactive: widget.interactive,
     pressable: onPressed != null,
     padding: widget.padding.resolve(TextDirection.ltr),
+    width: widget.width,
+    height: widget.height,
   );
 }
 

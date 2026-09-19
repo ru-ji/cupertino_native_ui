@@ -52,6 +52,8 @@ class ProfileTabPage extends StatelessWidget {
         const CupertinoNativeList(
           sections: [
             CupertinoNativeListSection(
+              rowPadding: kSettingsRowPadding,
+              minHeight: kSettingsRowMinHeight,
               children: [
                 CupertinoNativeListTile(
                   id: 'name',
@@ -71,6 +73,8 @@ class ProfileTabPage extends StatelessWidget {
               ],
             ),
             CupertinoNativeListSection(
+              rowPadding: kSettingsRowPadding,
+              minHeight: kSettingsRowMinHeight,
               children: [
                 CupertinoNativeListTile(
                   id: 'subscription',

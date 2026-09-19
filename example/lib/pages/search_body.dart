@@ -132,19 +132,18 @@ class _SearchBodyState extends State<SearchBody> {
           padding: const EdgeInsets.fromLTRB(32, 16, 32, 8),
           child: Text(header.toUpperCase(), style: footnoteStyle(context)),
         ),
-        CupertinoNativeList(
-          sections: [
-            CupertinoNativeListSection(
-              children: [
-                for (final (name, category) in items)
-                  CupertinoNativeListTile(
-                    id: name,
-                    title: name,
-                    subtitle: category,
-                    showChevron: true,
-                  ),
-              ],
-            ),
+        // Drawn Flutter rows, NOT CupertinoNativeList: this body already runs
+        // inside a native platform view, and a platform view nested in another
+        // renders blank — the empty body after opening/closing search.
+        SettingsSection(
+          children: [
+            for (final (name, category) in items)
+              SettingsRow(
+                title: name,
+                subtitle: category,
+                showChevron: true,
+                onTap: () {},
+              ),
           ],
         ),
         const SizedBox(height: 24),
@@ -161,14 +160,9 @@ class _SearchBodyState extends State<SearchBody> {
           padding: const EdgeInsets.fromLTRB(32, 16, 32, 8),
           child: Text('SUGGESTED', style: footnoteStyle(context)),
         ),
-        CupertinoNativeList(
-          sections: [
-            CupertinoNativeListSection(
-              children: [
-                for (final s in _suggestions)
-                  CupertinoNativeListTile(id: s, title: s),
-              ],
-            ),
+        SettingsSection(
+          children: [
+            for (final s in _suggestions) SettingsRow(title: s, onTap: () {}),
           ],
         ),
         const SizedBox(height: 24),

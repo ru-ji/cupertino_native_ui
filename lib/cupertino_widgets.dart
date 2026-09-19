@@ -11,6 +11,8 @@ export 'src/models/cupertino_native_button_extra_options.dart';
 export 'src/models/cupertino_symbols.dart';
 export 'src/models/cupertino_native_icon.dart';
 export 'src/cupertino_native_switch.dart';
+export 'src/cupertino_native_checkbox.dart';
+export 'src/cupertino_native_radio.dart';
 export 'src/cupertino_native_sliding_segmented_control.dart';
 export 'src/cupertino_native_slider.dart';
 export 'src/cupertino_native_alert_dialog.dart';

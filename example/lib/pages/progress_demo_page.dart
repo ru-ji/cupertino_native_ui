@@ -81,6 +81,8 @@ class _ProgressDemoPageState extends State<ProgressDemoPage> {
         CupertinoNativeList(
           sections: [
             CupertinoNativeListSection(
+              rowPadding: kSettingsRowPadding,
+              minHeight: kSettingsRowMinHeight,
               header: 'Activity',
               footer: 'value: null loops the native indeterminate spinner.',
               children: [

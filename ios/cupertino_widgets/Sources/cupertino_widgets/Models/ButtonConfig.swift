@@ -10,6 +10,8 @@ struct ButtonConfig: Codable {
     let borderShape: String?  // "automatic", "capsule", "circle", "roundedRectangle"
     let labelStyle: String?  // "automatic", "iconOnly", "titleAndIcon", "titleOnly"
     let expand: Bool?
+    /// Nil means enabled; false greys the button out and drops its taps.
+    let enabled: Bool?
     let fontSize: Double?
     let fontWeight: Int?
     let textColor: Int?

@@ -108,6 +108,9 @@ struct ScaffoldView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
             .applyScrollEdgeEffect(model.config.scrollEdgeEffect)
+            // Scroll views dismiss the keyboard on scroll by default; a field
+            // in the body keeps it.
+            .scrollDismissesKeyboard(.never)
         } else {
             SearchablePageBody(
                 engine: model.rootEngines[rootRoute],

@@ -28,6 +28,8 @@ class _DatePickerDemoPageState extends State<DatePickerDemoPage> {
         CupertinoNativeList(
           sections: [
             CupertinoNativeListSection(
+              rowPadding: kSettingsRowPadding,
+              minHeight: kSettingsRowMinHeight,
               header: 'Event',
               footer:
                   'Tap a pill — the calendar overlay is the real '
@@ -55,6 +57,8 @@ class _DatePickerDemoPageState extends State<DatePickerDemoPage> {
               ],
             ),
             CupertinoNativeListSection(
+              rowPadding: kSettingsRowPadding,
+              minHeight: kSettingsRowMinHeight,
               header: 'Alarm',
               footer:
                   'time mode shows only the hour wheel; tint colors the '
@@ -73,6 +77,8 @@ class _DatePickerDemoPageState extends State<DatePickerDemoPage> {
               ],
             ),
             CupertinoNativeListSection(
+              rowPadding: kSettingsRowPadding,
+              minHeight: kSettingsRowMinHeight,
               header: 'Summary',
               children: [
                 CupertinoNativeListTile(

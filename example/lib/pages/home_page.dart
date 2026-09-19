@@ -3,6 +3,8 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart' show Scaffold, Theme, ThemeMode;
 import 'package:flutter/services.dart' show SystemUiOverlayStyle;
 
+import '../widgets/settings_ui.dart';
+
 import '../app.dart';
 import 'alert_demo_page.dart';
 import 'app_bar_demo_page.dart';
@@ -69,64 +71,142 @@ class HomePage extends StatelessWidget {
                   onRowTap: (id) => _open(context, id),
                   sections: [
                     CupertinoNativeListSection(
+                      rowPadding: kSettingsRowPadding,
+                      minHeight: kSettingsRowMinHeight,
                       header: 'Controls',
                       children: [
-                        _row('slider', 'Slider', 'slider.horizontal.3',
-                            CupertinoColors.systemBlue),
-                        _row('switch', 'Switch', 'switch.2',
-                            CupertinoColors.systemGreen),
-                        _row('segmented', 'Segmented Control',
-                            'rectangle.split.3x1', CupertinoColors.systemOrange),
-                        _row('button', 'Button', 'hand.tap',
-                            CupertinoColors.systemPurple),
-                        _row('contextMenu', 'Context Menu',
-                            'hand.point.up.left', CupertinoColors.systemBrown),
-                        _row('textField', 'Text Field', 'character.cursor.ibeam',
-                            CupertinoColors.systemTeal),
-                        _row('datePicker', 'Date Picker', 'calendar',
-                            CupertinoColors.systemRed),
+                        _row(
+                          'slider',
+                          'Slider',
+                          'slider.horizontal.3',
+                          CupertinoColors.systemBlue,
+                        ),
+                        _row(
+                          'switch',
+                          'Switch',
+                          'switch.2',
+                          CupertinoColors.systemGreen,
+                        ),
+                        _row(
+                          'segmented',
+                          'Segmented Control',
+                          'rectangle.split.3x1',
+                          CupertinoColors.systemOrange,
+                        ),
+                        _row(
+                          'button',
+                          'Button',
+                          'hand.tap',
+                          CupertinoColors.systemPurple,
+                        ),
+                        _row(
+                          'contextMenu',
+                          'Context Menu',
+                          'hand.point.up.left',
+                          CupertinoColors.systemBrown,
+                        ),
+                        _row(
+                          'textField',
+                          'Text Field',
+                          'character.cursor.ibeam',
+                          CupertinoColors.systemTeal,
+                        ),
+                        _row(
+                          'datePicker',
+                          'Date Picker',
+                          'calendar',
+                          CupertinoColors.systemRed,
+                        ),
                       ],
                     ),
                     CupertinoNativeListSection(
+                      rowPadding: kSettingsRowPadding,
+                      minHeight: kSettingsRowMinHeight,
                       header: 'Navigation',
                       children: [
-                        _row('tabBar', 'Tab Bar', 'square.grid.2x2',
-                            CupertinoColors.systemPink),
-                        _row('nativeBody', 'Native Body', 'swift',
-                            CupertinoColors.systemOrange),
-                        _row('nativeScaffold', 'Native Scaffold', 'iphone',
-                            CupertinoColors.systemBlue),
-                        _row('searchable', 'Searchable', 'magnifyingglass',
-                            CupertinoColors.systemGrey),
-                        _row('sheet', 'Sheet',
-                            'rectangle.portrait.bottomhalf.inset.filled',
-                            CupertinoColors.systemGreen),
-                        _row('navigationBar', 'Navigation Bar',
-                            'rectangle.topthird.inset.filled',
-                            CupertinoColors.systemIndigo),
+                        _row(
+                          'tabBar',
+                          'Tab Bar',
+                          'square.grid.2x2',
+                          CupertinoColors.systemPink,
+                        ),
+                        _row(
+                          'nativeBody',
+                          'Native Body',
+                          'swift',
+                          CupertinoColors.systemOrange,
+                        ),
+                        _row(
+                          'nativeScaffold',
+                          'Native Scaffold',
+                          'iphone',
+                          CupertinoColors.systemBlue,
+                        ),
+                        _row(
+                          'searchable',
+                          'Searchable',
+                          'magnifyingglass',
+                          CupertinoColors.systemGrey,
+                        ),
+                        _row(
+                          'sheet',
+                          'Sheet',
+                          'rectangle.portrait.bottomhalf.inset.filled',
+                          CupertinoColors.systemGreen,
+                        ),
+                        _row(
+                          'navigationBar',
+                          'Navigation Bar',
+                          'rectangle.topthird.inset.filled',
+                          CupertinoColors.systemIndigo,
+                        ),
                       ],
                     ),
                     CupertinoNativeListSection(
+                      rowPadding: kSettingsRowPadding,
+                      minHeight: kSettingsRowMinHeight,
                       header: 'Views',
                       children: [
-                        _row('listForm', 'List & Form', 'list.bullet',
-                            CupertinoColors.systemYellow),
-                        _row('liquidGlass', 'Liquid Glass', 'sparkles',
-                            CupertinoColors.systemCyan),
-                        _row('effects', 'Widget Effects', 'wand.and.stars',
-                            CupertinoColors.systemPurple),
+                        _row(
+                          'listForm',
+                          'List & Form',
+                          'list.bullet',
+                          CupertinoColors.systemYellow,
+                        ),
+                        _row(
+                          'liquidGlass',
+                          'Liquid Glass',
+                          'sparkles',
+                          CupertinoColors.systemCyan,
+                        ),
+                        _row(
+                          'effects',
+                          'Widget Effects',
+                          'wand.and.stars',
+                          CupertinoColors.systemPurple,
+                        ),
                       ],
                     ),
                     CupertinoNativeListSection(
+                      rowPadding: kSettingsRowPadding,
+                      minHeight: kSettingsRowMinHeight,
                       header: 'Feedback',
                       footer:
                           'Every control on these pages is a real UIKit/SwiftUI '
                           'view rendered inside Flutter.',
                       children: [
-                        _row('alert', 'Alert', 'exclamationmark.triangle',
-                            CupertinoColors.systemRed),
-                        _row('progress', 'Progress', 'chart.bar.xaxis',
-                            CupertinoColors.systemCyan),
+                        _row(
+                          'alert',
+                          'Alert',
+                          'exclamationmark.triangle',
+                          CupertinoColors.systemRed,
+                        ),
+                        _row(
+                          'progress',
+                          'Progress',
+                          'chart.bar.xaxis',
+                          CupertinoColors.systemCyan,
+                        ),
                       ],
                     ),
                   ],
@@ -175,8 +255,7 @@ class HomePage extends StatelessWidget {
       'progress' => const ProgressDemoPage(),
       _ => const SliderDemoPage(),
     };
-    Navigator.of(context).push(
-      CupertinoPageRoute(builder: (_) => page, title: 'Back'),
-    );
+    Navigator.of(context)
+        .push(CupertinoPageRoute(builder: (_) => page, title: 'Back'));
   }
 }

@@ -29,6 +29,8 @@ class _AlertDemoPageState extends State<AlertDemoPage> {
           },
           sections: [
             CupertinoNativeListSection(
+              rowPadding: kSettingsRowPadding,
+              minHeight: kSettingsRowMinHeight,
               header: 'Examples',
               footer: 'Last choice: $_lastChoice',
               children: const [

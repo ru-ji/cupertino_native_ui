@@ -1,6 +1,8 @@
 import 'package:flutter/widgets.dart';
 import 'package:cupertino_widgets/cupertino_widgets.dart';
 
+import '../widgets/settings_ui.dart';
+
 /// Settings tab body — shared with the native scaffold. A native list, so the
 /// rows are real SwiftUI cells.
 class SettingsTabPage extends StatelessWidget {
@@ -14,6 +16,8 @@ class SettingsTabPage extends StatelessWidget {
         CupertinoNativeList(
           sections: [
             CupertinoNativeListSection(
+              rowPadding: kSettingsRowPadding,
+              minHeight: kSettingsRowMinHeight,
               header: 'Preferences',
               children: [
                 CupertinoNativeListTile(
@@ -35,6 +39,8 @@ class SettingsTabPage extends StatelessWidget {
               ],
             ),
             CupertinoNativeListSection(
+              rowPadding: kSettingsRowPadding,
+              minHeight: kSettingsRowMinHeight,
               header: 'Privacy',
               children: [
                 CupertinoNativeListTile(
@@ -51,6 +57,8 @@ class SettingsTabPage extends StatelessWidget {
               ],
             ),
             CupertinoNativeListSection(
+              rowPadding: kSettingsRowPadding,
+              minHeight: kSettingsRowMinHeight,
               footer: 'Cupertino Widgets 1.0.0',
               children: [
                 CupertinoNativeListTile(

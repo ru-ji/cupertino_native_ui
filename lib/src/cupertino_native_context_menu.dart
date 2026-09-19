@@ -97,6 +97,15 @@ class _CupertinoNativeContextMenuState extends State<CupertinoNativeContextMenu>
   /// restores it regardless.
   Timer? _restoreTimer;
 
+  /// Debounce timer per capture method. A parent that rebuilds every frame
+  /// (an animation, a platform view pushing sizes) would otherwise encode a
+  /// PNG every frame — the timer keeps getting pushed back, so the capture
+  /// fires only once the rebuild storm has stopped.
+  final Map<String, Timer> _captureDebounce = {};
+
+  /// A capture in flight, by method; a second one is not launched on top.
+  final Set<String> _pendingCaptures = {};
+
   bool? _lastIsDark;
 
   bool get _isDark => Theme.of(context).brightness == Brightness.dark;
@@ -129,6 +138,10 @@ class _CupertinoNativeContextMenuState extends State<CupertinoNativeContextMenu>
   @override
   void dispose() {
     _restoreTimer?.cancel();
+    for (final timer in _captureDebounce.values) {
+      timer.cancel();
+    }
+    _captureDebounce.clear();
     super.dispose();
   }
 
@@ -200,33 +213,74 @@ class _CupertinoNativeContextMenuState extends State<CupertinoNativeContextMenu>
   ///
   /// Flutter captures it itself: a native window snapshot drops content drawn
   /// into Flutter's Metal layer.
+  ///
+  /// Captured from the boundary's layer directly, not via
+  /// [RenderRepaintBoundary.toImage]: that API asserts `!debugNeedsPaint`, and
+  /// a boundary under a platform view can legitimately be dirty at
+  /// post-frame time — the assert then spams forever on every rebuild. The
+  /// layer form never asserts and rasterizes the last-painted pixels, which
+  /// is exactly what a menu lift wants anyway.
+  ///
+  /// Debounced (one capture per quiet period, per method) and skipped while
+  /// this route is covered by another — a page hidden under a pushed scaffold
+  /// must not keep encoding PNGs.
   // ponytail: static snapshot, retaken when the widget changes — re-capture
   // on a timer if live/animated content ever needs to lift accurately.
   void _captureAfterFrame(GlobalKey key, String method) {
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
+    _captureDebounce[method]?.cancel();
+    _captureDebounce[method] = Timer(const Duration(milliseconds: 120), () {
+      _captureDebounce.remove(method);
       if (!mounted || channel == null || _menuOpen) return;
-      final render = key.currentContext?.findRenderObject();
-      if (render is! RenderRepaintBoundary) return;
-      final dpr = MediaQuery.devicePixelRatioOf(context);
-      try {
-        final image = await render.toImage(pixelRatio: dpr);
-        final size = '${image.width}x${image.height}';
-        final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
-        image.dispose();
-        if (bytes == null) {
-          debugPrint('[ctxmenu] $method: encode returned null');
-          return;
-        }
-        await channel?.invokeMethod(method, {
-          'bytes': bytes.buffer.asUint8List(),
-          'scale': dpr,
-        });
-        debugPrint('[ctxmenu] $method sent: $size px, ${bytes.lengthInBytes}B');
-      } catch (e) {
-        // Boundary not painted yet; the next update re-captures.
-        debugPrint('[ctxmenu] $method FAILED: $e');
-      }
+      if (_pendingCaptures.contains(method)) return;
+      _pendingCaptures.add(method);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _pendingCaptures.remove(method);
+        if (!mounted || channel == null || _menuOpen) return;
+        final route = ModalRoute.of(context);
+        if (route != null && !route.isCurrent) return;
+        _captureNow(key, method);
+      });
     });
+  }
+
+  /// The PNG last pushed per method, so an unchanged capture is dropped
+  /// before it reaches the channel.
+  final Map<String, Uint8List> _lastSent = {};
+
+  Future<void> _captureNow(GlobalKey key, String method) async {
+    final render = key.currentContext?.findRenderObject();
+    if (render is! RenderRepaintBoundary) return;
+    final layer = render.debugLayer;
+    if (layer is! OffsetLayer) return;
+    final dpr = MediaQuery.devicePixelRatioOf(context);
+    try {
+      final image = await layer.toImage(
+        Offset.zero & render.size,
+        pixelRatio: dpr,
+      );
+      final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
+      image.dispose();
+      if (bytes == null) {
+        debugPrint('[ctxmenu] $method: encode returned null');
+        return;
+      }
+      // The capture is re-run on every rebuild (a non-const child is a new
+      // widget each time) and almost always paints the same pixels. Comparing
+      // the bytes costs a pass over a few hundred KB; sending them costs the
+      // same over the method channel, plus a decode and a texture on the
+      // native side.
+      final png = bytes.buffer.asUint8List();
+      if (listEquals(_lastSent[method], png)) return;
+      _lastSent[method] = png;
+      await channel?.invokeMethod(method, {
+        'bytes': png,
+        'scale': dpr,
+      });
+      debugPrint('[ctxmenu] $method sent: ${bytes.lengthInBytes}B');
+    } catch (e) {
+      // Nothing to rasterize yet; the next update re-captures.
+      debugPrint('[ctxmenu] $method FAILED: $e');
+    }
   }
 
   @override
