@@ -288,21 +288,8 @@ CupertinoNativeTextField(
 
 #### Keyboard toolbar
 
-`toolbarActions` fills the bar above the keyboard while the field is focused —
+`toolbarActions` fills the bar above the keyboard while this field is focused —
 the row of actions Notes and Numbers put there.
-
-It is the field's real UIKit input accessory (`UITextField.inputAccessoryView`),
-not SwiftUI's `ToolbarItemGroup(placement: .keyboard)`: inside a Flutter
-platform view that placement resolves to nothing, or crashes on the first focus,
-and it offers no control over the bar's material. The accessory makes the
-keyboard taller by the bar's height, so the bar is part of the keyboard's frame
-and moves with it.
-
-**The bar paints nothing, and what shows through it is the app** — the keyboard's
-own material does not extend under the accessory strip. A light keyboard under a
-dark page therefore shows a seam at the bar. One further cost is recorded in
-`docs/native-bugs-analysis.md` §6: the bar is attached when the field takes
-focus, so it lands a frame or two after the keyboard finishes presenting.
 
 ```dart
 CupertinoNativeTextField(
@@ -315,51 +302,48 @@ CupertinoNativeTextField(
 )
 ```
 
-**The widgets are read, not mounted.** The bar lives in the keyboard's own
-window, where Flutter cannot draw, so its contents are built natively: the
-package's views are transcribed straight into SwiftUI — the same lowering
-`CupertinoNativePageScaffold.nativeBody` uses — and each keeps its own
-`onPressed` / `onChanged`. Accepted: `CupertinoNativeButton`,
-`CupertinoNativeSwitch`, `CupertinoNativePicker`, `CupertinoNativeSymbol`,
-`CupertinoNativeGlassContainer`, `Text`, `Spacer`, `SizedBox` (a fixed gap),
-and `CupertinoNativeFlutterView`. Anything else asserts with that
-explanation.
+The bar takes the height of what you give it: wrap the items in a `Padding`
+for room around them.
 
-**The lowering is recursive.** A `Row`, a `Column` or a glass container can
-hold further items, and every level follows the same rule — SwiftUI views
-stay SwiftUI, only Flutter islands cost an engine:
+For the page to show through the bar, set `resizeToAvoidBottomInset: false` on
+the scaffold and pad your scroll content with
+`MediaQuery.viewInsetsOf(context).bottom`.
+
+A glass capsule can hold its own row:
 
 ```dart
 CupertinoNativeTextField(
   toolbarActions: [
-    CupertinoNativeGlassContainer(
-      shape: CupertinoGlassShape.capsule,
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      child: Row(
-        children: [
-          CupertinoNativeButton(onPressed: _bold, child: const Text('B')),
-          const SizedBox(width: 8),
-          CupertinoNativeButton(onPressed: _done, child: const Text('Done')),
-        ],
+    Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+      child: CupertinoNativeGlassContainer(
+        shape: CupertinoGlassShape.capsule,
+        interactive: true,
+        height: 40,
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        child: Row(
+          children: [
+            CupertinoNativeButton(onPressed: _bold, child: const Text('B')),
+            const Spacer(),
+            CupertinoNativeButton(onPressed: _done, child: const Text('Done')),
+          ],
+        ),
       ),
     ),
-    const Spacer(),
   ],
 )
 ```
 
-The container above becomes a real Liquid Glass capsule in the bar, with its
-buttons as real SwiftUI buttons inside the material.
+`onPressed: null` greys a button out, so the chevrons can disable themselves at
+the first and last field. Pass resolved colors —
+`CupertinoColors.label.resolveFrom(context)`, not the dynamic color.
 
-Flutter content goes through `CupertinoNativeFlutterView` — usually written as
-a `CupertinoNativeBodyRoute.island` (see
-[Embedding Flutter in SwiftUI](#embedding-flutter-in-swiftui)) — hosted in its
-own engine: the route is registered in `maybeRun` like a scaffold body. It is
-the expensive item: one view is one isolate, and only it costs one. A row of
-native buttons costs nothing.
-
-It belongs to *this* field's responder: it shows when this field is focused,
-and not for a Flutter `TextField` elsewhere on the page.
+Accepted here: `CupertinoNativeButton`, `CupertinoNativeSwitch`,
+`CupertinoNativePicker`, `CupertinoNativeSymbol`,
+`CupertinoNativeGlassContainer`, `Text`, `Spacer`, `SizedBox`, `Padding`,
+`Row`, `Column`, and `CupertinoNativeFlutterView` for your own Flutter (see
+[Embedding Flutter in SwiftUI](#embedding-flutter-in-swiftui)). Anything else
+asserts.
 
 ### Date Picker
 
