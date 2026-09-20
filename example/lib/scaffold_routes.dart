@@ -6,7 +6,6 @@ import 'pages/profile_tab_page.dart';
 import 'pages/scaffold_bodies.dart';
 import 'pages/search_body.dart';
 import 'pages/search_tab_page.dart';
-import 'pages/system_bar_demo_page.dart';
 import 'pages/settings_tab_page.dart';
 
 /// Route builders for every CupertinoNativePageScaffold body (tab roots and
@@ -21,7 +20,6 @@ Map<String, Widget Function()> scaffoldRoutes() {
     'details': () => const ScaffoldDetailsBody(),
     'searchBody': () => const SearchBody(),
     'newEvent': () => const NewEventSheetBody(),
-    'systemBarBody': () => const SystemBarBody(),
     // Hosted inside a glass container (see LiquidGlassDemoPage).
     'glassNowPlaying': () => const GlassNowPlayingBody(),
     'glassCard': () => const GlassCardBody(),

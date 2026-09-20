@@ -1,15 +1,18 @@
 import Foundation
 
 @available(iOS 26.0, *)
-enum MenuItemType: String, Codable {
+enum MenuItemType: String, Codable, Hashable {
     case action
     case submenu
     case section
     case toggle
 }
 
+/// `Hashable` so that anything holding one stays hashable too — a glass group
+/// item carries a menu, and its own Hashable conformance is what drives the
+/// `ForEach` identity and the morph's trigger.
 @available(iOS 26.0, *)
-struct MenuItemConfig: Codable, Identifiable {
+struct MenuItemConfig: Codable, Identifiable, Hashable {
     var id: String { actionId ?? UUID().uuidString }
     let type: MenuItemType
     let title: String?
