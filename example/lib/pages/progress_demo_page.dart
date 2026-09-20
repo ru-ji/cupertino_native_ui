@@ -3,8 +3,6 @@ import 'dart:async';
 import 'package:flutter/cupertino.dart';
 import 'package:cupertino_widgets/cupertino_widgets.dart';
 
-import '../widgets/settings_ui.dart';
-
 /// [CupertinoNativeProgressIndicator] presented as a Downloads page: a live
 /// determinate download, indeterminate activity, and a storage gauge.
 class ProgressDemoPage extends StatefulWidget {
@@ -40,93 +38,100 @@ class _ProgressDemoPageState extends State<ProgressDemoPage> {
   Widget build(BuildContext context) {
     final percent = (_downloadedMb / _totalMb * 100).round();
 
-    return DemoScaffold(
-      title: 'Progress',
-      children: [
-        SettingsSection(
-          header: 'Downloads',
-          footer:
-              'A determinate native ProgressView driven from Flutter — '
-              'value updates stream to the platform view.',
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          'Xcode 26.pkg',
-                          style: rowTitleStyle(context),
-                        ),
-                      ),
-                      Text(
-                        '${_downloadedMb.round()} of ${_totalMb.round()} MB · '
-                        '$percent%',
-                        style: footnoteStyle(context),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  CupertinoNativeLinearActivityIndicator(
-                    progress: _downloadedMb / _totalMb,
-                  ),
-                ],
-              ),
+    return CupertinoPageScaffold(
+      child: CustomScrollView(
+        slivers: [
+          CupertinoNativeSliverNavigationBar(
+            largeTitle: 'Progress',
+            leading: Navigator.canPop(context)
+                ? CupertinoNativeButton.glass(
+                    borderShape: CupertinoNativeButtonBorderShape.circle,
+                    onPressed: () => Navigator.pop(context),
+                    child: CupertinoSymbolImage.symbol(
+                      CupertinoSymbols.chevronBackward,
+                    ),
+                  )
+                : null,
+          ),
+          SliverPadding(
+            padding: EdgeInsets.only(
+              bottom:
+                  MediaQuery.paddingOf(context).bottom +
+                  MediaQuery.viewInsetsOf(context).bottom +
+                  40,
             ),
-          ],
-        ),
-        CupertinoNativeList(
-          sections: [
-            CupertinoNativeListSection(
-              rowPadding: kSettingsRowPadding,
-              minHeight: kSettingsRowMinHeight,
-              header: 'Activity',
-              footer: 'value: null loops the native indeterminate spinner.',
+            sliver: SliverList.list(
               children: [
-                const CupertinoNativeListTile(
-                  id: 'updates',
-                  title: 'Checking for Updates…',
-                  trailing: CupertinoNativeActivityIndicator(),
+                CupertinoNativeList(
+                  sections: [
+                    CupertinoNativeListSection(
+                      header: 'Downloads',
+                      footer:
+                          'A determinate native ProgressView driven from Flutter — '
+                          'value updates stream to the platform view.',
+                      children: [
+                        CupertinoNativeListTile(
+                          id: 'xcode',
+                          title: 'Xcode 26.pkg',
+                          subtitle:
+                              '${_downloadedMb.round()} of ${_totalMb.round()} MB · '
+                              '$percent%',
+                          trailing: CupertinoNativeLinearActivityIndicator(
+                            progress: _downloadedMb / _totalMb,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
-                const CupertinoNativeListTile(
-                  id: 'photos',
-                  title: 'Syncing Photos',
-                  subtitle: '1,204 items remaining',
-                  trailing: CupertinoNativeActivityIndicator(
-                    color: CupertinoColors.systemPink,
-                  ),
+                CupertinoNativeList(
+                  sections: [
+                    CupertinoNativeListSection(
+                      header: 'Activity',
+                      footer:
+                          'value: null loops the native indeterminate spinner.',
+                      children: [
+                        const CupertinoNativeListTile(
+                          id: 'updates',
+                          title: 'Checking for Updates…',
+                          trailing: CupertinoNativeActivityIndicator(),
+                        ),
+                        const CupertinoNativeListTile(
+                          id: 'photos',
+                          title: 'Syncing Photos',
+                          subtitle: '1,204 items remaining',
+                          trailing: CupertinoNativeActivityIndicator(
+                            color: CupertinoColors.systemPink,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                const CupertinoNativeList(
+                  sections: [
+                    CupertinoNativeListSection(
+                      header: 'Storage',
+                      footer: 'A tinted determinate bar with a native label.',
+                      children: [
+                        CupertinoNativeListTile(
+                          id: 'storage',
+                          title: 'iPhone',
+                          subtitle: '205 GB of 256 GB used',
+                          trailing: CupertinoNativeLinearActivityIndicator(
+                            progress: 205 / 256,
+                            color: CupertinoColors.systemOrange,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ],
             ),
-          ],
-        ),
-        SettingsSection(
-          header: 'Storage',
-          footer: 'A tinted determinate bar with a native label.',
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'iPhone — 205 GB of 256 GB used',
-                    style: footnoteStyle(context),
-                  ),
-                  const SizedBox(height: 8),
-                  const CupertinoNativeLinearActivityIndicator(
-                    progress: 205 / 256,
-                    color: CupertinoColors.systemOrange,
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ],
+          ),
+        ],
+      ),
     );
   }
 }

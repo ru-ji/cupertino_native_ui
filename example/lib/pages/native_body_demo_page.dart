@@ -1,19 +1,19 @@
 import 'package:cupertino_widgets/cupertino_widgets.dart';
 import 'package:flutter/cupertino.dart';
 
-/// A scaffold whose body is **SwiftUI, not Flutter**.
+/// A scaffold whose body is **SwiftUI, not Flutter**: Dart sends a
+/// description and SwiftUI renders it, so every control below is a real
+/// SwiftUI view in the scaffold's own tree, not a platform view.
 ///
-/// Compare with the Native Scaffold demo: there the body is a route in its own
-/// FlutterEngine, so a native control inside it would be a platform view
-/// nested in an already-native hierarchy — Flutter → SwiftUI → FlutterView →
-/// SwiftUI. Here Dart sends a description and SwiftUI renders it, so the
-/// field, the toggle and the button below are real SwiftUI views in the
-/// scaffold's own tree.
+/// The page is a keyboard bench. The scroll holding the notes is set to one of
+/// SwiftUI's `ScrollDismissesKeyboardMode` values — focus a note, then drag
+/// the list:
 ///
-/// The trade is visible in the code: the body is built from
-/// `CupertinoNativeBody.*` descriptions, not from Flutter widgets. Nothing in
-/// it can be an arbitrary Flutter widget — that is the price of removing the
-/// nesting.
+/// * **Drag** (`interactively`) — the keyboard follows the finger and comes
+///   back if the drag is reversed, like Messages.
+/// * **Now** (`immediately`) — it leaves as soon as the scroll starts.
+/// * **Never** — it stays whatever the scroll does.
+/// * **Auto** — the system decides.
 class NativeBodyDemoPage extends StatefulWidget {
   const NativeBodyDemoPage({super.key});
 
@@ -22,11 +22,14 @@ class NativeBodyDemoPage extends StatefulWidget {
 }
 
 class _NativeBodyDemoPageState extends State<NativeBodyDemoPage> {
-  String _name = '';
-  bool _notify = true;
-  double _volume = 0.4;
-  int _style = 0;
-  String _lastAction = 'none';
+  static const _modes = CupertinoNativeScrollDismissKeyboard.values;
+
+  int _mode = 1; // interactively
+  final _notes = <String>['', '', '', '', '', '', '', ''];
+
+  CupertinoNativeScrollDismissKeyboard get _dismiss => _modes[_mode];
+
+  int get _filled => _notes.where((note) => note.trim().isNotEmpty).length;
 
   @override
   Widget build(BuildContext context) {
@@ -34,72 +37,75 @@ class _NativeBodyDemoPageState extends State<NativeBodyDemoPage> {
       child: CupertinoNativePageScaffold(
         scrollEdgeEffect: CupertinoScrollEdgeEffectStyle.soft,
         navigationBar: const CupertinoNativeScaffoldNavigationBar(
-          title: 'Native Body',
-          subtitle: 'Rendered by SwiftUI',
+          title: 'Notes',
+          subtitle: 'SwiftUI body',
           titleDisplayMode: CupertinoNativeToolbarTitleDisplayMode.large,
         ),
         onBodyEvent: _onBodyEvent,
-        nativeBody: CupertinoNativeBody.column(
-          spacing: 18,
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 40),
+        // Body nodes, not list rows: a row's `trailing` is only transcribed on
+        // the standalone list path, so a field put there would be dropped.
+        nativeBody: CupertinoNativeBody.scroll(
+          spacing: 16,
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 40),
+          dismissKeyboard: _dismiss,
           children: [
+            CupertinoNativeBody.segmented(
+              id: 'mode',
+              selectedIndex: _mode,
+              items: [for (final mode in _modes) _shortName(mode)],
+            ),
             CupertinoNativeBody.text(
-              'Every control below is a SwiftUI view in this scaffold, not a '
-              'platform view inside an embedded FlutterEngine.',
+              _explain(_dismiss),
               style: CupertinoNativeTextStyle.footnote,
               color: CupertinoColors.secondaryLabel,
             ),
-            CupertinoNativeBody.text(
-              'Account',
-              style: CupertinoNativeTextStyle.headline,
-            ),
-            CupertinoNativeBody.textField(
-              id: 'name',
-              value: _name,
-              placeholder: 'Your name',
-            ),
-            CupertinoNativeBody.toggle(
-              id: 'notify',
-              label: 'Notifications',
-              value: _notify,
-            ),
-            CupertinoNativeBody.divider(),
-            CupertinoNativeBody.text(
-              'Volume',
-              style: CupertinoNativeTextStyle.headline,
-            ),
-            CupertinoNativeBody.slider(id: 'volume', value: _volume),
-            CupertinoNativeBody.picker(
-              id: 'style',
-              selectedIndex: _style,
-              style: CupertinoNativePickerStyle.segmented,
-              items: const [
-                CupertinoNativePickerItem(title: 'Off'),
-                CupertinoNativePickerItem(title: 'Low'),
-                CupertinoNativePickerItem(title: 'High'),
-              ],
-            ),
-            CupertinoNativeBody.divider(),
-            CupertinoNativeBody.row(
-              spacing: 12,
-              children: [
-                CupertinoNativeBody.symbol(
-                  'bell.badge',
-                  size: 22,
-                  effect: CupertinoNativeSymbolEffect.bounce,
-                  trigger: _style,
+            for (var i = 0; i < _notes.length; i++)
+              CupertinoNativeBody.glass(
+                cornerRadius: 18,
+                interactive: true,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
                 ),
-                CupertinoNativeBody.text(
-                  'name "$_name" · notify $_notify · '
-                  'vol ${_volume.toStringAsFixed(2)} · last $_lastAction',
-                  style: CupertinoNativeTextStyle.caption,
-                  color: CupertinoColors.secondaryLabel,
-                ),
-              ],
+                children: [
+                  CupertinoNativeBody.column(
+                    spacing: 6,
+                    alignment: CrossAxisAlignment.start,
+                    children: [
+                      CupertinoNativeBody.row(
+                        spacing: 8,
+                        children: [
+                          CupertinoNativeBody.symbol(
+                            _notes[i].trim().isEmpty
+                                ? 'circle'
+                                : 'checkmark.circle.fill',
+                            size: 16,
+                          ),
+                          CupertinoNativeBody.text(
+                            'Note ${i + 1}',
+                            style: CupertinoNativeTextStyle.headline,
+                          ),
+                        ],
+                      ),
+                      CupertinoNativeBody.textField(
+                        id: 'note$i',
+                        value: _notes[i],
+                        placeholder: 'Type, then scroll',
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            CupertinoNativeBody.text(
+              _filled == 0
+                  ? 'Focus a note, then drag the list.'
+                  : '$_filled of ${_notes.length} written.',
+              style: CupertinoNativeTextStyle.footnote,
+              color: CupertinoColors.secondaryLabel,
             ),
             CupertinoNativeBody.button(
-              id: 'save',
-              title: 'Save',
+              id: 'clear',
+              title: 'Clear notes',
               style: CupertinoNativeButtonStyle.glassProminent,
               sizeStyle: CupertinoNativeControlSize.large,
               expand: true,
@@ -110,19 +116,36 @@ class _NativeBodyDemoPageState extends State<NativeBodyDemoPage> {
     );
   }
 
+  String _shortName(CupertinoNativeScrollDismissKeyboard mode) =>
+      switch (mode) {
+        CupertinoNativeScrollDismissKeyboard.automatic => 'Auto',
+        CupertinoNativeScrollDismissKeyboard.interactively => 'Drag',
+        CupertinoNativeScrollDismissKeyboard.immediately => 'Now',
+        CupertinoNativeScrollDismissKeyboard.never => 'Never',
+      };
+
+  String _explain(CupertinoNativeScrollDismissKeyboard mode) => switch (mode) {
+    CupertinoNativeScrollDismissKeyboard.automatic =>
+      'automatic — the system decides; a scroll holding a field dismisses '
+          'interactively.',
+    CupertinoNativeScrollDismissKeyboard.interactively =>
+      'interactively — the keyboard follows the drag, and comes back if the '
+          'drag is reversed.',
+    CupertinoNativeScrollDismissKeyboard.immediately =>
+      'immediately — the keyboard leaves as soon as the scroll starts.',
+    CupertinoNativeScrollDismissKeyboard.never =>
+      'never — scrolling leaves the keyboard alone.',
+  };
+
   void _onBodyEvent(String id, Object? value) {
     setState(() {
-      switch (id) {
-        case 'name':
-          _name = value as String? ?? '';
-        case 'notify':
-          _notify = value as bool? ?? false;
-        case 'volume':
-          _volume = (value as num?)?.toDouble() ?? 0;
-        case 'style':
-          _style = (value as num?)?.toInt() ?? 0;
-        case 'save':
-          _lastAction = 'save';
+      if (id == 'mode') {
+        _mode = (value as num?)?.toInt() ?? 0;
+      } else if (id == 'clear') {
+        _notes.fillRange(0, _notes.length, '');
+      } else if (id.startsWith('note')) {
+        final index = int.tryParse(id.substring(4));
+        if (index != null) _notes[index] = value as String? ?? '';
       }
     });
   }

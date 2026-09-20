@@ -604,6 +604,12 @@ class _CupertinoNativeTextFieldState extends State<CupertinoNativeTextField>
   @override
   Widget build(BuildContext context) {
     if (defaultTargetPlatform == TargetPlatform.iOS) {
+      // The paint room is for what a control draws *outside* its box — a
+      // glass rim and its shadow. A plain field draws nothing out there, and
+      // the room is not free: an inflated platform view overlaps its
+      // neighbours, and the engine cuts a new Flutter surface at every
+      // overlap. Measured on a form page, that is the difference between 26
+      // composited layers and a handful.
       final platformView = withPaintRoomFilling(
         wrapForTransition(
           UiKitView(
@@ -618,6 +624,7 @@ class _CupertinoNativeTextFieldState extends State<CupertinoNativeTextField>
             onPlatformViewCreated: _onPlatformViewCreated,
           ),
         ),
+        room: widget.glass != null ? 16 : 0,
       );
 
       final Widget sized;

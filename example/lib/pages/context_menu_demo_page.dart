@@ -1,8 +1,5 @@
-import 'package:flutter/cupertino.dart' show CupertinoColors;
-import 'package:flutter/widgets.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:cupertino_widgets/cupertino_widgets.dart';
-
-import '../widgets/settings_ui.dart';
 
 /// [CupertinoNativeContextMenu] — long-press any card for a real
 /// `UIContextMenuInteraction`: system lift, blur and haptics, with menu items
@@ -71,62 +68,85 @@ class _ContextMenuDemoPageState extends State<ContextMenuDemoPage> {
 
   @override
   Widget build(BuildContext context) {
-    return DemoScaffold(
-      title: 'Context Menu',
-      children: [
-        const SizedBox(height: 20),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Column(
-            children: [
-              for (var i = 0; i < _photos.length; i += 2) ...[
-                Row(
-                  children: [
-                    Expanded(child: _tile(_photos[i], custom: i == 0)),
-                    const SizedBox(width: 12),
-                    Expanded(child: _tile(_photos[i + 1])),
-                  ],
-                ),
-                const SizedBox(height: 12),
-              ],
-            ],
+    return CupertinoPageScaffold(
+      child: CustomScrollView(
+        slivers: [
+          CupertinoNativeSliverNavigationBar(
+            largeTitle: 'Context Menu',
+            leading: Navigator.canPop(context)
+                ? CupertinoNativeButton.glass(
+                    borderShape: CupertinoNativeButtonBorderShape.circle,
+                    onPressed: () => Navigator.pop(context),
+                    child: CupertinoSymbolImage.symbol(
+                      CupertinoSymbols.chevronBackward,
+                    ),
+                  )
+                : null,
           ),
-        ),
-        CupertinoNativeList(
-          sections: [
-            CupertinoNativeListSection(
-              rowPadding: kSettingsRowPadding,
-              minHeight: kSettingsRowMinHeight,
-              header: 'Menu',
-              footer:
-                  'Touch and hold a photo — the system lifts it with the '
-                  'native blur and haptic, and the menu is a real UIMenu. '
-                  '"Sunset ride" shows a custom preview (a different view) '
-                  'while its menu is open.',
+          SliverPadding(
+            padding: EdgeInsets.only(
+              bottom:
+                  MediaQuery.paddingOf(context).bottom +
+                  MediaQuery.viewInsetsOf(context).bottom +
+                  40,
+            ),
+            sliver: SliverList.list(
               children: [
-                CupertinoNativeListTile(
-                  id: 'blur',
-                  title: 'Blur background',
-                  trailing: CupertinoNativeSwitch(
-                    value: _blur,
-                    onChanged: (v) => setState(() => _blur = v),
+                const SizedBox(height: 20),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Column(
+                    children: [
+                      for (var i = 0; i < _photos.length; i += 2) ...[
+                        Row(
+                          children: [
+                            Expanded(child: _tile(_photos[i], custom: i == 0)),
+                            const SizedBox(width: 12),
+                            Expanded(child: _tile(_photos[i + 1])),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                      ],
+                    ],
                   ),
                 ),
-                CupertinoNativeListTile(
-                  id: 'menuOpen',
-                  title: 'Menu open',
-                  additionalInfo: _menuOpen ? 'Yes' : 'No',
-                ),
-                CupertinoNativeListTile(
-                  id: 'lastAction',
-                  title: 'Last action',
-                  additionalInfo: _lastAction ?? 'None',
+                CupertinoNativeList(
+                  sections: [
+                    CupertinoNativeListSection(
+                      header: 'Menu',
+                      footer:
+                          'Touch and hold a photo — the system lifts it with the '
+                          'native blur and haptic, and the menu is a real UIMenu. '
+                          '"Sunset ride" shows a custom preview (a different view) '
+                          'while its menu is open.',
+                      children: [
+                        CupertinoNativeListTile(
+                          id: 'blur',
+                          title: 'Blur background',
+                          trailing: CupertinoNativeSwitch(
+                            value: _blur,
+                            onChanged: (v) => setState(() => _blur = v),
+                          ),
+                        ),
+                        CupertinoNativeListTile(
+                          id: 'menuOpen',
+                          title: 'Menu open',
+                          additionalInfo: _menuOpen ? 'Yes' : 'No',
+                        ),
+                        CupertinoNativeListTile(
+                          id: 'lastAction',
+                          title: 'Last action',
+                          additionalInfo: _lastAction ?? 'None',
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ],
             ),
-          ],
-        ),
-      ],
+          ),
+        ],
+      ),
     );
   }
 
@@ -154,7 +174,10 @@ class _ContextMenuDemoPageState extends State<ContextMenuDemoPage> {
                     color: CupertinoColors.systemBackground.resolveFrom(
                       context,
                     ),
-                    child: Text(title, style: rowTitleStyle(context)),
+                    child: Text(
+                      title,
+                      style: CupertinoTheme.of(context).textTheme.textStyle,
+                    ),
                   ),
                 ],
               ),

@@ -1,7 +1,5 @@
 import 'package:flutter/cupertino.dart';
 
-import '../widgets/settings_ui.dart';
-
 /// Home tab body. Shared between the standalone tab bar demo and the native
 /// scaffold — the scaffold's body engine lives inside a platform view, so this
 /// page (like all tab pages) uses only drawn Flutter widgets.
@@ -26,7 +24,13 @@ class HomeTabPage extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 4),
-          Text('Thursday, July 10', style: footnoteStyle(context)),
+          Text(
+            'Thursday, July 10',
+            style: TextStyle(
+              fontSize: 13,
+              color: CupertinoColors.secondaryLabel.resolveFrom(context),
+            ),
+          ),
           const SizedBox(height: 16),
           const _HomeCard(
             title: 'Native everywhere',
@@ -90,7 +94,7 @@ class _HomeCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 4),
-          Text(subtitle, style: rowTitleStyle(context)),
+          Text(subtitle, style: CupertinoTheme.of(context).textTheme.textStyle),
         ],
       ),
     );

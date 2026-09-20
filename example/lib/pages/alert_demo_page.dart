@@ -1,8 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:cupertino_widgets/cupertino_widgets.dart';
 
-import '../widgets/settings_ui.dart';
-
 /// [CupertinoNativeAlertDialog] presented as tappable settings rows, like the
 /// confirmation flows in Settings.
 class AlertDemoPage extends StatefulWidget {
@@ -19,36 +17,59 @@ class _AlertDemoPageState extends State<AlertDemoPage> {
 
   @override
   Widget build(BuildContext context) {
-    return DemoScaffold(
-      title: 'Alert',
-      children: [
-        CupertinoNativeList(
-          onRowTap: (id) {
-            if (id == 'mobileData') _showMobileData(context);
-            if (id == 'erase') _showErase(context);
-          },
-          sections: [
-            CupertinoNativeListSection(
-              rowPadding: kSettingsRowPadding,
-              minHeight: kSettingsRowMinHeight,
-              header: 'Examples',
-              footer: 'Last choice: $_lastChoice',
-              children: const [
-                CupertinoNativeListTile(
-                  id: 'mobileData',
-                  title: 'Mobile Data Is Off',
-                  showChevron: true,
-                ),
-                CupertinoNativeListTile(
-                  id: 'erase',
-                  title: 'Erase All Content…',
-                  showChevron: true,
+    return CupertinoPageScaffold(
+      child: CustomScrollView(
+        slivers: [
+          CupertinoNativeSliverNavigationBar(
+            largeTitle: 'Alert',
+            leading: Navigator.canPop(context)
+                ? CupertinoNativeButton.glass(
+                    borderShape: CupertinoNativeButtonBorderShape.circle,
+                    onPressed: () => Navigator.pop(context),
+                    child: CupertinoSymbolImage.symbol(
+                      CupertinoSymbols.chevronBackward,
+                    ),
+                  )
+                : null,
+          ),
+          SliverPadding(
+            padding: EdgeInsets.only(
+              bottom:
+                  MediaQuery.paddingOf(context).bottom +
+                  MediaQuery.viewInsetsOf(context).bottom +
+                  40,
+            ),
+            sliver: SliverList.list(
+              children: [
+                CupertinoNativeList(
+                  onRowTap: (id) {
+                    if (id == 'mobileData') _showMobileData(context);
+                    if (id == 'erase') _showErase(context);
+                  },
+                  sections: [
+                    CupertinoNativeListSection(
+                      header: 'Examples',
+                      footer: 'Last choice: $_lastChoice',
+                      children: const [
+                        CupertinoNativeListTile(
+                          id: 'mobileData',
+                          title: 'Mobile Data Is Off',
+                          showChevron: true,
+                        ),
+                        CupertinoNativeListTile(
+                          id: 'erase',
+                          title: 'Erase All Content…',
+                          showChevron: true,
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ],
             ),
-          ],
-        ),
-      ],
+          ),
+        ],
+      ),
     );
   }
 

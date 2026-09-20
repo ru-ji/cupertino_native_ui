@@ -1,8 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:cupertino_widgets/cupertino_widgets.dart';
 
-import '../widgets/settings_ui.dart';
-
 /// Profile tab body — shared with the native scaffold. The rows are native
 /// list cells.
 class ProfileTabPage extends StatelessWidget {
@@ -47,13 +45,17 @@ class ProfileTabPage extends StatelessWidget {
             color: CupertinoColors.label.resolveFrom(context),
           ),
         ),
-        Text('casey@example.com', style: footnoteStyle(context)),
+        Text(
+          'casey@example.com',
+          style: TextStyle(
+            fontSize: 13,
+            color: CupertinoColors.secondaryLabel.resolveFrom(context),
+          ),
+        ),
         const SizedBox(height: 8),
         const CupertinoNativeList(
           sections: [
             CupertinoNativeListSection(
-              rowPadding: kSettingsRowPadding,
-              minHeight: kSettingsRowMinHeight,
               children: [
                 CupertinoNativeListTile(
                   id: 'name',
@@ -73,8 +75,6 @@ class ProfileTabPage extends StatelessWidget {
               ],
             ),
             CupertinoNativeListSection(
-              rowPadding: kSettingsRowPadding,
-              minHeight: kSettingsRowMinHeight,
               children: [
                 CupertinoNativeListTile(
                   id: 'subscription',

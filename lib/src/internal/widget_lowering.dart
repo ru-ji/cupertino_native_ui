@@ -50,6 +50,12 @@ CupertinoNativeBody? lowerWidgetNode(
     case Spacer():
       return CupertinoNativeBody.spacer();
 
+    // A childless SizedBox is a fixed gap. One *with* a child is a sizing
+    // box, and lowering it as a gap silently dropped the child — a 200pt
+    // square where a field was meant to be.
+    case SizedBox(:final child?):
+      return lowerWidgetNode(child, id, callbacks);
+
     case SizedBox(:final width):
       return CupertinoNativeBody.spacer(extent: width);
 
@@ -155,6 +161,16 @@ CupertinoNativeBody? lowerWidgetNode(
       );
 
     case CupertinoNativeTextField():
+      // The bar travels with the field: the native side owns it and puts it
+      // on the transcribed field's own UITextField.
+      final toolbar = widget.toolbarActions.isEmpty
+          ? null
+          : LoweredToolbar(widget.toolbarActions, isDark: false);
+      if (toolbar != null) {
+        for (final entry in toolbar.callbacks.entries) {
+          callbacks['$id.toolbar.${entry.key}'] = entry.value;
+        }
+      }
       final onChanged = widget.onChanged;
       if (onChanged != null) {
         callbacks[id] = (value) {
@@ -169,6 +185,18 @@ CupertinoNativeBody? lowerWidgetNode(
         placeholder: widget.placeholder,
         obscureText: widget.obscureText,
         enabled: widget.enabled,
+        keyboardType: widget.keyboardType,
+        textInputAction: widget.textInputAction,
+        textContentType: widget.textContentType,
+        textCapitalization: widget.textCapitalization,
+        autocorrect: widget.autocorrect,
+        textAlign: widget.textAlign,
+        maxLength: widget.maxLength,
+        clearButtonMode: widget.clearButtonMode,
+        glass: widget.glass,
+        prefix: widget.prefix,
+        suffix: widget.suffix,
+        keyboardToolbar: toolbar?.nodes ?? const [],
       );
 
     case CupertinoNativeSlidingSegmentedControl():

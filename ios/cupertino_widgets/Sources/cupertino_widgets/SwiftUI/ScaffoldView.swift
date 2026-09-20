@@ -108,9 +108,11 @@ struct ScaffoldView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
             .applyScrollEdgeEffect(model.config.scrollEdgeEffect)
-            // Scroll views dismiss the keyboard on scroll by default; a field
-            // in the body keeps it.
-            .scrollDismissesKeyboard(.never)
+            // The body's own choice wins: this outer scroll is the one the
+            // user actually drags, so a `.never` hard-written here silently
+            // overrode `CupertinoNativeBody.scroll(dismissKeyboard:)`.
+            .scrollDismissesKeyboard(
+                model.config.nativeBody?.firstScrollDismissMode ?? .never)
         } else {
             SearchablePageBody(
                 engine: model.rootEngines[rootRoute],

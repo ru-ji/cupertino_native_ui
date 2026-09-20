@@ -14,7 +14,14 @@ enum CupertinoGlassShape { capsule, circle, roundedRect }
 /// Which Liquid Glass material variant to render (SwiftUI `Glass` /
 /// `UIGlassEffect.Style`): [regular] is the standard adaptive glass,
 /// [clear] is the more transparent variant for media-rich backdrops.
-enum CupertinoGlassVariant { regular, clear }
+enum CupertinoGlassVariant {
+  regular,
+  clear,
+
+  /// No material at all: the container is only a group — one platform view
+  /// holding a transcribed tree. See [CupertinoNativeGroup].
+  none,
+}
 
 /// Liquid Glass settings for a control that renders *on* glass rather than
 /// being a glass container itself — currently [CupertinoNativeTextField.glass].

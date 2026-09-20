@@ -3,8 +3,6 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart' show Scaffold, Theme, ThemeMode;
 import 'package:flutter/services.dart' show SystemUiOverlayStyle;
 
-import '../widgets/settings_ui.dart';
-
 import '../app.dart';
 import 'alert_demo_page.dart';
 import 'app_bar_demo_page.dart';
@@ -71,8 +69,6 @@ class HomePage extends StatelessWidget {
                   onRowTap: (id) => _open(context, id),
                   sections: [
                     CupertinoNativeListSection(
-                      rowPadding: kSettingsRowPadding,
-                      minHeight: kSettingsRowMinHeight,
                       header: 'Controls',
                       children: [
                         _row(
@@ -120,8 +116,6 @@ class HomePage extends StatelessWidget {
                       ],
                     ),
                     CupertinoNativeListSection(
-                      rowPadding: kSettingsRowPadding,
-                      minHeight: kSettingsRowMinHeight,
                       header: 'Navigation',
                       children: [
                         _row(
@@ -163,8 +157,6 @@ class HomePage extends StatelessWidget {
                       ],
                     ),
                     CupertinoNativeListSection(
-                      rowPadding: kSettingsRowPadding,
-                      minHeight: kSettingsRowMinHeight,
                       header: 'Views',
                       children: [
                         _row(
@@ -188,8 +180,6 @@ class HomePage extends StatelessWidget {
                       ],
                     ),
                     CupertinoNativeListSection(
-                      rowPadding: kSettingsRowPadding,
-                      minHeight: kSettingsRowMinHeight,
                       header: 'Feedback',
                       footer:
                           'Every control on these pages is a real UIKit/SwiftUI '

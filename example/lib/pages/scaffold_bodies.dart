@@ -1,8 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:cupertino_widgets/cupertino_widgets.dart';
 
-import '../widgets/settings_ui.dart';
-
 /// Body for the scaffold's home tab. Runs in its own FlutterEngine inside the
 /// native ScrollView — scrolling this content collapses the large title and
 /// (with minimizeBehavior) shrinks the tab bar, all natively.
@@ -37,14 +35,17 @@ class ScaffoldHomeBody extends StatelessWidget {
           child: Text(
             'Scroll me — the large title collapses, the tab bar minimizes '
             'and the glass toolbar reacts, all natively.',
-            style: footnoteStyle(context),
+            style: TextStyle(
+              fontSize: 13,
+              color: CupertinoColors.secondaryLabel.resolveFrom(context),
+            ),
           ),
         ),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: PillButton(
-            label: 'Open Now Playing',
-            onTap: () {
+          child: CupertinoNativeButton.filled(
+            child: Text('Open Now Playing'),
+            onPressed: () {
               CupertinoNativePageScaffold.push(
                 CupertinoNativePageScaffoldPage(
                   route: 'details',
@@ -109,13 +110,26 @@ class _AlbumRow extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: rowTitleStyle(context)),
+                Text(
+                  title,
+                  style: CupertinoTheme.of(context).textTheme.textStyle,
+                ),
                 const SizedBox(height: 2),
-                Text(subtitle, style: footnoteStyle(context)),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: CupertinoColors.secondaryLabel.resolveFrom(context),
+                  ),
+                ),
               ],
             ),
           ),
-          const DisclosureChevron(),
+          Icon(
+            CupertinoIcons.chevron_right,
+            size: 14,
+            color: CupertinoColors.tertiaryLabel.resolveFrom(context),
+          ),
         ],
       ),
     );
@@ -159,20 +173,28 @@ class ScaffoldDetailsBody extends StatelessWidget {
               color: CupertinoColors.label.resolveFrom(context),
             ),
           ),
-          Text('Ambient · 40 tracks', style: footnoteStyle(context)),
+          Text(
+            'Ambient · 40 tracks',
+            style: TextStyle(
+              fontSize: 13,
+              color: CupertinoColors.secondaryLabel.resolveFrom(context),
+            ),
+          ),
           const SizedBox(height: 12),
           Text(
             'This page was pushed onto the native SwiftUI NavigationStack: '
             'the slide transition, toolbar morph and back-swipe are all '
             'system behavior.',
             textAlign: TextAlign.center,
-            style: footnoteStyle(context),
+            style: TextStyle(
+              fontSize: 13,
+              color: CupertinoColors.secondaryLabel.resolveFrom(context),
+            ),
           ),
           const SizedBox(height: 20),
-          PillButton(
-            label: 'Pop Back',
-            filled: false,
-            onTap: () => CupertinoNativePageScaffold.pop(),
+          CupertinoNativeButton.glass(
+            child: Text('Pop Back'),
+            onPressed: () => CupertinoNativePageScaffold.pop(),
           ),
         ],
       ),

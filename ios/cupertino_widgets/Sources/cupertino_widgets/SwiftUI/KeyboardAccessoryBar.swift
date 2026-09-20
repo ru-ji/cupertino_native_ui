@@ -147,6 +147,41 @@ final class KeyboardAccessoryBar: NSObject {
     /// Keeps the toolbar's appearance in step with the app theme. Called on
     /// `setBrightness`, which can arrive without a toolbar rebuild (the nodes
     /// themselves did not change), so the retained host's style is re-pinned.
+    /// Keeps the toolbar's appearance in step with the app theme. Called on
+    /// `setBrightness`, which can arrive without a toolbar rebuild (the nodes
+    /// themselves did not change), so the retained host's style is re-pinned.
+    /// Bars live here, one per field id, for the process's life.
+    ///
+    /// They cannot be owned by a SwiftUI view: `init` runs on every
+    /// re-evaluation, so building one there churned a bar per frame — and the
+    /// accessory a focused field pointed at had already been deallocated.
+    /// Measured: two builds and two deallocations per frame, forever.
+    private static var cache: [String: KeyboardAccessoryBar] = [:]
+
+    /// The bar for `key`, built once. `signature` rebuilds it when the items
+    /// themselves changed.
+    static func shared(
+        key: String,
+        signature: String,
+        nodes: [BodyNodeConfig],
+        isDark: Bool,
+        onEvent: @escaping (String, Any?) -> Void
+    ) -> KeyboardAccessoryBar {
+        let cacheKey = "\(key)|\(signature)"
+        if let existing = cache[cacheKey] {
+            existing.applyBrightness(isDark)
+            return existing
+        }
+        let bar = KeyboardAccessoryBar(nodes: nodes, isDark: isDark, onEvent: onEvent)
+        // Drop any older signature for this key: the items changed, and the
+        // old bar is no longer reachable from any field.
+        for staleKey in cache.keys where staleKey.hasPrefix("\(key)|") {
+            cache.removeValue(forKey: staleKey)
+        }
+        cache[cacheKey] = bar
+        return bar
+    }
+
     func applyBrightness(_ isDark: Bool) {
         let style: UIUserInterfaceStyle = isDark ? .dark : .light
         guard contentHost.overrideUserInterfaceStyle != style else { return }

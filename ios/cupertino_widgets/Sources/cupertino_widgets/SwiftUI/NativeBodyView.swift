@@ -37,6 +37,16 @@ final class NativeBodyModel: ObservableObject {
         return model
     }
 
+    /// One store per list node — the rows' models and their keyboard bars.
+    private var listStores: [String: TrailingRowStore] = [:]
+
+    func listStore(for id: String) -> TrailingRowStore {
+        if let existing = listStores[id] { return existing }
+        let store = TrailingRowStore()
+        listStores[id] = store
+        return store
+    }
+
     /// One `TextFieldModel` per field node, so `AdaptiveTextFieldView` behaves
     /// exactly as it does standalone.
     private var fieldModels: [String: TextFieldModel] = [:]
@@ -120,7 +130,10 @@ struct NativeBodyNode: View {
 
     var body: some View {
         content
-            .applyBodyPadding(node.padding)
+            // A scroll insets its *content* instead (see the "scroll" case):
+            // padding the ScrollView itself shrinks the rectangle it clips
+            // to, and a glass node then has nothing to grow into.
+            .applyBodyPadding(node.type == "scroll" ? nil : node.padding)
             .applyBodyExpand(node.expand == true)
     }
 
@@ -142,8 +155,13 @@ struct NativeBodyNode: View {
                 VStack(alignment: horizontalAlignment, spacing: node.spacing.map { CGFloat($0) }) {
                     childViews
                 }
+                // On the content: the ScrollView keeps its full width, so it
+                // clips 20pt further out than the cards it holds.
+                .applyBodyPadding(node.padding)
             }
-            .scrollDismissesKeyboard(.never)
+            // The caller's choice, defaulting to the system's: a scroll that
+            // holds a field dismisses interactively, like Messages.
+            .scrollDismissesKeyboard(node.scroll?.dismissMode ?? .automatic)
         case "padding":
             VStack(spacing: 0) { childViews }
         case "spacer":
@@ -316,6 +334,9 @@ struct NativeBodyNode: View {
         if let config = node.list {
             AdaptiveListView(
                 config: config,
+                // A body's list gets a store of its own, held by the body
+                // model so it outlives the view updates.
+                store: model.listStore(for: node.id ?? "list"),
                 onRowTap: { onEvent(node.id ?? "list", $0) },
                 onToggle: { rowId, value in onEvent("\(node.id ?? "list").\(rowId)", value) },
                 onTrailingEvent: { rowId, itemId, value in
@@ -546,9 +567,10 @@ struct BodyGlassView: View {
                     leading: CGFloat(config.paddingLeft ?? 0),
                     bottom: CGFloat(config.paddingBottom ?? 0),
                     trailing: CGFloat(config.paddingRight ?? 0)))
-            .frame(
-                width: config.width.map { CGFloat($0) },
-                height: config.height.map { CGFloat($0) })
+            // Only when a size was asked for: an unconditional `.frame`
+            // constrains the geometry the glass grows from, even with two
+            // nils.
+            .applyGlassSize(width: config.width, height: config.height)
             .glassEffect(glass, in: shape)
             .contentShape(shape)
             .onTapGesture {
@@ -561,7 +583,10 @@ struct BodyGlassView: View {
     private var glass: Glass {
         var glass: Glass = config.variant == "clear" ? .clear : .regular
         if let argb = config.tint { glass = glass.tint(Color(argb: argb)) }
-        if config.interactive != false { glass = glass.interactive() }
+        // Opt-in, not opt-out: a card that merely holds controls should not
+        // light up when one of them is tapped — the highlight is drawn on the
+        // node's rectangle, so it reads as a clipped block over the card.
+        if config.interactive == true { glass = glass.interactive() }
         return glass
     }
 
@@ -604,6 +629,21 @@ struct BodySegmentedView: View {
             }
             .pickerStyle(.segmented)
             .applySegmentedTint(config.color.map { Color(argb: $0) })
+        }
+    }
+}
+
+@available(iOS 26.0, *)
+extension View {
+    /// The caller's size, or nothing at all — not `.frame(nil, nil)`.
+    @ViewBuilder
+    func applyGlassSize(width: Double?, height: Double?) -> some View {
+        if width == nil && height == nil {
+            self
+        } else {
+            self.frame(
+                width: width.map { CGFloat($0) },
+                height: height.map { CGFloat($0) })
         }
     }
 }

@@ -1,9 +1,5 @@
-import 'package:flutter/cupertino.dart'
-    show CupertinoColors, CupertinoDatePickerMode;
-import 'package:flutter/widgets.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:cupertino_widgets/cupertino_widgets.dart';
-
-import '../widgets/settings_ui.dart';
 
 /// [CupertinoNativeDatePicker] — the compact system picker: a tappable pill
 /// that pops the native calendar / time wheel over the app, exactly like
@@ -22,75 +18,97 @@ class _DatePickerDemoPageState extends State<DatePickerDemoPage> {
 
   @override
   Widget build(BuildContext context) {
-    return DemoScaffold(
-      title: 'Date Picker',
-      children: [
-        CupertinoNativeList(
-          sections: [
-            CupertinoNativeListSection(
-              rowPadding: kSettingsRowPadding,
-              minHeight: kSettingsRowMinHeight,
-              header: 'Event',
-              footer:
-                  'Tap a pill — the calendar overlay is the real '
-                  'UIDatePicker (compact style); picks stream back to Flutter.',
+    return CupertinoPageScaffold(
+      child: CustomScrollView(
+        slivers: [
+          CupertinoNativeSliverNavigationBar(
+            largeTitle: 'Date Picker',
+            leading: Navigator.canPop(context)
+                ? CupertinoNativeButton.glass(
+                    borderShape: CupertinoNativeButtonBorderShape.circle,
+                    onPressed: () => Navigator.pop(context),
+                    child: CupertinoSymbolImage.symbol(
+                      CupertinoSymbols.chevronBackward,
+                    ),
+                  )
+                : null,
+          ),
+          SliverPadding(
+            padding: EdgeInsets.only(
+              bottom:
+                  MediaQuery.paddingOf(context).bottom +
+                  MediaQuery.viewInsetsOf(context).bottom +
+                  40,
+            ),
+            sliver: SliverList.list(
               children: [
-                CupertinoNativeListTile(
-                  id: 'starts',
-                  title: 'Starts',
-                  trailing: CupertinoNativeDatePicker(
-                    initialDateTime: _starts,
-                    mode: CupertinoDatePickerMode.dateAndTime,
-                    onDateTimeChanged: (d) => setState(() => _starts = d),
-                  ),
-                ),
-                CupertinoNativeListTile(
-                  id: 'ends',
-                  title: 'Ends',
-                  trailing: CupertinoNativeDatePicker(
-                    initialDateTime: _ends,
-                    mode: CupertinoDatePickerMode.dateAndTime,
-                    minimumDate: _starts,
-                    onDateTimeChanged: (d) => setState(() => _ends = d),
-                  ),
+                CupertinoNativeList(
+                  sections: [
+                    CupertinoNativeListSection(
+                      header: 'Event',
+                      footer:
+                          'Tap a pill — the calendar overlay is the real '
+                          'UIDatePicker (compact style); picks stream back to Flutter.',
+                      children: [
+                        CupertinoNativeListTile(
+                          id: 'starts',
+                          title: 'Starts',
+                          trailing: CupertinoNativeDatePicker(
+                            initialDateTime: _starts,
+                            mode: CupertinoDatePickerMode.dateAndTime,
+                            onDateTimeChanged: (d) =>
+                                setState(() => _starts = d),
+                          ),
+                        ),
+                        CupertinoNativeListTile(
+                          id: 'ends',
+                          title: 'Ends',
+                          trailing: CupertinoNativeDatePicker(
+                            initialDateTime: _ends,
+                            mode: CupertinoDatePickerMode.dateAndTime,
+                            minimumDate: _starts,
+                            onDateTimeChanged: (d) => setState(() => _ends = d),
+                          ),
+                        ),
+                      ],
+                    ),
+                    CupertinoNativeListSection(
+                      header: 'Alarm',
+                      footer:
+                          'time mode shows only the hour wheel; tint colors the '
+                          'selection.',
+                      children: [
+                        CupertinoNativeListTile(
+                          id: 'alarm',
+                          title: 'Wake Up',
+                          trailing: CupertinoNativeDatePicker(
+                            initialDateTime: _alarm,
+                            mode: CupertinoDatePickerMode.time,
+                            activeColor: CupertinoColors.systemOrange,
+                            onDateTimeChanged: (d) =>
+                                setState(() => _alarm = d),
+                          ),
+                        ),
+                      ],
+                    ),
+                    CupertinoNativeListSection(
+                      header: 'Summary',
+                      children: [
+                        CupertinoNativeListTile(
+                          id: 'duration',
+                          title: 'Duration',
+                          additionalInfo:
+                              '${_ends.difference(_starts).inMinutes} min',
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ],
             ),
-            CupertinoNativeListSection(
-              rowPadding: kSettingsRowPadding,
-              minHeight: kSettingsRowMinHeight,
-              header: 'Alarm',
-              footer:
-                  'time mode shows only the hour wheel; tint colors the '
-                  'selection.',
-              children: [
-                CupertinoNativeListTile(
-                  id: 'alarm',
-                  title: 'Wake Up',
-                  trailing: CupertinoNativeDatePicker(
-                    initialDateTime: _alarm,
-                    mode: CupertinoDatePickerMode.time,
-                    activeColor: CupertinoColors.systemOrange,
-                    onDateTimeChanged: (d) => setState(() => _alarm = d),
-                  ),
-                ),
-              ],
-            ),
-            CupertinoNativeListSection(
-              rowPadding: kSettingsRowPadding,
-              minHeight: kSettingsRowMinHeight,
-              header: 'Summary',
-              children: [
-                CupertinoNativeListTile(
-                  id: 'duration',
-                  title: 'Duration',
-                  additionalInfo: '${_ends.difference(_starts).inMinutes} min',
-                ),
-              ],
-            ),
-          ],
-        ),
-      ],
+          ),
+        ],
+      ),
     );
   }
 }

@@ -112,8 +112,12 @@ class NativeTextFieldView: NativeHostingView {
     private func setupSwiftUI() {
         // A text field fills the box Flutter gives it, inset by the 16pt paint room
         // (`withPaintRoomFilling`) so its glass rim and shadow stay inside the view.
-        attach(AnyView(content)) { host, container in
-            let room: CGFloat = 16
+        attach(AnyView(content)) { [weak self] host, container in
+            // Must match Dart's `withPaintRoomFilling(room:)`: only a glass
+            // field is given room outside its box, because an inflated
+            // platform view overlaps its neighbours and costs a composited
+            // layer at every overlap.
+            let room: CGFloat = self?.model.config.glass == true ? 16 : 0
             let insets = [
                 host.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: room),
                 host.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -room),

@@ -260,8 +260,15 @@ struct AdaptiveLiquidGlassView: View {
     /// The glass and its content: the hosted Flutter view or the native icon,
     /// with `glassEffect` applied to it directly.
     @available(iOS 26.0, *)
+    @ViewBuilder
     private var glassSurface: some View {
-        content.glassEffect(glass, in: glassShape)
+        // `variant == "none"` is the plain group: the same transcribed tree in
+        // the same single platform view, with no material painted over it.
+        if config.variant == "none" {
+            content
+        } else {
+            content.glassEffect(glass, in: glassShape)
+        }
     }
 
     /// What the glass wraps: the hosted Flutter view, the native icon, or Apple's

@@ -1,3 +1,7 @@
+import 'package:flutter/cupertino.dart'
+    show CupertinoDynamicColor, OverlayVisibilityMode;
+import 'package:flutter/services.dart'
+    show TextCapitalization, TextInputAction, TextInputType;
 import 'package:flutter/widgets.dart';
 
 import 'cupertino_native_glass_container.dart';
@@ -114,11 +118,16 @@ class CupertinoNativeBody {
     required List<CupertinoNativeBody> children,
     double? spacing,
     EdgeInsets? padding,
+    CupertinoNativeScrollDismissKeyboard dismissKeyboard =
+        CupertinoNativeScrollDismissKeyboard.automatic,
   }) : this._(
          type: 'scroll',
          children: children,
          spacing: spacing,
          padding: padding,
+         payload: {
+           'scroll': {'dismissKeyboard': dismissKeyboard.name},
+         },
        );
 
   /// Flexible space, or a fixed gap when [extent] is given.
@@ -203,6 +212,18 @@ class CupertinoNativeBody {
     bool obscureText = false,
     bool enabled = true,
     EdgeInsets? padding,
+    TextInputType? keyboardType,
+    TextInputAction? textInputAction,
+    String? textContentType,
+    TextCapitalization? textCapitalization,
+    bool? autocorrect,
+    TextAlign? textAlign,
+    int? maxLength,
+    OverlayVisibilityMode? clearButtonMode,
+    CupertinoGlass? glass,
+    CupertinoNativeIcon? prefix,
+    CupertinoNativeIcon? suffix,
+    List<Map<String, dynamic>> keyboardToolbar = const [],
   }) : this._(
          type: 'textField',
          id: id,
@@ -213,9 +234,44 @@ class CupertinoNativeBody {
              'placeholder': placeholder,
              'obscureText': obscureText,
              'enabled': enabled,
+             // The same names `CupertinoNativeTextField` sends, so a field
+             // transcribed into a list row behaves like a standalone one.
+             'keyboardType': _keyboardTypeName(keyboardType),
+             'textInputAction': textInputAction?.name,
+             'textContentType': textContentType,
+             'textCapitalization': textCapitalization?.name,
+             'autocorrect': autocorrect,
+             'textAlign': textAlign?.name,
+             'maxLength': maxLength,
+             'clearButtonMode': clearButtonMode?.name,
+             // The glass a standalone field sends, under the same names, so a
+             // transcribed field can wear it too.
+             'glass': glass != null,
+             'glassCornerRadius': glass?.cornerRadius ?? 16,
+             'glassVariant':
+                 (glass?.variant ?? CupertinoGlassVariant.regular).name,
+             'glassInteractive': glass?.interactive ?? true,
+             'glassTint': glass?.tint,
+             'prefixIcon': prefix,
+             'suffixIcon': suffix,
+             // Already lowered by the caller, with its callbacks.
+             'keyboardToolbar': keyboardToolbar,
            },
          },
        );
+
+  /// `TextInputType` has no stable name; map the ones the native side knows.
+  static String? _keyboardTypeName(TextInputType? type) {
+    if (type == null) return null;
+    if (type == TextInputType.emailAddress) return 'emailAddress';
+    if (type == TextInputType.url) return 'url';
+    if (type == TextInputType.phone) return 'phone';
+    if (type == TextInputType.number) return 'number';
+    if (type == TextInputType.datetime) return 'datetime';
+    if (type == TextInputType.name) return 'name';
+    if (type == TextInputType.visiblePassword) return 'visiblePassword';
+    return 'text';
+  }
 
   /// A `Toggle`, reporting `(id, bool)`.
   CupertinoNativeBody.toggle({
@@ -556,6 +612,14 @@ class CupertinoNativeBody {
   }
 
   static Object? _lower(Object? value, bool isDark) {
+    // A `CupertinoDynamicColor` carries both variants; sending
+    // `toARGB32()` blindly ships the light one, which is how a secondary
+    // label ended up dark grey on a dark page. The tree already knows the
+    // app's brightness, so resolve it here rather than asking every caller
+    // to remember `resolveFrom(context)`.
+    if (value is CupertinoDynamicColor) {
+      return (isDark ? value.darkColor : value.color).toARGB32();
+    }
     if (value is Color) return value.toARGB32();
     if (value is FontWeight) return (value.value ~/ 100) - 1;
     if (value is CupertinoNativeIcon) return value.toMap();
@@ -575,6 +639,24 @@ class CupertinoNativeBody {
 }
 
 /// SwiftUI's built-in text styles, for [CupertinoNativeBody.text].
+/// How a scroll dismisses the keyboard, mirroring SwiftUI's
+/// `ScrollDismissesKeyboardMode`.
+enum CupertinoNativeScrollDismissKeyboard {
+  /// The system's choice for the content: interactive for a scroll that holds
+  /// a text field, immediate otherwise.
+  automatic,
+
+  /// The keyboard follows the drag, and comes back if the drag is reversed —
+  /// Messages' behaviour.
+  interactively,
+
+  /// The keyboard dismisses as soon as the scroll starts.
+  immediately,
+
+  /// Scrolling never dismisses the keyboard.
+  never,
+}
+
 enum CupertinoNativeTextStyle {
   largeTitle,
   title,
