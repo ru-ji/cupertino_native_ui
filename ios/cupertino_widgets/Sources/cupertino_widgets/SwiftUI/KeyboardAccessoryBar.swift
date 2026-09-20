@@ -18,9 +18,10 @@ import UIKit
 /// the field types SwiftUI's `TextField` is backed by) with a transparent
 /// accessory view. UIKit gives the accessory its own strip above the keyboard,
 /// so the bar lands inside the keyboard's own frame — it makes the keyboard
-/// taller rather than floating over it — and a bar that paints nothing draws no
-/// slab where the SwiftUI placement drew one. (What shows through that strip is
-/// the app, not the keyboard's material — see [KeyboardInputView].)
+/// taller rather than floating over it — and the bar draws no slab of its own
+/// where the SwiftUI placement drew one. The strip gets the keyboard's chrome
+/// material instead, so nothing of the page shows through it; see
+/// [KeyboardInputView].
 ///
 /// ## What the first cut got wrong
 ///
@@ -201,24 +202,33 @@ final class KeyboardAccessoryBar: NSObject {
 /// with `.default` style, and with no style override at all. A plain view is
 /// what the keyboard actually places.
 ///
-/// The bar paints nothing of its own, and that is the whole point: the opaque
-/// slab the SwiftUI `.keyboard` placement drew is what this replaces.
+/// ## The backdrop
 ///
-/// What shows through is **not** the keyboard's material, and it is worth being
-/// precise about that. UIKit places the accessory in its own strip above the
-/// keyboard, and the keyboard's backdrop does not extend under it — measured on
-/// a red page, the strip behind the bar came back red while the keyboard's own
-/// suggestion row stayed grey. So a transparent bar shows the app behind it,
-/// which is what "truly transparent" means here, and it also means a light
-/// keyboard under a dark page will show a seam at the bar. Painting a material
-/// (a `UIVisualEffectView` blur) instead is the fix for that, and it is a
-/// deliberate non-goal for now.
+/// UIKit places the accessory in its own strip above the keyboard, and the
+/// keyboard's own backdrop does not extend under it — measured on a red page,
+/// the strip behind the bar came back red while the keyboard's suggestion row
+/// stayed grey. So a bar that paints nothing shows the app through itself,
+/// which reads as a hole punched between the page and the keyboard, and it is
+/// worst exactly where this bar is used: a `CupertinoNativeGlassContainer` in
+/// the toolbar refracts the scrolling page straight through that gap.
+///
+/// The strip is therefore given the keyboard's own chrome material —
+/// `.systemChromeMaterial`, the effect UIKit uses for keyboard chrome — so it
+/// follows the keyboard's light/dark rather than a colour guessed here. It sits
+/// behind the content and takes no touches, so the toolbar's buttons keep every
+/// tap. The bar itself stays non-opaque: the material is the background, not a
+/// slab painted over it.
 @available(iOS 26.0, *)
 final class KeyboardInputView: UIView {
     private let barHeight: CGFloat
 
+    /// The keyboard-chrome backdrop the SwiftUI content floats on. Behind
+    /// everything, and inert.
+    private let backdrop: UIVisualEffectView
+
     init(height: CGFloat) {
         barHeight = height
+        backdrop = UIVisualEffectView(effect: UIBlurEffect(style: .systemChromeMaterial))
         // A *real* width, not `UIView.noIntrinsicMetric`: `UIPeripheralHost`
         // reads the accessory's size from this frame, and the first version
         // handed it -1 — which the keyboard installed as `frame = (-1 0; 1 48)`,
@@ -228,10 +238,17 @@ final class KeyboardInputView: UIView {
         super.init(frame: CGRect(x: 0, y: 0, width: Self.startingWidth, height: height))
         // `.flexibleWidth` so the stretch above actually happens.
         autoresizingMask = [.flexibleWidth]
-        // Never opaque: the bar itself paints nothing, the keyboard material
-        // does, and the SwiftUI content floats on it.
+        // The bar paints nothing itself — the material below it does, and the
+        // SwiftUI content floats on that.
         isOpaque = false
         backgroundColor = .clear
+
+        backdrop.frame = bounds
+        backdrop.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        // Inert: the buttons above it must receive their taps.
+        backdrop.isUserInteractionEnabled = false
+        // At the back, before the hosted SwiftUI content is added on top.
+        insertSubview(backdrop, at: 0)
     }
 
     @available(*, unavailable)

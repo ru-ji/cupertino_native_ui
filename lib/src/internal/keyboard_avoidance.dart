@@ -91,3 +91,27 @@ double keyboardCoverOfViewport(BuildContext context) {
   final keyboardTop = MediaQuery.sizeOf(context).height - inset;
   return (viewportBottom - keyboardTop).clamp(0.0, inset);
 }
+
+/// A row's rectangle, measured in window coordinates, moved into the frame of
+/// the platform view that contains it — the space [RenderBox.showOnScreen]
+/// expects.
+///
+/// **Convert once, when the row reports focus, and keep the result.** The
+/// reveal runs on every rising metrics tick of the keyboard's animation, and
+/// the page scrolls as it goes. Both the row and the platform view move up
+/// together, so their difference is what stays put: re-subtracting the view's
+/// *current* position from a row captured earlier asks for a little more
+/// travel on each tick than the last, and the list walks off the top of the
+/// screen — taking the field's window with it, which is what closes the
+/// keyboard mid-animation. See `keyboard_avoidance_test.dart`.
+Rect rowInViewCoordinates({
+  required Rect rowInWindow,
+  required Rect viewInWindow,
+}) {
+  return Rect.fromLTWH(
+    0,
+    rowInWindow.top - viewInWindow.top,
+    0,
+    rowInWindow.height,
+  );
+}

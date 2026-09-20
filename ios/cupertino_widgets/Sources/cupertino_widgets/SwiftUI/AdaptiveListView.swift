@@ -339,4 +339,15 @@ final class TrailingRowStore {
             attachAccessory(child, rowId: rowId, model: model, onEvent: onEvent)
         }
     }
+
+    /// Puts the responder back on the field `key` names, `"rowId.fieldId"`.
+    ///
+    /// The row's model is only ever created here, so a field that was focused
+    /// before the platform view left the window already has one — this just
+    /// bumps its focus command. See `NativeListView.refocusTranscribedField`.
+    func refocus(key: String) {
+        let parts = key.split(separator: ".", maxSplits: 1)
+        guard parts.count == 2, let model = models[String(parts[0])] else { return }
+        model.refocusField(id: String(parts[1]))
+    }
 }
