@@ -10,6 +10,7 @@ import 'button_demo_page.dart';
 import 'context_menu_demo_page.dart';
 import 'date_picker_demo_page.dart';
 import 'effects_demo_page.dart';
+import 'glass_transition_demo_page.dart';
 import 'liquid_glass_demo_page.dart';
 import 'native_body_demo_page.dart';
 import 'native_list_form_demo_page.dart';
@@ -240,6 +241,7 @@ class HomePage extends StatelessWidget {
       'navigationBar' => const AppBarDemoPage(),
       'listForm' => const NativeListFormDemoPage(),
       'liquidGlass' => const LiquidGlassDemoPage(),
+      'glassTransitions' => const GlassTransitionDemoPage(),
       'effects' => const EffectsDemoPage(),
       'alert' => const AlertDemoPage(),
       'progress' => const ProgressDemoPage(),

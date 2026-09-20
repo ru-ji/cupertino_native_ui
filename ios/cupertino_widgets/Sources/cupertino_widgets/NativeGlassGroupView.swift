@@ -109,8 +109,9 @@ class NativeGlassGroupView: NativeHostingView {
 @available(iOS 26.0, *)
 final class GlassGroupModel: ObservableObject {
     @Published var config = GlassGroupConfig(
-        items: [], spacing: nil, variant: nil, tint: nil, interactive: nil,
-        vertical: nil, cornerRadius: nil, isDark: nil, transition: nil)
+        items: [], spacing: nil, mergeDistance: nil, variant: nil, tint: nil,
+        interactive: nil, vertical: nil, cornerRadius: nil, isDark: nil,
+        transition: nil)
 }
 
 /// iOS 16 is the floor: `AnyShape` is what lets one item be a circle and its
@@ -132,11 +133,17 @@ struct AdaptiveGlassGroupView: View {
     /// group" mode.
     private var sharesOneGlass: Bool { spacing <= 0 }
 
-    /// What the container is told. A shared glass states its union outright,
-    /// so it needs no radius and keeps the container's default — which is what
-    /// the union branch passed before. Only a group that merges by proximity
-    /// has to hand its spacing over.
-    private var containerSpacing: CGFloat? { sharesOneGlass ? nil : spacing }
+    /// What the container is told — the radius within which two glasses blend,
+    /// which is a different question from the gap they are laid out with.
+    ///
+    /// `mergeDistance` answers it outright. Without one, a shared glass needs
+    /// no radius (the union is stated, not inferred) and keeps the container's
+    /// default, exactly as the union branch passed before; anything else
+    /// inherits the gap, which is what this widget has always done.
+    private var containerSpacing: CGFloat? {
+        if let d = c.mergeDistance { return CGFloat(d) }
+        return sharesOneGlass ? nil : spacing
+    }
 
     /// How far apart the items sit. A shared glass keeps the 11pt of a toolbar
     /// group; otherwise the gap is the spacing the caller asked for.
@@ -262,6 +269,12 @@ struct AdaptiveGlassGroupView: View {
         }
     }
 
+    /// How many items share this item's union id. One means it stands alone.
+    private func unionSize(of item: GlassGroupItemConfig) -> Int {
+        let id = unionId(for: item)
+        return c.items.filter { unionId(for: $0) == id }.count
+    }
+
     private func shape(for item: GlassGroupItemConfig) -> AnyShape {
         // `glassEffectUnion` only combines effects that share a shape, so a
         // shared glass has to give every item the same one.
@@ -272,7 +285,21 @@ struct AdaptiveGlassGroupView: View {
             return AnyShape(
                 RoundedRectangle(
                     cornerRadius: CGFloat(c.cornerRadius ?? 16), style: .continuous))
-        default: return AnyShape(Circle())
+        default:
+            // A circle is *inscribed* in whatever frame it is handed. Alone,
+            // that frame is the item's own 44pt box and it looks right.
+            // Unioned, the frame is the union's bounding box — and a circle
+            // inscribed in a 108x44 box is a 44pt circle, so the union
+            // collapses back to one item's worth of glass sitting in the
+            // middle with the content hanging outside it. Measured, not
+            // reasoned: see docs/glass-transitions.md.
+            //
+            // `Capsule` fills its frame instead, and is the shape SwiftUI's
+            // own `glassEffect()` defaults to — which is why Apple's union
+            // examples work and a circle override does not.
+            return unionSize(of: item) > 1
+                ? AnyShape(Capsule())
+                : AnyShape(Circle())
         }
     }
 }

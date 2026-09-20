@@ -34,11 +34,18 @@ struct GlassGroupItemConfig: Codable, Hashable, Identifiable {
 @available(iOS 26.0, *)
 struct GlassGroupConfig: Codable {
     let items: [GlassGroupItemConfig]
-    /// Distance between the glasses AND the radius within which the container
-    /// lets them merge — one number, because in SwiftUI it is one number:
-    /// `GlassEffectContainer(spacing:)` decides when two shapes are close
-    /// enough to become one.
+    /// Distance between the glasses, and — unless `mergeDistance` says
+    /// otherwise — the radius within which the container lets them merge.
+    /// 0 or less is the old "one shared glass" mode.
     let spacing: Double?
+    /// How close two glasses have to be before the *container* blends them,
+    /// which is not the same question as how far apart they are laid out.
+    ///
+    /// SwiftUI takes both — the container's `spacing` is the radius, the
+    /// stack's own spacing is the gap — and this widget used to pass one
+    /// number for both, so the radius could never be set below the gap and a
+    /// union could not be tested on its own. nil = the gap, the old behaviour.
+    let mergeDistance: Double?
     /// "regular" | "clear"; nil = regular.
     let variant: String?
     /// ARGB tint mixed into every glass in the group.
