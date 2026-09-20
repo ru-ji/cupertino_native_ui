@@ -17,6 +17,16 @@ struct GlassGroupItemConfig: Codable, Hashable, Identifiable {
     let width: Double?
     let height: Double?
     let enabled: Bool?
+    /// `false` keeps the item's slot in the layout but gives it no glass, so a
+    /// glass can materialise in or out without the group's box changing size.
+    /// nil = true.
+    let glassVisible: Bool?
+    /// Joins this glass to every other item carrying the same id, making them
+    /// one shape (`glassEffectUnion`). nil = the item's own `actionId`, i.e.
+    /// united with nothing.
+    let unionId: String?
+    /// "matchedGeometry" | "materialize" | "identity"; nil = the group's.
+    let transition: String?
 
     var id: String { actionId }
 }
@@ -40,4 +50,6 @@ struct GlassGroupConfig: Codable {
     /// Corner radius for `roundedRect` items; nil = 16.
     let cornerRadius: Double?
     let isDark: Bool?
+    /// Default for every item that does not state its own; nil = matchedGeometry.
+    let transition: String?
 }

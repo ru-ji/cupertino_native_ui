@@ -14,10 +14,68 @@ class LiquidGlassDemoPage extends StatefulWidget {
 
 class _LiquidGlassDemoPageState extends State<LiquidGlassDemoPage> {
   static const _tints = ['None', 'Blue', 'Pink'];
+  static const _transitions = [
+    CupertinoGlassTransition.matchedGeometry,
+    CupertinoGlassTransition.materialize,
+    CupertinoGlassTransition.identity,
+  ];
+  static const _transitionLabels = ['Match', 'Materialize', 'None'];
+
   int _tintIndex = 0;
   bool _interactive = true;
   bool _clear = false;
   bool? _supported;
+
+  _GlassCase _glassCase = _GlassCase.appear;
+  CupertinoGlassTransition _transition =
+      CupertinoGlassTransition.matchedGeometry;
+  bool _glassOn = true;
+
+  /// The items of the demo group, for the case currently selected.
+  ///
+  /// The three cases differ only in *what changes* between one config and the
+  /// next, which is the whole point: the transition is chosen by the shape of
+  /// the change, not by the widget.
+  List<CupertinoNativeGlassGroupItem> get _glassItems {
+    switch (_glassCase) {
+      case _GlassCase.appear:
+        // 0 → 1. The item never leaves the list — it only loses its glass — so
+        // the group's box holds still while the material arrives.
+        return [
+          CupertinoNativeGlassGroupItem(
+            actionId: 'appear',
+            glassVisible: _glassOn,
+            icon: CupertinoNativeIcon.named('sparkles'),
+          ),
+        ];
+      case _GlassCase.swap:
+        // 1 → 1. A new actionId is a new glass: SwiftUI removes one and inserts
+        // the other in the same place, so there is no geometry to match.
+        return [
+          CupertinoNativeGlassGroupItem(
+            actionId: _glassOn ? 'swap.undo' : 'swap.redo',
+            icon: CupertinoNativeIcon.named(
+              _glassOn ? 'arrow.uturn.backward' : 'arrow.uturn.forward',
+            ),
+          ),
+        ];
+      case _GlassCase.merge:
+        // 2 → 1 and 1 → 2. The actionIds never change; only the union id does,
+        // which is what takes the two glasses into and out of one shape.
+        return [
+          CupertinoNativeGlassGroupItem(
+            actionId: 'merge.back',
+            unionId: _glassOn ? 'pair' : null,
+            icon: CupertinoNativeIcon.named('arrow.uturn.backward'),
+          ),
+          CupertinoNativeGlassGroupItem(
+            actionId: 'merge.forward',
+            unionId: _glassOn ? 'pair' : null,
+            icon: CupertinoNativeIcon.named('arrow.uturn.forward'),
+          ),
+        ];
+    }
+  }
 
   @override
   void initState() {
@@ -111,30 +169,23 @@ class _LiquidGlassDemoPageState extends State<LiquidGlassDemoPage> {
                           route: 'glassNowPlaying',
                         ),
                       ),
-                      // Two glass buttons merged into one capsule, like a toolbar group.
+                      // The group the transitions are demonstrated on. Its
+                      // whole state is three values: which change, how it
+                      // animates, and which way round it is.
                       Positioned(
                         top: 20,
                         left: 20,
                         child: CupertinoNativeGlassGroup(
-                          spacing: 0,
+                          // 0 is the shorthand for "one shared glass". The
+                          // merge case states its union per item instead, so it
+                          // asks for a real gap.
+                          spacing: _glassCase == _GlassCase.merge ? 4 : 0,
+                          transition: _transition,
                           tint: _tint,
                           clear: _clear,
                           interactive: _interactive,
                           onAction: (_) {},
-                          items: [
-                            CupertinoNativeGlassGroupItem(
-                              actionId: 'undo',
-                              icon: CupertinoNativeIcon.named(
-                                'arrow.uturn.backward',
-                              ),
-                            ),
-                            CupertinoNativeGlassGroupItem(
-                              actionId: 'redo',
-                              icon: CupertinoNativeIcon.named(
-                                'arrow.uturn.forward',
-                              ),
-                            ),
-                          ],
+                          items: _glassItems,
                         ),
                       ),
                       // A pressable glass circle — onPressed makes the container a
@@ -213,6 +264,71 @@ class _LiquidGlassDemoPageState extends State<LiquidGlassDemoPage> {
                         ),
                       ],
                     ),
+                    CupertinoNativeListSection(
+                      header: 'Glass transitions',
+                      footer:
+                          'The group in the artwork above is driven by these '
+                          'three controls. Appear is 0 → 1: a glass arrives '
+                          'where there was nothing, keeping its slot so the box '
+                          'does not move under it. Swap is 1 → 1: one glass '
+                          'replaced by another in the same place, with no '
+                          'geometry to match. Merge is 1 ⇄ 2: two glasses taken '
+                          'into and out of one shared shape. Match is the '
+                          'default and is what makes a merge travel; '
+                          'Materialize is the one for a glass arriving or '
+                          'leaving on its own.',
+                      children: [
+                        CupertinoNativeListTile(
+                          id: 'glassCase',
+                          title: 'Change',
+                          subtitle: _glassCase.arrow,
+                          trailing:
+                              CupertinoNativeSlidingSegmentedControl<int>.menu(
+                                children: {
+                                  for (final (i, c) in _GlassCase.values.indexed)
+                                    i: Text(c.label),
+                                },
+                                groupValue: _glassCase.index,
+                                onValueChanged: (v) => setState(() {
+                                  _glassCase = _GlassCase.values[v!];
+                                  _glassOn = true;
+                                }),
+                              ),
+                        ),
+                        CupertinoNativeListTile(
+                          id: 'glassTransition',
+                          title: 'Transition',
+                          trailing:
+                              CupertinoNativeSlidingSegmentedControl<int>.menu(
+                                children: {
+                                  for (final (i, label)
+                                      in _transitionLabels.indexed)
+                                    i: Text(label),
+                                },
+                                groupValue: _transitions.indexOf(_transition),
+                                onValueChanged: (v) => setState(
+                                  () => _transition = _transitions[v!],
+                                ),
+                              ),
+                        ),
+                        CupertinoNativeListTile(
+                          id: 'glassOn',
+                          title: _glassOn ? 'Present' : 'Absent',
+                          subtitle: switch (_glassCase) {
+                            _GlassCase.appear =>
+                              'Flip to materialise the glass in and out',
+                            _GlassCase.swap =>
+                              'Flip to replace the glass with its twin',
+                            _GlassCase.merge =>
+                              'Flip to unite the two glasses, and part them',
+                          },
+                          trailing: CupertinoNativeSwitch(
+                            value: _glassOn,
+                            onChanged: (v) => setState(() => _glassOn = v),
+                          ),
+                        ),
+                      ],
+                    ),
                   ],
                 ),
               ],
@@ -222,6 +338,26 @@ class _LiquidGlassDemoPageState extends State<LiquidGlassDemoPage> {
       ),
     );
   }
+}
+
+/// The changes a glass group can be asked to make, as the demo drives them.
+///
+/// Four cases, three knobs: 0 → 1 and 1 → 0 are one, and 1 → 2 and 2 → 1 are
+/// another, because each pair changes the same thing.
+enum _GlassCase {
+  /// 0 → 1 and 1 → 0 — a glass arrives where there was nothing, and leaves.
+  appear('Appear', '0 → 1'),
+
+  /// 1 → 1 — one glass replaced by another, in the same place.
+  swap('Swap', '1 → 1'),
+
+  /// 1 → 2 and 2 → 1 — two glasses join into one shape and part again.
+  merge('Merge', '1 ⇄ 2');
+
+  const _GlassCase(this.label, this.arrow);
+
+  final String label;
+  final String arrow;
 }
 
 /// Vivid Flutter-drawn artwork for the glass to refract.

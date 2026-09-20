@@ -549,12 +549,66 @@ CupertinoNativeGlassGroup(
 
 | Parameter | Type | Default | |
 | --- | --- | --- | --- |
-| `items` | `List<CupertinoNativeGlassGroupItem>` | required | `actionId`, `icon`, `title`, `shape`, `width`, `height`, `enabled`. |
+| `items` | `List<CupertinoNativeGlassGroupItem>` | required | `actionId`, `icon`, `title`, `shape`, `width`, `height`, `enabled`, `glassVisible`, `unionId`, `transition`. |
 | `onAction` | `ValueChanged<String>?` | — | |
 | `spacing` | `double` | `8` | Gap, and the distance at which glasses merge. |
 | `vertical` | `bool` | `false` | |
 | `tint` / `clear` / `interactive` | | — | |
 | `cornerRadius` | `double` | `16` | |
+| `transition` | `CupertinoGlassTransition` | `.matchedGeometry` | How a glass arrives and leaves. |
+
+#### Transitions
+
+A group can be asked to make four changes, and which transition you want
+follows from which one it is — not from the widget:
+
+| Change | What happened | |
+| --- | --- | --- |
+| 0 → 1, 1 → 0 | an item arrived or left | `.materialize` |
+| 1 → 1 | an item's `actionId` changed, so it is a *different* glass in the same place | `.materialize` |
+| 1 → 2, 2 → 1 | items joined or left a union | `.matchedGeometry` |
+
+`.matchedGeometry` is SwiftUI's own default for glasses inside a container's
+spacing, and it is what makes a merge a merge: the shapes travel into each
+other. `.materialize` fades the content in while the material animates in or
+out and matches no geometry at all, which is what a glass wants when it appears
+where there was nothing, or replaces another one in exactly the same spot.
+
+A glass that arrives from nothing should keep its slot rather than leave the
+list — the group's box must not shrink underneath it:
+
+```dart
+CupertinoNativeGlassGroup(
+  spacing: 0,
+  transition: CupertinoGlassTransition.materialize,
+  items: [
+    CupertinoNativeGlassGroupItem(
+      actionId: 'play',
+      icon: CupertinoNativeIcon.named('play.fill'),
+      // Keeps the slot; only the material goes.
+      glassVisible: _playing,
+    ),
+  ],
+  onAction: (id) {},
+)
+```
+
+Two items are made one shape by giving them the same `unionId`, and taken apart
+again by dropping it — which is the 2 → 1 and 1 → 2 pair:
+
+```dart
+CupertinoNativeGlassGroupItem(
+  actionId: 'back', unionId: _united ? 'pair' : null, icon: backIcon),
+CupertinoNativeGlassGroupItem(
+  actionId: 'forward', unionId: _united ? 'pair' : null, icon: forwardIcon),
+```
+
+`unionId` only combines glasses of the same shape — a circle and a capsule never
+combine — and `spacing: 0` is the shorthand that puts every item under one id,
+which is why an explicit `unionId` is only read when `spacing` is above 0.
+
+The 1 → 1 case needs no new field: change the item's `actionId` and SwiftUI sees
+a different glass where the old one stood, so one leaves and the other arrives.
 
 ### Navigation Bar
 

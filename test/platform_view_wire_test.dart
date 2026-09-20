@@ -340,6 +340,47 @@ void main() {
     expect((items[1] as Map)['actionId'], 'edit');
   }, variant: iOS);
 
+  testWidgets('glass group sends the transition and union fields', (
+    tester,
+  ) async {
+    final params = await paramsOf(
+      tester,
+      CupertinoNativeGlassGroup(
+        spacing: 4,
+        transition: CupertinoGlassTransition.materialize,
+        items: [
+          const CupertinoNativeGlassGroupItem(
+            actionId: 'play',
+            title: 'Play',
+            glassVisible: false,
+            unionId: 'pair',
+            transition: CupertinoGlassTransition.matchedGeometry,
+          ),
+          const CupertinoNativeGlassGroupItem(
+            actionId: 'pause',
+            title: 'Pause',
+          ),
+        ],
+      ),
+    );
+
+    // The group's transition is the default for items that state none.
+    expect(params['transition'], 'materialize');
+
+    final stated = (params['items'] as List)[0] as Map;
+    expect(stated['glassVisible'], false);
+    expect(stated['unionId'], 'pair');
+    // An item's own transition wins over the group's.
+    expect(stated['transition'], 'matchedGeometry');
+
+    // An item that says nothing keeps its glass, stands alone, and takes the
+    // group's transition.
+    final plain = (params['items'] as List)[1] as Map;
+    expect(plain['glassVisible'], true);
+    expect(plain['unionId'], isNull);
+    expect(plain['transition'], isNull);
+  }, variant: iOS);
+
   group('toolbarActions lowering', () {
     testWidgets('widgets become native nodes, in order', variant: iOS, (
       tester,
