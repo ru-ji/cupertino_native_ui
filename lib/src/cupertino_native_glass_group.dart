@@ -8,6 +8,7 @@ import 'package:flutter/widgets.dart';
 
 import 'internal/native_platform_view_mixin.dart';
 import 'models/cupertino_native_icon.dart';
+import 'models/cupertino_native_menu_item.dart';
 import 'internal/scroll_friendly_recognizer.dart';
 
 /// The shape of one glass in a [CupertinoNativeGlassGroup].
@@ -73,6 +74,7 @@ class CupertinoNativeGlassGroupItem {
     this.glassVisible = true,
     this.unionId,
     this.transition,
+    this.menuItems = const [],
   }) : assert(
          icon != null || title != null,
          'A glass with neither an icon nor a title has nothing to be shaped '
@@ -127,6 +129,17 @@ class CupertinoNativeGlassGroupItem {
   /// Overrides [CupertinoNativeGlassGroup.transition] for this item.
   final CupertinoGlassTransition? transition;
 
+  /// Turns this glass into a menu anchor instead of a plain button.
+  ///
+  /// The glass becomes the menu's own label, so the system has the capsule as
+  /// its anchor and grows the menu out of it — the whole shape transforms,
+  /// which is what a toolbar menu does and what presenting a popover beside
+  /// the button cannot give. Taps report through the menu entries' own action
+  /// ids, not the item's [actionId].
+  ///
+  /// Empty — the default — leaves it a button.
+  final List<CupertinoNativeMenuItem> menuItems;
+
   Map<String, dynamic> toMap() => {
     'actionId': actionId,
     'icon': icon?.toMap(),
@@ -138,6 +151,7 @@ class CupertinoNativeGlassGroupItem {
     'glassVisible': glassVisible,
     'unionId': unionId,
     'transition': transition?.name,
+    'menuItems': menuItems.map((e) => e.toMap()).toList(),
   };
 }
 

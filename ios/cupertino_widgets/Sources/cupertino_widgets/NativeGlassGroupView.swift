@@ -305,11 +305,29 @@ struct AdaptiveGlassGroupView: View {
         .padding(.horizontal, item.title == nil ? 0 : 14)
     }
 
+    @ViewBuilder
     private func button(_ item: GlassGroupItemConfig) -> some View {
-        label(item)
-            .opacity(item.enabled == false ? 0.4 : 1)
-            .contentShape(Rectangle())
-            .onTapGesture { if item.enabled != false { onAction(item.actionId) } }
+        if let menuItems = item.menuItems, !menuItems.isEmpty {
+            // The glass is the `Menu`'s own label, so the system has the
+            // capsule as its anchor and grows the menu out of it — the whole
+            // shape transforms, which is what it does for a toolbar menu and
+            // what a tap gesture presenting something separately cannot give.
+            Menu {
+                ForEach(menuItems) { entry in
+                    MenuItemMapper(item: entry) { actionId, _ in onAction(actionId) }
+                }
+            } label: {
+                label(item).opacity(item.enabled == false ? 0.4 : 1)
+            }
+            .menuStyle(.button)
+            .buttonStyle(.plain)
+            .disabled(item.enabled == false)
+        } else {
+            label(item)
+                .opacity(item.enabled == false ? 0.4 : 1)
+                .contentShape(Rectangle())
+                .onTapGesture { if item.enabled != false { onAction(item.actionId) } }
+        }
     }
 
     @available(iOS 26.0, *)
@@ -361,30 +379,63 @@ struct AdaptiveGlassGroupView: View {
     /// The outline of one glass, `morph` of the way from its own roundness
     /// towards a square.
     ///
-    /// One `RoundedRectangle` covers every case, which is what lets the morph
-    /// be a single number instead of a change of shape type: at half the
-    /// height it is a circle on a square frame and a capsule on a wide one.
-    /// That also settles the union on its own — a union's frame is the whole
+    /// One shape covers every case, which is what lets the morph be a single
+    /// number instead of a change of shape type — and a change of type is
+    /// exactly what matched geometry cannot interpolate across.
+    ///
+    /// It also settles the union on its own: a union's frame is the whole
     /// group's bounding box, and this fills it, where a `Circle` would be
-    /// inscribed in it and collapse to one item's worth of glass in the middle.
-    /// Measured, not reasoned: see docs/glass-transitions.md.
+    /// *inscribed* in it and collapse to one item's worth of glass in the
+    /// middle. Measured, not reasoned: see docs/glass-transitions.md.
     private func shape(for item: GlassGroupItemConfig, morph: CGFloat) -> AnyShape {
-        let extent = CGFloat(item.height ?? 44)
-        let rest: CGFloat
         if !sharesOneGlass, item.shape == "roundedRect" {
-            rest = CGFloat(c.cornerRadius ?? 16)
-        } else {
-            rest = extent / 2
+            return AnyShape(
+                FixedRadiusShape(
+                    radius: CGFloat(c.cornerRadius ?? 16), morph: morph))
         }
-        return AnyShape(
-            RoundedRectangle(
-                cornerRadius: rest * (1 - morph.clamped(to: 0...1)),
-                style: .continuous))
+        return AnyShape(MorphingCapsule(morph: morph))
     }
 }
 
-extension CGFloat {
-    fileprivate func clamped(to range: ClosedRange<CGFloat>) -> CGFloat {
-        Swift.min(Swift.max(self, range.lowerBound), range.upperBound)
+/// A capsule that can be squared up.
+///
+/// The radius is half the frame's *short* side, taken from the frame it is
+/// handed rather than from the item's declared height — which is the whole
+/// point. A `RoundedRectangle` with a hard-coded radius is only a circle when
+/// the frame happens to match it, and a glass's frame is its own, larger than
+/// the label inside it. At `morph` 0 this is exactly a `Capsule`: a circle on a
+/// square frame, a capsule on a wide one, whatever the size.
+@available(iOS 26.0, *)
+private struct MorphingCapsule: Shape {
+    var morph: CGFloat
+
+    var animatableData: CGFloat {
+        get { morph }
+        set { morph = newValue }
+    }
+
+    func path(in rect: CGRect) -> Path {
+        let full = min(rect.width, rect.height) / 2
+        let clamped = Swift.min(Swift.max(morph, 0), 1)
+        return RoundedRectangle(cornerRadius: full * (1 - clamped), style: .continuous)
+            .path(in: rect)
+    }
+}
+
+/// The same, for an item that named its own corner radius.
+@available(iOS 26.0, *)
+private struct FixedRadiusShape: Shape {
+    var radius: CGFloat
+    var morph: CGFloat
+
+    var animatableData: CGFloat {
+        get { morph }
+        set { morph = newValue }
+    }
+
+    func path(in rect: CGRect) -> Path {
+        let clamped = Swift.min(Swift.max(morph, 0), 1)
+        return RoundedRectangle(cornerRadius: radius * (1 - clamped), style: .continuous)
+            .path(in: rect)
     }
 }

@@ -83,12 +83,13 @@ class _ArriveDemoState extends State<_ArriveDemo> {
           'The only change here that is really an arrival. The item keeps '
           'its slot and loses only its material, so the box does not move '
           'underneath the glass landing in it.',
-      code: 'glassVisible: \$_shown   ·   .materialize',
       buttonLabel: _shown ? 'Remove' : 'Add',
       onPressed: () => setState(() => _shown = !_shown),
       child: CupertinoNativeGlassGroup(
         transition: CupertinoGlassTransition.materialize,
-        interactive: false,
+        // The glass plays the change itself, so the card can be driven from
+        // the button or from the thing the button is talking about.
+        onAction: (_) => setState(() => _shown = !_shown),
         items: [
           CupertinoNativeGlassGroupItem(
             actionId: 'back',
@@ -125,13 +126,10 @@ class _SwapDemoState extends State<_SwapDemo> {
           'A new actionId is a different glass, so one leaves and another '
           'arrives in its place. Both are the same circle, so the matched '
           'geometry holds the material still while the content turns over.',
-      code:
-          "actionId: '\${_isBack ? 'leading.back' : 'leading.more'}'"
-          '   ·   .matchedGeometry',
       buttonLabel: 'Swap',
       onPressed: () => setState(() => _isBack = !_isBack),
       child: CupertinoNativeGlassGroup(
-        interactive: false,
+        onAction: (_) => setState(() => _isBack = !_isBack),
         items: [
           CupertinoNativeGlassGroupItem(
             actionId: _isBack ? 'leading.back' : 'leading.more',
@@ -162,6 +160,26 @@ class _ReshapeDemo extends StatefulWidget {
 class _ReshapeDemoState extends State<_ReshapeDemo> {
   bool _selecting = false;
 
+  /// The menu the left glass opens, in both states.
+  static const _menu = [
+    CupertinoNativeMenuAction(
+      title: 'Select',
+      systemImage: 'checkmark.circle',
+      actionId: 'menu.select',
+    ),
+    CupertinoNativeMenuAction(
+      title: 'Sort By',
+      systemImage: 'arrow.up.arrow.down',
+      actionId: 'menu.sort',
+    ),
+    CupertinoNativeMenuAction(
+      title: 'Delete',
+      systemImage: 'trash',
+      actionId: 'menu.delete',
+      isDestructive: true,
+    ),
+  ];
+
   @override
   Widget build(BuildContext context) {
     return GlassDemoStage(
@@ -172,12 +190,18 @@ class _ReshapeDemoState extends State<_ReshapeDemo> {
           'old shape and a new one for each and morphs between them. The 6pt '
           'gap is under the blend radius, which is what lets them run '
           'together on the way past.',
-      code: 'spacing: 6   ·   .matchedGeometry',
       buttonLabel: _selecting ? 'Done' : 'Select',
       onPressed: () => setState(() => _selecting = !_selecting),
       child: CupertinoNativeGlassGroup(
         spacing: 6,
-        interactive: false,
+        // Only the X leaves selection; the menu glass has its own job.
+        onAction: (id) {
+          // 'menu.select' arrives from inside the menu, the other two from the
+          // glasses themselves.
+          if (id == 'close' || id == 'select' || id == 'menu.select') {
+            setState(() => _selecting = !_selecting);
+          }
+        },
         items: _selecting
             ? [
                 CupertinoNativeGlassGroupItem(
@@ -185,6 +209,7 @@ class _ReshapeDemoState extends State<_ReshapeDemo> {
                   shape: CupertinoGlassGroupShape.capsule,
                   icon: CupertinoNativeIcon.named('line.3.horizontal'),
                   title: '•••',
+                  menuItems: _menu,
                 ),
                 CupertinoNativeGlassGroupItem(
                   actionId: 'close',
@@ -199,6 +224,11 @@ class _ReshapeDemoState extends State<_ReshapeDemo> {
                   shape: CupertinoGlassGroupShape.capsule,
                   icon: CupertinoNativeIcon.named('line.3.horizontal'),
                   width: 44,
+                  // The glass is the menu's anchor, so the capsule itself
+                  // transforms into the menu rather than sprouting one beside
+                  // it. Present in both states, so the morph carries a live
+                  // menu across the change.
+                  menuItems: _menu,
                 ),
                 CupertinoNativeGlassGroupItem(
                   actionId: 'select',

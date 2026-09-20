@@ -699,8 +699,35 @@ content blurs in. `CupertinoGlassTransition.intensity` is that — and because
 nothing is inserted or removed, it is not a transition at all, so a glass on
 `intensity` does not merge or match geometry with its neighbours.
 
-Both are in the example app: **Glass transitions** is the three defaults,
-**Custom transitions** the two departures from them.
+The example app's **Glass transitions** page plays all three, and each glass is
+tappable there — the change is driven by the glass as much as by the button
+under it.
+
+A glass can also be a **menu anchor** rather than a button. Give the item
+`menuItems` and the glass becomes the menu's own label, so the system has the
+capsule as its anchor and grows the menu out of it — the whole shape
+transforms, which is what a toolbar menu does and what presenting a popover
+beside the button cannot give:
+
+```dart
+CupertinoNativeGlassGroupItem(
+  actionId: 'menu',
+  shape: CupertinoGlassGroupShape.capsule,
+  icon: CupertinoNativeIcon.named('line.3.horizontal'),
+  width: 44,
+  menuItems: const [
+    CupertinoNativeMenuAction(
+      title: 'Select', systemImage: 'checkmark.circle', actionId: 'menu.select'),
+    CupertinoNativeMenuAction(
+      title: 'Delete', systemImage: 'trash', actionId: 'menu.delete',
+      isDestructive: true),
+  ],
+)
+```
+
+Entries report through their own `actionId` on the group's `onAction`, not the
+item's. Keep `menuItems` on both sides of a change and the morph carries a live
+menu across it.
 
 > A navigation bar's buttons are **not** glasses in a container — they are
 > toolbar items, animated by the bar itself, and there is no modifier to copy.

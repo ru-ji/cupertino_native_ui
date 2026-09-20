@@ -27,6 +27,10 @@ struct GlassGroupItemConfig: Codable, Hashable, Identifiable {
     let unionId: String?
     /// "matchedGeometry" | "materialize" | "identity"; nil = the group's.
     let transition: String?
+    /// Turns this glass into a menu anchor: the capsule itself is what the
+    /// system morphs open, so the menu grows out of the glass rather than
+    /// appearing beside it. nil or empty = a plain button.
+    let menuItems: [MenuItemConfig]?
 
     var id: String { actionId }
 }

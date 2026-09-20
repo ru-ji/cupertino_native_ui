@@ -5,7 +5,7 @@ import 'package:flutter/cupertino.dart';
 /// one. Nothing here is a transition — it is the stage they are played on.
 ///
 /// One card per change: what it is, the glass doing it over a backdrop worth
-/// refracting, the one line of code that causes it, and the button that plays
+/// refracting, a sentence on what makes it happen, and the button that plays
 /// it. The card is a fixed size and the glass is centred on a hairline, so one
 /// state can be held against the other without the page having moved
 /// underneath.
@@ -15,7 +15,6 @@ class GlassDemoStage extends StatelessWidget {
     required this.title,
     required this.arrow,
     required this.blurb,
-    required this.code,
     required this.buttonLabel,
     required this.onPressed,
     required this.child,
@@ -29,9 +28,6 @@ class GlassDemoStage extends StatelessWidget {
 
   /// One sentence on what makes it happen.
   final String blurb;
-
-  /// The line that causes it, for someone reading the app rather than the code.
-  final String code;
 
   final String buttonLabel;
   final VoidCallback onPressed;
@@ -109,18 +105,6 @@ class GlassDemoStage extends StatelessWidget {
               child: Text(
                 blurb,
                 style: TextStyle(fontSize: 13, height: 1.35, color: labels),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(18, 10, 18, 0),
-              child: Text(
-                code,
-                style: TextStyle(
-                  fontSize: 12,
-                  height: 1.4,
-                  fontFamily: 'Menlo',
-                  color: CupertinoColors.systemBlue.resolveFrom(context),
-                ),
               ),
             ),
             Padding(
