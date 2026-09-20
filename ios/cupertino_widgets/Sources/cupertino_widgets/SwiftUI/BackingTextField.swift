@@ -88,7 +88,12 @@ struct BackingTextField: UIViewRepresentable {
             if field.text != parent.text { field.text = parent.text }
         }
 
-        func textFieldDidBeginEditing(_ field: UITextField) { parent.focused = true }
+        func textFieldDidBeginEditing(_ field: UITextField) {
+            // Before the focus report goes out: Flutter reads this to reveal
+            // the row rather than the whole platform view.
+            parent.model.focusFrameInWindow = field.convert(field.bounds, to: nil)
+            parent.focused = true
+        }
         func textFieldDidEndEditing(_ field: UITextField) { parent.focused = false }
 
         func textFieldShouldReturn(_ field: UITextField) -> Bool {

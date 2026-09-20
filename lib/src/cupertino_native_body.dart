@@ -204,7 +204,9 @@ class CupertinoNativeBody {
        );
 
   /// A `TextField`, reporting each edit as `(id, String)`. Focus and submit
-  /// arrive as `('<id>.focused', bool)` and `('<id>.submitted', String)`.
+  /// arrive as `('<id>.focused', {focused, y, height})` — the row's own box
+  /// in window coordinates, so a host can reveal the row rather than the
+  /// whole platform view — and `('<id>.submitted', String)`.
   CupertinoNativeBody.textField({
     required String id,
     String? value,
