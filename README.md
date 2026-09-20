@@ -305,9 +305,33 @@ CupertinoNativeTextField(
 The bar takes the height of what you give it: wrap the items in a `Padding`
 for room around them.
 
-For the page to show through the bar, set `resizeToAvoidBottomInset: false` on
-the scaffold and pad your scroll content with
-`MediaQuery.viewInsetsOf(context).bottom`.
+**The bar paints nothing, so what you see through it is whatever your page puts
+behind the keyboard** — and UIKit counts the bar as part of the keyboard's frame,
+so `viewInsets.bottom` covers the strip as well. A scaffold that resizes for the
+keyboard therefore ends the page exactly at the top of the bar and leaves nothing
+behind it but its own background colour: a flat, opaque band with the bar's
+content sitting on it. `resizeToAvoidBottomInset: false` and padding the scroll
+content with `MediaQuery.viewInsetsOf(context).bottom` is the fix, and it is the
+same flag on all three scaffolds — `Scaffold`, `CupertinoPageScaffold` and
+`CupertinoNativePageScaffold` — all of which default it to `true`.
+
+A page with no scaffold needs neither: nothing shrinks for the keyboard unless a
+scaffold shrinks it, so the content runs under the bar and the bar shows it.
+
+**Keeping the field itself visible is a separate question**, and the answer is not
+the same one. iOS does not move views for the keyboard — the inset is data, not
+layout — so exactly two things lift a field clear of it: a box that shrank (a
+scaffold resizing, or your own padding driven by `viewInsets`), or a scrollable
+ancestor. A focused field scrolls itself into view through `showOnScreen` on every
+rising metrics tick, and `showOnScreen` walks up to a viewport; with no scrollable
+above it the call reaches the root and does nothing. A field pinned to the bottom
+of a plain `Container`, with no scaffold and no scrollable, therefore stays under
+the keyboard no matter what — `scrollPadding` included, since there is nothing to
+scroll. Put it in a `ListView`/`CustomScrollView`, or move its container yourself
+with `Padding(padding: EdgeInsets.only(bottom:
+MediaQuery.viewInsetsOf(context).bottom))` — plain `Padding`, not
+`AnimatedPadding`: the engine already delivers the inset frame by frame along the
+keyboard's own curve, and animating it again only adds lag.
 
 A glass capsule can hold its own row:
 
