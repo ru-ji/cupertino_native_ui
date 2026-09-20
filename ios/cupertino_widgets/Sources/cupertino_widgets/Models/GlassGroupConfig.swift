@@ -59,4 +59,6 @@ struct GlassGroupConfig: Codable {
     let isDark: Bool?
     /// Default for every item that does not state its own; nil = matchedGeometry.
     let transition: String?
+    /// How far the glass squares up as a change plays, 0…1. nil or 0 = never.
+    let morphOnChange: Double?
 }

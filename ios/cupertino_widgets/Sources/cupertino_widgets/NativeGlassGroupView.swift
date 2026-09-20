@@ -66,11 +66,16 @@ class NativeGlassGroupView: NativeHostingView {
         ) { host, container in
             host.setContentHuggingPriority(.required, for: .horizontal)
             host.setContentHuggingPriority(.required, for: .vertical)
+            // Centred and otherwise free. The `<= container` pair that used to
+            // be here squeezed the glasses into whatever width the Flutter box
+            // happened to hold, and the box only catches up once a measurement
+            // lands — so a group that grows was clamped for the whole animation
+            // and a "Select" capsule could settle at a width it never chose.
+            // The container paints unclipped (see HostingContainerView), so
+            // the glass is free to overrun its box while the box follows.
             NSLayoutConstraint.activate([
                 host.centerXAnchor.constraint(equalTo: container.centerXAnchor),
                 host.centerYAnchor.constraint(equalTo: container.centerYAnchor),
-                host.widthAnchor.constraint(lessThanOrEqualTo: container.widthAnchor),
-                host.heightAnchor.constraint(lessThanOrEqualTo: container.heightAnchor),
             ])
         }
     }
@@ -94,7 +99,15 @@ class NativeGlassGroupView: NativeHostingView {
                 // a split, an arrival and a replacement happen too. The whole
                 // config goes over at once, so `items` gaining, losing or
                 // re-identifying an entry is what drives the transitions.
-                withAnimation(.smooth(duration: 0.35)) { model.config = config }
+                withAnimation(.smooth(duration: 0.35)) {
+                    model.config = config
+                } completion: { [weak self] in
+                    // The size it settled at. Any measurement taken while the
+                    // animation runs follows the glass rather than its
+                    // destination, so without this the box can keep an
+                    // intermediate width for good.
+                    self?.publishIntrinsicSize()
+                }
                 result(nil)
             } else {
                 result(
@@ -111,7 +124,7 @@ final class GlassGroupModel: ObservableObject {
     @Published var config = GlassGroupConfig(
         items: [], spacing: nil, mergeDistance: nil, variant: nil, tint: nil,
         interactive: nil, vertical: nil, cornerRadius: nil, isDark: nil,
-        transition: nil)
+        transition: nil, morphOnChange: nil)
 }
 
 /// iOS 16 is the floor: `AnyShape` is what lets one item be a circle and its
@@ -128,6 +141,7 @@ struct AdaptiveGlassGroupView: View {
 
     private var c: GlassGroupConfig { model.config }
     private var spacing: CGFloat { CGFloat(c.spacing ?? 8) }
+    private var morphAmount: CGFloat { CGFloat(c.morphOnChange ?? 0) }
 
     /// No gap: the old "44pt glasses united into one capsule, like a toolbar
     /// group" mode.
@@ -169,9 +183,56 @@ struct AdaptiveGlassGroupView: View {
     /// hierarchy transitions or animations".
     @ViewBuilder
     private var content: some View {
-        GlassEffectContainer(spacing: containerSpacing) {
-            stack { item in
-                glassed(item)
+        PhaseAnimator(
+            MorphPhase.script,
+            trigger: morphAmount > 0 ? c.items : []
+        ) { phase in
+            GlassEffectContainer(spacing: containerSpacing) {
+                stack { item in
+                    glassed(item, morph: phase.morph * morphAmount)
+                }
+            }
+            .scaleEffect(x: phase.scaleX, y: phase.scaleY)
+        } animation: { phase in
+            .spring(duration: phase.duration, bounce: 0.35)
+        }
+    }
+
+    /// What the glass does to its own outline while a change plays.
+    ///
+    /// Measured off a 60fps capture of the system's own bar button swapping its
+    /// icon: it does **not** scale. It squares up — the top and bottom edges
+    /// flatten first, then the sides — and unwinds back to a circle. What reads
+    /// as a press is the outline losing its roundness, not the glass growing.
+    ///
+    /// The scale left here is the hair of anisotropy that sells which edge went
+    /// first; the shape does the rest.
+    private enum MorphPhase {
+        case rest
+        case flattenVertical
+        case squared
+
+        /// Rest, out through both stages, back to rest.
+        static let script: [MorphPhase] = [.rest, .flattenVertical, .squared, .rest]
+
+        /// How far towards a square, before the caller's amount scales it.
+        var morph: CGFloat {
+            switch self {
+            case .rest: return 0
+            case .flattenVertical: return 0.7
+            case .squared: return 1
+            }
+        }
+
+        var scaleX: CGFloat { self == .flattenVertical ? 1.02 : 1 }
+        var scaleY: CGFloat { self == .flattenVertical ? 0.98 : 1 }
+
+        /// Out quickly, back at leisure — the timing of a press.
+        var duration: Double {
+            switch self {
+            case .rest: return 0.28
+            case .flattenVertical: return 0.09
+            case .squared: return 0.11
             }
         }
     }
@@ -195,12 +256,34 @@ struct AdaptiveGlassGroupView: View {
     /// item also left the layout, the group's box would shrink underneath the
     /// transition and there would be nowhere for the new glass to land.
     @ViewBuilder
-    private func glassed(_ item: GlassGroupItemConfig) -> some View {
-        if item.glassVisible == false {
+    private func glassed(_ item: GlassGroupItemConfig, morph: CGFloat) -> some View {
+        if transitionName(for: item) == "intensity" {
+            // Custom, and deliberately not a transition: `materialize` scales
+            // the glass in, and the glass this reproduces does not move at all.
+            // The material is always mounted and only its opacity travels, so
+            // there is nothing for SwiftUI to insert or remove — which is also
+            // why this glass cannot merge or match geometry with a neighbour.
+            //
+            // The material lives in a background layer of its own so the gauge
+            // reaches it alone; opacity on the glassed view would take the
+            // content down with it.
+            let on = item.glassVisible != false
+            button(item)
+                .opacity(on ? 1 : 0)
+                // The content's own blur in and out, which is all it wants —
+                // a bare fade reads as a decal being switched off, not as an
+                // icon resolving out of the material.
+                .blur(radius: on ? 0 : 6)
+                .background {
+                    Color.clear
+                        .glassEffect(glass, in: shape(for: item, morph: morph))
+                        .opacity(on ? 1 : 0)
+                }
+        } else if item.glassVisible == false {
             button(item).hidden()
         } else {
             button(item)
-                .glassEffect(glass, in: shape(for: item))
+                .glassEffect(glass, in: shape(for: item, morph: morph))
                 .glassEffectID(item.actionId, in: namespace)
                 .glassEffectUnion(id: unionId(for: item), namespace: namespace)
                 .glassEffectTransition(transition(for: item))
@@ -261,6 +344,12 @@ struct AdaptiveGlassGroupView: View {
     /// animates in or out, without matching any geometry — which is the effect
     /// for a glass that appears from nothing, or replaces another one in the
     /// same place.
+    /// The transition the item asked for, before it is resolved to a SwiftUI
+    /// one — `intensity` has no SwiftUI equivalent, so it is read by name.
+    private func transitionName(for item: GlassGroupItemConfig) -> String {
+        item.transition ?? c.transition ?? "matchedGeometry"
+    }
+
     private func transition(for item: GlassGroupItemConfig) -> GlassEffectTransition {
         switch item.transition ?? c.transition {
         case "materialize": return .materialize
@@ -269,37 +358,33 @@ struct AdaptiveGlassGroupView: View {
         }
     }
 
-    /// How many items share this item's union id. One means it stands alone.
-    private func unionSize(of item: GlassGroupItemConfig) -> Int {
-        let id = unionId(for: item)
-        return c.items.filter { unionId(for: $0) == id }.count
-    }
-
-    private func shape(for item: GlassGroupItemConfig) -> AnyShape {
-        // `glassEffectUnion` only combines effects that share a shape, so a
-        // shared glass has to give every item the same one.
-        if sharesOneGlass { return AnyShape(Capsule()) }
-        switch item.shape {
-        case "capsule": return AnyShape(Capsule())
-        case "roundedRect":
-            return AnyShape(
-                RoundedRectangle(
-                    cornerRadius: CGFloat(c.cornerRadius ?? 16), style: .continuous))
-        default:
-            // A circle is *inscribed* in whatever frame it is handed. Alone,
-            // that frame is the item's own 44pt box and it looks right.
-            // Unioned, the frame is the union's bounding box — and a circle
-            // inscribed in a 108x44 box is a 44pt circle, so the union
-            // collapses back to one item's worth of glass sitting in the
-            // middle with the content hanging outside it. Measured, not
-            // reasoned: see docs/glass-transitions.md.
-            //
-            // `Capsule` fills its frame instead, and is the shape SwiftUI's
-            // own `glassEffect()` defaults to — which is why Apple's union
-            // examples work and a circle override does not.
-            return unionSize(of: item) > 1
-                ? AnyShape(Capsule())
-                : AnyShape(Circle())
+    /// The outline of one glass, `morph` of the way from its own roundness
+    /// towards a square.
+    ///
+    /// One `RoundedRectangle` covers every case, which is what lets the morph
+    /// be a single number instead of a change of shape type: at half the
+    /// height it is a circle on a square frame and a capsule on a wide one.
+    /// That also settles the union on its own — a union's frame is the whole
+    /// group's bounding box, and this fills it, where a `Circle` would be
+    /// inscribed in it and collapse to one item's worth of glass in the middle.
+    /// Measured, not reasoned: see docs/glass-transitions.md.
+    private func shape(for item: GlassGroupItemConfig, morph: CGFloat) -> AnyShape {
+        let extent = CGFloat(item.height ?? 44)
+        let rest: CGFloat
+        if !sharesOneGlass, item.shape == "roundedRect" {
+            rest = CGFloat(c.cornerRadius ?? 16)
+        } else {
+            rest = extent / 2
         }
+        return AnyShape(
+            RoundedRectangle(
+                cornerRadius: rest * (1 - morph.clamped(to: 0...1)),
+                style: .continuous))
+    }
+}
+
+extension CGFloat {
+    fileprivate func clamped(to range: ClosedRange<CGFloat>) -> CGFloat {
+        Swift.min(Swift.max(self, range.lowerBound), range.upperBound)
     }
 }
