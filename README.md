@@ -607,6 +607,31 @@ CupertinoNativeGlassGroupItem(
 combine — and `spacing: 0` is the shorthand that puts every item under one id,
 which is why an explicit `unionId` is only read when `spacing` is above 0.
 
+An item that shares its `unionId` with another is drawn as a **capsule**,
+whatever its `shape` says. A union's frame is the whole group, and a circle is
+*inscribed* in the frame it is handed, so a circle union collapses to one item's
+worth of glass in the middle with both icons left outside it. A capsule fills
+the frame; on a square item it *is* a circle, so a lone glass is unaffected.
+`roundedRect` is honoured as well, since it fills its frame too.
+
+Two glasses can be drawn as one shape for either of two reasons, and they are
+separate questions: a `unionId` states it, and the container's spacing *infers*
+it — SwiftUI merges effects that are nearer to each other than the container's
+spacing, whatever their ids say. `spacing` used to answer both. `mergeDistance`
+sets the radius on its own:
+
+```dart
+CupertinoNativeGlassGroup(
+  spacing: 20,        // the glasses sit 20pt apart
+  mergeDistance: 0,   // and blend only where a unionId says so
+  items: [...],
+)
+```
+
+`mergeDistance: 0` with a `unionId` is the configuration to reach for when the
+union is the point: the glasses stay visibly two circles apart when the ids
+differ, and become one shape when they match.
+
 The 1 → 1 case needs no new field: change the item's `actionId` and SwiftUI sees
 a different glass where the old one stood, so one leaves and the other arrives.
 

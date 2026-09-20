@@ -347,6 +347,7 @@ void main() {
       tester,
       CupertinoNativeGlassGroup(
         spacing: 4,
+        mergeDistance: 12,
         transition: CupertinoGlassTransition.materialize,
         items: [
           const CupertinoNativeGlassGroupItem(
@@ -366,6 +367,12 @@ void main() {
 
     // The group's transition is the default for items that state none.
     expect(params['transition'], 'materialize');
+
+    // The blend radius travels separately from the gap: they are two different
+    // questions, and answering both with `spacing` is what made a union
+    // impossible to isolate.
+    expect(params['spacing'], 4);
+    expect(params['mergeDistance'], 12);
 
     final stated = (params['items'] as List)[0] as Map;
     expect(stated['glassVisible'], false);

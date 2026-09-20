@@ -101,6 +101,13 @@ class CupertinoNativeGlassGroupItem {
   /// [actionId]. Give two items the same id to make them one glass, and move an
   /// item between ids to take it in and out of a union. The shapes have to
   /// match: a circle and a capsule never combine.
+  ///
+  /// An item that shares its id with another is drawn as a capsule whatever
+  /// [shape] says. A union's frame is the whole group, and a circle is
+  /// *inscribed* in the frame it is given — so a circle union collapses to one
+  /// item's worth of glass in the middle with the content hanging outside it.
+  /// A capsule fills the frame, which is what a merge needs; on a square item
+  /// it is a circle anyway, so nothing changes for a lone glass.
   final String? unionId;
 
   /// Overrides [CupertinoNativeGlassGroup.transition] for this item.
@@ -150,6 +157,7 @@ class CupertinoNativeGlassGroup extends StatefulWidget {
     required this.items,
     this.onAction,
     this.spacing = 8,
+    this.mergeDistance,
     this.vertical = false,
     this.tint,
     this.clear = false,
@@ -163,13 +171,26 @@ class CupertinoNativeGlassGroup extends StatefulWidget {
   /// Called with the tapped item's [CupertinoNativeGlassGroupItem.actionId].
   final ValueChanged<String>? onAction;
 
-  /// Distance between the glasses — and, at the same time, how close they have
-  /// to be before they merge. In SwiftUI it is one number
-  /// (`GlassEffectContainer(spacing:)`), so it is one here: animate it and the
-  /// group flows apart and back together.
+  /// Distance between the glasses. Unless [mergeDistance] overrides it, this is
+  /// also how close they have to be before the container merges them by
+  /// proximity.
   ///
   /// 0 renders the items as one shared glass, like a toolbar group.
   final double spacing;
+
+  /// How close two glasses have to be before the container blends them,
+  /// overriding [spacing].
+  ///
+  /// These are two different questions and [spacing] used to answer both: the
+  /// gap is how far apart the items are laid out, the radius is how near they
+  /// must be before the container merges them by proximity anyway. With one
+  /// number for both, the radius can never be set below the gap — so a union
+  /// cannot be tested on its own.
+  ///
+  /// Set it below the gap to make [CupertinoNativeGlassGroupItem.unionId] the
+  /// only thing that unites two glasses. `null` — the default — inherits
+  /// [spacing], which is the behaviour this widget has always had.
+  final double? mergeDistance;
 
   final bool vertical;
 
@@ -209,6 +230,7 @@ class _CupertinoNativeGlassGroupState extends State<CupertinoNativeGlassGroup>
   Map<String, dynamic> _toMap() => {
     'items': widget.items.map((e) => e.toMap()).toList(),
     'spacing': widget.spacing,
+    'mergeDistance': widget.mergeDistance,
     'variant': widget.clear ? 'clear' : 'regular',
     'tint': widget.tint?.toARGB32(),
     'interactive': widget.interactive,
