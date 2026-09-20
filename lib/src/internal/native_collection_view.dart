@@ -100,8 +100,18 @@ class _NativeCollectionViewState extends State<NativeCollectionView>
   /// True while a transcribed field inside this list holds focus.
   bool _fieldFocused = false;
 
-  /// That field's vertical extent in window coordinates, when it reported
-  /// one. Null falls back to revealing the whole list.
+  /// That field's vertical extent **in this platform view's own coordinates**,
+  /// when it reported one. Null falls back to revealing the whole list.
+  ///
+  /// Box-local, and deliberately not the window rectangle the native side
+  /// measured. The reveal runs on *every* rising metrics tick, and the page
+  /// scrolls as it goes: a window-space row would be compared against a box
+  /// that has already moved, so each tick would ask for slightly more travel
+  /// than the last and the list would walk off the top of the screen — taking
+  /// the field's window with it, which is what closes the keyboard. The row's
+  /// offset *inside* the platform view is unaffected by the page scrolling, so
+  /// converting once, when the report arrives, is stable for the whole
+  /// animation.
   Rect? _focusedRow;
 
   /// The last keyboard inset seen, to react only while it grows.
@@ -119,6 +129,21 @@ class _NativeCollectionViewState extends State<NativeCollectionView>
     final rising = bottomInset > _lastBottomInset;
     _lastBottomInset = bottomInset;
     if (rising && _fieldFocused) _revealAboveKeyboard();
+  }
+
+  /// A focus report's `y`/`height`, which are window coordinates, moved into
+  /// the space [RenderBox.showOnScreen] expects — this platform view's own.
+  /// See [_focusedRow] for why the conversion happens once, here.
+  Rect? _rowInViewCoordinates(Map<Object?, Object?> report) {
+    final y = (report['y'] as num?)?.toDouble();
+    final height = (report['height'] as num?)?.toDouble();
+    if (y == null || height == null) return null;
+    final box = context.findRenderObject();
+    if (box is! RenderBox || !box.hasSize) return null;
+    return rowInViewCoordinates(
+      rowInWindow: Rect.fromLTWH(0, y, 0, height),
+      viewInWindow: box.localToGlobal(Offset.zero) & box.size,
+    );
   }
 
   /// One section, with each row's [CupertinoNativeListTile.trailing] lowered
@@ -214,19 +239,14 @@ class _NativeCollectionViewState extends State<NativeCollectionView>
           // The native side reports it as `<nodeId>.focused`.
           if (nodeId.endsWith('.focused')) {
             final value = call.arguments['value'];
-            // `{focused, y, height}` — the row's own box in window
-            // coordinates, so the reveal can move the row rather than the
-            // whole list. See `FocusReportingField` on the native side.
-            final report = value is Map ? value : null;
+            // `{focused, y, height}` — the row's own box, so the reveal can
+            // move the row rather than the whole list. See
+            // `FocusReportingField` on the native side.
+            final report = value is Map ? value.cast<Object?, Object?>() : null;
             _fieldFocused = (report?['focused'] ?? value) == true;
             _focusedRow = report == null || !_fieldFocused
                 ? null
-                : Rect.fromLTWH(
-                    0,
-                    (report['y'] as num).toDouble(),
-                    0,
-                    (report['height'] as num).toDouble(),
-                  );
+                : _rowInViewCoordinates(report);
             if (_fieldFocused) _revealAboveKeyboard(postFrame: true);
           }
           _trailingCallbacks[rowId]?[nodeId]?.call(call.arguments['value']);
@@ -246,7 +266,8 @@ class _NativeCollectionViewState extends State<NativeCollectionView>
 
   /// Scrolls the focused row clear of the keyboard — the row, not the list:
   /// revealing the whole box overshot a short section and undershot a long
-  /// one. The row's rect comes from the native side with its focus report.
+  /// one. The row's rect comes from the native side with its focus report,
+  /// already converted into this view's coordinates — see [_focusedRow].
   void _revealAboveKeyboard({bool postFrame = false}) {
     void run() {
       if (!mounted) return;
@@ -265,12 +286,7 @@ class _NativeCollectionViewState extends State<NativeCollectionView>
       final row = _focusedRow;
       final target = row == null
           ? Offset.zero & box.size
-          : Rect.fromLTWH(
-              0,
-              row.top - box.localToGlobal(Offset.zero).dy,
-              box.size.width,
-              row.height,
-            );
+          : Rect.fromLTWH(0, row.top, box.size.width, row.height);
       box.showOnScreen(
         rect: EdgeInsets.only(bottom: inset + 20).inflateRect(target),
       );

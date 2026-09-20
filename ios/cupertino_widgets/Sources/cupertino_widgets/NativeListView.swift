@@ -52,6 +52,35 @@ class NativeListView: NativeHostingView {
     /// and the accessory a focused field pointed at was already dead.
     private let rowStore = TrailingRowStore()
 
+    /// The transcribed field that currently holds the responder, as
+    /// `"rowId.fieldId"`, or nil. Kept from the `.focused` reports the rows
+    /// send, so the responder can be put back — see [refocusOnReattach].
+    private var focusedFieldKey: String?
+
+    /// The field to put the responder back on when this view next enters a
+    /// window, as `"rowId.fieldId"`, or nil.
+    ///
+    /// Captured on the way *out*, and it has to be the key rather than a flag:
+    /// leaving the window resigns the field, that blur travels to SwiftUI as a
+    /// `focused == false` change, and the report it sends back clears
+    /// [focusedFieldKey] a turn later. By the time the engine re-adds the view
+    /// there is nothing left to read the intent off.
+    ///
+    /// Only ever set while a field genuinely held the responder, so a page
+    /// whose route dismissed the keyboard first — `endEditing`, from
+    /// `RouteKeyboardDismissal` on the Dart side — has nothing to restore and
+    /// the keyboard does not come back on the way out.
+    ///
+    /// The list hosts real `UITextField`s now that a row's `trailing` can be a
+    /// `CupertinoNativeTextField`, and the engine takes a platform view out of
+    /// the `FlutterView` on any frame it is not composited — scrolling is
+    /// enough. A view outside a window cannot be first responder, so UIKit
+    /// resigns the field and the keyboard closes mid-edit. Nothing public keeps
+    /// a responder alive outside a window, so the fix is to put it back the
+    /// moment the view returns. The standalone field has done this from the
+    /// start; the list needed the same treatment once fields moved into it.
+    private var refocusOnReattach: String?
+
     init(
         frame: CGRect,
         viewIdentifier viewId: Int64,
@@ -82,7 +111,43 @@ class NativeListView: NativeHostingView {
         self.isDark = isDark
         attach(AnyView(makeContent(config)))
         _view.backgroundColor = .clear
+        // Stay parented while the engine takes this platform view out of the
+        // window on a frame it is not composited. Unparented, the hosted
+        // UIHostingController drops its field's first responder — the same trap
+        // NativeTextFieldView documents.
+        _view.keepsParentWhileDetached = true
+        // Staying parented is not enough on its own: the container still leaves
+        // the window, so the responder has to be re-driven on the way back.
+        _view.onWindowChanged = { [weak self] window in
+            guard let self else { return }
+            NativeLog.log(
+                "list window → \(window == nil ? "nil" : "attached") "
+                    + "focused=\(self.focusedFieldKey ?? "none") "
+                    + "restore=\(self.refocusOnReattach ?? "none")")
+            if window == nil {
+                self.refocusOnReattach = self.focusedFieldKey
+            } else if let key = self.refocusOnReattach {
+                self.refocusOnReattach = nil
+                self.rowStore.refocus(key: key)
+                NativeLog.log("list refocus → \(key)")
+            }
+        }
         scheduleSizeReports()
+    }
+
+    /// A row's `.focused` report is the only place that says which transcribed
+    /// field holds the responder; the value carries the field's own frame, and
+    /// `focused` says whether it took or gave it up.
+    private func noteTranscribedFocus(rowId: String, nodeId: String, value: Any?) {
+        let suffix = ".focused"
+        guard nodeId.hasSuffix(suffix) else { return }
+        let key = "\(rowId).\(nodeId.dropLast(suffix.count))"
+        let focused = (value as? [String: Any])?["focused"] as? Bool ?? false
+        if focused {
+            focusedFieldKey = key
+        } else if focusedFieldKey == key {
+            focusedFieldKey = nil
+        }
     }
 
     private static func toggleValues(in config: ListConfig) -> [String: Bool] {
@@ -109,6 +174,7 @@ class NativeListView: NativeHostingView {
                         "onToggle", arguments: ["id": id, "value": value])
                 },
                 onTrailingEvent: { [weak self] rowId, nodeId, value in
+                    self?.noteTranscribedFocus(rowId: rowId, nodeId: nodeId, value: value)
                     self?.channel?.invokeMethod(
                         "onTrailingEvent",
                         arguments: ["rowId": rowId, "nodeId": nodeId, "value": value])
@@ -128,7 +194,11 @@ class NativeListView: NativeHostingView {
             result(intrinsicSize())
         // The route is leaving; drop the responder now so the keyboard rides
         // the transition down instead of waiting for this view's disposal.
+        // Logged because "the route dismissed it" and "it dropped on its own"
+        // look identical on screen, and this is the line that tells them apart.
         case "endEditing":
+            NativeLog.log(
+                "list endEditing (route leaving) focused=\(focusedFieldKey ?? "none")")
             _view.endEditing(true)
             result(nil)
         case "updateList":

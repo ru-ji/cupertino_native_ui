@@ -38,7 +38,6 @@ class NativeTextFieldFactory: NSObject, FlutterPlatformViewFactory {
 class NativeTextFieldView: NativeHostingView {
     private let channel: FlutterMethodChannel
     private let model: TextFieldModel
-    private var focusCommandId = 0
 
     /// Whether the field currently holds focus, so a config push knows whether
     /// the keyboard accessory is live and needs the new toolbar.
@@ -201,9 +200,10 @@ class NativeTextFieldView: NativeHostingView {
         )
     }
 
+    /// Routed through the model so its sequence is the only one issuing ids —
+    /// see `TextFieldModel.requestFocus`.
     private func setFocus(_ focused: Bool) {
-        focusCommandId += 1
-        model.focusCommand = (id: focusCommandId, focused: focused)
+        model.requestFocus(focused)
     }
 
     // MARK: - Method channel

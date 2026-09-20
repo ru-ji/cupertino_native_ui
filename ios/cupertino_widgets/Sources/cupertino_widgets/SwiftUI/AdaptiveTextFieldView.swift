@@ -13,6 +13,21 @@ final class TextFieldModel: ObservableObject {
     /// Bumped by `focus` / `unfocus` so the view can act on a repeated request.
     @Published var focusCommand: (id: Int, focused: Bool)?
 
+    /// The sequence behind [focusCommand]. One counter for every driver — the
+    /// platform view's own `focus`/`unfocus`, and the re-focus that puts the
+    /// responder back after the hosting view left the window — because
+    /// `BackingTextField` only acts on a command whose id it has not seen.
+    /// Two counters would hand out the same id twice and swallow the second
+    /// request, which is a keyboard that never comes back.
+    private var focusCommandSeq = 0
+
+    /// Asks the backing field to take (or give up) the responder. Safe to call
+    /// outside a view update: the field applies it on the next main-queue turn.
+    func requestFocus(_ focused: Bool) {
+        focusCommandSeq += 1
+        focusCommand = (id: focusCommandSeq, focused: focused)
+    }
+
     /// The keyboard accessory for this field, or nil. Set on the backing
     /// `UITextField` while it is still unfocused, so UIKit presents it in the
     /// same animation as the keyboard — no `reloadInputViews()`.

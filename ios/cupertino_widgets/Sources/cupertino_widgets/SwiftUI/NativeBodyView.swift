@@ -62,6 +62,19 @@ final class NativeBodyModel: ObservableObject {
         return model
     }
 
+    /// Puts the responder back on a field this model already owns.
+    ///
+    /// Needed because a transcribed field is a real `UITextField` living inside
+    /// the *list's* platform view, and the iOS engine takes a platform view out
+    /// of the `FlutterView` on any frame it is not composited. A view outside a
+    /// window cannot be first responder, so UIKit resigns the field and the
+    /// keyboard closes — and nothing brings it back on its own. The standalone
+    /// field solves the same problem the same way; see
+    /// `NativeTextFieldView.wantsFocusWhenVisible`.
+    func refocusField(id: String) {
+        fieldModels[id]?.requestFocus(true)
+    }
+
     /// Pushes updated field configs (placeholder, enabled, glass) without the
     /// fields losing what the user has typed. Called when Dart sends a new
     /// tree, outside any view update.
