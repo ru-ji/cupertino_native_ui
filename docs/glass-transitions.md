@@ -46,7 +46,7 @@ device pixels unless marked pt.
 
 ## The finding: a union needs a shape that fills its box
 
-Two glasses, gap 20pt, blend 0, tinted blue on a dark page:
+Two glasses, gap 20pt, blend 0, tinted blue on a dark page. **Before the fix:**
 
 | item `shape` | A: no `unionId` | B: same `unionId` |
 | --- | --- | --- |
@@ -80,7 +80,12 @@ id with another is drawn as a capsule**, whatever `shape` says. On a square item
 a capsule *is* a circle, so a lone glass is unaffected; `roundedRect` is still
 honoured, since it fills its frame too.
 
-After the fix, the `circle` row's column B measures 322px like the others.
+**After the fix**, the `circle` row's column B measures 322px like the others,
+which is the frame below — the same matrix, same build, with only the shape rule
+changed. The whole table above is therefore one screenshot apart from the whole
+of this one:
+
+![The shape matrix after the fix](glass-shape-matrix.jpg)
 
 ### The blend radius is a separate question, and was not the bug
 
