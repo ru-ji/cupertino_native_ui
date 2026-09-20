@@ -23,11 +23,15 @@ class _TextFieldDemoPageState extends State<TextFieldDemoPage> {
 
   /// One field's bar: previous / next / done, in a glass capsule — the shape
   /// the system bar uses on iOS 26.
+  ///
+  /// The items are white, not `CupertinoColors.label`, because the capsule is
+  /// glass over the keyboard and the system's own bar items are white there in
+  /// both themes. White is a plain `Color`, so there is nothing to resolve from
+  /// the context — where `label` is a `CupertinoDynamicColor` and would ship
+  /// its light-mode black, the bar being built by SwiftUI from an ARGB value.
   List<Widget> _keyboardToolbar(int index) {
     void moveTo(int target) => _toolbarFields[target].requestFocus();
-    // Resolved here: the bar is built by SwiftUI from an ARGB value, so an
-    // unresolved CupertinoDynamicColor would ship its light-mode black.
-    final labelColor = CupertinoColors.label.resolveFrom(context);
+    const itemColor = CupertinoColors.white;
     return [
       // The bar takes the height of what it is given, so the room around the
       // capsule is this padding — nothing is added natively.
@@ -42,23 +46,30 @@ class _TextFieldDemoPageState extends State<TextFieldDemoPage> {
             children: [
               CupertinoNativeButton(
                 onPressed: index > 0 ? () => moveTo(index - 1) : null,
-                color: labelColor,
-                child: CupertinoSymbolImage.symbol(CupertinoSymbols.chevronUp),
+                color: itemColor,
+                child: CupertinoSymbolImage.symbol(
+                  CupertinoSymbols.chevronUp,
+                  color: itemColor,
+                ),
               ),
               CupertinoNativeButton(
                 onPressed: index < _toolbarFields.length - 1
                     ? () => moveTo(index + 1)
                     : null,
-                color: labelColor,
+                color: itemColor,
                 child: CupertinoSymbolImage.symbol(
                   CupertinoSymbols.chevronDown,
+                  color: itemColor,
                 ),
               ),
               const Spacer(),
               CupertinoNativeButton(
                 onPressed: () => FocusManager.instance.primaryFocus?.unfocus(),
-                color: labelColor,
-                child: CupertinoSymbolImage.symbol(CupertinoSymbols.checkmark),
+                color: itemColor,
+                child: CupertinoSymbolImage.symbol(
+                  CupertinoSymbols.checkmark,
+                  color: itemColor,
+                ),
               ),
             ],
           ),

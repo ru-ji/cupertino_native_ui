@@ -19,9 +19,8 @@ import UIKit
 /// accessory view. UIKit gives the accessory its own strip above the keyboard,
 /// so the bar lands inside the keyboard's own frame — it makes the keyboard
 /// taller rather than floating over it — and the bar draws no slab of its own
-/// where the SwiftUI placement drew one. The strip gets the keyboard's chrome
-/// material instead, so nothing of the page shows through it; see
-/// [KeyboardInputView].
+/// where the SwiftUI placement drew one. The strip is left unpainted, so the
+/// page shows through it; see [KeyboardInputView].
 ///
 /// ## What the first cut got wrong
 ///
@@ -145,12 +144,6 @@ final class KeyboardAccessoryBar: NSObject {
                 + "host=\(ObjectIdentifier(host)) inputView=\(ObjectIdentifier(inputView))")
     }
 
-    /// Keeps the toolbar's appearance in step with the app theme. Called on
-    /// `setBrightness`, which can arrive without a toolbar rebuild (the nodes
-    /// themselves did not change), so the retained host's style is re-pinned.
-    /// Keeps the toolbar's appearance in step with the app theme. Called on
-    /// `setBrightness`, which can arrive without a toolbar rebuild (the nodes
-    /// themselves did not change), so the retained host's style is re-pinned.
     /// Bars live here, one per field id, for the process's life.
     ///
     /// They cannot be owned by a SwiftUI view: `init` runs on every
@@ -183,6 +176,9 @@ final class KeyboardAccessoryBar: NSObject {
         return bar
     }
 
+    /// Keeps the toolbar's appearance in step with the app theme. Called on
+    /// `setBrightness`, which can arrive without a toolbar rebuild (the nodes
+    /// themselves did not change), so the retained host's style is re-pinned.
     func applyBrightness(_ isDark: Bool) {
         let style: UIUserInterfaceStyle = isDark ? .dark : .light
         guard contentHost.overrideUserInterfaceStyle != style else { return }
@@ -202,33 +198,26 @@ final class KeyboardAccessoryBar: NSObject {
 /// with `.default` style, and with no style override at all. A plain view is
 /// what the keyboard actually places.
 ///
-/// ## The backdrop
+/// ## Unpainted
 ///
 /// UIKit places the accessory in its own strip above the keyboard, and the
 /// keyboard's own backdrop does not extend under it — measured on a red page,
 /// the strip behind the bar came back red while the keyboard's suggestion row
-/// stayed grey. So a bar that paints nothing shows the app through itself,
-/// which reads as a hole punched between the page and the keyboard, and it is
-/// worst exactly where this bar is used: a `CupertinoNativeGlassContainer` in
-/// the toolbar refracts the scrolling page straight through that gap.
+/// stayed grey. So the bar shows the page through itself, which is what the
+/// toolbar wants: the capsule in it is a `CupertinoNativeGlassContainer`, and
+/// glass is only worth having if there is something behind it to refract. A
+/// material painted under the glass would be glass over a slab of keyboard
+/// chrome.
 ///
-/// The strip is therefore given the keyboard's own chrome material —
-/// `.systemChromeMaterial`, the effect UIKit uses for keyboard chrome — so it
-/// follows the keyboard's light/dark rather than a colour guessed here. It sits
-/// behind the content and takes no touches, so the toolbar's buttons keep every
-/// tap. The bar itself stays non-opaque: the material is the background, not a
-/// slab painted over it.
+/// The one consequence to know about is the seam. The strip is page-coloured,
+/// so a light keyboard under a dark page meets that dark colour at the top of
+/// the strip and steps back to grey below it.
 @available(iOS 26.0, *)
 final class KeyboardInputView: UIView {
     private let barHeight: CGFloat
 
-    /// The keyboard-chrome backdrop the SwiftUI content floats on. Behind
-    /// everything, and inert.
-    private let backdrop: UIVisualEffectView
-
     init(height: CGFloat) {
         barHeight = height
-        backdrop = UIVisualEffectView(effect: UIBlurEffect(style: .systemChromeMaterial))
         // A *real* width, not `UIView.noIntrinsicMetric`: `UIPeripheralHost`
         // reads the accessory's size from this frame, and the first version
         // handed it -1 — which the keyboard installed as `frame = (-1 0; 1 48)`,
@@ -238,17 +227,10 @@ final class KeyboardInputView: UIView {
         super.init(frame: CGRect(x: 0, y: 0, width: Self.startingWidth, height: height))
         // `.flexibleWidth` so the stretch above actually happens.
         autoresizingMask = [.flexibleWidth]
-        // The bar paints nothing itself — the material below it does, and the
-        // SwiftUI content floats on that.
+        // The bar paints nothing at all — the SwiftUI content added on top is
+        // the whole of what is drawn.
         isOpaque = false
         backgroundColor = .clear
-
-        backdrop.frame = bounds
-        backdrop.autoresizingMask = [.flexibleWidth, .flexibleHeight]
-        // Inert: the buttons above it must receive their taps.
-        backdrop.isUserInteractionEnabled = false
-        // At the back, before the hosted SwiftUI content is added on top.
-        insertSubview(backdrop, at: 0)
     }
 
     @available(*, unavailable)
