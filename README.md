@@ -319,19 +319,31 @@ A page with no scaffold needs neither: nothing shrinks for the keyboard unless a
 scaffold shrinks it, so the content runs under the bar and the bar shows it.
 
 **Keeping the field itself visible is a separate question**, and the answer is not
-the same one. iOS does not move views for the keyboard — the inset is data, not
-layout — so exactly two things lift a field clear of it: a box that shrank (a
-scaffold resizing, or your own padding driven by `viewInsets`), or a scrollable
-ancestor. A focused field scrolls itself into view through `showOnScreen` on every
-rising metrics tick, and `showOnScreen` walks up to a viewport; with no scrollable
-above it the call reaches the root and does nothing. A field pinned to the bottom
-of a plain `Container`, with no scaffold and no scrollable, therefore stays under
-the keyboard no matter what — `scrollPadding` included, since there is nothing to
+the same one. SwiftUI moves a `TextField` up on its own, but a Flutter app is not
+SwiftUI: its root is a `FlutterViewController`/`FlutterView` — UIKit views, and
+UIKit does no keyboard avoidance at all. The engine only *reports* the inset as
+`MediaQuery.viewInsets`; nothing acts on it. So in Flutter exactly two things lift
+a field clear of the keyboard: a box that shrank (a scaffold resizing, or your own
+padding driven by `viewInsets`), or a scrollable ancestor. A focused field scrolls
+itself into view through `showOnScreen` on every rising metrics tick, and
+`showOnScreen` walks up to a viewport; with no scrollable above it the call
+reaches the root and does nothing. A field pinned to the bottom of a plain
+`Container`, with no scaffold and no scrollable, therefore stays under the
+keyboard no matter what — `scrollPadding` included, since there is nothing to
 scroll. Put it in a `ListView`/`CustomScrollView`, or move its container yourself
 with `Padding(padding: EdgeInsets.only(bottom:
 MediaQuery.viewInsetsOf(context).bottom))` — plain `Padding`, not
 `AnimatedPadding`: the engine already delivers the inset frame by frame along the
 keyboard's own curve, and animating it again only adds lag.
+
+That SwiftUI behaviour is the same mechanism as the scaffold's — the keyboard is
+contributed to the *safe area*, so the layout region gets shorter and the content
+is laid out in a smaller box. It is why this package turns it **off** for the
+controls it hosts: `NativeHostingView.attach` sets `safeAreaRegions = []` by
+default, because avoidance inside a Flutter-sized platform view slides a control's
+content up over its Flutter neighbours. `CupertinoNativePageScaffold` opts back in
+— `keyboardAvoidance: true`, then `.all` or `.container` depending on
+`resizeToAvoidBottomInset`.
 
 A glass capsule can hold its own row:
 
