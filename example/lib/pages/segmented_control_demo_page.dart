@@ -1,8 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:cupertino_widgets/cupertino_widgets.dart';
 
-import '../widgets/settings_ui.dart';
-
 /// [CupertinoNativeSlidingSegmentedControl] as iOS uses it: straight on the
 /// page, not inside a card. Its `.menu` constructor is the same options behind a button.
 class SegmentedControlDemoPage extends StatefulWidget {
@@ -25,66 +23,100 @@ class _SegmentedControlDemoPageState extends State<SegmentedControlDemoPage> {
 
   @override
   Widget build(BuildContext context) {
-    return DemoScaffold(
-      title: 'Segmented Control',
-      children: [
-        _group(
-          context,
-          'Standard',
-          CupertinoNativeSlidingSegmentedControl(
-            children: {for (final (i, l) in _ranges.indexed) i: Text(l)},
-            groupValue: _range,
-            onValueChanged: (v) => setState(() => _range = v!),
+    return CupertinoPageScaffold(
+      child: CustomScrollView(
+        slivers: [
+          CupertinoNativeSliverNavigationBar(
+            largeTitle: 'Segmented Control',
+            leading: Navigator.canPop(context)
+                ? CupertinoNativeButton.glass(
+                    borderShape: CupertinoNativeButtonBorderShape.circle,
+                    onPressed: () => Navigator.pop(context),
+                    child: CupertinoSymbolImage.symbol(
+                      CupertinoSymbols.chevronBackward,
+                    ),
+                  )
+                : null,
           ),
-        ),
-        _group(
-          context,
-          'Two segments',
-          Center(
-            child: SizedBox(
-              width: 200,
-              child: CupertinoNativeSlidingSegmentedControl(
-                children: {for (final (i, l) in _filters.indexed) i: Text(l)},
-                groupValue: _filter,
-                onValueChanged: (v) => setState(() => _filter = v!),
-              ),
+          SliverPadding(
+            padding: EdgeInsets.only(
+              bottom:
+                  MediaQuery.paddingOf(context).bottom +
+                  MediaQuery.viewInsetsOf(context).bottom +
+                  40,
             ),
-          ),
-        ),
-        _group(
-          context,
-          'Thumb color',
-          CupertinoNativeSlidingSegmentedControl(
-            children: {for (final (i, l) in _ranges.indexed) i: Text(l)},
-            groupValue: _tinted,
-            thumbColor: CupertinoColors.systemPurple,
-            onValueChanged: (v) => setState(() => _tinted = v!),
-          ),
-        ),
-        CupertinoNativeList(
-          sections: [
-            CupertinoNativeListSection(
-              rowPadding: kSettingsRowPadding,
-              minHeight: kSettingsRowMinHeight,
-              header: 'Picker',
-              footer:
-                  'The same options behind a button — lowered straight into '
-                  'SwiftUI as the row\'s trailing native menu.',
+            sliver: SliverList.list(
               children: [
-                CupertinoNativeListTile(
-                  id: 'sort',
-                  title: 'Sort By',
-                  trailing: CupertinoNativeSlidingSegmentedControl<int>.menu(
-                    children: {for (final (i, l) in _sorts.indexed) i: Text(l)},
-                    groupValue: _sort,
-                    onValueChanged: (v) => setState(() => _sort = v!),
+                _group(
+                  context,
+                  'Standard',
+                  CupertinoNativeSlidingSegmentedControl(
+                    children: {
+                      for (final (i, l) in _ranges.indexed) i: Text(l),
+                    },
+                    groupValue: _range,
+                    onValueChanged: (v) => setState(() => _range = v!),
                   ),
+                ),
+                _group(
+                  context,
+                  'Two segments',
+                  Center(
+                    child: SizedBox(
+                      width: 200,
+                      child: CupertinoNativeSlidingSegmentedControl(
+                        children: {
+                          for (final (i, l) in _filters.indexed) i: Text(l),
+                        },
+                        groupValue: _filter,
+                        onValueChanged: (v) => setState(() => _filter = v!),
+                      ),
+                    ),
+                  ),
+                ),
+                _group(
+                  context,
+                  'Thumb color',
+                  CupertinoNativeSlidingSegmentedControl(
+                    children: {
+                      for (final (i, l) in _ranges.indexed) i: Text(l),
+                    },
+                    groupValue: _tinted,
+                    thumbColor: CupertinoColors.systemPurple,
+                    onValueChanged: (v) => setState(() => _tinted = v!),
+                  ),
+                ),
+                CupertinoNativeList(
+                  sections: [
+                    CupertinoNativeListSection(
+                      header: 'Picker',
+                      footer:
+                          'The same options behind a button — lowered straight into '
+                          'SwiftUI as the row\'s trailing native menu.',
+                      children: [
+                        CupertinoNativeListTile(
+                          id: 'sort',
+                          title: 'Sort By',
+                          trailing:
+                              CupertinoNativeSlidingSegmentedControl<int>.menu(
+                                children: {
+                                  for (final (i, l) in _sorts.indexed)
+                                    i: Text(l),
+                                },
+                                groupValue: _sort,
+                                onValueChanged: (v) =>
+                                    setState(() => _sort = v!),
+                              ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ],
             ),
-          ],
-        ),
-      ],
+          ),
+        ],
+      ),
     );
   }
 
@@ -96,7 +128,13 @@ class _SegmentedControlDemoPageState extends State<SegmentedControlDemoPage> {
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-            child: Text(header.toUpperCase(), style: footnoteStyle(context)),
+            child: Text(
+              header.toUpperCase(),
+              style: TextStyle(
+                fontSize: 13,
+                color: CupertinoColors.secondaryLabel.resolveFrom(context),
+              ),
+            ),
           ),
           control,
         ],

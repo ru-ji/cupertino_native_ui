@@ -33,6 +33,12 @@ class MyApp extends StatelessWidget {
           brightness: Brightness.dark,
         ),
         themeMode: mode,
+        // Every page is a CupertinoPageScaffold, which is not a Material —
+        // so a bare `Text` fell back to Flutter's debug style, the yellow
+        // underline. One transparent Material at the root gives every page a
+        // text style to inherit, and paints nothing.
+        builder: (context, child) =>
+            Material(type: MaterialType.transparency, child: child!),
         home: const HomePage(),
       ),
     );

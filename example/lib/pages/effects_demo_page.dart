@@ -1,9 +1,8 @@
 import 'dart:math' as math;
 
-import 'package:flutter/widgets.dart';
-import 'package:cupertino_widgets/cupertino_widgets.dart';
+import 'package:flutter/cupertino.dart';
 
-import '../widgets/settings_ui.dart';
+import 'package:cupertino_widgets/cupertino_widgets.dart';
 
 /// Verifies that standard Flutter effect widgets apply to the plugin's
 /// native (Swift) views: the stage hosts a button and a `UISwitch`, and the
@@ -69,77 +68,101 @@ class _EffectsDemoPageState extends State<EffectsDemoPage> {
     // Offstage keeps them alive but unpainted.
     stage = Offstage(offstage: _offstage, child: stage);
 
-    return DemoScaffold(
-      title: 'Widget Effects',
-      children: [
-        // Fixed-height stage so hiding the natives doesn't reflow the page.
-        SizedBox(height: 140, child: Center(child: stage)),
-        CupertinoNativeList(
-          onRowTap: (id) => setState(() {
-            switch (id) {
-              case 'opacity':
-                _opacityIndex = (_opacityIndex + 1) % _opacities.length;
-              case 'visibility':
-                _visible = !_visible;
-              case 'offstage':
-                _offstage = !_offstage;
-              case 'scale':
-                _scaleIndex = (_scaleIndex + 1) % _scales.length;
-              case 'rotation':
-                _rotationIndex = (_rotationIndex + 1) % _rotations.length;
-              case 'translate':
-                _translationIndex =
-                    (_translationIndex + 1) % _translations.length;
-            }
-          }),
-          sections: [
-            CupertinoNativeListSection(
-              rowPadding: kSettingsRowPadding,
-              minHeight: kSettingsRowMinHeight,
-              header: 'Effects',
-              footer:
-                  'Every effect reaches the UIView through platform-view '
-                  'mutators. Note: an inherited Opacity fades the glass button\'s '
-                  'label but iOS keeps rendering the glass material itself — use '
-                  'Visibility or Offstage to fully hide glass surfaces.',
+    return CupertinoPageScaffold(
+      child: CustomScrollView(
+        slivers: [
+          CupertinoNativeSliverNavigationBar(
+            largeTitle: 'Widget Effects',
+            leading: Navigator.canPop(context)
+                ? CupertinoNativeButton.glass(
+                    borderShape: CupertinoNativeButtonBorderShape.circle,
+                    onPressed: () => Navigator.pop(context),
+                    child: CupertinoSymbolImage.symbol(
+                      CupertinoSymbols.chevronBackward,
+                    ),
+                  )
+                : null,
+          ),
+          SliverPadding(
+            padding: EdgeInsets.only(
+              bottom:
+                  MediaQuery.paddingOf(context).bottom +
+                  MediaQuery.viewInsetsOf(context).bottom +
+                  40,
+            ),
+            sliver: SliverList.list(
               children: [
-                CupertinoNativeListTile(
-                  id: 'opacity',
-                  title: 'Opacity',
-                  additionalInfo:
-                      '${(_opacities[_opacityIndex] * 100).round()}%',
-                ),
-                CupertinoNativeListTile(
-                  id: 'visibility',
-                  title: 'Visibility',
-                  additionalInfo: _visible ? 'visible' : 'hidden',
-                ),
-                CupertinoNativeListTile(
-                  id: 'offstage',
-                  title: 'Offstage',
-                  additionalInfo: _offstage ? 'offstage' : 'on stage',
-                ),
-                CupertinoNativeListTile(
-                  id: 'scale',
-                  title: 'Scale',
-                  additionalInfo: '×${_scales[_scaleIndex]}',
-                ),
-                CupertinoNativeListTile(
-                  id: 'rotation',
-                  title: 'Rotation',
-                  additionalInfo: '${_rotations[_rotationIndex]}°',
-                ),
-                CupertinoNativeListTile(
-                  id: 'translate',
-                  title: 'Translate',
-                  additionalInfo:
-                      '${_translations[_translationIndex].round()}px',
+                // Fixed-height stage so hiding the natives doesn't reflow the page.
+                SizedBox(height: 140, child: Center(child: stage)),
+                CupertinoNativeList(
+                  onRowTap: (id) => setState(() {
+                    switch (id) {
+                      case 'opacity':
+                        _opacityIndex = (_opacityIndex + 1) % _opacities.length;
+                      case 'visibility':
+                        _visible = !_visible;
+                      case 'offstage':
+                        _offstage = !_offstage;
+                      case 'scale':
+                        _scaleIndex = (_scaleIndex + 1) % _scales.length;
+                      case 'rotation':
+                        _rotationIndex =
+                            (_rotationIndex + 1) % _rotations.length;
+                      case 'translate':
+                        _translationIndex =
+                            (_translationIndex + 1) % _translations.length;
+                    }
+                  }),
+                  sections: [
+                    CupertinoNativeListSection(
+                      header: 'Effects',
+                      footer:
+                          'Every effect reaches the UIView through platform-view '
+                          'mutators. Note: an inherited Opacity fades the glass button\'s '
+                          'label but iOS keeps rendering the glass material itself — use '
+                          'Visibility or Offstage to fully hide glass surfaces.',
+                      children: [
+                        CupertinoNativeListTile(
+                          id: 'opacity',
+                          title: 'Opacity',
+                          additionalInfo:
+                              '${(_opacities[_opacityIndex] * 100).round()}%',
+                        ),
+                        CupertinoNativeListTile(
+                          id: 'visibility',
+                          title: 'Visibility',
+                          additionalInfo: _visible ? 'visible' : 'hidden',
+                        ),
+                        CupertinoNativeListTile(
+                          id: 'offstage',
+                          title: 'Offstage',
+                          additionalInfo: _offstage ? 'offstage' : 'on stage',
+                        ),
+                        CupertinoNativeListTile(
+                          id: 'scale',
+                          title: 'Scale',
+                          additionalInfo: '×${_scales[_scaleIndex]}',
+                        ),
+                        CupertinoNativeListTile(
+                          id: 'rotation',
+                          title: 'Rotation',
+                          additionalInfo: '${_rotations[_rotationIndex]}°',
+                        ),
+                        CupertinoNativeListTile(
+                          id: 'translate',
+                          title: 'Translate',
+                          additionalInfo:
+                              '${_translations[_translationIndex].round()}px',
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ],
             ),
-          ],
-        ),
-      ],
+          ),
+        ],
+      ),
     );
   }
 }

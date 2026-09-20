@@ -1,4 +1,5 @@
 import Foundation
+import SwiftUI
 
 /// One node of a scaffold's **native body** — a SwiftUI view tree described
 /// from Dart instead of rendered by an embedded FlutterEngine.
@@ -46,6 +47,9 @@ struct BodyNodeConfig: Codable {
     let extent: Double?
     /// `.frame(maxWidth: .infinity)` on this node.
     let expand: Bool?
+
+    /// For `type == "scroll"`.
+    let scroll: ScrollConfig?
 
     // Leaf payloads — exactly one is set, matching `type`.
     let text: BodyTextConfig?
@@ -120,4 +124,34 @@ struct BodySliderConfig: Codable {
     let step: Double?
     let color: Int?
     let enabled: Bool?
+}
+
+/// A scroll node's own settings.
+@available(iOS 26.0, *)
+struct ScrollConfig: Codable {
+    /// "automatic" | "interactively" | "immediately" | "never", from Dart's
+    /// `CupertinoNativeScrollDismissKeyboard`.
+    let dismissKeyboard: String?
+
+    var dismissMode: ScrollDismissesKeyboardMode {
+        switch dismissKeyboard {
+        case "interactively": return .interactively
+        case "immediately": return .immediately
+        case "never": return .never
+        default: return .automatic
+        }
+    }
+}
+
+@available(iOS 26.0, *)
+extension BodyNodeConfig {
+    /// The dismiss mode of the first `scroll` node in this tree, for the
+    /// scaffold's own scroll view to adopt.
+    var firstScrollDismissMode: ScrollDismissesKeyboardMode? {
+        if type == "scroll" { return scroll?.dismissMode }
+        for child in children ?? [] {
+            if let mode = child.firstScrollDismissMode { return mode }
+        }
+        return nil
+    }
 }

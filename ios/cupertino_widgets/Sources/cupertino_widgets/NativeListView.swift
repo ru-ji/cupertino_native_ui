@@ -44,6 +44,14 @@ class NativeListView: NativeHostingView {
     /// the cheap path, which is the common one for a list.
     private var shownToggles: [String: Bool] = [:]
 
+    /// Keyboard bars for the fields transcribed into rows, and the models
+    /// those rows render from.
+    ///
+    /// Both live here, not in a SwiftUI view: a `View`'s `init` runs on every
+    /// re-evaluation, so a bar built there was rebuilt and freed every frame —
+    /// and the accessory a focused field pointed at was already dead.
+    private let rowStore = TrailingRowStore()
+
     init(
         frame: CGRect,
         viewIdentifier viewId: Int64,
@@ -91,6 +99,7 @@ class NativeListView: NativeHostingView {
         return AnyView(
             AdaptiveListView(
                 config: config,
+                store: rowStore,
                 onRowTap: { [weak self] id in
                     self?.channel?.invokeMethod("onRowTap", arguments: ["id": id])
                 },

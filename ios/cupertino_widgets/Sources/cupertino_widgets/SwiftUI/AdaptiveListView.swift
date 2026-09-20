@@ -10,6 +10,13 @@ import SwiftUI
 /// `intrinsicContentSize` is exact) so the Flutter box grows to fit.
 @available(iOS 26.0, *)
 struct AdaptiveListView: View {
+    /// Owns the rows' models and their keyboard bars — see
+    /// [TrailingRowStore]. Held by the platform view.
+    let store: TrailingRowStore
+
+    /// For the hairline: a separator is one device pixel tall.
+    @Environment(\.displayScale) private var displayScale
+
     let config: ListConfig
     let onRowTap: (String) -> Void
     let onToggle: (String, Bool) -> Void
@@ -22,11 +29,13 @@ struct AdaptiveListView: View {
 
     init(
         config: ListConfig,
+        store: TrailingRowStore,
         onRowTap: @escaping (String) -> Void,
         onToggle: @escaping (String, Bool) -> Void,
         onTrailingEvent: @escaping (String, String, Any?) -> Void
     ) {
         self.config = config
+        self.store = store
         self.onRowTap = onRowTap
         self.onToggle = onToggle
         self.onTrailingEvent = onTrailingEvent
@@ -103,15 +112,25 @@ struct AdaptiveListView: View {
                         .overlay(alignment: .bottom) {
                             if index < section.rows.count - 1 {
                                 Rectangle()
-                                    .fill(.separator)
-                                    .frame(height: 1.0)
+                                    // `separator`, not `.separator`: the
+                                    // opaque one reads as a grey line at full
+                                    // strength. UIKit's is translucent, and a
+                                    // hairline — one device pixel, not one
+                                    // point, or it is three times too thick on
+                                    // a 3x screen.
+                                    .fill(Color(uiColor: .separator))
+                                    .frame(height: 1.0 / displayScale)
                                     .padding(.leading, separatorInset(row))
                             }
                         }
                 }
             }
             .background(
-                isPlain ? AnyShapeStyle(Color.clear) : AnyShapeStyle(.background.tertiary)
+                // The Settings card colour. `.background.tertiary` is a
+                // different grey, and visibly so against a grouped page.
+                isPlain
+                    ? AnyShapeStyle(Color.clear)
+                    : AnyShapeStyle(Color(uiColor: .secondarySystemGroupedBackground))
             )
             .clipShape(
                 RoundedRectangle(cornerRadius: isInset ? cornerRadius : 0, style: .continuous)
@@ -194,6 +213,7 @@ struct AdaptiveListView: View {
                     TrailingRow(
                         rowId: row.id,
                         nodes: trailing,
+                        store: store,
                         onEvent: onTrailingEvent)
                 }
             }
@@ -237,21 +257,16 @@ struct AdaptiveListView: View {
 struct TrailingRow: View {
     let rowId: String
     let nodes: [BodyNodeConfig]
+    let store: TrailingRowStore
     let onEvent: (String, String, Any?) -> Void
 
-    @StateObject private var model: NativeBodyModel
-
-    init(
-        rowId: String,
-        nodes: [BodyNodeConfig],
-        onEvent: @escaping (String, String, Any?) -> Void
-    ) {
-        self.rowId = rowId
-        self.nodes = nodes
-        self.onEvent = onEvent
-        let seed = NativeBodyModel()
-        seed.seedAll(nodes)
-        _model = StateObject(wrappedValue: seed)
+    /// Read, never created here: the store owns it, so re-evaluating this
+    /// view cannot churn models or bars.
+    private var model: NativeBodyModel {
+        store.model(
+            rowId: rowId,
+            nodes: nodes,
+            onEvent: { nodeId, value in onEvent(rowId, nodeId, value) })
     }
 
     var body: some View {
@@ -274,6 +289,54 @@ extension View {
             self.tint(Color(argb: argb))
         } else {
             self
+        }
+    }
+}
+
+/// The models and keyboard bars of a list's transcribed rows.
+///
+/// Owned by the platform view. A row's model is created once per row id and
+/// kept, and a field that asked for a toolbar gets its bar attached here —
+/// outside any view update, so nothing is rebuilt per frame.
+@available(iOS 26.0, *)
+final class TrailingRowStore {
+    private var models: [String: NativeBodyModel] = [:]
+    private var bars: [String: KeyboardAccessoryBar] = [:]
+
+    func model(
+        rowId: String,
+        nodes: [BodyNodeConfig],
+        onEvent: @escaping (String, Any?) -> Void
+    ) -> NativeBodyModel {
+        if let existing = models[rowId] { return existing }
+        let model = NativeBodyModel()
+        model.seedAll(nodes)
+        models[rowId] = model
+        for node in nodes { attachAccessory(node, rowId: rowId, model: model, onEvent: onEvent) }
+        return model
+    }
+
+    private func attachAccessory(
+        _ node: BodyNodeConfig,
+        rowId: String,
+        model: NativeBodyModel,
+        onEvent: @escaping (String, Any?) -> Void
+    ) {
+        if let id = node.id, let config = node.textField,
+            let items = config.keyboardToolbar, !items.isEmpty
+        {
+            let key = "\(rowId).\(id)"
+            let bar =
+                bars[key]
+                ?? KeyboardAccessoryBar(
+                    nodes: items,
+                    isDark: node.isDark == true,
+                    onEvent: { itemId, value in onEvent("\(id).toolbar.\(itemId)", value) })
+            bars[key] = bar
+            model.fieldModel(for: id, config: config).accessory = bar.inputView
+        }
+        for child in node.children ?? [] {
+            attachAccessory(child, rowId: rowId, model: model, onEvent: onEvent)
         }
     }
 }

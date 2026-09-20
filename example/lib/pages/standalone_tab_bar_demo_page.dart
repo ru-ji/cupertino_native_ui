@@ -1,7 +1,6 @@
-import 'package:flutter/widgets.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:cupertino_widgets/cupertino_widgets.dart';
 
-import '../widgets/settings_ui.dart';
 import 'home_tab_page.dart';
 import 'profile_tab_page.dart';
 import 'search_tab_page.dart';
@@ -29,39 +28,68 @@ class _StandaloneTabBarDemoPageState extends State<StandaloneTabBarDemoPage> {
 
   @override
   Widget build(BuildContext context) {
-    return DemoScaffold(
-      title: 'Tab Bar',
-      bottomBar: CupertinoNativeTabBar(
-        currentIndex: _tabIds.indexOf(_selectedTab),
-        scrollEdgeEffect: CupertinoScrollEdgeEffectStyle.soft,
-        split: true,
-        rightCount: 1,
-        items: [
-          CupertinoNativeTab(
-            title: 'Home',
-            icon: CupertinoNativeIcon.symbol(CupertinoSymbols.houseFill),
-            id: 'home',
+    return CupertinoPageScaffold(
+      child: Stack(
+        children: [
+          CustomScrollView(
+            slivers: [
+              CupertinoNativeSliverNavigationBar(
+                largeTitle: 'Tab Bar',
+                leading: Navigator.canPop(context)
+                    ? CupertinoNativeButton.glass(
+                        borderShape: CupertinoNativeButtonBorderShape.circle,
+                        onPressed: () => Navigator.pop(context),
+                        child: CupertinoSymbolImage.symbol(
+                          CupertinoSymbols.chevronBackward,
+                        ),
+                      )
+                    : null,
+              ),
+              SliverPadding(
+                padding: EdgeInsets.only(
+                  bottom: MediaQuery.paddingOf(context).bottom + 88,
+                ),
+                sliver: SliverList.list(children: [_body()]),
+              ),
+            ],
           ),
-          CupertinoNativeTab(
-            title: 'Profile',
-            icon: CupertinoNativeIcon.symbol(CupertinoSymbols.personFill),
-            id: 'profile',
-          ),
-          CupertinoNativeTab(
-            title: 'Settings',
-            icon: CupertinoNativeIcon.symbol(CupertinoSymbols.gear),
-            id: 'settings',
-          ),
-          CupertinoNativeTab(
-            title: '',
-            icon: CupertinoNativeIcon.symbol(CupertinoSymbols.magnifyingglass),
-            id: 'search',
-            role: CupertinoNativeTabRole.search,
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: CupertinoNativeTabBar(
+              currentIndex: _tabIds.indexOf(_selectedTab),
+              scrollEdgeEffect: CupertinoScrollEdgeEffectStyle.soft,
+              split: true,
+              rightCount: 1,
+              items: [
+                CupertinoNativeTab(
+                  title: 'Home',
+                  icon: CupertinoNativeIcon.symbol(CupertinoSymbols.houseFill),
+                  id: 'home',
+                ),
+                CupertinoNativeTab(
+                  title: 'Profile',
+                  icon: CupertinoNativeIcon.symbol(CupertinoSymbols.personFill),
+                  id: 'profile',
+                ),
+                CupertinoNativeTab(
+                  title: 'Settings',
+                  icon: CupertinoNativeIcon.symbol(CupertinoSymbols.gear),
+                  id: 'settings',
+                ),
+                CupertinoNativeTab(
+                  title: '',
+                  icon: CupertinoNativeIcon.symbol(
+                    CupertinoSymbols.magnifyingglass,
+                  ),
+                  id: 'search',
+                  role: CupertinoNativeTabRole.search,
+                ),
+              ],
+              onTap: (i) => setState(() => _selectedTab = _tabIds[i]),
+            ),
           ),
         ],
-        onTap: (i) => setState(() => _selectedTab = _tabIds[i]),
       ),
-      children: [_body()],
     );
   }
 

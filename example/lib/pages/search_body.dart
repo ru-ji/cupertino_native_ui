@@ -3,8 +3,6 @@ import 'dart:async';
 import 'package:flutter/cupertino.dart';
 import 'package:cupertino_widgets/cupertino_widgets.dart';
 
-import '../widgets/settings_ui.dart';
-
 /// Body for the searchable scaffold demo. It runs in its own FlutterEngine
 /// inside the native SwiftUI ScrollView and listens to
 /// [CupertinoNativePageScaffold.searchState] — the live snapshot of the native
@@ -130,20 +128,21 @@ class _SearchBodyState extends State<SearchBody> {
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(32, 16, 32, 8),
-          child: Text(header.toUpperCase(), style: footnoteStyle(context)),
+          child: Text(
+            header.toUpperCase(),
+            style: TextStyle(
+              fontSize: 13,
+              color: CupertinoColors.secondaryLabel.resolveFrom(context),
+            ),
+          ),
         ),
         // Drawn Flutter rows, NOT CupertinoNativeList: this body already runs
         // inside a native platform view, and a platform view nested in another
         // renders blank — the empty body after opening/closing search.
-        SettingsSection(
+        _Card(
           children: [
             for (final (name, category) in items)
-              SettingsRow(
-                title: name,
-                subtitle: category,
-                showChevron: true,
-                onTap: () {},
-              ),
+              _Row(title: name, subtitle: category, onTap: () {}),
           ],
         ),
         const SizedBox(height: 24),
@@ -158,11 +157,17 @@ class _SearchBodyState extends State<SearchBody> {
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(32, 16, 32, 8),
-          child: Text('SUGGESTED', style: footnoteStyle(context)),
+          child: Text(
+            'SUGGESTED',
+            style: TextStyle(
+              fontSize: 13,
+              color: CupertinoColors.secondaryLabel.resolveFrom(context),
+            ),
+          ),
         ),
-        SettingsSection(
+        _Card(
           children: [
-            for (final s in _suggestions) SettingsRow(title: s, onTap: () {}),
+            for (final s in _suggestions) _Row(title: s, onTap: () {}),
           ],
         ),
         const SizedBox(height: 24),
@@ -173,7 +178,7 @@ class _SearchBodyState extends State<SearchBody> {
   Widget _loader() {
     return const Padding(
       padding: EdgeInsets.symmetric(vertical: 48),
-      child: Center(child: ActivitySpinner(size: 28)),
+      child: Center(child: CupertinoActivityIndicator(radius: 14)),
     );
   }
 
@@ -181,7 +186,86 @@ class _SearchBodyState extends State<SearchBody> {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 48),
       child: Center(
-        child: Text('No results for "$_query"', style: footnoteStyle(context)),
+        child: Text(
+          'No results for "$_query"',
+          style: TextStyle(
+            fontSize: 13,
+            color: CupertinoColors.secondaryLabel.resolveFrom(context),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The grouped card these rows sit in. Flutter-drawn on purpose: this body
+/// runs inside a native view, and a native list nested in one renders blank.
+class _Card extends StatelessWidget {
+  const _Card({required this.children});
+
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        color: CupertinoColors.secondarySystemGroupedBackground.resolveFrom(
+          context,
+        ),
+        borderRadius: BorderRadius.circular(26),
+      ),
+      child: Column(children: children),
+    );
+  }
+}
+
+/// One row of [_Card]: title, optional subtitle, disclosure chevron.
+class _Row extends StatelessWidget {
+  const _Row({required this.title, this.subtitle, this.onTap});
+
+  final String title;
+  final String? subtitle;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = CupertinoTheme.of(context);
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: Container(
+        constraints: const BoxConstraints(minHeight: 46),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(title, style: theme.textTheme.textStyle),
+                  if (subtitle != null)
+                    Text(
+                      subtitle!,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: CupertinoColors.secondaryLabel.resolveFrom(
+                          context,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            Icon(
+              CupertinoIcons.chevron_right,
+              size: 14,
+              color: CupertinoColors.tertiaryLabel.resolveFrom(context),
+            ),
+          ],
+        ),
       ),
     );
   }

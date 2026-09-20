@@ -1,10 +1,6 @@
-import 'package:flutter/cupertino.dart'
-    show CupertinoColors, CupertinoDynamicColor, NavigationBarBottomMode;
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart' show Scaffold;
-import 'package:flutter/widgets.dart';
 import 'package:cupertino_widgets/cupertino_widgets.dart';
-
-import '../widgets/settings_ui.dart';
 
 /// A music library, built the way an iOS app builds one — and a full workout
 /// for [CupertinoNativeSliverNavigationBar].
@@ -106,7 +102,7 @@ class _AppBarDemoPageState extends State<AppBarDemoPage> {
     return Scaffold(
       backgroundColor: CupertinoColors.systemBackground.resolveFrom(context),
       body: DefaultTextStyle(
-        style: rowTitleStyle(context),
+        style: CupertinoTheme.of(context).textTheme.textStyle,
         child: CustomScrollView(
           slivers: [
             CupertinoNativeSliverNavigationBar.search(
@@ -193,7 +189,10 @@ class _AppBarDemoPageState extends State<AppBarDemoPage> {
         child: Builder(
           builder: (context) => Text(
             '${_playlists.length} playlists · Synced just now',
-            style: footnoteStyle(context),
+            style: TextStyle(
+              fontSize: 13,
+              color: CupertinoColors.secondaryLabel.resolveFrom(context),
+            ),
           ),
         ),
       ),
@@ -223,13 +222,16 @@ class _AppBarDemoPageState extends State<AppBarDemoPage> {
               children: [
                 Text(
                   'No Results',
-                  style: rowTitleStyle(context)
+                  style: CupertinoTheme.of(context).textTheme.textStyle
                       .copyWith(fontSize: 20, fontWeight: FontWeight.w600),
                 ),
                 const SizedBox(height: 6),
                 Text(
                   'Try a different artist, song or album.',
-                  style: footnoteStyle(context),
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: CupertinoColors.secondaryLabel.resolveFrom(context),
+                  ),
                 ),
               ],
             ),
@@ -392,7 +394,7 @@ class _SectionHeader extends StatelessWidget {
         children: [
           Text(
             title,
-            style: rowTitleStyle(context).copyWith(
+            style: CupertinoTheme.of(context).textTheme.textStyle.copyWith(
               fontSize: 22,
               fontWeight: FontWeight.w700,
               letterSpacing: -0.4,
@@ -400,10 +402,11 @@ class _SectionHeader extends StatelessWidget {
           ),
           Text(
             'See All',
-            style: rowTitleStyle(
-              context,
-              color: CupertinoColors.systemBlue.resolveFrom(context),
-            ).copyWith(fontSize: 15),
+            style: CupertinoTheme.of(context).textTheme.textStyle
+                .copyWith(
+                  color: CupertinoColors.systemBlue.resolveFrom(context),
+                )
+                .copyWith(fontSize: 15),
           ),
         ],
       ),
@@ -430,14 +433,18 @@ class _ArtCard extends StatelessWidget {
             album.title,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: rowTitleStyle(context).copyWith(fontSize: 15),
+            style: CupertinoTheme.of(context).textTheme.textStyle
+                .copyWith(fontSize: 15),
           ),
           const SizedBox(height: 2),
           Text(
             album.subtitle,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: footnoteStyle(context),
+            style: TextStyle(
+              fontSize: 13,
+              color: CupertinoColors.secondaryLabel.resolveFrom(context),
+            ),
           ),
         ],
       ),
@@ -473,19 +480,28 @@ class _LibraryRow extends StatelessWidget {
                         album.title,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: rowTitleStyle(context),
+                        style: CupertinoTheme.of(context).textTheme.textStyle,
                       ),
                       const SizedBox(height: 2),
                       Text(
                         album.subtitle,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: footnoteStyle(context),
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: CupertinoColors.secondaryLabel.resolveFrom(
+                            context,
+                          ),
+                        ),
                       ),
                     ],
                   ),
                 ),
-                const DisclosureChevron(),
+                Icon(
+                  CupertinoIcons.chevron_right,
+                  size: 14,
+                  color: CupertinoColors.tertiaryLabel.resolveFrom(context),
+                ),
               ],
             ),
           ),
@@ -513,8 +529,17 @@ class _SearchTermRow extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(0, 14, 16, 14),
             child: Row(
               children: [
-                Expanded(child: Text(term, style: rowTitleStyle(context))),
-                const DisclosureChevron(),
+                Expanded(
+                  child: Text(
+                    term,
+                    style: CupertinoTheme.of(context).textTheme.textStyle,
+                  ),
+                ),
+                Icon(
+                  CupertinoIcons.chevron_right,
+                  size: 14,
+                  color: CupertinoColors.tertiaryLabel.resolveFrom(context),
+                ),
               ],
             ),
           ),

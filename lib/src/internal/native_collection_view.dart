@@ -58,7 +58,7 @@ class NativeCollectionView extends StatefulWidget {
 }
 
 class _NativeCollectionViewState extends State<NativeCollectionView>
-    with NativePlatformViewStateMixin {
+    with NativePlatformViewStateMixin, WidgetsBindingObserver {
   bool? _lastIsDark;
 
   // Match the app's own theme brightness, NOT the device brightness: a light
@@ -79,6 +79,38 @@ class _NativeCollectionViewState extends State<NativeCollectionView>
           theme.colorScheme.primary.toARGB32(),
       'sections': widget.sections.map(_sectionMap).toList(),
     };
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  /// True while a transcribed field inside this list holds focus.
+  bool _fieldFocused = false;
+
+  /// The last keyboard inset seen, to react only while it grows.
+  double _lastBottomInset = 0;
+
+  /// iOS reports the inset repeatedly while the keyboard animates. The focus
+  /// event itself arrives before the keyboard has any height at all, so
+  /// revealing on focus alone scrolls by nothing — this is what actually
+  /// moves the list.
+  @override
+  void didChangeMetrics() {
+    final view = WidgetsBinding.instance.platformDispatcher.implicitView;
+    if (view == null) return;
+    final bottomInset = view.viewInsets.bottom;
+    final rising = bottomInset > _lastBottomInset;
+    _lastBottomInset = bottomInset;
+    if (rising && _fieldFocused) _revealAboveKeyboard();
   }
 
   /// One section, with each row's [CupertinoNativeListTile.trailing] lowered
@@ -171,6 +203,13 @@ class _NativeCollectionViewState extends State<NativeCollectionView>
         final rowId = call.arguments['rowId'] as String?;
         final nodeId = call.arguments['nodeId'] as String?;
         if (rowId != null && nodeId != null) {
+          // A transcribed field lives inside this platform view, so Flutter
+          // never sees its focus and never scrolls it clear of the keyboard.
+          // The native side reports it as `<nodeId>.focused`.
+          if (nodeId.endsWith('.focused')) {
+            _fieldFocused = call.arguments['value'] == true;
+            if (_fieldFocused) _revealAboveKeyboard();
+          }
           _trailingCallbacks[rowId]?[nodeId]?.call(call.arguments['value']);
         }
         break;
@@ -184,6 +223,31 @@ class _NativeCollectionViewState extends State<NativeCollectionView>
         }
         break;
     }
+  }
+
+  /// Scrolls the list clear of the keyboard when a field inside it takes
+  /// focus. The whole list is moved, not the row: the row's position is known
+  /// natively, not here.
+  ///
+  /// ponytail: a short section is fully revealed; a long one only brings its
+  /// bottom into view. Reporting the focused row's rect from the native side
+  /// is the exact version.
+  void _revealAboveKeyboard() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final box = context.findRenderObject();
+      if (box is! RenderBox || !box.hasSize) return;
+      // The keyboard's height counts as padding, the way the standalone
+      // field's reveal does it: without that, the list is already "on screen"
+      // behind the keyboard and nothing scrolls.
+      final inset = MediaQuery.viewInsetsOf(context).bottom;
+      box.showOnScreen(
+        rect: EdgeInsets.only(bottom: inset + 20).inflateRect(
+          Offset.zero & box.size,
+        ),
+        duration: const Duration(milliseconds: 200),
+      );
+    });
   }
 
   @override

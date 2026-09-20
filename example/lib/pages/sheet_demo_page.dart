@@ -1,8 +1,5 @@
-import 'package:flutter/cupertino.dart' show CupertinoColors, CupertinoTheme;
-import 'package:flutter/widgets.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:cupertino_widgets/cupertino_widgets.dart';
-
-import '../widgets/settings_ui.dart';
 
 /// [CupertinoNativeSheet] — the system page-sheet modal
 /// (`UISheetPresentationController`): rising over the app it pushes this page
@@ -77,69 +74,93 @@ class _SheetDemoPageState extends State<SheetDemoPage> {
 
   @override
   Widget build(BuildContext context) {
-    return DemoScaffold(
-      title: 'Sheet',
-      children: [
-        CupertinoNativeList(
-          onRowTap: (id) {
-            switch (id) {
-              case 'appBar':
-                _present(label: 'App bar sheet', appBar: _appBar());
-              case 'segmented':
-                _present(
-                  label: 'Segmented sheet',
-                  appBar: _appBar(),
-                  bottom: const CupertinoNativeSheetSegmentedControl(
-                    segments: ['Event', 'Reminder', 'Call'],
-                  ),
-                );
-              case 'search':
-                _present(
-                  label: 'Search sheet',
-                  appBar: _appBar(withSearch: true),
-                  detents: const [CupertinoNativeSheetDetent.large],
-                );
-              case 'bare':
-                _present(label: 'Bare sheet');
-            }
-          },
-          sections: [
-            CupertinoNativeListSection(
-              rowPadding: kSettingsRowPadding,
-              minHeight: kSettingsRowMinHeight,
-              header: 'Present',
-              footer: 'Last event: $_last',
-              children: const [
-                CupertinoNativeListTile(
-                  id: 'appBar',
-                  title: 'With App Bar',
-                  subtitle:
-                      'Pinned title, ✕ leading, Add trailing — scrollable',
-                  showChevron: true,
-                ),
-                CupertinoNativeListTile(
-                  id: 'segmented',
-                  title: 'With Bottom Segmented Control',
-                  subtitle: 'Native segmented pinned under the bar',
-                  showChevron: true,
-                ),
-                CupertinoNativeListTile(
-                  id: 'search',
-                  title: 'With Search Field',
-                  subtitle: 'The scaffold-style native search, in a sheet',
-                  showChevron: true,
-                ),
-                CupertinoNativeListTile(
-                  id: 'bare',
-                  title: 'Bare Sheet',
-                  subtitle: 'No chrome — the Flutter body owns everything',
-                  showChevron: true,
+    return CupertinoPageScaffold(
+      child: CustomScrollView(
+        slivers: [
+          CupertinoNativeSliverNavigationBar(
+            largeTitle: 'Sheet',
+            leading: Navigator.canPop(context)
+                ? CupertinoNativeButton.glass(
+                    borderShape: CupertinoNativeButtonBorderShape.circle,
+                    onPressed: () => Navigator.pop(context),
+                    child: CupertinoSymbolImage.symbol(
+                      CupertinoSymbols.chevronBackward,
+                    ),
+                  )
+                : null,
+          ),
+          SliverPadding(
+            padding: EdgeInsets.only(
+              bottom:
+                  MediaQuery.paddingOf(context).bottom +
+                  MediaQuery.viewInsetsOf(context).bottom +
+                  40,
+            ),
+            sliver: SliverList.list(
+              children: [
+                CupertinoNativeList(
+                  onRowTap: (id) {
+                    switch (id) {
+                      case 'appBar':
+                        _present(label: 'App bar sheet', appBar: _appBar());
+                      case 'segmented':
+                        _present(
+                          label: 'Segmented sheet',
+                          appBar: _appBar(),
+                          bottom: const CupertinoNativeSheetSegmentedControl(
+                            segments: ['Event', 'Reminder', 'Call'],
+                          ),
+                        );
+                      case 'search':
+                        _present(
+                          label: 'Search sheet',
+                          appBar: _appBar(withSearch: true),
+                          detents: const [CupertinoNativeSheetDetent.large],
+                        );
+                      case 'bare':
+                        _present(label: 'Bare sheet');
+                    }
+                  },
+                  sections: [
+                    CupertinoNativeListSection(
+                      header: 'Present',
+                      footer: 'Last event: $_last',
+                      children: const [
+                        CupertinoNativeListTile(
+                          id: 'appBar',
+                          title: 'With App Bar',
+                          subtitle: 'Pinned title, ✕ leading, Add trailing — scrollable',
+                          showChevron: true,
+                        ),
+                        CupertinoNativeListTile(
+                          id: 'segmented',
+                          title: 'With Bottom Segmented Control',
+                          subtitle: 'Native segmented pinned under the bar',
+                          showChevron: true,
+                        ),
+                        CupertinoNativeListTile(
+                          id: 'search',
+                          title: 'With Search Field',
+                          subtitle:
+                              'The scaffold-style native search, in a sheet',
+                          showChevron: true,
+                        ),
+                        CupertinoNativeListTile(
+                          id: 'bare',
+                          title: 'Bare Sheet',
+                          subtitle:
+                              'No chrome — the Flutter body owns everything',
+                          showChevron: true,
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ],
             ),
-          ],
-        ),
-      ],
+          ),
+        ],
+      ),
     );
   }
 }

@@ -1,8 +1,5 @@
-import 'package:flutter/cupertino.dart' show CupertinoColors;
-import 'package:flutter/widgets.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:cupertino_widgets/cupertino_widgets.dart';
-
-import '../widgets/settings_ui.dart';
 
 /// [CupertinoNativeGlassContainer] — the iOS 26 Liquid Glass material as
 /// a Flutter container. The glass shapes below are real SwiftUI `.glassEffect`
@@ -41,156 +38,188 @@ class _LiquidGlassDemoPageState extends State<LiquidGlassDemoPage> {
 
   @override
   Widget build(BuildContext context) {
-    return DemoScaffold(
-      title: 'Liquid Glass',
-      children: [
-        const SizedBox(height: 20),
-        Container(
-          height: 400,
-          margin: const EdgeInsets.symmetric(horizontal: 16),
-          clipBehavior: Clip.antiAlias,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(kCardCornerRadius),
-          ),
-          child: Stack(
-            children: [
-              const Positioned.fill(child: _Backdrop()),
-              // Glass card — its content is hosted INSIDE the glass by
-              // `route`: SwiftUI applies `glassEffect` to the hosted Flutter
-              // view, so the text is drawn above the material rather than
-              // refracted through it. It is a live engine — state and
-              // animations work in there as anywhere else.
-              Center(
-                child: CupertinoNativeGlassContainer(
-                  shape: CupertinoGlassShape.roundedRect,
-                  cornerRadius: 26,
-                  variant: _variant,
-                  tint: _tint,
-                  interactive: _interactive,
-                  // Tint and variant changes are interpolated by SwiftUI:
-                  // one message, then CoreAnimation. Try the tint segments.
-                  animateChanges: true,
-                  width: 260,
-                  height: 116,
-                  route: 'glassCard',
-                ),
-              ),
-              // Glass capsule pinned to the bottom, like a mini player.
-              Positioned(
-                left: 24,
-                right: 24,
-                bottom: 20,
-                child: CupertinoNativeGlassContainer(
-                  shape: CupertinoGlassShape.capsule,
-                  variant: _variant,
-                  tint: _tint,
-                  interactive: _interactive,
-                  // Tint and variant changes are interpolated by SwiftUI:
-                  // one message, then CoreAnimation. Try the tint segments.
-                  animateChanges: true,
-                  height: 52,
-
-                  route: 'glassNowPlaying',
-                ),
-              ),
-              // Two glass buttons merged into one capsule, like a toolbar group.
-              Positioned(
-                top: 20,
-                left: 20,
-                child: CupertinoNativeGlassGroup(
-                  spacing: 0,
-                  tint: _tint,
-                  clear: _clear,
-                  interactive: _interactive,
-                  onAction: (_) {},
-                  items: [
-                    CupertinoNativeGlassGroupItem(
-                      actionId: 'undo',
-                      icon: CupertinoNativeIcon.named('arrow.uturn.backward'),
+    return CupertinoPageScaffold(
+      child: CustomScrollView(
+        slivers: [
+          CupertinoNativeSliverNavigationBar(
+            largeTitle: 'Liquid Glass',
+            leading: Navigator.canPop(context)
+                ? CupertinoNativeButton.glass(
+                    borderShape: CupertinoNativeButtonBorderShape.circle,
+                    onPressed: () => Navigator.pop(context),
+                    child: CupertinoSymbolImage.symbol(
+                      CupertinoSymbols.chevronBackward,
                     ),
-                    CupertinoNativeGlassGroupItem(
-                      actionId: 'redo',
-                      icon: CupertinoNativeIcon.named('arrow.uturn.forward'),
+                  )
+                : null,
+          ),
+          SliverPadding(
+            padding: EdgeInsets.only(
+              bottom:
+                  MediaQuery.paddingOf(context).bottom +
+                  MediaQuery.viewInsetsOf(context).bottom +
+                  40,
+            ),
+            sliver: SliverList.list(
+              children: [
+                const SizedBox(height: 20),
+                Container(
+                  height: 400,
+                  margin: const EdgeInsets.symmetric(horizontal: 16),
+                  clipBehavior: Clip.antiAlias,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(26),
+                  ),
+                  child: Stack(
+                    children: [
+                      const Positioned.fill(child: _Backdrop()),
+                      // Glass card — its content is hosted INSIDE the glass by
+                      // `route`: SwiftUI applies `glassEffect` to the hosted Flutter
+                      // view, so the text is drawn above the material rather than
+                      // refracted through it. It is a live engine — state and
+                      // animations work in there as anywhere else.
+                      Center(
+                        child: CupertinoNativeGlassContainer(
+                          shape: CupertinoGlassShape.roundedRect,
+                          cornerRadius: 26,
+                          variant: _variant,
+                          tint: _tint,
+                          interactive: _interactive,
+                          // Tint and variant changes are interpolated by SwiftUI:
+                          // one message, then CoreAnimation. Try the tint segments.
+                          animateChanges: true,
+                          width: 260,
+                          height: 116,
+                          route: 'glassCard',
+                        ),
+                      ),
+                      // Glass capsule pinned to the bottom, like a mini player.
+                      Positioned(
+                        left: 24,
+                        right: 24,
+                        bottom: 20,
+                        child: CupertinoNativeGlassContainer(
+                          shape: CupertinoGlassShape.capsule,
+                          variant: _variant,
+                          tint: _tint,
+                          interactive: _interactive,
+                          // Tint and variant changes are interpolated by SwiftUI:
+                          // one message, then CoreAnimation. Try the tint segments.
+                          animateChanges: true,
+                          height: 52,
+
+                          route: 'glassNowPlaying',
+                        ),
+                      ),
+                      // Two glass buttons merged into one capsule, like a toolbar group.
+                      Positioned(
+                        top: 20,
+                        left: 20,
+                        child: CupertinoNativeGlassGroup(
+                          spacing: 0,
+                          tint: _tint,
+                          clear: _clear,
+                          interactive: _interactive,
+                          onAction: (_) {},
+                          items: [
+                            CupertinoNativeGlassGroupItem(
+                              actionId: 'undo',
+                              icon: CupertinoNativeIcon.named(
+                                'arrow.uturn.backward',
+                              ),
+                            ),
+                            CupertinoNativeGlassGroupItem(
+                              actionId: 'redo',
+                              icon: CupertinoNativeIcon.named(
+                                'arrow.uturn.forward',
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      // A pressable glass circle — onPressed makes the container a
+                      // liquid-glass button (tap it to cycle the tint).
+                      Positioned(
+                        top: 20,
+                        right: 20,
+                        child: CupertinoNativeGlassContainer(
+                          shape: CupertinoGlassShape.circle,
+                          variant: _variant,
+                          tint: _tint,
+                          interactive: _interactive,
+                          // Tint and variant changes are interpolated by SwiftUI:
+                          // one message, then CoreAnimation. Try the tint segments.
+                          animateChanges: true,
+                          width: 56,
+                          height: 56,
+                          icon: CupertinoNativeIcon.symbol(
+                            CupertinoSymbols.paintbrush,
+                          ),
+                          onPressed: () => setState(
+                            () => _tintIndex = (_tintIndex + 1) % _tints.length,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                CupertinoNativeList(
+                  sections: [
+                    CupertinoNativeListSection(
+                      header: 'Glass',
+                      footer: switch (_supported) {
+                        true =>
+                          'This device renders real Liquid Glass (iOS 26+). Touch '
+                              'and hold the shapes — interactive glass shimmers and '
+                              'stretches under your finger. The circle is a glass button: '
+                              'tap it to cycle the tint.',
+                        false =>
+                          'This device runs iOS 25 or earlier: a static material '
+                              'stands in. The real effect is iOS 26+ only.',
+                        null => 'Checking Liquid Glass availability…',
+                      },
+                      children: [
+                        CupertinoNativeListTile(
+                          id: 'interactive',
+                          title: 'Interactive',
+                          subtitle: 'Shimmer on touch',
+                          trailing: CupertinoNativeSwitch(
+                            value: _interactive,
+                            onChanged: (v) => setState(() => _interactive = v),
+                          ),
+                        ),
+                        CupertinoNativeListTile(
+                          id: 'clear',
+                          title: 'Clear variant',
+                          subtitle: 'More transparent glass',
+                          trailing: CupertinoNativeSwitch(
+                            value: _clear,
+                            onChanged: (v) => setState(() => _clear = v),
+                          ),
+                        ),
+                        CupertinoNativeListTile(
+                          id: 'tint',
+                          title: 'Tint',
+                          trailing:
+                              CupertinoNativeSlidingSegmentedControl<int>.menu(
+                                children: {
+                                  for (final (i, label) in _tints.indexed)
+                                    i: Text(label),
+                                },
+                                groupValue: _tintIndex,
+                                onValueChanged: (v) =>
+                                    setState(() => _tintIndex = v!),
+                              ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-              ),
-              // A pressable glass circle — onPressed makes the container a
-              // liquid-glass button (tap it to cycle the tint).
-              Positioned(
-                top: 20,
-                right: 20,
-                child: CupertinoNativeGlassContainer(
-                  shape: CupertinoGlassShape.circle,
-                  variant: _variant,
-                  tint: _tint,
-                  interactive: _interactive,
-                  // Tint and variant changes are interpolated by SwiftUI:
-                  // one message, then CoreAnimation. Try the tint segments.
-                  animateChanges: true,
-                  width: 56,
-                  height: 56,
-                  icon: CupertinoNativeIcon.symbol(CupertinoSymbols.paintbrush),
-                  onPressed: () => setState(
-                    () => _tintIndex = (_tintIndex + 1) % _tints.length,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-        CupertinoNativeList(
-          sections: [
-            CupertinoNativeListSection(
-              rowPadding: kSettingsRowPadding,
-              minHeight: kSettingsRowMinHeight,
-              header: 'Glass',
-              footer: switch (_supported) {
-                true =>
-                  'This device renders real Liquid Glass (iOS 26+). Touch '
-                      'and hold the shapes — interactive glass shimmers and '
-                      'stretches under your finger. The circle is a glass button: '
-                      'tap it to cycle the tint.',
-                false =>
-                  'This device runs iOS 25 or earlier: a static material '
-                      'stands in. The real effect is iOS 26+ only.',
-                null => 'Checking Liquid Glass availability…',
-              },
-              children: [
-                CupertinoNativeListTile(
-                  id: 'interactive',
-                  title: 'Interactive',
-                  subtitle: 'Shimmer on touch',
-                  trailing: CupertinoNativeSwitch(
-                    value: _interactive,
-                    onChanged: (v) => setState(() => _interactive = v),
-                  ),
-                ),
-                CupertinoNativeListTile(
-                  id: 'clear',
-                  title: 'Clear variant',
-                  subtitle: 'More transparent glass',
-                  trailing: CupertinoNativeSwitch(
-                    value: _clear,
-                    onChanged: (v) => setState(() => _clear = v),
-                  ),
-                ),
-                CupertinoNativeListTile(
-                  id: 'tint',
-                  title: 'Tint',
-                  trailing: CupertinoNativeSlidingSegmentedControl<int>.menu(
-                    children: {
-                      for (final (i, label) in _tints.indexed) i: Text(label),
-                    },
-                    groupValue: _tintIndex,
-                    onValueChanged: (v) => setState(() => _tintIndex = v!),
-                  ),
-                ),
               ],
             ),
-          ],
-        ),
-      ],
+          ),
+        ],
+      ),
     );
   }
 }
