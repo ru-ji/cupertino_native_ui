@@ -10,6 +10,7 @@ import 'button_demo_page.dart';
 import 'context_menu_demo_page.dart';
 import 'date_picker_demo_page.dart';
 import 'effects_demo_page.dart';
+import 'glass_custom_transition_demo_page.dart';
 import 'glass_transition_demo_page.dart';
 import 'liquid_glass_demo_page.dart';
 import 'native_body_demo_page.dart';
@@ -22,6 +23,7 @@ import 'sheet_demo_page.dart';
 import 'slider_demo_page.dart';
 import 'standalone_tab_bar_demo_page.dart';
 import 'switch_demo_page.dart';
+import 'system_bar_demo_page.dart';
 import 'text_field_demo_page.dart';
 
 /// The demo catalog — a native SwiftUI list of rows, like every page in the
@@ -173,6 +175,24 @@ class HomePage extends StatelessWidget {
                           CupertinoColors.systemCyan,
                         ),
                         _row(
+                          'glassTransitions',
+                          'Glass transitions',
+                          'arrow.triangle.merge',
+                          CupertinoColors.systemCyan,
+                        ),
+                        _row(
+                          'glassCustom',
+                          'Custom transitions',
+                          'wand.and.sparkles',
+                          CupertinoColors.systemIndigo,
+                        ),
+                        _row(
+                          'systemBar',
+                          'System bar transition',
+                          'rectangle.topthird.inset.filled',
+                          CupertinoColors.systemGreen,
+                        ),
+                        _row(
                           'effects',
                           'Widget Effects',
                           'wand.and.stars',
@@ -242,6 +262,8 @@ class HomePage extends StatelessWidget {
       'listForm' => const NativeListFormDemoPage(),
       'liquidGlass' => const LiquidGlassDemoPage(),
       'glassTransitions' => const GlassTransitionDemoPage(),
+      'glassCustom' => const GlassCustomTransitionDemoPage(),
+      'systemBar' => const SystemBarDemoPage(),
       'effects' => const EffectsDemoPage(),
       'alert' => const AlertDemoPage(),
       'progress' => const ProgressDemoPage(),

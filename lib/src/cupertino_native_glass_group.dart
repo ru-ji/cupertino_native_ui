@@ -15,22 +15,22 @@ enum CupertinoGlassGroupShape { circle, capsule, roundedRect }
 
 /// How a glass arrives and leaves a [CupertinoNativeGlassGroup].
 ///
-/// The four changes a group can be asked to make, and the transition each one
-/// wants:
+/// A transition runs when a glass is **inserted or removed**, and at no other
+/// moment — so a change only animates if it changes which glasses exist, and
+/// that is decided by [CupertinoNativeGlassGroupItem.actionId].
 ///
-/// | Change | What happened | |
+/// | Change | How you cause it | |
 /// | --- | --- | --- |
-/// | 0 → 1 | an item arrived | [materialize] |
-/// | 1 → 0 | an item left | [materialize] |
-/// | 1 → 1 | an item's `actionId` changed, so it is a different glass in the same place | [materialize] |
-/// | 1 → 2, 2 → 1 | items joined or left a union | [matchedGeometry] |
+/// | 0 → 1, 1 → 0 | flip `glassVisible` | [materialize] |
+/// | 1 → 1 | give the item a new `actionId` | [matchedGeometry] |
+/// | 1 → 2, 2 → 1 | replace the items with differently shaped ones | [matchedGeometry] |
 ///
-/// [matchedGeometry] is SwiftUI's own default for glasses that sit inside the
-/// container's spacing, and it is the one that makes shapes travel into and out
-/// of each other — two glasses becoming one capsule, and back. [materialize]
-/// fades the content in while the material animates in or out and matches no
-/// geometry at all, which is what a glass wants when it appears where there was
-/// nothing, or replaces another one in exactly the same spot.
+/// [matchedGeometry] is SwiftUI's own default for glasses inside a container's
+/// spacing, and it gives the departing glass and the arriving one one shape
+/// that travels between them: it is what makes a merge a merge, and what lets
+/// a "Select" capsule become an X circle in one piece. [materialize] matches no
+/// geometry at all — the material scales in or out while the content fades —
+/// which is what a glass wants when it appears where there was nothing.
 enum CupertinoGlassTransition {
   /// Shapes travel into and out of each other. The default.
   matchedGeometry,
@@ -40,6 +40,20 @@ enum CupertinoGlassTransition {
 
   /// No transition — the glass appears and disappears immediately.
   identity,
+
+  /// The material's own strength, turned up from nothing to full. Custom.
+  ///
+  /// Not one of SwiftUI's transitions, and the reason it exists: [materialize]
+  /// *scales* the glass as it comes in, and the system's appearing button does
+  /// not. What that one does reads as a gauge on the material — zero at rest,
+  /// driven to full — while the content fades in place. So the glass here is
+  /// never inserted or removed and nothing has a transition to run: the glass
+  /// is always mounted and only the material's opacity moves.
+  ///
+  /// The cost of standing outside SwiftUI's transitions is that a glass on
+  /// [intensity] does not merge or match geometry with its neighbours. It is
+  /// for a glass that appears and disappears on its own.
+  intensity,
 }
 
 /// One glass in a group: an icon, a title, or both.
@@ -164,6 +178,7 @@ class CupertinoNativeGlassGroup extends StatefulWidget {
     this.interactive = true,
     this.cornerRadius = 16,
     this.transition = CupertinoGlassTransition.matchedGeometry,
+    this.morphOnChange = 0,
   });
 
   final List<CupertinoNativeGlassGroupItem> items;
@@ -217,6 +232,23 @@ class CupertinoNativeGlassGroup extends StatefulWidget {
   /// the same place.
   final CupertinoGlassTransition transition;
 
+  /// How far the glass squares up as a change plays, 0…1. 0 — the default —
+  /// leaves the outline alone; around 0.45 reads like the system's own.
+  ///
+  /// A swap and a reshape both work by handing the glass a new identity, and on
+  /// its own that reads as flat: the material is matched so perfectly that
+  /// nothing announces the change. What the system plays there is not a bulge
+  /// and not a scale — a 60fps capture of its bar button swapping an icon shows
+  /// the circle *squaring up*, top and bottom edges flattening first and then
+  /// the sides, before unwinding. The glass barely changes size at all.
+  ///
+  /// On the group rather than on one glass, because the glass that starts the
+  /// change is not the one that finishes it.
+  ///
+  /// A number rather than a flag because how far it goes before it stops
+  /// reading as a press is set by eye against the real thing, on a device.
+  final double morphOnChange;
+
   @override
   State<CupertinoNativeGlassGroup> createState() =>
       _CupertinoNativeGlassGroupState();
@@ -238,6 +270,7 @@ class _CupertinoNativeGlassGroupState extends State<CupertinoNativeGlassGroup>
     'cornerRadius': widget.cornerRadius,
     'isDark': _isDark,
     'transition': widget.transition.name,
+    'morphOnChange': widget.morphOnChange,
   };
 
   @override
@@ -258,6 +291,11 @@ class _CupertinoNativeGlassGroupState extends State<CupertinoNativeGlassGroup>
     final sent = jsonEncode(_toMap());
     if (sent == _sent) return;
     _sent = sent;
+    // Not re-measured from here: `getIntrinsicSize` lays the hosted view out
+    // to measure it, and forcing a layout in the middle of the morph is how
+    // the morph gets dropped. The native side pushes its size once the
+    // animation has settled instead, which is the only moment the answer is
+    // the real one.
     updateNativeView('setConfig', _toMap());
   }
 
