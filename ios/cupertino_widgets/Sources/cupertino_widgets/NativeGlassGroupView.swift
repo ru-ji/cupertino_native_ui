@@ -89,7 +89,11 @@ class NativeGlassGroupView: NativeHostingView {
             if let argsMap = call.arguments as? [String: Any],
                 let config = decodeConfig(GlassGroupConfig.self, from: argsMap)
             {
-                // Animated: this is where the merge happens.
+                // Animated: this is where the merge happens — and, since the
+                // container no longer changes identity with the spacing, where
+                // a split, an arrival and a replacement happen too. The whole
+                // config goes over at once, so `items` gaining, losing or
+                // re-identifying an entry is what drives the transitions.
                 withAnimation(.smooth(duration: 0.35)) { model.config = config }
                 result(nil)
             } else {
@@ -106,7 +110,7 @@ class NativeGlassGroupView: NativeHostingView {
 final class GlassGroupModel: ObservableObject {
     @Published var config = GlassGroupConfig(
         items: [], spacing: nil, variant: nil, tint: nil, interactive: nil,
-        vertical: nil, cornerRadius: nil, isDark: nil)
+        vertical: nil, cornerRadius: nil, isDark: nil, transition: nil)
 }
 
 /// iOS 16 is the floor: `AnyShape` is what lets one item be a circle and its
@@ -124,30 +128,43 @@ struct AdaptiveGlassGroupView: View {
     private var c: GlassGroupConfig { model.config }
     private var spacing: CGFloat { CGFloat(c.spacing ?? 8) }
 
+    /// No gap: the old "44pt glasses united into one capsule, like a toolbar
+    /// group" mode.
+    private var sharesOneGlass: Bool { spacing <= 0 }
+
+    /// What the container is told. A shared glass states its union outright,
+    /// so it needs no radius and keeps the container's default — which is what
+    /// the union branch passed before. Only a group that merges by proximity
+    /// has to hand its spacing over.
+    private var containerSpacing: CGFloat? { sharesOneGlass ? nil : spacing }
+
+    /// How far apart the items sit. A shared glass keeps the 11pt of a toolbar
+    /// group; otherwise the gap is the spacing the caller asked for.
+    private var layoutSpacing: CGFloat { sharesOneGlass ? 11 : spacing }
+
     var body: some View {
         content
             .environment(\.colorScheme, c.isDark == true ? .dark : .light)
     }
 
+    /// ONE container, whatever the spacing.
+    ///
+    /// This used to be an `if spacing <= 0` with a container in each branch,
+    /// and that is why the merge never animated: swapping branches changes the
+    /// container's identity, so SwiftUI tore it down and built another one
+    /// instead of interpolating between the two. Which glasses are united is
+    /// now a *value* — the union id below — so a single container can carry
+    /// the group from two glasses to one and back.
+    ///
+    /// The container also has to be the same one across an item's arrival and
+    /// departure, which is what `glassEffectID` and `glassEffectTransition`
+    /// are for. Apple: those two "only affect their content during view
+    /// hierarchy transitions or animations".
     @ViewBuilder
     private var content: some View {
-        if spacing <= 0 {
-            // No gap: 44pt glasses united into one capsule, like a toolbar
-            // group (`glassEffectUnion`).
-            GlassEffectContainer {
-                sharedStack { item in
-                    button(item)
-                        .glassEffect(glass, in: Capsule())
-                        .glassEffectUnion(id: "group", namespace: namespace)
-                }
-            }
-        } else {
-            GlassEffectContainer(spacing: spacing) {
-                stack { item in
-                    button(item)
-                        .glassEffect(glass, in: shape(for: item))
-                        .glassEffectID(item.id, in: namespace)
-                }
+        GlassEffectContainer(spacing: containerSpacing) {
+            stack { item in
+                glassed(item)
             }
         }
     }
@@ -158,21 +175,28 @@ struct AdaptiveGlassGroupView: View {
         @ViewBuilder decorate: @escaping (GlassGroupItemConfig) -> V
     ) -> some View {
         if c.vertical == true {
-            VStack(spacing: spacing) { ForEach(c.items) { decorate($0) } }
+            VStack(spacing: layoutSpacing) { ForEach(c.items) { decorate($0) } }
         } else {
-            HStack(spacing: spacing) { ForEach(c.items) { decorate($0) } }
+            HStack(spacing: layoutSpacing) { ForEach(c.items) { decorate($0) } }
         }
     }
 
-    /// The items of a shared glass, 11pt apart like a toolbar group.
+    /// One item, with or without a glass.
+    ///
+    /// An item that is present but has no glass keeps its slot and loses only
+    /// the material. That matters for a glass arriving from nothing: if the
+    /// item also left the layout, the group's box would shrink underneath the
+    /// transition and there would be nowhere for the new glass to land.
     @ViewBuilder
-    private func sharedStack<V: View>(
-        @ViewBuilder decorate: @escaping (GlassGroupItemConfig) -> V
-    ) -> some View {
-        if c.vertical == true {
-            VStack(spacing: 11) { ForEach(c.items) { decorate($0) } }
+    private func glassed(_ item: GlassGroupItemConfig) -> some View {
+        if item.glassVisible == false {
+            button(item).hidden()
         } else {
-            HStack(spacing: 11) { ForEach(c.items) { decorate($0) } }
+            button(item)
+                .glassEffect(glass, in: shape(for: item))
+                .glassEffectID(item.actionId, in: namespace)
+                .glassEffectUnion(id: unionId(for: item), namespace: namespace)
+                .glassEffectTransition(transition(for: item))
         }
     }
 
@@ -206,7 +230,42 @@ struct AdaptiveGlassGroupView: View {
         return glass
     }
 
+    /// The id this item contributes its glass under. Glasses that share an id
+    /// are drawn as one shape.
+    ///
+    /// A shared glass puts every item under one id, which is the old
+    /// `glassEffectUnion(id: "group")` behaviour. Otherwise an item stands
+    /// alone unless it names a partner — and "alone" is still an explicit id,
+    /// never a missing modifier, so moving an item in or out of a union is a
+    /// change of value rather than a change of view.
+    private func unionId(for item: GlassGroupItemConfig) -> String {
+        if sharesOneGlass { return Self.sharedGlassUnionId }
+        return item.unionId ?? item.actionId
+    }
+
+    private static let sharedGlassUnionId = "group"
+
+    /// How the glass arrives and leaves.
+    ///
+    /// Apple's default inside a container is `matchedGeometry` for effects
+    /// positioned within the container's spacing, and `materialize` for effects
+    /// farther apart. `matchedGeometry` is what makes two glasses travel into
+    /// each other; `materialize` fades the content in while the material
+    /// animates in or out, without matching any geometry — which is the effect
+    /// for a glass that appears from nothing, or replaces another one in the
+    /// same place.
+    private func transition(for item: GlassGroupItemConfig) -> GlassEffectTransition {
+        switch item.transition ?? c.transition {
+        case "materialize": return .materialize
+        case "identity": return .identity
+        default: return .matchedGeometry
+        }
+    }
+
     private func shape(for item: GlassGroupItemConfig) -> AnyShape {
+        // `glassEffectUnion` only combines effects that share a shape, so a
+        // shared glass has to give every item the same one.
+        if sharesOneGlass { return AnyShape(Capsule()) }
         switch item.shape {
         case "capsule": return AnyShape(Capsule())
         case "roundedRect":

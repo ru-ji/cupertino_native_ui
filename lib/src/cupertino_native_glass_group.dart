@@ -13,6 +13,35 @@ import 'internal/scroll_friendly_recognizer.dart';
 /// The shape of one glass in a [CupertinoNativeGlassGroup].
 enum CupertinoGlassGroupShape { circle, capsule, roundedRect }
 
+/// How a glass arrives and leaves a [CupertinoNativeGlassGroup].
+///
+/// The four changes a group can be asked to make, and the transition each one
+/// wants:
+///
+/// | Change | What happened | |
+/// | --- | --- | --- |
+/// | 0 → 1 | an item arrived | [materialize] |
+/// | 1 → 0 | an item left | [materialize] |
+/// | 1 → 1 | an item's `actionId` changed, so it is a different glass in the same place | [materialize] |
+/// | 1 → 2, 2 → 1 | items joined or left a union | [matchedGeometry] |
+///
+/// [matchedGeometry] is SwiftUI's own default for glasses that sit inside the
+/// container's spacing, and it is the one that makes shapes travel into and out
+/// of each other — two glasses becoming one capsule, and back. [materialize]
+/// fades the content in while the material animates in or out and matches no
+/// geometry at all, which is what a glass wants when it appears where there was
+/// nothing, or replaces another one in exactly the same spot.
+enum CupertinoGlassTransition {
+  /// Shapes travel into and out of each other. The default.
+  matchedGeometry,
+
+  /// The material animates in or out and the content fades; no geometry match.
+  materialize,
+
+  /// No transition — the glass appears and disappears immediately.
+  identity,
+}
+
 /// One glass in a group: an icon, a title, or both.
 ///
 /// Configuration rather than a widget: the items are laid out by SwiftUI in
@@ -27,6 +56,9 @@ class CupertinoNativeGlassGroupItem {
     this.width,
     this.height = 44,
     this.enabled = true,
+    this.glassVisible = true,
+    this.unionId,
+    this.transition,
   }) : assert(
          icon != null || title != null,
          'A glass with neither an icon nor a title has nothing to be shaped '
@@ -38,6 +70,11 @@ class CupertinoNativeGlassGroupItem {
   /// It is also the item's identity for the morph: SwiftUI interpolates each
   /// glass from one layout to the next by this id, so keep it stable across
   /// rebuilds or an item will fade instead of travelling.
+  ///
+  /// The same id is what makes a glass *replaced*: give an item a new
+  /// [actionId] and SwiftUI sees a different glass where the old one stood, so
+  /// the old one leaves and the new one arrives. That is the 1 → 1 case, and it
+  /// wants [CupertinoGlassTransition.materialize].
   final String actionId;
 
   final CupertinoNativeIcon? icon;
@@ -49,6 +86,26 @@ class CupertinoNativeGlassGroupItem {
   final double height;
   final bool enabled;
 
+  /// Whether this item carries a glass at all. Defaults to `true`.
+  ///
+  /// `false` keeps the item's slot in the group and drops only the material,
+  /// which is how a glass is made to arrive from nothing: leave the item in
+  /// [CupertinoNativeGlassGroup.items] and flip this. Taking the item out of
+  /// the list instead would shrink the group's box underneath the transition,
+  /// and the arriving glass would have nowhere to land.
+  final bool glassVisible;
+
+  /// Glasses sharing a [unionId] are drawn as one shape.
+  ///
+  /// `null` — the default — leaves the item united with nothing, under its own
+  /// [actionId]. Give two items the same id to make them one glass, and move an
+  /// item between ids to take it in and out of a union. The shapes have to
+  /// match: a circle and a capsule never combine.
+  final String? unionId;
+
+  /// Overrides [CupertinoNativeGlassGroup.transition] for this item.
+  final CupertinoGlassTransition? transition;
+
   Map<String, dynamic> toMap() => {
     'actionId': actionId,
     'icon': icon?.toMap(),
@@ -57,6 +114,9 @@ class CupertinoNativeGlassGroupItem {
     'width': width,
     'height': height,
     'enabled': enabled,
+    'glassVisible': glassVisible,
+    'unionId': unionId,
+    'transition': transition?.name,
   };
 }
 
@@ -95,6 +155,7 @@ class CupertinoNativeGlassGroup extends StatefulWidget {
     this.clear = false,
     this.interactive = true,
     this.cornerRadius = 16,
+    this.transition = CupertinoGlassTransition.matchedGeometry,
   });
 
   final List<CupertinoNativeGlassGroupItem> items;
@@ -124,6 +185,17 @@ class CupertinoNativeGlassGroup extends StatefulWidget {
   /// Radius for items shaped [CupertinoGlassGroupShape.roundedRect].
   final double cornerRadius;
 
+  /// The default for every item that does not state its own
+  /// [CupertinoNativeGlassGroupItem.transition].
+  ///
+  /// [CupertinoGlassTransition.matchedGeometry] is SwiftUI's own default for
+  /// glasses inside a container's spacing, and it is what makes a merge a
+  /// merge: the shapes travel into each other. Ask for
+  /// [CupertinoGlassTransition.materialize] on a group whose glasses appear and
+  /// disappear one at a time, or when a single glass is swapped for another in
+  /// the same place.
+  final CupertinoGlassTransition transition;
+
   @override
   State<CupertinoNativeGlassGroup> createState() =>
       _CupertinoNativeGlassGroupState();
@@ -143,6 +215,7 @@ class _CupertinoNativeGlassGroupState extends State<CupertinoNativeGlassGroup>
     'vertical': widget.vertical,
     'cornerRadius': widget.cornerRadius,
     'isDark': _isDark,
+    'transition': widget.transition.name,
   };
 
   @override
@@ -169,8 +242,12 @@ class _CupertinoNativeGlassGroupState extends State<CupertinoNativeGlassGroup>
   /// Total extent along the layout axis, for the box before the native
   /// measurement lands. Widths are only known here for items that state one;
   /// an icon-only glass is square, and a titled one is measured natively.
+  ///
+  /// Items with `glassVisible: false` still count: they keep their slot, so the
+  /// box must not shrink while one of them materialises.
   double get _fallbackMain {
-    var total = widget.spacing * (widget.items.length - 1).clamp(0, 999);
+    final gap = widget.spacing <= 0 ? 11.0 : widget.spacing;
+    var total = gap * (widget.items.length - 1).clamp(0, 999);
     for (final item in widget.items) {
       total += widget.vertical
           ? item.height
