@@ -286,6 +286,14 @@ CupertinoNativeBody? lowerWidgetNode(
         'Spacer, Row or Column — or CupertinoNativeFlutterView(route) to host '
         'your own Flutter there, which costs an engine.',
       );
+      // The assert is compiled out in release, where the widget was then
+      // dropped without a word — a glass container whose child hit this case
+      // simply came up empty on screen. Say so at runtime too.
+      debugPrint(
+        'cupertino_widgets: dropped ${widget.runtimeType} — this surface is '
+        'rendered by SwiftUI and cannot mount Flutter widgets. Wrap it in '
+        'CupertinoNativeFlutterView(route) to keep it.',
+      );
       return null;
   }
 }

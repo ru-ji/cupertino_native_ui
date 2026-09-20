@@ -12,6 +12,7 @@ import 'cupertino_native_glass_container.dart'
     show CupertinoGlass, CupertinoGlassVariant;
 import 'internal/widget_lowering.dart';
 import 'internal/native_platform_view_mixin.dart';
+import 'internal/keyboard_avoidance.dart';
 import 'internal/text_field_wire.dart';
 import 'search_row_visibility.dart';
 import 'models/cupertino_native_icon.dart';
@@ -295,7 +296,10 @@ class _NativeTextFieldRegistry {
 }
 
 class _CupertinoNativeTextFieldState extends State<CupertinoNativeTextField>
-    with NativePlatformViewStateMixin, WidgetsBindingObserver {
+    with
+        NativePlatformViewStateMixin,
+        WidgetsBindingObserver,
+        RouteKeyboardDismissal {
   /// Whether the native field is showing a non-empty selection (and thus its
   /// draggable handles). Kept current by the `onSelectionActive` callback.
   bool _selectionActive = false;
@@ -355,24 +359,43 @@ class _CupertinoNativeTextFieldState extends State<CupertinoNativeTextField>
     if (rising && _focusNode.hasFocus) _revealAboveKeyboard();
   }
 
+  /// Resigns the native first responder as the route starts leaving, so the
+  /// keyboard travels with the transition — see [RouteKeyboardDismissal].
+  @override
+  void dismissKeyboardForRoute() {
+    if (_focusNode.hasFocus) _focusNode.unfocus();
+  }
+
   /// Scrolls the minimum needed to keep the field above the keyboard.
   /// Instant, and a no-op when the field is already visible.
-  void _revealAboveKeyboard() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+  void _revealAboveKeyboard({bool postFrame = false}) {
+    void run() {
       if (!mounted || !_focusNode.hasFocus) return;
       final box = context.findRenderObject();
       if (box is! RenderBox || !box.hasSize) return;
-      // The keyboard's height counts as padding: a page that does not shrink
-      // for the keyboard (`resizeToAvoidBottomInset: false`, the native
-      // behaviour) leaves the field inside the viewport but behind the
-      // keyboard, where `showOnScreen` sees nothing to do.
+      // Only the part of the keyboard that really covers this viewport
+      // counts as padding — see [keyboardCoverOfViewport]. A page that
+      // already shrank for the keyboard adds nothing here, so a field that is
+      // visible stays put.
       final padding = widget.scrollPadding.copyWith(
         bottom:
-            widget.scrollPadding.bottom +
-            MediaQuery.viewInsetsOf(context).bottom,
+            widget.scrollPadding.bottom + keyboardCoverOfViewport(context),
       );
       box.showOnScreen(rect: padding.inflateRect(Offset.zero & box.size));
-    });
+    }
+
+    // The engine reports the inset on every vsync of the keyboard's own
+    // animation (it mirrors the curve on a hidden view and samples its
+    // presentation layer), so the scroll can be moved straight from the
+    // metrics callback and land in the frame being built. Deferring to a
+    // post-frame callback would put the content one frame behind the
+    // keyboard for the whole animation, which is exactly the lag that reads
+    // as "not native".
+    if (postFrame) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => run());
+    } else {
+      run();
+    }
   }
 
   FocusNode _createInternalFocusNode() {
@@ -593,7 +616,7 @@ class _CupertinoNativeTextFieldState extends State<CupertinoNativeTextField>
         if (focused) {
           if (!_focusNode.hasFocus) _focusNode.requestFocus();
           widget.onTap?.call();
-          _revealAboveKeyboard();
+          _revealAboveKeyboard(postFrame: true);
         } else if (_focusNode.hasFocus) {
           _focusNode.unfocus();
         }

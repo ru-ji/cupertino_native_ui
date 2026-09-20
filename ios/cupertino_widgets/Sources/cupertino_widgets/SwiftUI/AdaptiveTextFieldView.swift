@@ -18,6 +18,20 @@ final class TextFieldModel: ObservableObject {
     /// same animation as the keyboard — no `reloadInputViews()`.
     @Published var accessory: UIView?
 
+    /// Where the backing `UITextField` sat, in window coordinates, the moment
+    /// it took focus.
+    ///
+    /// Deliberately **not** `@Published`: the only reader is the focus event
+    /// on its way to Flutter, and publishing it re-evaluated the field on
+    /// every scroll tick — which rebuilt the accessory and made the keyboard
+    /// close and re-present itself over and over.
+    ///
+    /// Read off the real `UITextField` in `textFieldDidBeginEditing` rather
+    /// than from a SwiftUI `GeometryReader`, whose `.global` space is the
+    /// hosting view's, not the window's, when the tree is embedded in a
+    /// platform view.
+    var focusFrameInWindow: CGRect = .zero
+
     /// Bumped whenever `config` is replaced — the toolbar's declared values
     /// reseed on it, without comparing configs in `body`.
     private(set) var configRevision = 0

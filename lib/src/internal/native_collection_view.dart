@@ -9,6 +9,7 @@ import '../callbacks.dart';
 import '../models/cupertino_native_list_tile.dart';
 import '../models/cupertino_native_list_section.dart';
 import 'native_platform_view_mixin.dart';
+import 'keyboard_avoidance.dart';
 import 'widget_lowering.dart';
 
 /// Shared platform-view implementation behind `CupertinoNativeList` and
@@ -58,7 +59,10 @@ class NativeCollectionView extends StatefulWidget {
 }
 
 class _NativeCollectionViewState extends State<NativeCollectionView>
-    with NativePlatformViewStateMixin, WidgetsBindingObserver {
+    with
+        NativePlatformViewStateMixin,
+        WidgetsBindingObserver,
+        RouteKeyboardDismissal {
   bool? _lastIsDark;
 
   // Match the app's own theme brightness, NOT the device brightness: a light
@@ -96,6 +100,10 @@ class _NativeCollectionViewState extends State<NativeCollectionView>
   /// True while a transcribed field inside this list holds focus.
   bool _fieldFocused = false;
 
+  /// That field's vertical extent in window coordinates, when it reported
+  /// one. Null falls back to revealing the whole list.
+  Rect? _focusedRow;
+
   /// The last keyboard inset seen, to react only while it grows.
   double _lastBottomInset = 0;
 
@@ -118,9 +126,7 @@ class _NativeCollectionViewState extends State<NativeCollectionView>
   Map<String, dynamic> _sectionMap(CupertinoNativeListSection section) {
     return {
       ...section.toMap(),
-      'rows': [
-        for (final row in section.children) _rowMap(row),
-      ],
+      'rows': [for (final row in section.children) _rowMap(row)],
     };
   }
 
@@ -137,8 +143,8 @@ class _NativeCollectionViewState extends State<NativeCollectionView>
   }
 
   /// rowId → (nodeId → callback), for the lowered trailing controls.
-  final Map<String, Map<String, void Function(Object? value)>> _trailingCallbacks =
-      {};
+  final Map<String, Map<String, void Function(Object? value)>>
+  _trailingCallbacks = {};
 
   /// The config last pushed over the channel, encoded. Only set for pushes
   /// that actually went out.
@@ -207,8 +213,21 @@ class _NativeCollectionViewState extends State<NativeCollectionView>
           // never sees its focus and never scrolls it clear of the keyboard.
           // The native side reports it as `<nodeId>.focused`.
           if (nodeId.endsWith('.focused')) {
-            _fieldFocused = call.arguments['value'] == true;
-            if (_fieldFocused) _revealAboveKeyboard();
+            final value = call.arguments['value'];
+            // `{focused, y, height}` — the row's own box in window
+            // coordinates, so the reveal can move the row rather than the
+            // whole list. See `FocusReportingField` on the native side.
+            final report = value is Map ? value : null;
+            _fieldFocused = (report?['focused'] ?? value) == true;
+            _focusedRow = report == null || !_fieldFocused
+                ? null
+                : Rect.fromLTWH(
+                    0,
+                    (report['y'] as num).toDouble(),
+                    0,
+                    (report['height'] as num).toDouble(),
+                  );
+            if (_fieldFocused) _revealAboveKeyboard(postFrame: true);
           }
           _trailingCallbacks[rowId]?[nodeId]?.call(call.arguments['value']);
         }
@@ -225,29 +244,52 @@ class _NativeCollectionViewState extends State<NativeCollectionView>
     }
   }
 
-  /// Scrolls the list clear of the keyboard when a field inside it takes
-  /// focus. The whole list is moved, not the row: the row's position is known
-  /// natively, not here.
-  ///
-  /// ponytail: a short section is fully revealed; a long one only brings its
-  /// bottom into view. Reporting the focused row's rect from the native side
-  /// is the exact version.
-  void _revealAboveKeyboard() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+  /// Scrolls the focused row clear of the keyboard — the row, not the list:
+  /// revealing the whole box overshot a short section and undershot a long
+  /// one. The row's rect comes from the native side with its focus report.
+  void _revealAboveKeyboard({bool postFrame = false}) {
+    void run() {
       if (!mounted) return;
       final box = context.findRenderObject();
       if (box is! RenderBox || !box.hasSize) return;
-      // The keyboard's height counts as padding, the way the standalone
-      // field's reveal does it: without that, the list is already "on screen"
-      // behind the keyboard and nothing scrolls.
-      final inset = MediaQuery.viewInsetsOf(context).bottom;
+      // Only the part of the keyboard that really covers this viewport, the
+      // way the standalone field's reveal does it — see
+      // [keyboardCoverOfViewport].
+      // No early return on a zero cover: the row may still be plainly
+      // off-screen, and `showOnScreen` is the thing that decides.
+      final inset = keyboardCoverOfViewport(context);
+      // No duration: the engine already delivers the inset once per vsync of
+      // the keyboard's own animation, so an instant move on each tick *is*
+      // the animation — and it is the keyboard's curve, not a second one
+      // running alongside it at a different speed.
+      final row = _focusedRow;
+      final target = row == null
+          ? Offset.zero & box.size
+          : Rect.fromLTWH(
+              0,
+              row.top - box.localToGlobal(Offset.zero).dy,
+              box.size.width,
+              row.height,
+            );
       box.showOnScreen(
-        rect: EdgeInsets.only(bottom: inset + 20).inflateRect(
-          Offset.zero & box.size,
-        ),
-        duration: const Duration(milliseconds: 200),
+        rect: EdgeInsets.only(bottom: inset + 20).inflateRect(target),
       );
-    });
+    }
+
+    if (postFrame) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => run());
+    } else {
+      run();
+    }
+  }
+
+  /// The fields here are transcribed into the platform view, so Flutter holds
+  /// no focus node for them; `endEditing` resigns whichever one is first
+  /// responder inside it. Called as the route starts leaving, so the keyboard
+  /// goes down with the transition — see [RouteKeyboardDismissal].
+  @override
+  void dismissKeyboardForRoute() {
+    if (_fieldFocused) channel?.invokeMethod('endEditing');
   }
 
   @override

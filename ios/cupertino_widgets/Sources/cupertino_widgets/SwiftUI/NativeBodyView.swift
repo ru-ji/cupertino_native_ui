@@ -238,12 +238,25 @@ struct NativeBodyNode: View {
     @ViewBuilder
     private var textFieldView: some View {
         if let config = node.textField, let id = node.id {
+            let fieldModel = model.fieldModel(for: id, config: config)
             AdaptiveTextFieldView(
-                model: model.fieldModel(for: id, config: config),
+                model: fieldModel,
                 onChanged: { onEvent(id, $0) },
                 onSubmitted: { onEvent("\(id).submitted", $0) },
                 onEditingComplete: {},
-                onFocusChange: { onEvent("\(id).focused", $0) }
+                // The row's own frame rides along with the focus report, so
+                // Flutter can reveal *this row* rather than the whole platform
+                // view — see `TextFieldModel.focusFrameInWindow`.
+                onFocusChange: { focused in
+                    let frame = fieldModel.focusFrameInWindow
+                    onEvent(
+                        "\(id).focused",
+                        [
+                            "focused": focused,
+                            "y": Double(frame.minY),
+                            "height": Double(frame.height),
+                        ])
+                }
             )
             // The standalone platform view is sized by Flutter; here nothing
             // else states a height, so the field would collapse.
@@ -571,7 +584,10 @@ struct BodyGlassView: View {
             // constrains the geometry the glass grows from, even with two
             // nils.
             .applyGlassSize(width: config.width, height: config.height)
-            .glassEffect(glass, in: shape)
+            // `none` is the group case: the machinery without the material, so
+            // a tree can be transcribed into one platform view without wearing
+            // glass it never asked for. Anything else gets the effect.
+            .applyGlassEffect(config.variant == "none" ? nil : glass, in: shape)
             .contentShape(shape)
             .onTapGesture {
                 if config.pressable == true, let nodeId { onEvent(nodeId, nil) }
@@ -635,6 +651,17 @@ struct BodySegmentedView: View {
 
 @available(iOS 26.0, *)
 extension View {
+    /// `glassEffect` with an opt-out, since a `nil` effect has no spelling of
+    /// its own and an `if` at the call site would change the view's identity.
+    @ViewBuilder
+    func applyGlassEffect(_ glass: Glass?, in shape: AnyShape) -> some View {
+        if let glass {
+            self.glassEffect(glass, in: shape)
+        } else {
+            self
+        }
+    }
+
     /// The caller's size, or nothing at all — not `.frame(nil, nil)`.
     @ViewBuilder
     func applyGlassSize(width: Double?, height: Double?) -> some View {

@@ -126,6 +126,11 @@ class NativeListView: NativeHostingView {
         switch call.method {
         case "getIntrinsicSize":
             result(intrinsicSize())
+        // The route is leaving; drop the responder now so the keyboard rides
+        // the transition down instead of waiting for this view's disposal.
+        case "endEditing":
+            _view.endEditing(true)
+            result(nil)
         case "updateList":
             if let argsMap = call.arguments as? [String: Any],
                 let config = decodeConfig(ListConfig.self, from: argsMap)
