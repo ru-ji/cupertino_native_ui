@@ -90,9 +90,23 @@ class _TextFieldDemoPageState extends State<TextFieldDemoPage> {
   @override
   Widget build(BuildContext context) {
     // No shared shell: a page is a CupertinoPageScaffold with the native
-    // navigation bar and a list. The keyboard inset pads the scroll content
-    // instead of shrinking the page, so content keeps running under the bar.
+    // navigation bar and a list.
+    //
+    // `resizeToAvoidBottomInset: false` is load-bearing here, not a detail.
+    // UIKit puts a field's `inputAccessoryView` *inside* the keyboard's frame
+    // — it makes the keyboard taller rather than floating a bar over it — so
+    // `viewInsets.bottom` covers the toolbar's strip too. A scaffold that
+    // shrinks for the keyboard therefore ends the page exactly at the top of
+    // the bar, and the only thing left behind that strip is the scaffold's own
+    // background colour: an opaque slab with the glass capsule sitting on it.
+    // Full height instead, and what shows behind the bar is the page.
+    //
+    // The keyboard inset then pads the scroll content, as the comment on the
+    // sliver below says — which is also only true with the flag set, since
+    // `CupertinoPageScaffold` zeroes `viewInsets` for its child when it
+    // consumes them.
     return CupertinoPageScaffold(
+      resizeToAvoidBottomInset: false,
       child: CustomScrollView(
         slivers: [
           CupertinoNativeSliverNavigationBar(
