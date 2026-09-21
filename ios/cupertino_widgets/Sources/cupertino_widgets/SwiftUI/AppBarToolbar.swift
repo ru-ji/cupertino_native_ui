@@ -147,7 +147,30 @@ struct LegacyAppBarToolbar: ToolbarContent {
     @ViewBuilder
     private func buttons(_ entries: [BarEntryConfig]?) -> some View {
         let items = (entries ?? []).filter { !$0.isSpacer }.flatMap { $0.groupItems }
-        ForEach(items, id: \.actionId) { BarRawButton(item: $0, onAction: onAction) }
+        ForEach(items, id: \.actionId) { LegacyBarButton(item: $0, onAction: onAction) }
+    }
+}
+
+/// A bar button as iOS 15–18 draws a back button: the symbol, 6pt, then the
+/// title, both at 17pt. Icon-only and title-only items are the plain button.
+@available(iOS 15.0, *)
+private struct LegacyBarButton: View {
+    let item: BarItemConfig
+    let onAction: (String) -> Void
+
+    var body: some View {
+        if let icon = item.icon, let title = item.title {
+            Button {
+                onAction(item.actionId)
+            } label: {
+                HStack(spacing: 6) {
+                    IconView(icon: icon).font(.body.weight(.semibold))
+                    Text(title)
+                }
+            }
+        } else {
+            BarRawButton(item: item, onAction: onAction)
+        }
     }
 }
 

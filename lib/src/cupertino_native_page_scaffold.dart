@@ -220,7 +220,7 @@ class CupertinoNativePageScaffold extends StatefulWidget {
   /// updated by the `setBrightness` body-channel call.
   static final ValueNotifier<bool?> _bodyIsDark = ValueNotifier<bool?>(null);
 
-  /// Strips and applies a `?dark=0|1` suffix from a body route, returning the
+  /// Strips and applies the `?dark=0|1&width=` suffix from a body route, returning the
   /// bare route name. Safe to call with a route that has no query.
   static String _consumeBrightnessQuery(String route) {
     final q = route.indexOf('?');
@@ -228,8 +228,13 @@ class CupertinoNativePageScaffold extends StatefulWidget {
     final query = route.substring(q + 1);
     final dark = Uri.splitQueryString(query)['dark'];
     if (dark != null) _bodyIsDark.value = dark == '1';
+    _routeWidth = double.tryParse(Uri.splitQueryString(query)['width'] ?? '');
     return route.substring(0, q);
   }
+
+  /// The screen's width in points, sent by the native side in `?width=` — the
+  /// UIKit value, which the display's pixel size only matches on some phones.
+  static double? _routeWidth;
 
   static bool _bodyHandlersInstalled = false;
 
@@ -355,27 +360,31 @@ class CupertinoNativePageScaffold extends StatefulWidget {
     runApp(_DynamicEnvWrapper(child: _withExplicitWidth(child)));
   }
 
-  /// The auto-resizable engine lays the root out with UNBOUNDED constraints
-  /// and requires the top-level widget to pick explicit dimensions (the
-  /// native view then adopts that size). Width = the screen; height comes
-  /// from the content.
+  /// The auto-resizable engine's limit is the FlutterView's frame at its first
+  /// layout, which is unbounded when the host leaves the height open; the
+  /// top-level widget still has to pick an explicit width. That is the screen's
+  /// width in points from the route (`?width=`), else the view's, else the
+  /// display's; the height comes from the content.
   static Widget _withExplicitWidth(Widget child) {
     final dispatcher = ui.PlatformDispatcher.instance;
-    double width = 0;
-    if (dispatcher.displays.isNotEmpty) {
-      final display = dispatcher.displays.first;
-      if (display.size.width > 0) {
-        width = display.size.width / display.devicePixelRatio;
-      }
-    }
+    double width = _routeWidth ?? 0;
+    // Failing that, the view's size, which is in logical points. The display's
+    // physical width over the pixel ratio is not: on the Plus iPhones (1080 px
+    // panel, 414 pt screen) it comes out 54 pt short.
     if (width <= 0 && dispatcher.views.isNotEmpty) {
       final view = dispatcher.views.first;
       if (view.physicalSize.width > 0) {
         width = view.physicalSize.width / view.devicePixelRatio;
       }
     }
+    if (width <= 0 && dispatcher.displays.isNotEmpty) {
+      final display = dispatcher.displays.first;
+      if (display.size.width > 0) {
+        width = display.size.width / display.devicePixelRatio;
+      }
+    }
     if (width <= 0) width = 400; // last resort
-    return SizedBox(width: width, child: child);
+    return _BodyHeightReporter(child: SizedBox(width: width, child: child));
   }
 
   /// Pushes a page onto the enclosing scaffold's native stack. Only usable
@@ -790,4 +799,42 @@ class CupertinoNativeBodyRoute {
 
   @override
   int get hashCode => name.hashCode;
+}
+
+/// Hands the native host the height the root content settled on, after each
+/// frame in which it changed.
+///
+/// The engine only resizes an auto-resizable view on a frame without platform
+/// views (`FlutterPlatformViewsController.submitFrame`), so a body whose native
+/// lists measure themselves after the first frame would otherwise keep its first
+/// height.
+class _BodyHeightReporter extends StatefulWidget {
+  const _BodyHeightReporter({required this.child});
+  final Widget child;
+
+  @override
+  State<_BodyHeightReporter> createState() => _BodyHeightReporterState();
+}
+
+class _BodyHeightReporterState extends State<_BodyHeightReporter> {
+  Size? _last;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPersistentFrameCallback((_) {
+      if (!mounted) return;
+      final box = context.findRenderObject();
+      if (box is! RenderBox || !box.hasSize) return;
+      if (box.size == _last) return;
+      _last = box.size;
+      // Hosts that do not listen (no channel handler) just ignore it.
+      const MethodChannel('cupertino_widgets/body_height')
+          .invokeMethod<void>('height', box.size.height)
+          .catchError((Object _) {});
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
 }

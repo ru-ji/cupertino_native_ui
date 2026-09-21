@@ -73,9 +73,10 @@ private struct _FlutterContentRepresentable: UIViewControllerRepresentable {
     }
 }
 
-/// Hosts the FlutterViewController WITHOUT any external constraints — the
-/// auto-resizable FlutterView installs its own (FlutterAutoResizeLayoutConstraint)
-/// and publishes the Dart-chosen size through intrinsicContentSize/bounds.
+/// Hosts the FlutterViewController pinned top/leading/trailing to this view —
+/// its width is the host's — and leaves the height to the auto-resizable
+/// FlutterView, which installs its own (FlutterAutoResizeLayoutConstraint) and
+/// publishes the Dart-chosen size through intrinsicContentSize/bounds.
 @available(iOS 15.0, *)
 final class FlutterHostViewController: UIViewController {
     private let flutterController: FlutterViewController
@@ -86,11 +87,66 @@ final class FlutterHostViewController: UIViewController {
     var onSizeChange: ((CGSize) -> Void)?
     var onFirstFrame: (() -> Void)?
 
+    /// Dart's own measure of its root's height. Once a frame carries platform
+    /// views the engine never resizes the auto-resizable view again
+    /// (`FlutterPlatformViewsController.submitFrame` only calls `performResize`
+    /// when there are none), so a body whose lists measure themselves after
+    /// the first frame would stay at its first height. Dart tells us instead.
+    private var heightChannel: FlutterMethodChannel?
+
     init(engine: FlutterEngine) {
         flutterController = FlutterViewController(engine: engine, nibName: nil, bundle: nil)
         flutterController.isViewOpaque = false
         flutterController.isAutoResizable = true
         super.init(nibName: nil, bundle: nil)
+        let channel = FlutterMethodChannel(
+            name: "cupertino_widgets/body_height", binaryMessenger: engine.binaryMessenger)
+        channel.setMethodCallHandler { [weak self] call, result in
+            if call.method == "height", let height = (call.arguments as? NSNumber)?.doubleValue {
+                self?.adoptDartHeight(CGFloat(height))
+            }
+            result(nil)
+        }
+        heightChannel = channel
+    }
+
+    /// The last height Dart reported, kept so it can be applied again if the view
+    /// was not laid out yet, or the engine dropped its constraints.
+    private var dartHeight: CGFloat?
+
+    /// Gives the FlutterView Dart's measured height.
+    ///
+    /// The engine's own auto-resize constraint is what sizes the view, and it is
+    /// only ever created (or updated) on a frame without platform views. When it
+    /// exists, its constant is moved to the new height. When it does not — the
+    /// first frame already carried a platform view — it is created the way the
+    /// engine would have: `-[FlutterView setIntrinsicContentSize:]`, which takes
+    /// physical pixels. Creating it (rather than sizing the view some other way)
+    /// matters: with an engine constraint in place the engine keeps its limit at
+    /// the frame's *first* size (0, i.e. unbounded); without one it re-reads the
+    /// current frame as the limit and Dart can never grow past it.
+    private func adoptDartHeight(_ height: CGFloat) {
+        guard height > 1 else { return }
+        dartHeight = height
+        let flutterView: UIView = flutterController.view
+        let engineHeights = flutterView.constraints.filter {
+            $0.firstAttribute == .height
+                && String(describing: type(of: $0)).contains("AutoResize")
+        }
+        if engineHeights.isEmpty {
+            let width = flutterView.bounds.width
+            let selector = NSSelectorFromString("setIntrinsicContentSize:")
+            guard width > 1, flutterView.responds(to: selector) else { return }
+            let scale = flutterView.window?.windowScene?.screen.scale ?? UIScreen.main.scale
+            typealias SetSize = @convention(c) (AnyObject, Selector, CGSize) -> Void
+            let setSize = unsafeBitCast(flutterView.method(for: selector), to: SetSize.self)
+            setSize(flutterView, selector, CGSize(width: width * scale, height: height * scale))
+            return
+        }
+        for constraint in engineHeights where abs(constraint.constant - height) > 0.5 {
+            constraint.constant = height
+            flutterView.setNeedsLayout()
+        }
     }
 
     @available(*, unavailable)
@@ -103,7 +159,30 @@ final class FlutterHostViewController: UIViewController {
         view.backgroundColor = .clear
 
         addChild(flutterController)
-        view.addSubview(flutterController.view)
+        // Pinned before the first layout, the way Flutter's own add-to-app
+        // sample does it: an auto-resizable FlutterView takes its width limit
+        // from its frame at that first layout, so a view left unconstrained
+        // gets an arbitrary one (360pt, on a 414pt Plus iPhone). Width and
+        // top are the host's; the height stays Dart's.
+        let flutterView = flutterController.view!
+        flutterView.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(flutterView)
+        NSLayoutConstraint.activate([
+            flutterView.topAnchor.constraint(equalTo: view.topAnchor),
+            flutterView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            flutterView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+        ])
+        // The engine removes its own width/height constraints when the trait
+        // collection changes (`resetIntrinsicContentSize`), and on the next
+        // layout takes the view's *current frame* as its size limit
+        // (`updateAutoResizeConstraints`). With nothing to say what the height
+        // is meanwhile, UIKit keeps the old frame, so the limit becomes that
+        // height and the content can never grow again. A weak zero height makes
+        // the frame collapse instead, which the engine reads as "unbounded" —
+        // and loses to the engine's own (required) constraint whenever it exists.
+        let weakHeight = flutterView.heightAnchor.constraint(equalToConstant: 0)
+        weakHeight.priority = UILayoutPriority(1)
+        weakHeight.isActive = true
         flutterController.didMove(toParent: self)
 
         // The engine's own first-frame signal, so the spinner never outlives
@@ -132,6 +211,7 @@ final class FlutterHostViewController: UIViewController {
 
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
+        if let dartHeight { adoptDartHeight(dartHeight) }
         reportIfChanged(flutterController.view.intrinsicContentSize)
         // Dart layout can settle after this pass (fonts, images, async
         // builds); re-check once shortly after.

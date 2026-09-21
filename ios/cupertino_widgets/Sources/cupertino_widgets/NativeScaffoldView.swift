@@ -131,7 +131,7 @@ class NativeScaffoldView: NativeHostingView {
         for route in routes where pooledEngines[route] == nil {
             let engine = sharedEngineGroup.makeEngine(
                 withEntrypoint: nil, libraryURI: nil,
-                initialRoute: "cn-scaffold://\(route)?dark=\(isDark ? 1 : 0)")
+                initialRoute: "cn-scaffold://\(route)?dark=\(isDark ? 1 : 0)&width=\(Int(UIScreen.main.bounds.width))")
             if !engine.hasPlugin("FlutterCupertinoPlugin"),
                 let registrar = engine.registrar(forPlugin: "FlutterCupertinoPlugin")
             {
@@ -393,7 +393,7 @@ class NativeScaffoldView: NativeHostingView {
             // later changes stream through the scaffold_body channel.
             engine = Self.sharedEngineGroup.makeEngine(
                 withEntrypoint: nil, libraryURI: nil,
-                initialRoute: "cn-scaffold://\(route)?dark=\(currentIsDark ? 1 : 0)")
+                initialRoute: "cn-scaffold://\(route)?dark=\(currentIsDark ? 1 : 0)&width=\(Int(UIScreen.main.bounds.width))")
             // Register this plugin's platform-view factories on the spawned
             // engine so package widgets (buttons, toggles, ...) work inside
             // scaffold bodies too. Guarded: a pooled engine already carries

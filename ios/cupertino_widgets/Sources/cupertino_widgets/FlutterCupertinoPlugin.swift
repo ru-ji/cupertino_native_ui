@@ -146,14 +146,6 @@ public class FlutterCupertinoPlugin: NSObject, FlutterPlugin {
             }
             return
         }
-        guard #available(iOS 26.0, *) else {
-            result(
-                FlutterError(
-                    code: "UNSUPPORTED_OS_VERSION",
-                    message: "cupertino_widgets requires iOS 26 or later",
-                    details: nil))
-            return
-        }
         if call.method == "prewarmScaffold" {
             let args = call.arguments as? [String: Any]
             NativeScaffoldView.prewarm(
