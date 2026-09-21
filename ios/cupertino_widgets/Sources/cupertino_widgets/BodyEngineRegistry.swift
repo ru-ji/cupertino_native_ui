@@ -39,7 +39,7 @@ enum BodyEngineRegistry {
         } else {
             engine = NativeScaffoldView.sharedEngineGroup.makeEngine(
                 withEntrypoint: nil, libraryURI: nil,
-                initialRoute: "cn-scaffold://\(route)?dark=\(isDark ? 1 : 0)")
+                initialRoute: "cn-scaffold://\(route)?dark=\(isDark ? 1 : 0)&width=\(Int(UIScreen.main.bounds.width))")
             if !engine.hasPlugin("FlutterCupertinoPlugin"),
                 let registrar = engine.registrar(forPlugin: "FlutterCupertinoPlugin")
             {

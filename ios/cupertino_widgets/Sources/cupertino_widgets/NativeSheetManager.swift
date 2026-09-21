@@ -58,7 +58,7 @@ final class NativeSheetManager: NSObject, UIAdaptivePresentationControllerDelega
         } else {
             engine = NativeScaffoldView.sharedEngineGroup.makeEngine(
                 withEntrypoint: nil, libraryURI: nil,
-                initialRoute: "cn-scaffold://\(route)?dark=\(isDark ? 1 : 0)")
+                initialRoute: "cn-scaffold://\(route)?dark=\(isDark ? 1 : 0)&width=\(Int(UIScreen.main.bounds.width))")
             if !engine.hasPlugin("FlutterCupertinoPlugin"),
                 let registrar = engine.registrar(forPlugin: "FlutterCupertinoPlugin")
             {
@@ -340,7 +340,7 @@ extension View {
     /// scroll-edge effect keeps them legible on scroll.
     @ViewBuilder
     fileprivate func applyHiddenBarBackground() -> some View {
-        if #available(iOS 16.0, *) {
+        if #available(iOS 26.0, *) {
             self.toolbarBackground(.hidden, for: .navigationBar)
         } else {
             self

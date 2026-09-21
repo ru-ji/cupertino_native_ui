@@ -17,13 +17,28 @@ class SheetDemoPage extends StatefulWidget {
 class _SheetDemoPageState extends State<SheetDemoPage> {
   String _last = 'None yet';
 
+  /// Liquid Glass (iOS 26+) closes a sheet with an X; before that the leading
+  /// item reads like the system back button — a chevron and a label.
+  bool _glass = true;
+
+  @override
+  void initState() {
+    super.initState();
+    CupertinoNativeGlassContainer.isSupported.then((v) {
+      if (mounted) setState(() => _glass = v);
+    });
+  }
+
   CupertinoNativeScaffoldNavigationBar _appBar({bool withSearch = false}) {
     return CupertinoNativeScaffoldNavigationBar(
       title: 'New Event',
       titleDisplayMode: CupertinoNativeToolbarTitleDisplayMode.inline,
       leading: [
         CupertinoNativeBarItem(
-          icon: CupertinoNativeIcon.symbol(CupertinoSymbols.xmark),
+          icon: CupertinoNativeIcon.symbol(
+            _glass ? CupertinoSymbols.xmark : CupertinoSymbols.chevronBackward,
+          ),
+          title: _glass ? null : 'Cancel',
           actionId: 'close',
         ),
       ],
