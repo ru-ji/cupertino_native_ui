@@ -48,13 +48,13 @@ struct AdaptiveMenuView: View {
             if #available(iOS 26.0, *) {
                 menu.buttonStyle(.glass).tint(tintColor)
             } else {
-                menu.buttonStyle(.bordered).tint(tintColor)
+                menu.buttonStyle(.borderless).tint(tintColor)
             }
         case "glassProminent":
             if #available(iOS 26.0, *) {
                 menu.buttonStyle(.glassProminent).tint(tintColor)
             } else {
-                menu.buttonStyle(.borderedProminent).tint(tintColor)
+                menu.buttonStyle(.borderless).tint(tintColor)
             }
         default:
             menu.buttonStyle(.automatic).tint(tintColor)

@@ -159,38 +159,12 @@ class _ButtonDemoPageState extends State<ButtonDemoPage> {
                         ),
                       ],
                     ),
-                  ],
-                ),
-                // A menu is not transcribable, so these rows stay Flutter —
-                // laid out plainly, without a card around them.
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(32, 24, 32, 6),
-                  child: Text(
-                    'POPUP MENU',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: CupertinoColors.secondaryLabel.resolveFrom(
-                        context,
-                      ),
-                    ),
-                  ),
-                ),
-                Column(
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
-                      ),
-                      child: Row(
-                        children: [
-                          Text(
-                            'Glass',
-                            style: CupertinoTheme.of(context)
-                                .textTheme
-                                .textStyle,
-                          ),
-                          const Spacer(),
+                    CupertinoNativeListSection(
+                      header: 'Popup Menu',
+                      children: [
+                        _buttonRow(
+                          'menuGlass',
+                          'Glass',
                           CupertinoNativeMenu(
                             title: 'Sort',
                             systemImage: 'arrow.up.arrow.down',
@@ -198,23 +172,10 @@ class _ButtonDemoPageState extends State<ButtonDemoPage> {
                             items: _menuItems,
                             onAction: (id, _) => _did('Menu $id'),
                           ),
-                        ],
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
-                      ),
-                      child: Row(
-                        children: [
-                          Text(
-                            'Icon',
-                            style: CupertinoTheme.of(context)
-                                .textTheme
-                                .textStyle,
-                          ),
-                          const Spacer(),
+                        ),
+                        _buttonRow(
+                          'menuIcon',
+                          'Icon',
                           CupertinoNativeMenu(
                             systemImage: 'ellipsis',
                             style: CupertinoNativeButtonStyle.glass,
@@ -225,23 +186,10 @@ class _ButtonDemoPageState extends State<ButtonDemoPage> {
                             items: _menuItems,
                             onAction: (id, _) => _did('Menu $id'),
                           ),
-                        ],
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
-                      ),
-                      child: Row(
-                        children: [
-                          Text(
-                            'Tinted',
-                            style: CupertinoTheme.of(context)
-                                .textTheme
-                                .textStyle,
-                          ),
-                          const Spacer(),
+                        ),
+                        _buttonRow(
+                          'menuTinted',
+                          'Tinted',
                           CupertinoNativeMenu(
                             title: 'Options',
                             style: CupertinoNativeButtonStyle.tinted,
@@ -250,8 +198,8 @@ class _ButtonDemoPageState extends State<ButtonDemoPage> {
                             items: _menuItems,
                             onAction: (id, _) => _did('Menu $id'),
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
