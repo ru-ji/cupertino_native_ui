@@ -55,13 +55,13 @@ struct AdaptiveButtonView: View {
                 if #available(iOS 26.0, *) {
                     labeledButton.buttonStyle(.glass).tint(tintColor)
                 } else {
-                    labeledButton.buttonStyle(.bordered).tint(tintColor)
+                    labeledButton.buttonStyle(.borderless).tint(tintColor)
                 }
             case "glassProminent":
                 if #available(iOS 26.0, *) {
                     labeledButton.buttonStyle(.glassProminent).tint(tintColor)
                 } else {
-                    labeledButton.buttonStyle(.borderedProminent).tint(tintColor)
+                    labeledButton.buttonStyle(.borderless).tint(tintColor)
                 }
             default:
                 labeledButton
