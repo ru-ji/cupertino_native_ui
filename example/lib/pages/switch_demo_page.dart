@@ -21,6 +21,8 @@ class _SwitchDemoPageState extends State<SwitchDemoPage> {
   bool _agree = false;
   bool _backup = true;
   String _color = 'blue';
+  String _appearance = 'dark';
+  final Set<String> _allergies = {'peanuts', 'gluten'};
 
   @override
   Widget build(BuildContext context) {
@@ -35,6 +37,7 @@ class _SwitchDemoPageState extends State<SwitchDemoPage> {
                     onPressed: () => Navigator.pop(context),
                     child: CupertinoSymbolImage.symbol(
                       CupertinoSymbols.chevronBackward,
+                      weight: FontWeight.w600,
                     ),
                   )
                 : null,
@@ -49,6 +52,18 @@ class _SwitchDemoPageState extends State<SwitchDemoPage> {
             sliver: SliverList.list(
               children: [
                 CupertinoNativeList(
+                  onRowTap: (id) {
+                    if (const ['light', 'dark', 'system'].contains(id)) {
+                      setState(() => _appearance = id);
+                    } else if (id.startsWith('allergy_')) {
+                      final key = id.substring(8);
+                      setState(
+                        () => _allergies.contains(key)
+                            ? _allergies.remove(key)
+                            : _allergies.add(key),
+                      );
+                    }
+                  },
                   sections: [
                     CupertinoNativeListSection(
                       header: 'Connectivity',
@@ -186,6 +201,39 @@ class _SwitchDemoPageState extends State<SwitchDemoPage> {
                                   : null,
                               onChanged: (_) => setState(() => _color = id),
                             ),
+                          ),
+                      ],
+                    ),
+                    CupertinoNativeListSection(
+                      header: 'Appearance',
+                      footer:
+                          'One row selected at a time, like an inline Picker.',
+                      children: [
+                        for (final (id, name) in const [
+                          ('light', 'Light'),
+                          ('dark', 'Dark'),
+                          ('system', 'System Default'),
+                        ])
+                          CupertinoNativeListTile(
+                            id: id,
+                            title: name,
+                            selected: _appearance == id,
+                          ),
+                      ],
+                    ),
+                    CupertinoNativeListSection(
+                      header: 'Allergies',
+                      footer: 'Several rows can be selected: each tap flips its checkmark.',
+                      children: [
+                        for (final (id, name) in const [
+                          ('peanuts', 'Peanuts'),
+                          ('shellfish', 'Shellfish'),
+                          ('gluten', 'Gluten'),
+                        ])
+                          CupertinoNativeListTile(
+                            id: 'allergy_$id',
+                            title: name,
+                            selected: _allergies.contains(id),
                           ),
                       ],
                     ),

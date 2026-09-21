@@ -98,6 +98,10 @@ public class FlutterCupertinoPlugin: NSObject, FlutterPlugin {
         registrar.register(
             edgeBlurFactory,
             withId: "com.example.cupertino_widgets/cupertino_native_edge_blur")
+
+        registrar.register(
+            NativeBarMaterialFactory(messenger: registrar.messenger()),
+            withId: "com.example.cupertino_widgets/cupertino_native_bar_material")
     }
 
     /// Rasterizes an SF Symbol to PNG bytes so Flutter can draw it as a normal

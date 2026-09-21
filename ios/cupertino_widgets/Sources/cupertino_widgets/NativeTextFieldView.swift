@@ -78,6 +78,21 @@ class NativeTextFieldView: NativeHostingView {
     /// changes; handed to the field through `model.accessory`.
     private var accessory: KeyboardAccessoryBar?
 
+    /// The four inset constraints of `setupSwiftUI`: leading, trailing, top,
+    /// bottom. Dart's paint room follows `glass` on every build, so the bar's
+    /// search field going glass once it sticks grows the platform view by 16pt
+    /// a side; these must follow or the content fills the inflated box.
+    private var roomConstraints: [NSLayoutConstraint] = []
+
+    private func syncRoom() {
+        guard roomConstraints.count == 4 else { return }
+        let room: CGFloat = model.config.glass == true ? 16 : 0
+        roomConstraints[0].constant = room
+        roomConstraints[1].constant = -room
+        roomConstraints[2].constant = room
+        roomConstraints[3].constant = -room
+    }
+
     /// The `keyboardToolbar` array Dart last sent, compared with `isEqual:` —
     /// a `JSONEncoder` re-encoding is not stable (key order varies), so it
     /// reported a change on every push.
@@ -123,6 +138,7 @@ class NativeTextFieldView: NativeHostingView {
                 host.topAnchor.constraint(equalTo: container.topAnchor, constant: room),
                 host.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -room),
             ]
+            self?.roomConstraints = insets
             // Below required: the container is 0x0 until Flutter sizes the
             // platform view, and 16pt of inset on each side of a zero-width
             // box is unsatisfiable. At 999 Auto Layout bends them for that one
@@ -238,6 +254,7 @@ class NativeTextFieldView: NativeHostingView {
             // Assigned, not rebuilt: the field's state lives in the model, and
             // rebuilding would dismiss the keyboard mid-edit.
             model.config = config
+            syncRoom()
             if let text = config.text, text != model.text { model.text = text }
             syncAccessory(rawToolbar: dict["keyboardToolbar"] as? [Any])
             result(nil)

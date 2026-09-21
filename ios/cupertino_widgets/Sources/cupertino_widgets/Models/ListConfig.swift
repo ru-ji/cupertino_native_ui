@@ -15,6 +15,8 @@ struct ListRowConfig: Codable {
     let type: String?  // "label" | "toggle" | "button"
     let toggleValue: Bool?
     let enabled: Bool?
+    /// Trailing checkmark of a selection row.
+    let selected: Bool?
     /// A lowered `CupertinoNativeListTile.trailing` — native nodes (switch,
     /// slider, button, picker, …) rendered in the row by SwiftUI.
     let trailing: [BodyNodeConfig]?

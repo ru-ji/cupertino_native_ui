@@ -189,6 +189,8 @@ struct NativeBodyNode: View {
             textView
         case "button":
             buttonView
+        case "menu":
+            menuView
         case "textField":
             textFieldView
         case "toggle":
@@ -245,6 +247,17 @@ struct NativeBodyNode: View {
         if let config = node.button, let id = node.id {
             AdaptiveButtonView(config: config) { onEvent(id, nil) }
                 .disabled(config.enabled == false)
+        }
+    }
+
+    @ViewBuilder
+    private var menuView: some View {
+        if let config = node.menu, let id = node.id {
+            AdaptiveMenuView(config: config) { actionId, value in
+                var event: [String: Any] = ["id": actionId]
+                if let value { event["value"] = value }
+                onEvent(id, event)
+            }
         }
     }
 
@@ -330,6 +343,7 @@ struct NativeBodyNode: View {
             let binding = Binding<Double>(
                 get: { model.sliders[id] ?? config.value },
                 set: { newValue in
+                    NativeLog.log("slider \(id) set \(newValue)")
                     model.sliders[id] = newValue
                     onEvent(id, newValue)
                 })
@@ -358,7 +372,7 @@ struct NativeBodyNode: View {
     @ViewBuilder
     private var listView: some View {
         if let config = node.list {
-            AdaptiveListView(
+            AdaptiveSystemListView(
                 config: config,
                 // A body's list gets a store of its own, held by the body
                 // model so it outlives the view updates.
@@ -367,7 +381,8 @@ struct NativeBodyNode: View {
                 onToggle: { rowId, value in onEvent("\(node.id ?? "list").\(rowId)", value) },
                 onTrailingEvent: { rowId, itemId, value in
                     onEvent("\(node.id ?? "list").\(rowId).\(itemId)", value)
-                }
+                },
+                onHeight: { _ in }
             )
         }
     }

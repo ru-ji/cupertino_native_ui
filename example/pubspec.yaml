@@ -17,6 +17,7 @@ dependencies:
     path: ../
   # Bundles the CupertinoIcons font so CupertinoIcons glyphs can render
   # natively (the native side loads bundled icon fonts by family name).
+  cupertino_icons: ^1.0.8
   soft_edge_blur: ^0.1.3
 
 dev_dependencies:

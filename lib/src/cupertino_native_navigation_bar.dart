@@ -13,6 +13,7 @@ import 'cupertino_native_text_field.dart';
 import 'cupertino_scroll_edge_effect.dart';
 import 'cupertino_symbol_image.dart';
 import 'internal/ios_version.dart';
+import 'internal/legacy_sliver_navigation_bar.dart';
 import 'models/cupertino_native_icon.dart';
 import 'models/cupertino_symbols.dart';
 import 'search_row_visibility.dart';
@@ -343,6 +344,11 @@ class _CupertinoSliverAppBarState
     if (position == null || !position.hasPixels || position.pixels <= 0.0) {
       return;
     }
+    // A finger landing on a moving page also reports "not scrolling" (the
+    // hold), and animating then replaces the hold behind the Scrollable's
+    // back: its next drag trips `_hold == null`. Snap only once idle.
+    // ignore: invalid_use_of_protected_member, invalid_use_of_visible_for_testing_member
+    if (position.activity is! IdleScrollActivity) return;
     // During the search morph the header extents are driven by _controller,
     // and the active search view should scroll freely.
     if (_controller.value > 0.0) return;
@@ -438,15 +444,26 @@ class _CupertinoSliverAppBarState
           ? null
           : Row(mainAxisSize: MainAxisSize.min, children: widget.trailing);
       if (widget._searchable) {
-        // Pre-iOS 26 look: Flutter's own search bar; the iOS 26-only glass
-        // icon properties don't apply here and are ignored.
-        return CupertinoSliverNavigationBar.search(
+        // The iOS 26-only glass icon properties don't apply here and are
+        // ignored. The search-activation morph is not drawn yet: tapping the
+        // field focuses it in place.
+        return LegacySliverNavigationBar(
+          largeTitle: Text(widget.largeTitle),
+          leading: widget.leading,
+          trailing: trailingRow,
           searchField: CupertinoSearchTextField(
             placeholder: widget.searchPlaceholder,
             style: widget.searchStyle,
             onChanged: widget.onSearchChanged,
+            backgroundColor: const Color(0x00000000),
           ),
           bottomMode: widget.bottomMode,
+        );
+      }
+      // No bottom slot: the iOS 15–18 bar, drawn here. (A [bottom] widget
+      // still uses Flutter's own bar.)
+      if (widget.bottom == null) {
+        return LegacySliverNavigationBar(
           largeTitle: Text(widget.largeTitle),
           leading: widget.leading,
           trailing: trailingRow,
@@ -501,7 +518,12 @@ class _CupertinoSliverAppBarState
             placeholder: widget.searchPlaceholder,
             style: widget.searchStyle,
             glass: glassy
-                ? CupertinoGlass(cornerRadius: widget.bottomHeight / 2)
+                ? CupertinoGlass(
+                    cornerRadius: widget.bottomHeight / 2,
+                    // A bar search field does not swell under a touch the way
+                    // interactive glass does — a scroll starting on it would.
+                    interactive: false,
+                  )
                 : null,
             backgroundColor: glassy
                 ? null

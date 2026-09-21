@@ -89,89 +89,85 @@ class _SheetDemoPageState extends State<SheetDemoPage> {
 
   @override
   Widget build(BuildContext context) {
+    final top = MediaQuery.paddingOf(context).top + 44;
     return CupertinoPageScaffold(
-      child: CustomScrollView(
-        slivers: [
-          CupertinoNativeSliverNavigationBar(
-            largeTitle: 'Sheet',
-            leading: Navigator.canPop(context)
-                ? CupertinoNativeButton.glass(
-                    borderShape: CupertinoNativeButtonBorderShape.circle,
-                    onPressed: () => Navigator.pop(context),
-                    child: CupertinoSymbolImage.symbol(
-                      CupertinoSymbols.chevronBackward,
-                    ),
-                  )
-                : null,
-          ),
-          SliverPadding(
+      child: Stack(
+        children: [
+          ListView(
             padding: EdgeInsets.only(
-              bottom:
-                  MediaQuery.paddingOf(context).bottom +
-                  MediaQuery.viewInsetsOf(context).bottom +
-                  40,
+              top: top,
+              bottom: MediaQuery.paddingOf(context).bottom + 40,
             ),
-            sliver: SliverList.list(
-              children: [
-                CupertinoNativeList(
-                  onRowTap: (id) {
-                    switch (id) {
-                      case 'appBar':
-                        _present(label: 'App bar sheet', appBar: _appBar());
-                      case 'segmented':
-                        _present(
-                          label: 'Segmented sheet',
-                          appBar: _appBar(),
-                          bottom: const CupertinoNativeSheetSegmentedControl(
-                            segments: ['Event', 'Reminder', 'Call'],
-                          ),
-                        );
-                      case 'search':
-                        _present(
-                          label: 'Search sheet',
-                          appBar: _appBar(withSearch: true),
-                          detents: const [CupertinoNativeSheetDetent.large],
-                        );
-                      case 'bare':
-                        _present(label: 'Bare sheet');
-                    }
-                  },
-                  sections: [
-                    CupertinoNativeListSection(
-                      header: 'Present',
-                      footer: 'Last event: $_last',
-                      children: const [
-                        CupertinoNativeListTile(
-                          id: 'appBar',
-                          title: 'With App Bar',
-                          subtitle: 'Pinned title, ✕ leading, Add trailing — scrollable',
-                          showChevron: true,
+            children: [
+              CupertinoNativeList(
+                onRowTap: (id) {
+                  switch (id) {
+                    case 'appBar':
+                      _present(label: 'App bar sheet', appBar: _appBar());
+                    case 'segmented':
+                      _present(
+                        label: 'Segmented sheet',
+                        appBar: _appBar(),
+                        bottom: const CupertinoNativeSheetSegmentedControl(
+                          segments: ['Event', 'Reminder', 'Call'],
                         ),
-                        CupertinoNativeListTile(
-                          id: 'segmented',
-                          title: 'With Bottom Segmented Control',
-                          subtitle: 'Native segmented pinned under the bar',
-                          showChevron: true,
-                        ),
-                        CupertinoNativeListTile(
-                          id: 'search',
-                          title: 'With Search Field',
-                          subtitle:
-                              'The scaffold-style native search, in a sheet',
-                          showChevron: true,
-                        ),
-                        CupertinoNativeListTile(
-                          id: 'bare',
-                          title: 'Bare Sheet',
-                          subtitle:
-                              'No chrome — the Flutter body owns everything',
-                          showChevron: true,
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ],
+                      );
+                    case 'search':
+                      _present(
+                        label: 'Search sheet',
+                        appBar: _appBar(withSearch: true),
+                        detents: const [CupertinoNativeSheetDetent.large],
+                      );
+                    case 'bare':
+                      _present(label: 'Bare sheet');
+                  }
+                },
+                sections: [
+                  CupertinoNativeListSection(
+                    header: 'Present',
+                    footer: 'Last event: $_last',
+                    children: const [
+                      CupertinoNativeListTile(
+                        id: 'appBar',
+                        title: 'With App Bar',
+                        subtitle: 'Pinned title, ✕ leading, Add trailing — scrollable',
+                        showChevron: true,
+                      ),
+                      CupertinoNativeListTile(
+                        id: 'segmented',
+                        title: 'With Bottom Segmented Control',
+                        subtitle: 'Native segmented pinned under the bar',
+                        showChevron: true,
+                      ),
+                      CupertinoNativeListTile(
+                        id: 'search',
+                        title: 'With Search Field',
+                        subtitle:
+                            'The scaffold-style native search, in a sheet',
+                        showChevron: true,
+                      ),
+                      CupertinoNativeListTile(
+                        id: 'bare',
+                        title: 'Bare Sheet',
+                        subtitle:
+                            'No chrome — the Flutter body owns everything',
+                        showChevron: true,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ],
+          ),
+          CupertinoNativeNavigationBar(
+            title: 'Sheet',
+            leading: CupertinoNativeButton.glass(
+              borderShape: CupertinoNativeButtonBorderShape.circle,
+              onPressed: () => Navigator.pop(context),
+              child: CupertinoSymbolImage.symbol(
+                CupertinoSymbols.chevronBackward,
+                weight: FontWeight.w600,
+              ),
             ),
           ),
         ],

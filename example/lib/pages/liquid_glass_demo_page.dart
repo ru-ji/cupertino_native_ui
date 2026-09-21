@@ -107,6 +107,7 @@ class _LiquidGlassDemoPageState extends State<LiquidGlassDemoPage> {
                     onPressed: () => Navigator.pop(context),
                     child: CupertinoSymbolImage.symbol(
                       CupertinoSymbols.chevronBackward,
+                      weight: FontWeight.w600,
                     ),
                   )
                 : null,
@@ -285,7 +286,8 @@ class _LiquidGlassDemoPageState extends State<LiquidGlassDemoPage> {
                           trailing:
                               CupertinoNativeSlidingSegmentedControl<int>.menu(
                                 children: {
-                                  for (final (i, c) in _GlassCase.values.indexed)
+                                  for (final (i, c)
+                                      in _GlassCase.values.indexed)
                                     i: Text(c.label),
                                 },
                                 groupValue: _glassCase.index,

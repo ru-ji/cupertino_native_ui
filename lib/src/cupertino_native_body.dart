@@ -203,6 +203,45 @@ class CupertinoNativeBody {
          },
        );
 
+  /// A popup `Menu`, reporting a pick as `(id, {'id': actionId, 'value': v})`
+  /// — `value` is the new state of a toggle item, null for an action.
+  CupertinoNativeBody.menu({
+    required String id,
+    required List<Map<String, dynamic>> items,
+    String title = 'Options',
+    String? systemImage,
+    CupertinoNativeButtonStyle style = CupertinoNativeButtonStyle.automatic,
+    CupertinoNativeButtonBorderShape borderShape =
+        CupertinoNativeButtonBorderShape.automatic,
+    CupertinoNativeButtonLabelStyle labelStyle =
+        CupertinoNativeButtonLabelStyle.titleAndIcon,
+    CupertinoNativeControlSize controlSize = CupertinoNativeControlSize.regular,
+    Color? color,
+    double? fontSize,
+    int? fontWeight,
+    Color? textColor,
+    EdgeInsets? padding,
+  }) : this._(
+         type: 'menu',
+         id: id,
+         padding: padding,
+         payload: {
+           'menu': {
+             'title': title,
+             'systemImage': systemImage,
+             'items': items,
+             'style': style,
+             'borderShape': borderShape,
+             'labelStyle': labelStyle,
+             'controlSize': controlSize,
+             'color': color,
+             'fontSize': fontSize,
+             'fontWeight': fontWeight,
+             'textColor': textColor,
+           },
+         },
+       );
+
   /// A `TextField`, reporting each edit as `(id, String)`. Focus and submit
   /// arrive as `('<id>.focused', {focused, y, height})` — the row's own box
   /// in window coordinates, so a host can reveal the row rather than the
