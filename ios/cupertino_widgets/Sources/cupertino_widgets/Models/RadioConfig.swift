@@ -1,6 +1,6 @@
 import Foundation
 
-@available(iOS 26.0, *)
+@available(iOS 15.0, *)
 struct RadioConfig: Codable {
     let value: Bool
     let label: String?

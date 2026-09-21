@@ -16,7 +16,7 @@ import SwiftUI
 ///
 /// Leaf nodes carry the same `*Config` the standalone platform views decode,
 /// so a control renders identically whichever way it is reached.
-@available(iOS 26.0, *)
+@available(iOS 15.0, *)
 struct BodyNodeConfig: Codable {
     /// "column" | "row" | "scroll" | "padding" | "spacer" | "divider" |
     /// "text" | "button" | "textField" | "toggle" | "checkbox" | "radio" |
@@ -70,7 +70,7 @@ struct BodyNodeConfig: Codable {
 
 /// A compact `DatePicker` inside a native body: the same control the
 /// standalone platform view renders, driven by `DatePickerModel`.
-@available(iOS 26.0, *)
+@available(iOS 15.0, *)
 struct DatePickerConfig: Codable {
     let value: Double?  // milliseconds since epoch
     let minimumDate: Double?
@@ -82,7 +82,7 @@ struct DatePickerConfig: Codable {
 
 /// A native `ProgressView` inside a native body: determinate with `value`,
 /// an indeterminate spinner without.
-@available(iOS 26.0, *)
+@available(iOS 15.0, *)
 struct ProgressConfig: Codable {
     let value: Double?
     let total: Double?
@@ -92,7 +92,7 @@ struct ProgressConfig: Codable {
     let isDark: Bool?
 }
 
-@available(iOS 26.0, *)
+@available(iOS 15.0, *)
 struct BodyEdgeInsets: Codable {
     let top: Double
     let leading: Double
@@ -100,7 +100,7 @@ struct BodyEdgeInsets: Codable {
     let trailing: Double
 }
 
-@available(iOS 26.0, *)
+@available(iOS 15.0, *)
 struct BodyTextConfig: Codable {
     let value: String
     /// A SwiftUI text style name: "largeTitle" | "title" | "title2" |
@@ -116,7 +116,7 @@ struct BodyTextConfig: Codable {
 
 /// The slider has no `Codable` config of its own — the standalone view drives
 /// an observable model — so the body carries its own.
-@available(iOS 26.0, *)
+@available(iOS 15.0, *)
 struct BodySliderConfig: Codable {
     let value: Double
     let min: Double
@@ -127,12 +127,13 @@ struct BodySliderConfig: Codable {
 }
 
 /// A scroll node's own settings.
-@available(iOS 26.0, *)
+@available(iOS 15.0, *)
 struct ScrollConfig: Codable {
     /// "automatic" | "interactively" | "immediately" | "never", from Dart's
     /// `CupertinoNativeScrollDismissKeyboard`.
     let dismissKeyboard: String?
 
+    @available(iOS 16.0, *)
     var dismissMode: ScrollDismissesKeyboardMode {
         switch dismissKeyboard {
         case "interactively": return .interactively
@@ -143,7 +144,7 @@ struct ScrollConfig: Codable {
     }
 }
 
-@available(iOS 26.0, *)
+@available(iOS 16.0, *)
 extension BodyNodeConfig {
     /// The dismiss mode of the first `scroll` node in this tree, for the
     /// scaffold's own scroll view to adopt.

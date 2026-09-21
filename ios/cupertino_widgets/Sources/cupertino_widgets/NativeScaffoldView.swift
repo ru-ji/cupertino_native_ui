@@ -3,7 +3,7 @@ import Flutter
 import SwiftUI
 import UIKit
 
-@available(iOS 26.0, *)
+@available(iOS 15.0, *)
 class NativeScaffoldFactory: NSObject, FlutterPlatformViewFactory {
     private var messenger: FlutterBinaryMessenger
 
@@ -32,7 +32,7 @@ class NativeScaffoldFactory: NSObject, FlutterPlatformViewFactory {
 
 /// One entry in a scaffold NavigationStack path. `id` is unique per push so
 /// the same route can be pushed twice and each instance keeps its own engine.
-@available(iOS 26.0, *)
+@available(iOS 15.0, *)
 struct PushedRoute: Hashable {
     let id: UUID
     let route: String
@@ -41,7 +41,7 @@ struct PushedRoute: Hashable {
 
 /// Observable state shared between the platform view (which mutates it from
 /// method-channel calls) and the SwiftUI ScaffoldView (which binds to it).
-@available(iOS 26.0, *)
+@available(iOS 15.0, *)
 class ScaffoldModel: ObservableObject {
     @Published var config: ScaffoldConfig
     @Published var selection: String {
@@ -99,7 +99,7 @@ class ScaffoldModel: ObservableObject {
     }
 }
 
-@available(iOS 26.0, *)
+@available(iOS 15.0, *)
 class NativeScaffoldView: NativeHostingView {
     /// One engine group shared by every scaffold instance. Engines spawned
     /// from the same group share the GPU context, font caches and isolate
@@ -419,7 +419,7 @@ class NativeScaffoldView: NativeHostingView {
     /// Keyboard avoidance follows `resizeToAvoidBottomInset`; the container
     /// safe area (bars, home indicator) always applies.
     private func applyKeyboardAvoidance() {
-        guard let host = hostingController else { return }
+        guard #available(iOS 16.4, *), let host = hostingController else { return }
         host.safeAreaRegions =
             (model.config.resizeToAvoidBottomInset ?? true) ? .all : .container
     }

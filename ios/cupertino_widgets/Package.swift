@@ -11,7 +11,7 @@ let package = Package(
     // still builds and runs. Declaring 26 here would instead force every
     // consuming app to raise its own deployment target to 26 just to compile.
     platforms: [
-        .iOS("13.0")
+        .iOS("15.0")
     ],
     products: [
         .library(name: "cupertino-widgets", targets: ["cupertino_widgets"])

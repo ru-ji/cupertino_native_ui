@@ -6,7 +6,7 @@ import UIKit
 /// (`UISheetPresentationController`) — the standard page-sheet modal that
 /// pushes the presenting screen back as it rises, with system detents, the
 /// grabber, and the swipe-to-dismiss gesture.
-@available(iOS 26.0, *)
+@available(iOS 15.0, *)
 final class NativeSheetManager: NSObject, UIAdaptivePresentationControllerDelegate,
     UIPopoverPresentationControllerDelegate
 {
@@ -238,7 +238,7 @@ final class NativeSheetManager: NSObject, UIAdaptivePresentationControllerDelega
 /// The sheet's native chrome: NavigationStack with the scaffold's app-bar
 /// toolbar, optional searchable field, optional segmented control pinned
 /// under the bar, and the Flutter body in a native ScrollView.
-@available(iOS 26.0, *)
+@available(iOS 15.0, *)
 struct SheetRootView: View {
     let engine: FlutterEngine
     let appBar: AppBarConfig?
@@ -285,23 +285,26 @@ struct SheetRootView: View {
     }
 
     var body: some View {
-        NavigationStack {
-            PageScrollBody(
-                engine: engine,
-                scrollEdgeEffect: scrollEdgeEffect,
-                showLoadingIndicator: showLoadingIndicator
-            )
-            .safeAreaInset(edge: .top, spacing: 0) { segmentedBar }
-            .applyAppBar(appBar, onAction: onBarAction)
-            // No bar background band: the bar items float on the sheet
-            // and the scroll-edge effect keeps them legible on scroll.
-            .toolbarBackground(.hidden, for: .navigationBar)
-            .applySearchable(appBar?.search, text: $searchText) {
-                onSearchSubmitted(searchText)
-            }
-            .onChange(of: searchText) { onSearchChanged($0) }
-            .background(sheetBackground)
+        if #available(iOS 16.0, *) {
+            NavigationStack { pageContent.applyHiddenBarBackground() }
+        } else {
+            NavigationView { pageContent }
         }
+    }
+
+    private var pageContent: some View {
+        PageScrollBody(
+            engine: engine,
+            scrollEdgeEffect: scrollEdgeEffect,
+            showLoadingIndicator: showLoadingIndicator
+        )
+        .safeAreaInset(edge: .top, spacing: 0) { segmentedBar }
+        .applyAppBar(appBar, onAction: onBarAction)
+        .applySearchable(appBar?.search, text: $searchText) {
+            onSearchSubmitted(searchText)
+        }
+        .onChange(of: searchText) { onSearchChanged($0) }
+        .background(sheetBackground)
     }
 
     /// The Dart-provided background, under the bar and safe areas too, so
@@ -327,6 +330,20 @@ struct SheetRootView: View {
             .padding(.horizontal, 16)
             .padding(.vertical, 8)
             .onChange(of: segment) { onSegment($0) }
+        }
+    }
+}
+
+@available(iOS 15.0, *)
+extension View {
+    /// No bar background band: the bar items float on the sheet and the
+    /// scroll-edge effect keeps them legible on scroll.
+    @ViewBuilder
+    fileprivate func applyHiddenBarBackground() -> some View {
+        if #available(iOS 16.0, *) {
+            self.toolbarBackground(.hidden, for: .navigationBar)
+        } else {
+            self
         }
     }
 }

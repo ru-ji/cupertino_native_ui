@@ -1,6 +1,6 @@
 import SwiftUI
 
-@available(iOS 26.0, *)
+@available(iOS 15.0, *)
 struct AdaptiveProgressView: View {
     let value: Double?
     let total: Double
@@ -31,7 +31,7 @@ struct AdaptiveProgressView: View {
     }
 }
 
-@available(iOS 26.0, *)
+@available(iOS 15.0, *)
 extension View {
     @ViewBuilder
     func applyStyle(_ style: Int) -> some View {

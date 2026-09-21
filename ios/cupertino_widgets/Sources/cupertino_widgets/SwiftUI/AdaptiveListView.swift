@@ -8,7 +8,7 @@ import SwiftUI
 /// `VStack` with the standard grouped styling looks the same, supports the same
 /// rows (label / toggle / button), and self-sizes reliably (its
 /// `intrinsicContentSize` is exact) so the Flutter box grows to fit.
-@available(iOS 26.0, *)
+@available(iOS 15.0, *)
 struct AdaptiveListView: View {
     /// Owns the rows' models and their keyboard bars — see
     /// [TrailingRowStore]. Held by the platform view.
@@ -60,8 +60,12 @@ struct AdaptiveListView: View {
 
     var body: some View {
         if config.scrollable ?? false {
-            ScrollView { sectionsStack }
-                .scrollDismissesKeyboard(.never)
+            if #available(iOS 16.0, *) {
+                ScrollView { sectionsStack }
+                    .scrollDismissesKeyboard(.never)
+            } else {
+                ScrollView { sectionsStack }
+            }
         } else {
             sectionsStack
         }
@@ -253,7 +257,7 @@ struct AdaptiveListView: View {
 /// same `NativeBodyModel` the toolbar and native bodies use, seeded from the
 /// nodes the first time the row appears. A user's touch owns the value from
 /// then on; pushes from Dart cannot fight it mid-gesture.
-@available(iOS 26.0, *)
+@available(iOS 15.0, *)
 struct TrailingRow: View {
     let rowId: String
     let nodes: [BodyNodeConfig]
@@ -281,7 +285,7 @@ struct TrailingRow: View {
     }
 }
 
-@available(iOS 26.0, *)
+@available(iOS 15.0, *)
 extension View {
     @ViewBuilder
     func applyListTint(_ argb: Int?) -> some View {
@@ -298,7 +302,7 @@ extension View {
 /// Owned by the platform view. A row's model is created once per row id and
 /// kept, and a field that asked for a toolbar gets its bar attached here —
 /// outside any view update, so nothing is rebuilt per frame.
-@available(iOS 26.0, *)
+@available(iOS 15.0, *)
 final class TrailingRowStore {
     private var models: [String: NativeBodyModel] = [:]
     private var bars: [String: KeyboardAccessoryBar] = [:]

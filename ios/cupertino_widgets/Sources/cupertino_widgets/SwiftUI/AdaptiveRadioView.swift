@@ -7,7 +7,7 @@ import SwiftUI
 /// Driven by a `Binding`, not its own state: the standalone platform view
 /// binds the value it echoes to Dart, and a native body node binds the
 /// `NativeBodyModel` — so a value pushed from Dart wins either way.
-@available(iOS 26.0, *)
+@available(iOS 15.0, *)
 struct AdaptiveRadioView: View {
     let config: RadioConfig
     @Binding var isOn: Bool
@@ -38,7 +38,7 @@ struct AdaptiveRadioView: View {
         .buttonStyle(.plain)
         .opacity(config.enabled == false ? 0.35 : 1)
         .disabled(config.enabled == false)
-        .sensoryFeedback(.selection, trigger: isOn)
+        .applySelectionFeedback(trigger: isOn)
     }
 
     private var button: some View {
@@ -47,7 +47,7 @@ struct AdaptiveRadioView: View {
             .overlay(
                 Circle()
                     .stroke(
-                        isOn ? AnyShapeStyle(tint) : AnyShapeStyle(.separator),
+                        isOn ? AnyShapeStyle(tint) : AnyShapeStyle(Color(uiColor: .separator)),
                         lineWidth: 1.5)
             )
             .frame(width: 22, height: 22)
@@ -89,5 +89,17 @@ struct AdaptiveRadioView: View {
     var customTextColor: Color? {
         guard let val = config.textColor else { return nil }
         return Color(argb: val)
+    }
+}
+
+@available(iOS 15.0, *)
+extension View {
+    @ViewBuilder
+    func applySelectionFeedback(trigger: Bool) -> some View {
+        if #available(iOS 17.0, *) {
+            self.sensoryFeedback(.selection, trigger: trigger)
+        } else {
+            self
+        }
     }
 }

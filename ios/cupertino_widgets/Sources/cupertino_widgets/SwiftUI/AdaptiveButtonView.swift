@@ -1,6 +1,6 @@
 import SwiftUI
 
-@available(iOS 26.0, *)
+@available(iOS 15.0, *)
 struct AdaptiveButtonView: View {
     let config: ButtonConfig
     let onPressed: () -> Void
@@ -52,9 +52,17 @@ struct AdaptiveButtonView: View {
                     .buttonStyle(.borderless)
                     .foregroundStyle(tintColor ?? .accentColor)
             case "glass":
-                labeledButton.buttonStyle(.glass).tint(tintColor)
+                if #available(iOS 26.0, *) {
+                    labeledButton.buttonStyle(.glass).tint(tintColor)
+                } else {
+                    labeledButton.buttonStyle(.bordered).tint(tintColor)
+                }
             case "glassProminent":
-                labeledButton.buttonStyle(.glassProminent).tint(tintColor)
+                if #available(iOS 26.0, *) {
+                    labeledButton.buttonStyle(.glassProminent).tint(tintColor)
+                } else {
+                    labeledButton.buttonStyle(.borderedProminent).tint(tintColor)
+                }
             default:
                 labeledButton
                     .buttonStyle(.automatic)
@@ -101,7 +109,7 @@ struct AdaptiveButtonView: View {
 
 // MARK: - Styles & Extensions
 
-@available(iOS 26.0, *)
+@available(iOS 15.0, *)
 extension View {
     /// Pins the control to an explicit point size. A nil axis is left to the
     /// control's own metrics.
@@ -135,7 +143,8 @@ extension View {
         case "mini": self.controlSize(.mini)
         case "small": self.controlSize(.small)
         case "large": self.controlSize(.large)
-        case "extraLarge": self.controlSize(.extraLarge)
+        case "extraLarge":
+            if #available(iOS 17.0, *) { self.controlSize(.extraLarge) } else { self.controlSize(.large) }
         default: self.controlSize(.regular)
         }
     }
@@ -148,7 +157,7 @@ extension View {
         case "roundedRectangle":
             self.buttonBorderShape(.roundedRectangle)
         case "circle":
-            self.buttonBorderShape(.circle)
+            if #available(iOS 17.0, *) { self.buttonBorderShape(.circle) } else { self.buttonBorderShape(.automatic) }
         default:
             self.buttonBorderShape(.automatic)
         }

@@ -4,7 +4,7 @@ import SwiftUI
 /// *discrete* ones fire once per `trigger` bump, *indefinite* ones run while
 /// `repeating` is true. `pulse`, `variableColor`, `wiggle`, `rotate` and
 /// `breathe` can do either; `bounce` is discrete only.
-@available(iOS 26.0, *)
+@available(iOS 15.0, *)
 struct AdaptiveSymbolView: View {
     @ObservedObject var model: SymbolModel
 
@@ -35,6 +35,22 @@ struct AdaptiveSymbolView: View {
 
     @ViewBuilder
     private func applyEffect(_ view: some View) -> some View {
+        if #available(iOS 18.0, *) {
+            applyEffect18(view)
+        } else if #available(iOS 17.0, *) {
+            switch config.effect {
+            case "bounce": view.symbolEffect(.bounce, value: trigger)
+            case "pulse": view.symbolEffect(.pulse, value: trigger)
+            default: view
+            }
+        } else {
+            view
+        }
+    }
+
+    @available(iOS 18.0, *)
+    @ViewBuilder
+    private func applyEffect18(_ view: some View) -> some View {
         switch config.effect {
         case "bounce":
             view.symbolEffect(.bounce, value: trigger)
@@ -72,7 +88,7 @@ struct AdaptiveSymbolView: View {
     }
 }
 
-@available(iOS 26.0, *)
+@available(iOS 15.0, *)
 extension View {
     @ViewBuilder
     fileprivate func applySymbolRenderingMode(_ mode: String?) -> some View {
@@ -98,7 +114,7 @@ extension View {
     /// the next when the name changes.
     @ViewBuilder
     fileprivate func applyReplaceTransition(_ enabled: Bool) -> some View {
-        if enabled {
+        if enabled, #available(iOS 17.0, *) {
             self.contentTransition(.symbolEffect(.replace))
         } else {
             self

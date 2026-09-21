@@ -12,7 +12,7 @@ import SwiftUI
 /// Engines are retained for the process's lifetime once created. A Flutter
 /// island is a real isolate; treat it as you would a scaffold body, not as
 /// something to sprinkle.
-@available(iOS 26.0, *)
+@available(iOS 15.0, *)
 enum BodyEngineRegistry {
     private static var engines: [String: FlutterEngine] = [:]
 
@@ -59,7 +59,7 @@ enum BodyEngineRegistry {
 /// `FlutterViewController` each time SwiftUI rebuilds: an engine can only be
 /// attached to one controller at a time, and a second one logs "already used
 /// with FlutterViewController" and renders nothing.
-@available(iOS 26.0, *)
+@available(iOS 15.0, *)
 struct BodyFlutterView: UIViewControllerRepresentable {
     let route: String
     let isDark: Bool

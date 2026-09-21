@@ -3,7 +3,7 @@ import Foundation
 /// An animated SF Symbol. Unlike `CupertinoSymbolImage` — which rasterizes a
 /// symbol into Flutter's own layer tree — this one stays a live SwiftUI
 /// `Image`, because `.symbolEffect` animates the view, not the pixels.
-@available(iOS 26.0, *)
+@available(iOS 15.0, *)
 struct SymbolConfig: Codable {
     let name: String
     let size: Double?

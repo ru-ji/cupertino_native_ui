@@ -77,7 +77,7 @@ import UIKit
 /// The SwiftUI content is the same lowered `BodyNodeConfig` tree a native body
 /// renders, so a `CupertinoNativeButton` in `toolbarActions` becomes a real
 /// SwiftUI button here.
-@available(iOS 26.0, *)
+@available(iOS 15.0, *)
 final class KeyboardAccessoryBar: NSObject {
     /// Height for a bar whose content states no size of its own. The bar
     /// otherwise measures its SwiftUI content, so what surrounds the items is
@@ -117,7 +117,7 @@ final class KeyboardAccessoryBar: NSObject {
         // The bar lives in the keyboard's window, which carries its own
         // safe-area region; honouring it would push the content off-centre in
         // a bar this short.
-        host.safeAreaRegions = []
+        if #available(iOS 16.4, *) { host.safeAreaRegions = [] }
         contentHost = host
 
         // The content decides the bar's height: a caller who wants room
@@ -212,7 +212,7 @@ final class KeyboardAccessoryBar: NSObject {
 /// The one consequence to know about is the seam. The strip is page-coloured,
 /// so a light keyboard under a dark page meets that dark colour at the top of
 /// the strip and steps back to grey below it.
-@available(iOS 26.0, *)
+@available(iOS 15.0, *)
 final class KeyboardInputView: UIView {
     private let barHeight: CGFloat
 

@@ -6,7 +6,7 @@ import UIKit
 /// Owns the hosting-controller lifecycle, Auto Layout pinning, and intrinsic-size
 /// calculation shared by every `Native*View` bridge class. Subclasses own their own
 /// `FlutterMethodChannel`, method-call routing, and config decoding.
-@available(iOS 26.0, *)
+@available(iOS 15.0, *)
 class NativeHostingView: NSObject, FlutterPlatformView {
     let _view = HostingContainerView()
     private(set) var hostingController: UIHostingController<AnyView>?
@@ -101,7 +101,7 @@ class NativeHostingView: NSObject, FlutterPlatformView {
         }
 
         let host = ClearHostingController(rootView: content)
-        if !keyboardAvoidance {
+        if !keyboardAvoidance, #available(iOS 16.4, *) {
             // Embedded controls are sized and positioned entirely by
             // Flutter, so no safe-area region may influence their layout:
             // .keyboard would shift content up inside the box when the
@@ -112,7 +112,7 @@ class NativeHostingView: NSObject, FlutterPlatformView {
         }
         // Keep `host.view.intrinsicContentSize` in step with the SwiftUI content,
         // so hug-and-center controls (button, switch) size to it.
-        host.sizingOptions = .intrinsicContentSize
+        if #available(iOS 16.0, *) { host.sizingOptions = .intrinsicContentSize }
         host.view.backgroundColor = nil
         // Not opaque: the control does not fill its box, and an opaque view shows a
         // faint rectangle around it.
@@ -230,7 +230,7 @@ class NativeHostingView: NSObject, FlutterPlatformView {
 ///
 /// UIKit re-asserts an opaque background on several occasions (parenting,
 /// trait changes, appearance transitions), so it is cleared on every layout.
-@available(iOS 26.0, *)
+@available(iOS 15.0, *)
 final class ClearHostingController<Content: View>: UIHostingController<Content> {
     /// Off for the one host that legitimately owns a background: the scaffold
     /// paints the page, so its opaque colour is the point rather than a
@@ -266,7 +266,7 @@ final class ClearHostingController<Content: View>: UIHostingController<Content> 
 /// window it currently lives in (the FlutterViewController, in practice).
 /// Keeps appearance callbacks, layout and safe-area state correct when
 /// Flutter removes and re-adds the platform view.
-@available(iOS 26.0, *)
+@available(iOS 15.0, *)
 final class HostingContainerView: UIView {
     weak var hostedController: UIHostingController<AnyView>?
 

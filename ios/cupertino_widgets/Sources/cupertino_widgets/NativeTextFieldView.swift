@@ -2,7 +2,7 @@ import Flutter
 import SwiftUI
 import UIKit
 
-@available(iOS 26.0, *)
+@available(iOS 15.0, *)
 class NativeTextFieldFactory: NSObject, FlutterPlatformViewFactory {
     private var messenger: FlutterBinaryMessenger
 
@@ -34,7 +34,7 @@ class NativeTextFieldFactory: NSObject, FlutterPlatformViewFactory {
 /// The field itself lives in [AdaptiveTextFieldView]; this class is only the
 /// bridge — it owns the shared [TextFieldModel], forwards edits and focus
 /// changes to Dart, and applies what Dart pushes back over the channel.
-@available(iOS 26.0, *)
+@available(iOS 15.0, *)
 class NativeTextFieldView: NativeHostingView {
     private let channel: FlutterMethodChannel
     private let model: TextFieldModel

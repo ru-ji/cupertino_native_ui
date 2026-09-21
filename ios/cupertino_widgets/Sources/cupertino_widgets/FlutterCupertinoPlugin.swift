@@ -11,13 +11,6 @@ public class FlutterCupertinoPlugin: NSObject, FlutterPlugin {
         let instance = FlutterCupertinoPlugin()
         registrar.addMethodCallDelegate(instance, channel: channel)
 
-        // Every view in this package is built on iOS 26 APIs, but the plugin
-        // itself compiles into whatever deployment target the host app sets —
-        // Flutter's generated registrant calls this unconditionally. On an
-        // older system register nothing: the app links and runs, and calls
-        // get a descriptive error instead of a MissingPluginException.
-        guard #available(iOS 26.0, *) else { return }
-
         // Sheet events (bar actions, segment/search changes) flow back to
         // Dart over the main app's messenger. First registration wins: the
         // app engine registers at launch, before any body/sheet engine.
@@ -112,7 +105,7 @@ public class FlutterCupertinoPlugin: NSObject, FlutterPlugin {
     /// views are composited outside Flutter's layer tree, so anything drawn
     /// through one is invisible to a `BackdropFilter` — an icon rendered that
     /// way would punch a hole in the app bar's scroll edge effect.
-    @available(iOS 26.0, *)
+    @available(iOS 15.0, *)
     private static func renderSymbol(name: String, args: [String: Any]) -> FlutterStandardTypedData?
     {
         let size = CGFloat(args["size"] as? Double ?? 17)

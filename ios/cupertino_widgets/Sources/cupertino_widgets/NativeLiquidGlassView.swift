@@ -2,7 +2,7 @@ import Flutter
 import SwiftUI
 import UIKit
 
-@available(iOS 26.0, *)
+@available(iOS 15.0, *)
 class NativeLiquidGlassFactory: NSObject, FlutterPlatformViewFactory {
     private var messenger: FlutterBinaryMessenger
 
@@ -31,7 +31,7 @@ class NativeLiquidGlassFactory: NSObject, FlutterPlatformViewFactory {
 
 /// Platform view exposing the iOS 26 Liquid Glass material. Below iOS 26 it
 /// renders an `ultraThinMaterial` approximation.
-@available(iOS 26.0, *)
+@available(iOS 15.0, *)
 class NativeLiquidGlassView: NativeHostingView {
     private var channel: FlutterMethodChannel?
     /// Engine hosting the `route` body, when the container has one. Spawned
@@ -197,7 +197,7 @@ class NativeLiquidGlassView: NativeHostingView {
 
 /// What the hosted SwiftUI view observes. Publishing configs keeps the view
 /// identity stable.
-@available(iOS 26.0, *)
+@available(iOS 15.0, *)
 final class GlassViewModel: ObservableObject {
     @Published private(set) var config: GlassConfig
     /// Engine rendering the `route` body, when there is one.
@@ -224,7 +224,7 @@ final class GlassViewModel: ObservableObject {
     }
 }
 
-@available(iOS 26.0, *)
+@available(iOS 15.0, *)
 struct AdaptiveLiquidGlassView: View {
     @ObservedObject var model: GlassViewModel
     let onPressed: () -> Void
@@ -250,8 +250,14 @@ struct AdaptiveLiquidGlassView: View {
     @ViewBuilder
     private var glassBody: some View {
         // Apple's order: content, padding, frame, then `glassEffect` last.
-        GlassEffectContainer {
-            glassSurface
+        if #available(iOS 26.0, *) {
+            GlassEffectContainer {
+                glassSurface
+                    .simultaneousGesture(
+                        TapGesture().onEnded { if config.pressable == true { onPressed() } })
+            }
+        } else {
+            content
                 .simultaneousGesture(
                     TapGesture().onEnded { if config.pressable == true { onPressed() } })
         }
@@ -331,7 +337,7 @@ struct AdaptiveLiquidGlassView: View {
     }
 }
 
-@available(iOS 26.0, *)
+@available(iOS 15.0, *)
 extension View {
     /// Fills the box Flutter built, in both axes — which is where an explicit
     /// width/height from the caller ends up. Left alone otherwise, so an

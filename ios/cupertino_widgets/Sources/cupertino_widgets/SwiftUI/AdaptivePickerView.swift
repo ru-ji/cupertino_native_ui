@@ -5,7 +5,7 @@ import SwiftUI
 /// `.palette` is the Liquid Glass one: the options sit side by side as icons
 /// in a glass row, the selection travelling between them. It only reads
 /// correctly with icons, so palette items should carry one.
-@available(iOS 26.0, *)
+@available(iOS 15.0, *)
 struct AdaptivePickerView: View {
     let config: PickerConfig
     let onChanged: (Int) -> Void
@@ -63,7 +63,7 @@ struct AdaptivePickerView: View {
     }
 }
 
-@available(iOS 26.0, *)
+@available(iOS 15.0, *)
 extension View {
     @ViewBuilder
     fileprivate func applyPickerStyle(_ style: String?) -> some View {
@@ -71,9 +71,11 @@ extension View {
         case "wheel": self.pickerStyle(.wheel)
         case "menu": self.pickerStyle(.menu)
         case "segmented": self.pickerStyle(.segmented)
-        case "palette": self.pickerStyle(.palette)
+        case "palette":
+            if #available(iOS 17.0, *) { self.pickerStyle(.palette) } else { self.pickerStyle(.automatic) }
         case "inline": self.pickerStyle(.inline)
-        case "navigationLink": self.pickerStyle(.navigationLink)
+        case "navigationLink":
+            if #available(iOS 16.0, *) { self.pickerStyle(.navigationLink) } else { self.pickerStyle(.automatic) }
         default: self.pickerStyle(.automatic)
         }
     }

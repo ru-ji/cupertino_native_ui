@@ -1,6 +1,6 @@
 import Foundation
 
-@available(iOS 26.0, *)
+@available(iOS 15.0, *)
 struct ToggleConfig: Codable {
     let label: String?
     let value: Bool

@@ -2,7 +2,7 @@ import Flutter
 import SwiftUI
 import UIKit
 
-@available(iOS 26.0, *)
+@available(iOS 15.0, *)
 class NativeListFactory: NSObject, FlutterPlatformViewFactory {
     private var messenger: FlutterBinaryMessenger
 
@@ -32,7 +32,7 @@ class NativeListFactory: NSObject, FlutterPlatformViewFactory {
 /// Hosts a native SwiftUI `List`/`Form` (see `AdaptiveListView`) as a Flutter
 /// platform view. Self-sizes to its content height (measured against the
 /// Flutter-provided width) so it can sit inside a Flutter scroll view.
-@available(iOS 26.0, *)
+@available(iOS 15.0, *)
 class NativeListView: NativeHostingView {
     private var channel: FlutterMethodChannel?
 

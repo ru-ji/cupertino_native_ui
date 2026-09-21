@@ -4,7 +4,7 @@ import Foundation
 /// "label" (icon + title/subtitle + optional trailing value/chevron),
 /// "toggle" (trailing switch), or "button" (tinted, tappable). Any row can
 /// also carry [trailing] — lowered native nodes rendered at the row's end.
-@available(iOS 26.0, *)
+@available(iOS 15.0, *)
 struct ListRowConfig: Codable {
     let id: String
     let title: String
@@ -21,7 +21,7 @@ struct ListRowConfig: Codable {
 }
 
 /// A `Section` of a native `List`/`Form`: optional header/footer + rows.
-@available(iOS 26.0, *)
+@available(iOS 15.0, *)
 struct ListSectionConfig: Codable {
     let header: String?
     let footer: String?
@@ -39,7 +39,7 @@ struct ListSectionConfig: Codable {
 }
 
 /// Codable DTO for row padding insets.
-@available(iOS 26.0, *)
+@available(iOS 15.0, *)
 struct EdgeInsetsDTO: Codable {
     let left: Double?
     let top: Double?
@@ -48,7 +48,7 @@ struct EdgeInsetsDTO: Codable {
 }
 
 /// Creation/update parameters for the native list/form platform view.
-@available(iOS 26.0, *)
+@available(iOS 15.0, *)
 struct ListConfig: Codable {
     let variant: String?  // "list" | "form"
     let style: String?    // "automatic" | "plain" | "grouped" | "insetGrouped" | "sidebar"

@@ -2,7 +2,7 @@ import Flutter
 import SwiftUI
 import UIKit
 
-@available(iOS 26.0, *)
+@available(iOS 15.0, *)
 class NativeRadioFactory: NSObject, FlutterPlatformViewFactory {
     private var messenger: FlutterBinaryMessenger
 
@@ -29,7 +29,7 @@ class NativeRadioFactory: NSObject, FlutterPlatformViewFactory {
     }
 }
 
-@available(iOS 26.0, *)
+@available(iOS 15.0, *)
 class NativeRadioView: NativeHostingView {
     private var channel: FlutterMethodChannel?
 
