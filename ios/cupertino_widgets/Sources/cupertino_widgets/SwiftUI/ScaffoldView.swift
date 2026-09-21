@@ -6,7 +6,7 @@ import SwiftUI
 /// Because the scroll view and the navigation stack are both native, large
 /// titles collapse on scroll, the tab bar can minimize (iOS 26), and pushes
 /// animate with full system transitions including toolbar morphing.
-@available(iOS 26.0, *)
+@available(iOS 15.0, *)
 struct ScaffoldView: View {
     @ObservedObject var model: ScaffoldModel
     let onBarAction: (String, String) -> Void  // (route, actionId)
@@ -28,6 +28,29 @@ struct ScaffoldView: View {
 
     @ViewBuilder
     private func tabbedContent(_ tabBar: TabBarConfig) -> some View {
+        if #available(iOS 18.0, *) {
+            tabbedContent18(tabBar)
+        } else {
+            // `Tab` is iOS 18; `tabItem` + `tag` is the pre-18 spelling. A
+            // `search` role has no equivalent, so that tab is a plain one.
+            TabView(selection: $model.selection) {
+                ForEach(tabBar.tabs) { tab in
+                    navStack(key: tab.id, rootRoute: tab.id, search: tab.search)
+                        .tabItem {
+                            Label(
+                                tab.title,
+                                systemImage: tab.resolvedSymbolName
+                                    ?? (tab.role == "search" ? "magnifyingglass" : "circle"))
+                        }
+                        .tag(tab.id)
+                }
+            }
+        }
+    }
+
+    @available(iOS 18.0, *)
+    @ViewBuilder
+    private func tabbedContent18(_ tabBar: TabBarConfig) -> some View {
         TabView(selection: $model.selection) {
             ForEach(tabBar.tabs) { tab in
                 if tab.role == "search" {
@@ -72,15 +95,31 @@ struct ScaffoldView: View {
 
     @ViewBuilder
     private func navStack(key: String, rootRoute: String, search: SearchConfig?) -> some View {
+        if #available(iOS 16.0, *) {
+            navStack16(key: key, rootRoute: rootRoute, search: search)
+        } else {
+            // No path-driven stack before iOS 16: the root page only, pushes
+            // are not shown.
+            NavigationView { root(rootRoute, search: search) }
+        }
+    }
+
+    private func root(_ rootRoute: String, search: SearchConfig?) -> some View {
+        pageRoot(rootRoute: rootRoute)
+            .applyAppBar(model.config.appBar) { onBarAction(rootRoute, $0) }
+            .applySearchable(
+                search,
+                text: searchBinding(rootRoute)
+            ) {
+                model.onSearchSubmitted?(rootRoute, model.searchTexts[rootRoute] ?? "")
+            }
+    }
+
+    @available(iOS 16.0, *)
+    @ViewBuilder
+    private func navStack16(key: String, rootRoute: String, search: SearchConfig?) -> some View {
         NavigationStack(path: pathBinding(key)) {
-            pageRoot(rootRoute: rootRoute)
-                .applyAppBar(model.config.appBar) { onBarAction(rootRoute, $0) }
-                .applySearchable(
-                    search,
-                    text: searchBinding(rootRoute)
-                ) {
-                    model.onSearchSubmitted?(rootRoute, model.searchTexts[rootRoute] ?? "")
-                }
+            root(rootRoute, search: search)
                 .navigationDestination(for: PushedRoute.self) { pushed in
                     PageScrollBody(
                         engine: model.pushedEngines[pushed.id],
@@ -111,8 +150,7 @@ struct ScaffoldView: View {
             // The body's own choice wins: this outer scroll is the one the
             // user actually drags, so a `.never` hard-written here silently
             // overrode `CupertinoNativeBody.scroll(dismissKeyboard:)`.
-            .scrollDismissesKeyboard(
-                model.config.nativeBody?.firstScrollDismissMode ?? .never)
+            .applyScrollDismiss(model.config.nativeBody)
         } else {
             SearchablePageBody(
                 engine: model.rootEngines[rootRoute],
@@ -124,7 +162,7 @@ struct ScaffoldView: View {
     }
 }
 
-@available(iOS 26.0, *)
+@available(iOS 15.0, *)
 extension View {
     @ViewBuilder
     func applyTabTint(_ argb: Int?) -> some View {
@@ -136,7 +174,26 @@ extension View {
     }
 
     @ViewBuilder
+    func applyScrollDismiss(_ body: BodyNodeConfig?) -> some View {
+        if #available(iOS 16.0, *) {
+            self.scrollDismissesKeyboard(body?.firstScrollDismissMode ?? .never)
+        } else {
+            self
+        }
+    }
+
+    @ViewBuilder
     func applyTabBarMinimizeBehavior(_ behavior: String?) -> some View {
+        if #available(iOS 26.0, *) {
+            applyTabBarMinimizeBehavior26(behavior)
+        } else {
+            self
+        }
+    }
+
+    @available(iOS 26.0, *)
+    @ViewBuilder
+    private func applyTabBarMinimizeBehavior26(_ behavior: String?) -> some View {
         switch behavior {
         case "onScrollDown": self.tabBarMinimizeBehavior(.onScrollDown)
         case "onScrollUp": self.tabBarMinimizeBehavior(.onScrollUp)
@@ -148,6 +205,16 @@ extension View {
     /// iOS 26 Liquid Glass scroll edge effect style; no-op below 26.
     @ViewBuilder
     func applyScrollEdgeEffect(_ style: String?) -> some View {
+        if #available(iOS 26.0, *) {
+            applyScrollEdgeEffect26(style)
+        } else {
+            self
+        }
+    }
+
+    @available(iOS 26.0, *)
+    @ViewBuilder
+    private func applyScrollEdgeEffect26(_ style: String?) -> some View {
         switch style {
         case "soft": self.scrollEdgeEffectStyle(.soft, for: .all)
         case "hard": self.scrollEdgeEffectStyle(.hard, for: .all)
@@ -161,7 +228,7 @@ extension View {
     func applyTabBottomAccessory(
         _ config: TabAccessoryConfig?, onTap: @escaping (String) -> Void
     ) -> some View {
-        if let config = config {
+        if let config = config, #available(iOS 26.0, *) {
             self.tabViewBottomAccessory {
                 TabBottomAccessoryView(config: config, onTap: onTap)
             }

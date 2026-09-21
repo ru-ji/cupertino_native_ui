@@ -66,7 +66,6 @@ struct AppBarToolbar: ToolbarContent {
         return entries[index]
     }
 
-    @available(iOS 26.0, *)
     @ViewBuilder
     private func entryView(_ entry: BarEntryConfig) -> some View {
         let items = entry.groupItems
@@ -82,7 +81,6 @@ struct AppBarToolbar: ToolbarContent {
         }
     }
 
-    @available(iOS 26.0, *)
     @ViewBuilder
     private func barButton(_ item: BarItemConfig, ownBackground: Bool) -> some View {
         applyGlassStyle(to: rawButton(item), enabled: item.glass != false && ownBackground)
@@ -91,7 +89,6 @@ struct AppBarToolbar: ToolbarContent {
     /// `.glass` only where the item left the shared background — inside it the
     /// system already draws the material, and a second one on top of it is the
     /// double capsule.
-    @available(iOS 26.0, *)
     @ViewBuilder
     private func applyGlassStyle(to button: some View, enabled: Bool) -> some View {
         if enabled {
@@ -101,9 +98,18 @@ struct AppBarToolbar: ToolbarContent {
         }
     }
 
-    @available(iOS 26.0, *)
-    @ViewBuilder
     private func rawButton(_ item: BarItemConfig) -> some View {
+        BarRawButton(item: item, onAction: onAction)
+    }
+}
+
+/// One bar button: the icon, the title, or both.
+@available(iOS 15.0, *)
+struct BarRawButton: View {
+    let item: BarItemConfig
+    let onAction: (String) -> Void
+
+    var body: some View {
         Button {
             onAction(item.actionId)
         } label: {
@@ -124,11 +130,32 @@ struct AppBarToolbar: ToolbarContent {
     }
 }
 
-@available(iOS 26.0, *)
+/// The pre-iOS 26 bar. `ToolbarSpacer`, per-item shared backgrounds and
+/// conditional toolbar content do not exist there, so this is one group per
+/// side with the spacers dropped.
+@available(iOS 15.0, *)
+struct LegacyAppBarToolbar: ToolbarContent {
+    let config: AppBarConfig
+    let onAction: (String) -> Void
+
+    var body: some ToolbarContent {
+        ToolbarItemGroup(placement: .navigationBarLeading) { buttons(config.leading) }
+        ToolbarItemGroup(placement: .navigationBarTrailing) { buttons(config.trailing) }
+        ToolbarItemGroup(placement: .bottomBar) { buttons(config.bottom) }
+    }
+
+    @ViewBuilder
+    private func buttons(_ entries: [BarEntryConfig]?) -> some View {
+        let items = (entries ?? []).filter { !$0.isSpacer }.flatMap { $0.groupItems }
+        ForEach(items, id: \.actionId) { BarRawButton(item: $0, onAction: onAction) }
+    }
+}
+
+@available(iOS 15.0, *)
 extension View {
     /// Applies an optional `AppBarConfig` (title, display mode, toolbar items)
     /// to a navigation destination. No-op when `config` is nil.
-    @available(iOS 26.0, *)
+    @available(iOS 15.0, *)
     @ViewBuilder
     func applyAppBar(_ config: AppBarConfig?, onAction: @escaping (String) -> Void) -> some View {
         if let config = config {
@@ -136,17 +163,28 @@ extension View {
                 .navigationTitle(config.title)
                 .applyNavigationSubtitle(config.subtitle)
                 .applyTitleDisplayMode(config.displayMode)
-                .toolbar { AppBarToolbar(config: config, onAction: onAction) }
+                .applyToolbar(config, onAction: onAction)
         } else {
             self
         }
     }
 
+    @ViewBuilder
+    fileprivate func applyToolbar(_ config: AppBarConfig, onAction: @escaping (String) -> Void)
+        -> some View
+    {
+        if #available(iOS 26.0, *) {
+            self.toolbar { AppBarToolbar(config: config, onAction: onAction) }
+        } else {
+            self.toolbar { LegacyAppBarToolbar(config: config, onAction: onAction) }
+        }
+    }
+
     /// SwiftUI `.navigationSubtitle` — iOS 26+; no-op earlier.
-    @available(iOS 26.0, *)
+    @available(iOS 15.0, *)
     @ViewBuilder
     func applyNavigationSubtitle(_ subtitle: String?) -> some View {
-        if let subtitle {
+        if let subtitle, #available(iOS 26.0, *) {
             self.navigationSubtitle(subtitle)
         } else {
             self
@@ -154,9 +192,23 @@ extension View {
     }
 
     /// Applies the four title display modes.
-    @available(iOS 26.0, *)
+    @available(iOS 15.0, *)
     @ViewBuilder
     func applyTitleDisplayMode(_ mode: String?) -> some View {
+        if #available(iOS 17.0, *) {
+            applyTitleDisplayMode17(mode)
+        } else {
+            switch mode {
+            case "inline": self.navigationBarTitleDisplayMode(.inline)
+            case "large": self.navigationBarTitleDisplayMode(.large)
+            default: self.navigationBarTitleDisplayMode(.automatic)
+            }
+        }
+    }
+
+    @available(iOS 17.0, *)
+    @ViewBuilder
+    private func applyTitleDisplayMode17(_ mode: String?) -> some View {
         switch mode {
         case "inline": self.toolbarTitleDisplayMode(.inline)
         case "inlineLarge": self.toolbarTitleDisplayMode(.inlineLarge)

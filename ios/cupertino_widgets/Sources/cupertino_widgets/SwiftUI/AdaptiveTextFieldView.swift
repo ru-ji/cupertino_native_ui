@@ -2,7 +2,7 @@ import SwiftUI
 
 /// Shared state between the platform view and its SwiftUI body. The platform
 /// view owns it and writes to it from the method channel; the view observes.
-@available(iOS 26.0, *)
+@available(iOS 15.0, *)
 final class TextFieldModel: ObservableObject {
     @Published var config: TextFieldConfig {
         didSet { configRevision &+= 1 }
@@ -60,7 +60,7 @@ final class TextFieldModel: ObservableObject {
 /// The package's text field: SwiftUI chrome (glass, icons, clear button)
 /// around a `UITextField` — see [BackingTextField] for why the editable part
 /// is UIKit (the keyboard toolbar).
-@available(iOS 26.0, *)
+@available(iOS 15.0, *)
 struct AdaptiveTextFieldView: View {
     @ObservedObject var model: TextFieldModel
 
@@ -164,7 +164,7 @@ struct AdaptiveTextFieldView: View {
         let config: TextFieldConfig
 
         func body(content: Content) -> some View {
-            if config.glass == true {
+            if config.glass == true, #available(iOS 26.0, *) {
                 applied(content)
             } else {
                 content
@@ -179,6 +179,7 @@ struct AdaptiveTextFieldView: View {
                 cornerRadius: CGFloat(config.glassCornerRadius ?? 16), style: .continuous)
         }
 
+        @available(iOS 26.0, *)
         @ViewBuilder
         private func applied(_ content: Content) -> some View {
             GlassEffectContainer { content.glassEffect(glass, in: shape) }

@@ -7,7 +7,7 @@ import SwiftUI
 /// touching it — a slider that round-tripped every drag step through Dart
 /// would stutter. Dart is told about every change and can push a different
 /// value back, which wins.
-@available(iOS 26.0, *)
+@available(iOS 15.0, *)
 final class NativeBodyModel: ObservableObject {
     @Published var root: BodyNodeConfig?
 
@@ -114,7 +114,7 @@ final class NativeBodyModel: ObservableObject {
 }
 
 /// Renders a `BodyNodeConfig` tree as SwiftUI.
-@available(iOS 26.0, *)
+@available(iOS 15.0, *)
 struct NativeBodyView: View {
     @ObservedObject var model: NativeBodyModel
 
@@ -135,7 +135,7 @@ struct NativeBodyView: View {
 /// recurse into — a `View` cannot reference itself inside its own `body`.
 /// Internal rather than private: the scaffold's page root renders a tree's
 /// top-level node directly.
-@available(iOS 26.0, *)
+@available(iOS 15.0, *)
 struct NativeBodyNode: View {
     let node: BodyNodeConfig
     @ObservedObject var model: NativeBodyModel
@@ -174,7 +174,7 @@ struct NativeBodyNode: View {
             }
             // The caller's choice, defaulting to the system's: a scroll that
             // holds a field dismisses interactively, like Messages.
-            .scrollDismissesKeyboard(node.scroll?.dismissMode ?? .automatic)
+            .applyNodeScrollDismiss(node.scroll)
         case "padding":
             VStack(spacing: 0) { childViews }
         case "spacer":
@@ -462,7 +462,7 @@ struct NativeBodyNode: View {
 /// Owns the `SymbolModel` an animated symbol needs. Building one inline would
 /// hand `AdaptiveSymbolView` a fresh object on every update, restarting — or
 /// dropping — the effect it exists to run.
-@available(iOS 26.0, *)
+@available(iOS 15.0, *)
 private struct BodySymbolView: View {
     let config: SymbolConfig
 
@@ -476,7 +476,7 @@ private struct BodySymbolView: View {
     }
 }
 
-@available(iOS 26.0, *)
+@available(iOS 15.0, *)
 extension View {
     @ViewBuilder
     fileprivate func applyBodyLabelsHidden(_ hidden: Bool) -> some View {
@@ -544,7 +544,7 @@ extension View {
                     weight: config.fontWeight.map { Font.Weight(weightIndex: $0) } ?? .regular))
         } else {
             self.font(Self.namedFont(config.style))
-                .fontWeight(config.fontWeight.map { Font.Weight(weightIndex: $0) })
+                .applyFontWeight(config.fontWeight)
         }
     }
 
@@ -571,7 +571,7 @@ extension View {
 ///
 /// Its content sits *inside* the material, so it refracts whatever the glass
 /// itself refracts — unlike the platform view's `child`, which rides over it.
-@available(iOS 26.0, *)
+@available(iOS 15.0, *)
 struct BodyGlassView: View {
     let config: GlassConfig
     let nodes: [BodyNodeConfig]
@@ -580,23 +580,37 @@ struct BodyGlassView: View {
     let onEvent: (String, Any?) -> Void
 
     var body: some View {
-        GlassEffectContainer {
-            HStack(spacing: 8) {
-                ForEach(Array(nodes.enumerated()), id: \.offset) { index, child in
-                    NativeBodyNode(node: child, model: model, onEvent: onEvent)
-                        .id(child.id ?? "\(child.type)-\(index)")
-                }
+        if #available(iOS 26.0, *) {
+            GlassEffectContainer { glassed }
+        } else {
+            row.onTapGesture {
+                if config.pressable == true, let nodeId { onEvent(nodeId, nil) }
             }
-            .padding(
-                EdgeInsets(
-                    top: CGFloat(config.paddingTop ?? 0),
-                    leading: CGFloat(config.paddingLeft ?? 0),
-                    bottom: CGFloat(config.paddingBottom ?? 0),
-                    trailing: CGFloat(config.paddingRight ?? 0)))
-            // Only when a size was asked for: an unconditional `.frame`
-            // constrains the geometry the glass grows from, even with two
-            // nils.
-            .applyGlassSize(width: config.width, height: config.height)
+        }
+    }
+
+    private var row: some View {
+        HStack(spacing: 8) {
+            ForEach(Array(nodes.enumerated()), id: \.offset) { index, child in
+                NativeBodyNode(node: child, model: model, onEvent: onEvent)
+                    .id(child.id ?? "\(child.type)-\(index)")
+            }
+        }
+        .padding(
+            EdgeInsets(
+                top: CGFloat(config.paddingTop ?? 0),
+                leading: CGFloat(config.paddingLeft ?? 0),
+                bottom: CGFloat(config.paddingBottom ?? 0),
+                trailing: CGFloat(config.paddingRight ?? 0)))
+        // Only when a size was asked for: an unconditional `.frame`
+        // constrains the geometry the glass grows from, even with two
+        // nils.
+        .applyGlassSize(width: config.width, height: config.height)
+    }
+
+    @available(iOS 26.0, *)
+    private var glassed: some View {
+        row
             // `none` is the group case: the machinery without the material, so
             // a tree can be transcribed into one platform view without wearing
             // glass it never asked for. Anything else gets the effect.
@@ -605,7 +619,6 @@ struct BodyGlassView: View {
             .onTapGesture {
                 if config.pressable == true, let nodeId { onEvent(nodeId, nil) }
             }
-        }
     }
 
     @available(iOS 26.0, *)
@@ -635,7 +648,7 @@ struct BodyGlassView: View {
 /// A segmented control (or menu) inside a native body. Selection lives in
 /// `NativeBodyModel`, so pushes from Dart cannot fight a finger mid-touch —
 /// the same contract as the toggle and picker nodes.
-@available(iOS 26.0, *)
+@available(iOS 15.0, *)
 struct BodySegmentedView: View {
     let config: SegmentedControlConfig
     @Binding var selection: Int
@@ -662,10 +675,11 @@ struct BodySegmentedView: View {
     }
 }
 
-@available(iOS 26.0, *)
+@available(iOS 15.0, *)
 extension View {
     /// `glassEffect` with an opt-out, since a `nil` effect has no spelling of
     /// its own and an `if` at the call site would change the view's identity.
+    @available(iOS 26.0, *)
     @ViewBuilder
     func applyGlassEffect(_ glass: Glass?, in shape: AnyShape) -> some View {
         if let glass {
@@ -684,6 +698,27 @@ extension View {
             self.frame(
                 width: width.map { CGFloat($0) },
                 height: height.map { CGFloat($0) })
+        }
+    }
+}
+
+@available(iOS 15.0, *)
+extension View {
+    @ViewBuilder
+    fileprivate func applyNodeScrollDismiss(_ scroll: ScrollConfig?) -> some View {
+        if #available(iOS 16.0, *) {
+            self.scrollDismissesKeyboard(scroll?.dismissMode ?? .automatic)
+        } else {
+            self
+        }
+    }
+
+    @ViewBuilder
+    fileprivate func applyFontWeight(_ weightIndex: Int?) -> some View {
+        if let weightIndex, #available(iOS 16.0, *) {
+            self.fontWeight(Font.Weight(weightIndex: weightIndex))
+        } else {
+            self
         }
     }
 }

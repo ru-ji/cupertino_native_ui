@@ -16,7 +16,7 @@ import UIKit
 /// A field we own is assigned its accessory while unfocused, and UIKit builds
 /// the input views around it — one presentation, and field-to-field switches
 /// handled by UIKit itself.
-@available(iOS 26.0, *)
+@available(iOS 15.0, *)
 struct BackingTextField: UIViewRepresentable {
     @ObservedObject var model: TextFieldModel
     @Binding var text: String
@@ -163,7 +163,7 @@ struct BackingTextField: UIViewRepresentable {
 }
 
 /// Runs `onFirstWindow` once, the first time the field enters a window.
-@available(iOS 26.0, *)
+@available(iOS 15.0, *)
 private final class FocusReportingTextField: UITextField {
     var onFirstWindow: (() -> Void)?
 

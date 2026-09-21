@@ -2,7 +2,7 @@ import Flutter
 import SwiftUI
 import UIKit
 
-@available(iOS 26.0, *)
+@available(iOS 15.0, *)
 class NativePickerFactory: NSObject, FlutterPlatformViewFactory {
     private var messenger: FlutterBinaryMessenger
 
@@ -26,7 +26,7 @@ class NativePickerFactory: NSObject, FlutterPlatformViewFactory {
 }
 
 /// Hosts a SwiftUI `Picker` as a Flutter platform view.
-@available(iOS 26.0, *)
+@available(iOS 15.0, *)
 class NativePickerView: NativeHostingView {
     private var channel: FlutterMethodChannel?
 

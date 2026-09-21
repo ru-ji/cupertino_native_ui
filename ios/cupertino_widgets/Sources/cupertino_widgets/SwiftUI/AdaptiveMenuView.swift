@@ -1,6 +1,6 @@
 import SwiftUI
 
-@available(iOS 26.0, *)
+@available(iOS 15.0, *)
 struct AdaptiveMenuView: View {
     let config: MenuConfiguration
     let onAction: (String, Any?) -> Void
@@ -45,9 +45,17 @@ struct AdaptiveMenuView: View {
         case "plain":
             menu.buttonStyle(.borderless).tint(tintColor)
         case "glass":
-            menu.buttonStyle(.glass).tint(tintColor)
+            if #available(iOS 26.0, *) {
+                menu.buttonStyle(.glass).tint(tintColor)
+            } else {
+                menu.buttonStyle(.bordered).tint(tintColor)
+            }
         case "glassProminent":
-            menu.buttonStyle(.glassProminent).tint(tintColor)
+            if #available(iOS 26.0, *) {
+                menu.buttonStyle(.glassProminent).tint(tintColor)
+            } else {
+                menu.buttonStyle(.borderedProminent).tint(tintColor)
+            }
         default:
             menu.buttonStyle(.automatic).tint(tintColor)
         }
@@ -88,7 +96,7 @@ struct AdaptiveMenuView: View {
     }
 }
 
-@available(iOS 26.0, *)
+@available(iOS 15.0, *)
 struct MenuItemMapper: View {
     let item: MenuItemConfig
     let onAction: (String, Any?) -> Void

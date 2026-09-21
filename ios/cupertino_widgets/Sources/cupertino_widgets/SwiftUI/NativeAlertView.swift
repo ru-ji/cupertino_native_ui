@@ -1,7 +1,7 @@
 import Flutter
 import UIKit
 
-@available(iOS 26.0, *)
+@available(iOS 15.0, *)
 class AlertManager {
     static let shared = AlertManager()
 

@@ -2,7 +2,7 @@ import Flutter
 import SwiftUI
 import UIKit
 
-@available(iOS 26.0, *)
+@available(iOS 15.0, *)
 class NativeSymbolFactory: NSObject, FlutterPlatformViewFactory {
     private var messenger: FlutterBinaryMessenger
 
@@ -27,7 +27,7 @@ class NativeSymbolFactory: NSObject, FlutterPlatformViewFactory {
 
 /// Hosts a live SwiftUI `Image(systemName:)` so `.symbolEffect` has a view to
 /// animate. Self-sizes to the symbol.
-@available(iOS 26.0, *)
+@available(iOS 15.0, *)
 class NativeSymbolView: NativeHostingView {
     private var channel: FlutterMethodChannel?
     private let model = SymbolModel()
@@ -94,7 +94,7 @@ class NativeSymbolView: NativeHostingView {
 
 /// Observable box so updates change the rendered symbol without re-attaching
 /// the hosting controller.
-@available(iOS 26.0, *)
+@available(iOS 15.0, *)
 class SymbolModel: ObservableObject {
     @Published var config: SymbolConfig = SymbolConfig(
         name: "questionmark", size: nil, weight: nil, color: nil, renderingMode: nil,

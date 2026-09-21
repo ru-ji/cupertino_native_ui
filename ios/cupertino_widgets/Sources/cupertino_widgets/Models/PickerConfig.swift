@@ -3,7 +3,7 @@ import Foundation
 /// A SwiftUI `Picker`. The style is what makes it a different control: a
 /// spinning wheel, a menu button, a segmented strip, or the Liquid Glass
 /// palette row.
-@available(iOS 26.0, *)
+@available(iOS 15.0, *)
 struct PickerConfig: Codable {
     let label: String?
     let items: [PickerItemConfig]
@@ -17,7 +17,7 @@ struct PickerConfig: Codable {
     let isDark: Bool?
 }
 
-@available(iOS 26.0, *)
+@available(iOS 15.0, *)
 struct PickerItemConfig: Codable, Identifiable, Hashable {
     let title: String?
     let icon: IconConfig?

@@ -1,7 +1,7 @@
 import Foundation
 
 /// A single toolbar button that reports taps back to Dart via `actionId`.
-@available(iOS 26.0, *)
+@available(iOS 15.0, *)
 struct BarItemConfig: Codable, Hashable {
     let title: String?
     let icon: IconConfig?
@@ -16,7 +16,7 @@ struct BarItemConfig: Codable, Hashable {
 /// and `type == "spacer"` is a `ToolbarSpacer` — the gap that splits the
 /// shared background into separate capsules. Separate entries render as
 /// separate capsules.
-@available(iOS 26.0, *)
+@available(iOS 15.0, *)
 struct BarEntryConfig: Codable, Hashable {
     let type: String
     let title: String?
@@ -50,7 +50,7 @@ struct BarEntryConfig: Codable, Hashable {
 
 /// Navigation-bar configuration shared by the standalone app bar and every
 /// page of the native scaffold.
-@available(iOS 26.0, *)
+@available(iOS 15.0, *)
 struct AppBarConfig: Codable, Hashable {
     let title: String
     let subtitle: String?  // .navigationSubtitle (iOS 26+)

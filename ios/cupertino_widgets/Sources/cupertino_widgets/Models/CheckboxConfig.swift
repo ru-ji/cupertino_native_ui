@@ -1,6 +1,6 @@
 import Foundation
 
-@available(iOS 26.0, *)
+@available(iOS 15.0, *)
 struct CheckboxConfig: Codable {
     let value: Bool
     let label: String?

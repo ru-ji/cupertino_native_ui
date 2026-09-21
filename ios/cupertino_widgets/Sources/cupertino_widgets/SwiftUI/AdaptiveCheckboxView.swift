@@ -7,7 +7,7 @@ import SwiftUI
 /// Driven by a `Binding`, not its own state: the standalone platform view
 /// binds the value it echoes to Dart, and a native body node binds the
 /// `NativeBodyModel` — so a value pushed from Dart wins either way.
-@available(iOS 26.0, *)
+@available(iOS 15.0, *)
 struct AdaptiveCheckboxView: View {
     let config: CheckboxConfig
     @Binding var isOn: Bool
@@ -38,7 +38,7 @@ struct AdaptiveCheckboxView: View {
         .buttonStyle(.plain)
         .opacity(config.enabled == false ? 0.35 : 1)
         .disabled(config.enabled == false)
-        .sensoryFeedback(.selection, trigger: isOn)
+        .applySelectionFeedback(trigger: isOn)
     }
 
     private var box: some View {
@@ -47,7 +47,7 @@ struct AdaptiveCheckboxView: View {
             .overlay(
                 RoundedRectangle(cornerRadius: 7, style: .continuous)
                     .stroke(
-                        isOn ? AnyShapeStyle(tint) : AnyShapeStyle(.separator),
+                        isOn ? AnyShapeStyle(tint) : AnyShapeStyle(Color(uiColor: .separator)),
                         lineWidth: 1.5)
             )
             .frame(width: 22, height: 22)

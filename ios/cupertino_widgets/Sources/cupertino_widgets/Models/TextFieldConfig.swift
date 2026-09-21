@@ -2,7 +2,7 @@ import Foundation
 
 /// Creation/update parameters for the native text field platform view,
 /// mirroring the customization surface of `CupertinoNativeTextField` on Dart.
-@available(iOS 26.0, *)
+@available(iOS 15.0, *)
 struct TextFieldConfig: Codable {
     var text: String? = nil
     var placeholder: String? = nil
@@ -40,7 +40,7 @@ struct TextFieldConfig: Codable {
     var keyboardToolbar: [BodyNodeConfig]? = nil
 }
 
-@available(iOS 26.0, *)
+@available(iOS 15.0, *)
 extension TextFieldConfig {
     /// A platform view created without arguments still needs a config.
     static let empty = TextFieldConfig()

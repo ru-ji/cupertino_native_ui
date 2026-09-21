@@ -3,7 +3,7 @@ import SwiftUI
 
 /// A scaffold page body that hosts the Flutter engine inside a native
 /// ScrollView. Reused for both searchable roots and pushed pages.
-@available(iOS 26.0, *)
+@available(iOS 15.0, *)
 struct PageScrollBody: View {
     let engine: FlutterEngine?
     let scrollEdgeEffect: String?
@@ -34,7 +34,7 @@ struct PageScrollBody: View {
                 .applyScrollEdgeEffect(scrollEdgeEffect)
                 // A scroll view dismisses the keyboard on scroll by default on
                 // iOS 16+; a field inside a body should keep it.
-                .scrollDismissesKeyboard(.never)
+                .applyKeyboardStaysUp()
                 .onChange(of: scrollToTopSignal) { _ in
                     proxy.scrollTo(Self.topAnchor, anchor: .top)
                 }
@@ -58,7 +58,7 @@ struct PageScrollBody: View {
 /// `isSearching` is only delivered to a *descendant* of the view the
 /// `.searchable` modifier is attached to, so this dedicated view reads it in
 /// its own `body` (the searchable modifier is applied to it in `navStack`).
-@available(iOS 26.0, *)
+@available(iOS 15.0, *)
 struct SearchablePageBody: View {
     @Environment(\.isSearching) private var isSearching
 
@@ -85,11 +85,11 @@ struct SearchablePageBody: View {
     }
 }
 
-@available(iOS 26.0, *)
+@available(iOS 15.0, *)
 extension View {
     /// Applies an optional `SearchConfig` as a native `.searchable(...)` field.
     /// No-op when `config` is nil.
-    @available(iOS 26.0, *)
+    @available(iOS 15.0, *)
     @ViewBuilder
     func applySearchable(
         _ config: SearchConfig?,
@@ -112,10 +112,10 @@ extension View {
 
     /// `.searchToolbarBehavior(.minimize)`: a toolbar-placed field collapses
     /// to a magnifying-glass button while the page scrolls.
-    @available(iOS 26.0, *)
+    @available(iOS 15.0, *)
     @ViewBuilder
     func applySearchToolbarBehavior(_ raw: String?) -> some View {
-        if raw == "minimize" {
+        if raw == "minimize", #available(iOS 26.0, *) {
             self.searchToolbarBehavior(.minimize)
         } else {
             self
@@ -124,7 +124,7 @@ extension View {
 }
 
 /// Maps the Dart `CupertinoNativeSearchPlacement` name to SwiftUI's placement.
-@available(iOS 26.0, *)
+@available(iOS 15.0, *)
 private func searchFieldPlacement(_ raw: String?) -> SearchFieldPlacement {
     switch raw {
     case "toolbar":
@@ -135,5 +135,17 @@ private func searchFieldPlacement(_ raw: String?) -> SearchFieldPlacement {
         return .navigationBarDrawer(displayMode: .always)
     default:
         return .automatic
+    }
+}
+
+@available(iOS 15.0, *)
+extension View {
+    @ViewBuilder
+    fileprivate func applyKeyboardStaysUp() -> some View {
+        if #available(iOS 16.0, *) {
+            self.scrollDismissesKeyboard(.never)
+        } else {
+            self
+        }
     }
 }

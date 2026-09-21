@@ -4,7 +4,7 @@ import Foundation
 /// Body engines always boot the app's default `main()` with a
 /// `cn-scaffold://<route>` initial route intercepted by
 /// `CupertinoNativeScaffold.maybeRun` on the Dart side.
-@available(iOS 26.0, *)
+@available(iOS 15.0, *)
 struct ScaffoldConfig: Codable {
     let body: String?  // root body route, used when tabBar == nil
     /// A body described from Dart and rendered as SwiftUI directly, instead

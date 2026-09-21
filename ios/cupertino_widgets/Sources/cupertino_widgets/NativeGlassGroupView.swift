@@ -2,7 +2,7 @@ import Flutter
 import SwiftUI
 import UIKit
 
-@available(iOS 26.0, *)
+@available(iOS 15.0, *)
 class NativeGlassGroupFactory: NSObject, FlutterPlatformViewFactory {
     private var messenger: FlutterBinaryMessenger
 
@@ -16,6 +16,9 @@ class NativeGlassGroupFactory: NSObject, FlutterPlatformViewFactory {
         viewIdentifier viewId: Int64,
         arguments args: Any?
     ) -> FlutterPlatformView {
+        // A glass group is Liquid Glass and nothing else: below iOS 26 it is
+        // an empty view.
+        guard #available(iOS 26.0, *) else { return EmptyPlatformView() }
         return NativeGlassGroupView(
             frame: frame, viewIdentifier: viewId, arguments: args, messenger: messenger)
     }
@@ -119,7 +122,7 @@ class NativeGlassGroupView: NativeHostingView {
     }
 }
 
-@available(iOS 26.0, *)
+@available(iOS 15.0, *)
 final class GlassGroupModel: ObservableObject {
     @Published var config = GlassGroupConfig(
         items: [], spacing: nil, mergeDistance: nil, variant: nil, tint: nil,
@@ -255,6 +258,7 @@ struct AdaptiveGlassGroupView: View {
     /// the material. That matters for a glass arriving from nothing: if the
     /// item also left the layout, the group's box would shrink underneath the
     /// transition and there would be nowhere for the new glass to land.
+    @available(iOS 26.0, *)
     @ViewBuilder
     private func glassed(_ item: GlassGroupItemConfig, morph: CGFloat) -> some View {
         if transitionName(for: item) == "intensity" {
@@ -368,6 +372,7 @@ struct AdaptiveGlassGroupView: View {
         item.transition ?? c.transition ?? "matchedGeometry"
     }
 
+    @available(iOS 26.0, *)
     private func transition(for item: GlassGroupItemConfig) -> GlassEffectTransition {
         switch item.transition ?? c.transition {
         case "materialize": return .materialize
@@ -387,6 +392,7 @@ struct AdaptiveGlassGroupView: View {
     /// group's bounding box, and this fills it, where a `Circle` would be
     /// *inscribed* in it and collapse to one item's worth of glass in the
     /// middle. Measured, not reasoned: see docs/glass-transitions.md.
+    @available(iOS 26.0, *)
     private func shape(for item: GlassGroupItemConfig, morph: CGFloat) -> AnyShape {
         if !sharesOneGlass, item.shape == "roundedRect" {
             return AnyShape(
@@ -438,4 +444,8 @@ private struct FixedRadiusShape: Shape {
         return RoundedRectangle(cornerRadius: radius * (1 - clamped), style: .continuous)
             .path(in: rect)
     }
+}
+
+private final class EmptyPlatformView: NSObject, FlutterPlatformView {
+    func view() -> UIView { UIView() }
 }

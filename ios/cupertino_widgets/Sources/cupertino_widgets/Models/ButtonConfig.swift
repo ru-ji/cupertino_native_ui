@@ -1,6 +1,6 @@
 import Foundation
 
-@available(iOS 26.0, *)
+@available(iOS 15.0, *)
 struct ButtonConfig: Codable {
     let title: String
     let icon: IconConfig?  // SF Symbol or Flutter glyph
