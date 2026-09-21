@@ -183,6 +183,9 @@ class NativeContextMenuView: NSObject, FlutterPlatformView, UIContextMenuInterac
         // own render when available; the window snapshot only as a stopgap
         // before the first capture arrives.
         sessionSnapshot = childImage ?? snapshotChild()
+        // The system now scales that snapshot as the press highlight, under
+        // Flutter's child: Dart hides the child so the highlight is what shows.
+        channel.invokeMethod("onPressBegan", arguments: nil)
         return UIContextMenuConfiguration(
             identifier: nil,
             // A custom preview replaces the lifted content; without one the

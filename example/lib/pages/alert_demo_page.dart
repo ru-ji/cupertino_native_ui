@@ -28,6 +28,7 @@ class _AlertDemoPageState extends State<AlertDemoPage> {
                     onPressed: () => Navigator.pop(context),
                     child: CupertinoSymbolImage.symbol(
                       CupertinoSymbols.chevronBackward,
+                      weight: FontWeight.w600,
                     ),
                   )
                 : null,

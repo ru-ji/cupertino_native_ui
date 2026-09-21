@@ -10,6 +10,15 @@ struct AdaptiveButtonView: View {
         return Color(argb: val)
     }
 
+    /// Icon-to-title gap from Apple's iPhone design kit (no value for mini,
+    /// which takes the small one).
+    private var iconTitleGap: CGFloat {
+        switch config.controlSize {
+        case "mini", "small": return 3
+        default: return 4
+        }
+    }
+
     var body: some View {
 
         // An explicit size has to reach the label, not just frame the button, so
@@ -17,7 +26,20 @@ struct AdaptiveButtonView: View {
         let fills = config.expand == true || config.width != nil || config.height != nil
 
         let button = Button(action: onPressed) {
-            if let icon = config.icon {
+            if let icon = config.icon, !config.title.isEmpty,
+                config.labelStyle != "iconOnly", config.labelStyle != "titleOnly"
+            {
+                // Not a `Label`, whose gap is the system's: Apple's iPhone
+                // design kit puts 3pt between icon and title on the small
+                // buttons and 4pt on the larger ones.
+                applyCustomTextColor(
+                    to: HStack(spacing: iconTitleGap) {
+                        IconView(icon: icon).imageScale(.medium)
+                        Text(config.title).font(customFont)
+                    }
+                )
+                .applyFill(fills, bothAxes: config.height != nil)
+            } else if let icon = config.icon {
                 applyCustomTextColor(
                     to: Label {
                         Text(config.title).font(customFont)

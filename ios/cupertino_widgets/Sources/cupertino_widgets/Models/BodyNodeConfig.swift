@@ -19,7 +19,7 @@ import SwiftUI
 @available(iOS 15.0, *)
 struct BodyNodeConfig: Codable {
     /// "column" | "row" | "scroll" | "padding" | "spacer" | "divider" |
-    /// "text" | "button" | "textField" | "toggle" | "checkbox" | "radio" |
+    /// "text" | "button" | "menu" | "textField" | "toggle" | "checkbox" | "radio" |
     /// "slider" | "picker" | "segmented" | "datePicker" | "progress" |
     /// "list" | "symbol" | "flutter" | "glass"
     let type: String
@@ -54,6 +54,7 @@ struct BodyNodeConfig: Codable {
     // Leaf payloads — exactly one is set, matching `type`.
     let text: BodyTextConfig?
     let button: ButtonConfig?
+    let menu: MenuConfiguration?
     let textField: TextFieldConfig?
     let toggle: ToggleConfig?
     let checkbox: CheckboxConfig?

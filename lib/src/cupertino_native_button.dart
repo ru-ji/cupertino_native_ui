@@ -3,6 +3,8 @@ import 'package:flutter/material.dart' show Icon, Theme;
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
+import 'internal/ios_version.dart';
+import 'internal/legacy_sliver_navigation_bar.dart' show LegacyBarSlot;
 import 'internal/native_platform_view_mixin.dart';
 import 'models/cupertino_native_button_style.dart';
 import 'models/cupertino_native_button_extra_options.dart';
@@ -208,8 +210,9 @@ class _CupertinoNativeButtonState extends State<CupertinoNativeButton>
       // Sized natively too, not just boxed: a SwiftUI button is `fixedSize`,
       // so a Flutter SizedBox alone leaves it drawing at its own metrics and
       // spilling out of (or rattling inside) the box.
-      'width': _width,
-      'height': _height,
+      // Hugging a glyph, the native button sizes itself and reports it.
+      'width': _hugsGlyph ? widget.width : _width,
+      'height': _hugsGlyph ? widget.height : _height,
     };
   }
 
@@ -250,9 +253,16 @@ class _CupertinoNativeButtonState extends State<CupertinoNativeButton>
   /// The standard iOS touch target, and the size of a navigation-bar button.
   static const double _standardExtent = 44;
 
-  /// An explicit value wins; otherwise an icon-only button is a 44pt square.
+  /// In the iOS 15–18 bar an icon-only button hugs its glyph, as a bar item.
+  bool get _hugsGlyph => !isIOS26OrLater && LegacyBarSlot.isIn(context);
+
+  /// An explicit value wins; otherwise an icon-only button is a 44pt square,
+  /// or its measured glyph width in the iOS 15–18 bar.
   double? get _width =>
-      widget.width ?? (_isIconOnly && !widget.expand ? _standardExtent : null);
+      widget.width ??
+      (_isIconOnly && !widget.expand
+          ? (_hugsGlyph ? intrinsicWidth ?? _standardExtent : _standardExtent)
+          : null);
   double? get _height =>
       widget.height ?? (_isIconOnly && !widget.expand ? _standardExtent : null);
 

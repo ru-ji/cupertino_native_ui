@@ -91,6 +91,32 @@ class _CupertinoNativeContextMenuState extends State<CupertinoNativeContextMenu>
   /// dismiss animation lands, so the child doesn't pop back in mid-flight.
   bool _menuOpen = false;
 
+  /// True from just after a press begins until it ends without a menu. UIKit
+  /// scales the child's snapshot as the press highlight *under* Flutter's
+  /// child, which would otherwise sit there unscaled; hiding the child lets
+  /// the highlight be what the finger sees.
+  bool _pressHidden = false;
+  Timer? _pressTimer;
+
+  void _pressBegan() {
+    _pressTimer?.cancel();
+    // Not at once: a tap begins a press too, and must not flicker.
+    _pressTimer = Timer(const Duration(milliseconds: 90), () {
+      if (mounted && !_pressHidden) setState(() => _pressHidden = true);
+    });
+  }
+
+  void _pressEnded() {
+    _pressTimer?.cancel();
+    // UIKit cancels the touch as it lifts the menu, and `onOpenChanged` lands
+    // a beat later: restore only if no menu came.
+    _pressTimer = Timer(const Duration(milliseconds: 250), () {
+      if (mounted && _pressHidden && !_menuOpen) {
+        setState(() => _pressHidden = false);
+      }
+    });
+  }
+
   /// Safety net for [_menuOpen]: the child is hidden while the menu is up and
   /// restored when the native dismiss animation completes. If that completion
   /// is ever missed the child would stay invisible for good, so a timer
@@ -132,11 +158,14 @@ class _CupertinoNativeContextMenuState extends State<CupertinoNativeContextMenu>
   void _restoreChild() {
     _restoreTimer?.cancel();
     _restoreTimer = null;
-    if (mounted && _menuOpen) setState(() => _menuOpen = false);
+    if (mounted && (_menuOpen || _pressHidden)) {
+      setState(() => _menuOpen = _pressHidden = false);
+    }
   }
 
   @override
   void dispose() {
+    _pressTimer?.cancel();
     _restoreTimer?.cancel();
     for (final timer in _captureDebounce.values) {
       timer.cancel();
@@ -191,6 +220,8 @@ class _CupertinoNativeContextMenuState extends State<CupertinoNativeContextMenu>
       case 'onAction':
         final String? id = call.arguments['id'];
         if (id != null) widget.onAction?.call(id, call.arguments['value']);
+      case 'onPressBegan':
+        _pressBegan();
       case 'onOpenChanged':
         final bool? open = call.arguments['open'];
         if (open != null) {
@@ -272,10 +303,7 @@ class _CupertinoNativeContextMenuState extends State<CupertinoNativeContextMenu>
       final png = bytes.buffer.asUint8List();
       if (listEquals(_lastSent[method], png)) return;
       _lastSent[method] = png;
-      await channel?.invokeMethod(method, {
-        'bytes': png,
-        'scale': dpr,
-      });
+      await channel?.invokeMethod(method, {'bytes': png, 'scale': dpr});
       debugPrint('[ctxmenu] $method sent: ${bytes.lengthInBytes}B');
     } catch (e) {
       // Nothing to rasterize yet; the next update re-captures.
@@ -287,52 +315,58 @@ class _CupertinoNativeContextMenuState extends State<CupertinoNativeContextMenu>
   Widget build(BuildContext context) {
     if (defaultTargetPlatform != TargetPlatform.iOS) return widget.child;
 
-    return Stack(
-      fit: StackFit.passthrough,
-      // No clip: the preview overflows, and a composited clip would also cut
-      // the native views painted before it.
-      clipBehavior: Clip.none,
-      children: [
-        if (widget.preview != null)
-          Positioned(
-            left: 0,
-            top: 0,
-            child: IgnorePointer(
-              // ponytail: painted in place but near-invisible so it can be
-              // snapshotted; far off-screen its gradients rasterized blank.
-              child: Opacity(
-                opacity: 0.001,
-                child: RepaintBoundary(key: _previewKey, child: widget.preview),
+    return Listener(
+      onPointerUp: (_) => _pressEnded(),
+      onPointerCancel: (_) => _pressEnded(),
+      child: Stack(
+        fit: StackFit.passthrough,
+        // No clip: the preview overflows, and a composited clip would also cut
+        // the native views painted before it.
+        clipBehavior: Clip.none,
+        children: [
+          if (widget.preview != null)
+            Positioned(
+              left: 0,
+              top: 0,
+              child: IgnorePointer(
+                // ponytail: painted in place but near-invisible so it can be
+                // snapshotted; far off-screen its gradients rasterized blank.
+                child: Opacity(
+                  opacity: 0.001,
+                  child: RepaintBoundary(
+                    key: _previewKey,
+                    child: widget.preview,
+                  ),
+                ),
+              ),
+            ),
+          Positioned.fill(
+            child: RepaintBoundary(
+              child: UiKitView(
+                viewType: 'com.example.cupertino_widgets/cupertino_native_context_menu',
+                layoutDirection: TextDirection.ltr,
+                creationParams: _toMap(),
+                creationParamsCodec: const StandardMessageCodec(),
+                // The long-press must reach the native interaction immediately;
+                // inside scrollables Flutter's gesture arena would otherwise
+                // delay and cancel it (same pattern as the glass container).
+                hitTestBehavior: PlatformViewHitTestBehavior.opaque,
+                gestureRecognizers: scrollFriendlyGestures,
+                onPlatformViewCreated: _onPlatformViewCreated,
               ),
             ),
           ),
-        Positioned.fill(
-          child: RepaintBoundary(
-            child: UiKitView(
-              viewType:
-                  'com.example.cupertino_widgets/cupertino_native_context_menu',
-              layoutDirection: TextDirection.ltr,
-              creationParams: _toMap(),
-              creationParamsCodec: const StandardMessageCodec(),
-              // The long-press must reach the native interaction immediately;
-              // inside scrollables Flutter's gesture arena would otherwise
-              // delay and cancel it (same pattern as the glass container).
-              hitTestBehavior: PlatformViewHitTestBehavior.opaque,
-              gestureRecognizers: scrollFriendlyGestures,
-              onPlatformViewCreated: _onPlatformViewCreated,
+          IgnorePointer(
+            ignoring: !widget.childInteractive || _menuOpen,
+            child: Opacity(
+              opacity: _menuOpen || _pressHidden ? 0 : 1,
+              // Boundary so the child can be rendered to the image the system
+              // lifts — every layer of it, text included.
+              child: RepaintBoundary(key: _childKey, child: widget.child),
             ),
           ),
-        ),
-        IgnorePointer(
-          ignoring: !widget.childInteractive || _menuOpen,
-          child: Opacity(
-            opacity: _menuOpen ? 0 : 1,
-            // Boundary so the child can be rendered to the image the system
-            // lifts — every layer of it, text included.
-            child: RepaintBoundary(key: _childKey, child: widget.child),
-          ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

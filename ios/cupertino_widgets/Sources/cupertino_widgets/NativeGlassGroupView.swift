@@ -16,9 +16,11 @@ class NativeGlassGroupFactory: NSObject, FlutterPlatformViewFactory {
         viewIdentifier viewId: Int64,
         arguments args: Any?
     ) -> FlutterPlatformView {
-        // A glass group is Liquid Glass and nothing else: below iOS 26 it is
-        // an empty view.
-        guard #available(iOS 26.0, *) else { return EmptyPlatformView() }
+        // Below iOS 26 there is no glass: the same items as plain bar buttons.
+        guard #available(iOS 26.0, *) else {
+            return NativeLegacyGlassGroupView(
+                frame: frame, viewIdentifier: viewId, arguments: args, messenger: messenger)
+        }
         return NativeGlassGroupView(
             frame: frame, viewIdentifier: viewId, arguments: args, messenger: messenger)
     }
@@ -446,6 +448,109 @@ private struct FixedRadiusShape: Shape {
     }
 }
 
-private final class EmptyPlatformView: NSObject, FlutterPlatformView {
-    func view() -> UIView { UIView() }
+/// The glass group below iOS 26: the items as plain buttons — icon and/or title,
+/// in the accent colour, no material — the way a UIKit bar item looks there.
+@available(iOS 15.0, *)
+final class NativeLegacyGlassGroupView: NativeHostingView {
+    private var channel: FlutterMethodChannel?
+    private let model = GlassGroupModel()
+
+    init(
+        frame: CGRect, viewIdentifier viewId: Int64, arguments args: Any?,
+        messenger: FlutterBinaryMessenger
+    ) {
+        super.init()
+        _view.viewId = viewId
+        channel = FlutterMethodChannel(
+            name: "cupertino_widgets/glass_group_\(viewId)", binaryMessenger: messenger)
+        sizeChannel = channel
+        channel?.setMethodCallHandler { [weak self] call, result in
+            self?.handle(call, result: result)
+        }
+        if let map = args as? [String: Any], let config = decodeConfig(GlassGroupConfig.self, from: map) {
+            model.config = config
+        }
+        attach(
+            AnyView(
+                LegacyGlassGroupView(model: model) { [weak self] actionId in
+                    self?.channel?.invokeMethod("onAction", arguments: ["actionId": actionId])
+                })
+        ) { host, container in
+            host.setContentHuggingPriority(.required, for: .horizontal)
+            host.setContentHuggingPriority(.required, for: .vertical)
+            NSLayoutConstraint.activate([
+                host.centerXAnchor.constraint(equalTo: container.centerXAnchor),
+                host.centerYAnchor.constraint(equalTo: container.centerYAnchor),
+            ])
+        }
+    }
+
+    private func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
+        switch call.method {
+        case "snapshot":
+            result(PlatformViewSnapshot.capture(view()))
+        case "getIntrinsicSize":
+            result(intrinsicSize())
+        case "setConfig":
+            if let map = call.arguments as? [String: Any],
+                let config = decodeConfig(GlassGroupConfig.self, from: map)
+            {
+                model.config = config
+                DispatchQueue.main.async { [weak self] in self?.publishIntrinsicSize() }
+                result(nil)
+            } else {
+                result(FlutterError(code: "INVALID_ARGS", message: "Invalid arguments", details: nil))
+            }
+        default:
+            result(FlutterMethodNotImplemented)
+        }
+    }
+}
+
+@available(iOS 15.0, *)
+private struct LegacyGlassGroupView: View {
+    @ObservedObject var model: GlassGroupModel
+    let onAction: (String) -> Void
+
+    private var c: GlassGroupConfig { model.config }
+
+    var body: some View {
+        let items = c.items.filter { $0.glassVisible != false || $0.icon != nil || $0.title != nil }
+        Group {
+            if c.vertical == true {
+                VStack(spacing: 0) { ForEach(items) { button($0) } }
+            } else {
+                HStack(spacing: 0) { ForEach(items) { button($0) } }
+            }
+        }
+        .foregroundColor(c.tint.map { Color(argb: $0) })
+        .environment(\.colorScheme, c.isDark == true ? .dark : .light)
+    }
+
+    private func label(_ item: GlassGroupItemConfig) -> some View {
+        HStack(spacing: 6) {
+            if let icon = item.icon { IconView(icon: icon).imageScale(.large) }
+            if let title = item.title, !title.isEmpty { Text(title) }
+        }
+        .frame(minWidth: 44, minHeight: 44)
+        .opacity(item.enabled == false ? 0.4 : 1)
+    }
+
+    @ViewBuilder
+    private func button(_ item: GlassGroupItemConfig) -> some View {
+        if let menuItems = item.menuItems, !menuItems.isEmpty {
+            Menu {
+                ForEach(menuItems) { entry in
+                    MenuItemMapper(item: entry) { actionId, _ in onAction(actionId) }
+                }
+            } label: {
+                label(item)
+            }
+            .disabled(item.enabled == false)
+        } else {
+            label(item)
+                .contentShape(Rectangle())
+                .onTapGesture { if item.enabled != false { onAction(item.actionId) } }
+        }
+    }
 }

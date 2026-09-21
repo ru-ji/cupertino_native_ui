@@ -43,6 +43,11 @@ class CupertinoNativeListTile {
 
   final bool enabled;
 
+  /// Shows the system trailing checkmark, the way a selection list (an inline
+  /// `Picker`, Settings' Appearance) marks its chosen row. Taps still report
+  /// through `onRowTap`; the app keeps which row is selected.
+  final bool selected;
+
   /// A trailing control, transcribed straight into SwiftUI — the same
   /// lowering a `toolbarActions` item goes through, so
   /// `CupertinoNativeSwitch`, `CupertinoNativeSlider`,
@@ -63,6 +68,7 @@ class CupertinoNativeListTile {
     this.type = CupertinoNativeListTileType.label,
     this.toggleValue = false,
     this.enabled = true,
+    this.selected = false,
     this.trailing,
   });
 
@@ -77,6 +83,7 @@ class CupertinoNativeListTile {
       'type': type.name,
       'toggleValue': toggleValue,
       'enabled': enabled,
+      'selected': selected,
     };
   }
 }

@@ -41,6 +41,7 @@ class _StandaloneTabBarDemoPageState extends State<StandaloneTabBarDemoPage> {
                         onPressed: () => Navigator.pop(context),
                         child: CupertinoSymbolImage.symbol(
                           CupertinoSymbols.chevronBackward,
+                          weight: FontWeight.w600,
                         ),
                       )
                     : null,

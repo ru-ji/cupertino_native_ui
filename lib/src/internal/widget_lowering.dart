@@ -7,6 +7,7 @@ import '../cupertino_native_checkbox.dart';
 import '../cupertino_native_date_picker.dart';
 import '../cupertino_native_flutter_view.dart';
 import '../cupertino_native_glass_container.dart';
+import '../cupertino_native_menu.dart';
 import '../cupertino_native_picker.dart';
 import '../cupertino_native_radio.dart';
 import '../cupertino_native_slider.dart';
@@ -14,6 +15,7 @@ import '../cupertino_native_sliding_segmented_control.dart';
 import '../cupertino_native_switch.dart';
 import '../cupertino_native_symbol.dart';
 import '../cupertino_native_text_field.dart';
+import '../models/cupertino_native_button_extra_options.dart';
 
 /// Turns package widgets written inline into native descriptions, plus the
 /// callbacks to fire when they report — the lowering every surface that
@@ -69,11 +71,40 @@ CupertinoNativeBody? lowerWidgetNode(
         icon: label.icon,
         style: widget.style,
         sizeStyle: widget.sizeStyle,
-        borderShape: widget.borderShape,
+        // A circle only rounds a square, icon-only label: with a title
+        // SwiftUI still clips the label to the circle ("Sh…").
+        borderShape:
+            widget.borderShape == CupertinoNativeButtonBorderShape.circle &&
+                !label.iconOnly
+            ? CupertinoNativeButtonBorderShape.automatic
+            : widget.borderShape,
         color: widget.color,
         // A null `onPressed` is a disabled button, the way it is everywhere
         // else in Flutter — greyed out rather than silently inert.
         enabled: onPressed != null,
+      );
+
+    case CupertinoNativeMenu():
+      final onAction = widget.onAction;
+      if (onAction != null) {
+        callbacks[id] = (value) {
+          final event = value as Map<Object?, Object?>? ?? const {};
+          onAction(event['id'] as String? ?? '', event['value']);
+        };
+      }
+      return CupertinoNativeBody.menu(
+        id: id,
+        title: widget.title,
+        systemImage: widget.systemImage,
+        items: [for (final item in widget.items) item.toMap()],
+        style: widget.style,
+        borderShape: widget.borderShape,
+        labelStyle: widget.labelStyle,
+        controlSize: widget.controlSize,
+        color: widget.activeColor,
+        fontSize: widget.textStyle?.fontSize,
+        fontWeight: widget.textStyle?.fontWeight?.value,
+        textColor: widget.textStyle?.color,
       );
 
     case CupertinoNativeSwitch():
@@ -279,7 +310,7 @@ CupertinoNativeBody? lowerWidgetNode(
         'built by SwiftUI in a window Flutter cannot draw, so its items are '
         'read rather than mounted. Use the package\'s own controls — '
         'CupertinoNativeButton, CupertinoNativeSwitch, CupertinoNativeCheckbox, '
-        'CupertinoNativeRadio, CupertinoNativeSlider, CupertinoNativePicker, '
+        'CupertinoNativeMenu, CupertinoNativeRadio, CupertinoNativeSlider, CupertinoNativePicker, '
         'CupertinoNativeSegmentedControl, CupertinoNativeDatePicker, '
         'CupertinoNativeActivityIndicator, CupertinoNativeSymbol, '
         'CupertinoNativeTextField, CupertinoNativeGlassContainer, Text, '
