@@ -121,10 +121,13 @@ class ButtonLabel {
         case Text(:final data?, :final style):
           title = data;
           textStyle = style;
-        case CupertinoSymbolImage(:final name, :final size, :final color):
-          icon = CupertinoNativeIcon.named(name, size: size, color: color);
-        case Icon(icon: final data?, :final size, :final color):
-          icon = CupertinoNativeIcon.flutter(data, size: size, color: color);
+        case CupertinoSymbolImage(:final name, :final size, :final color, :final weight):
+          icon = CupertinoNativeIcon.named(
+            name,
+            size: size,
+            color: color,
+            weight: weight == FontWeight.normal ? null : weight,
+          );
         case Row(:final children) || Wrap(:final children):
           children.forEach(read);
         case Padding(:final child?) || Center(:final child?):
@@ -132,8 +135,8 @@ class ButtonLabel {
         default:
           assert(
             false,
-            'CupertinoNativeButton.child must be a Text, CupertinoSymbolImage, '
-            'Icon or a Row of them, not ${w.runtimeType}: the native control '
+            'CupertinoNativeButton.child must be a Text, CupertinoSymbolImage '
+            'or a Row of them, not ${w.runtimeType}: the native control '
             'draws its own label.',
           );
       }

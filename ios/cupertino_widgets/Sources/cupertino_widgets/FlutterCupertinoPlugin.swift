@@ -121,7 +121,13 @@ public class FlutterCupertinoPlugin: NSObject, FlutterPlugin {
         case "bold": weight = .bold
         default: weight = .regular
         }
-        let config = UIImage.SymbolConfiguration(pointSize: size, weight: weight)
+        let symbolScale: UIImage.SymbolScale
+        switch args["symbolScale"] as? String {
+        case "small": symbolScale = .small
+        case "large": symbolScale = .large
+        default: symbolScale = .medium
+        }
+        let config = UIImage.SymbolConfiguration(pointSize: size, weight: weight, scale: symbolScale)
         guard var image = UIImage(systemName: name, withConfiguration: config) else { return nil }
         if let argb = args["color"] as? Int {
             image = image.withTintColor(UIColor(argb: argb), renderingMode: .alwaysOriginal)

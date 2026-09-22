@@ -13,12 +13,14 @@ enum PlatformViewSnapshot {
     /// there is nothing to capture — the Dart side then falls back to simply
     /// hiding the view for the transition.
     static func capture(_ view: UIView) -> [String: Any]? {
+        // Photographed through the outset clip container, not the view: the
+        // container is the view's box grown by the outset, and what a control
+        // paints past its box (a switch's rim, a glass shadow) is inside it.
+        // Photographing the view itself cut that shadow at the box edge, which
+        // read as a grey square around a bar's glass buttons.
         let container = view as? HostingContainerView
-        let outset = container?.edgeMaskOutset ?? 0
-
-        // The container grown by the outset: `drawHierarchy` then includes what
-        // subviews paint past their box (a switch's rim, a glass shadow).
-        let capture = view.bounds.insetBy(dx: -outset, dy: -outset)
+        let target: UIView = container?.clipView ?? view
+        let capture = target.convert(target.bounds, to: view)
         guard capture.width > 0, capture.height > 0 else { return nil }
         let origin = capture.origin
 
@@ -56,19 +58,15 @@ enum PlatformViewSnapshot {
             // CoreGraphics draws from the bottom-left, UIKit from the top-left.
             ctx.translateBy(x: 0, y: CGFloat(height))
             ctx.scaleBy(x: scale, y: -scale)
-            // The capture starts outside the view, so the view's own origin
-            // lands `outset` in from the top-left of the bitmap. This is the
-            // ONLY place that offset is applied; `dx`/`dy` below tell Dart
-            // where to put the result back.
-            ctx.translateBy(x: -capture.minX, y: -capture.minY)
 
             UIGraphicsPushContext(ctx)
             defer { UIGraphicsPopContext() }
 
-            // `afterScreenUpdates: false` avoids a flash; unlike `layer.render(in:)` it
-            // captures Liquid Glass. `view.bounds`, not the enlarged rectangle: the
-            // context is already translated.
-            return view.drawHierarchy(in: view.bounds, afterScreenUpdates: false)
+            // `afterScreenUpdates: false` avoids a flash; unlike `layer.render(in:)`
+            // it captures Liquid Glass. The target's own bounds, which is the
+            // bitmap's size: `rect` is where the whole hierarchy is drawn,
+            // scaled to fit, so a rectangle of any other size resizes it.
+            return target.drawHierarchy(in: target.bounds, afterScreenUpdates: false)
         }
         guard drawn else { return nil }
 

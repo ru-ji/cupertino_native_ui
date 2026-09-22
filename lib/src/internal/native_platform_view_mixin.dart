@@ -23,8 +23,6 @@ mixin NativePlatformViewStateMixin<T extends StatefulWidget> on State<T> {
     Future<dynamic> Function(MethodCall call)? onMethodCall,
   }) {
     channel = MethodChannel(channelName);
-    // A ready photo for route transitions, taken before one starts.
-    if (hidesDuringRouteTransition) _keepBitmapFresh();
     // Always handled here, whether or not the widget wants calls of its own:
     // `intrinsicSize` is pushed by the native view the moment its container
     // lays out, and every widget wants that.
@@ -78,75 +76,12 @@ mixin NativePlatformViewStateMixin<T extends StatefulWidget> on State<T> {
     }
   }
 
-  /// Keeps an up-to-date bitmap of this control on hand, for the route
-  /// transition that swaps it in (see [wrapForTransition]).
-  ///
-  /// Taken as soon as the view can be photographed — a view that has never
-  /// rendered refuses, so it retries every 100ms until the first success —
-  /// then retaken only when the control itself changes.
-  void _keepBitmapFresh() {
-    if (_warmImage != null) return;
-    _captureTimer ??= Timer.periodic(
-      const Duration(milliseconds: 100),
-      (_) => _refreshWarmBitmap(),
-    );
-    _refreshWarmBitmap();
-  }
-
-  /// Takes the bitmap. A refusal is not an error — the view has simply not
-  /// rendered yet, and [_keepBitmapFresh] asks again.
-  Future<void> _refreshWarmBitmap() async {
-    final channel = this.channel;
-    if (channel == null || !mounted) return;
-    final box = context.findRenderObject() as RenderBox?;
-    if (box == null || !box.hasSize || box.size.isEmpty) {
-      return;
-    }
-    (ui.Image, Rect)? capture;
-    try {
-      capture = await captureNativeView(channel);
-    } on MissingPluginException {
-      // No `snapshot` handler for this view type: stop retrying.
-      _captureTimer?.cancel();
-      _captureTimer = null;
-      return;
-    } catch (_) {
-      return;
-    }
-    if (capture == null) return;
-    if (!mounted) {
-      capture.$1.dispose();
-      return;
-    }
-    _captureTimer?.cancel();
-    _captureTimer = null;
-    // Kept on hand so a route transition can swap it in on its first frame,
-    // with no channel round trip in between.
-    _warmImage?.dispose();
-    _warmImage = capture.$1.clone();
-    _warmDest = capture.$2;
-    capture.$1.dispose();
-  }
-
-  /// Runs until the first capture succeeds, then stops.
-  Timer? _captureTimer;
-
-  /// The latest photo of this control, and its pixels-per-point.
-  ui.Image? _warmImage;
-  Rect _warmDest = Rect.zero;
-
   @override
   void dispose() {
-    _captureTimer?.cancel();
-    for (final animation in _watchedRouteAnimations) {
-      animation.removeStatusListener(_handleRouteAnimationStatus);
-    }
-    _watchedRouteAnimations = const [];
+    _unwatchRoute();
     _routeTransitioning = false;
     _transitionImage?.dispose();
     _transitionImage = null;
-    _warmImage?.dispose();
-    _warmImage = null;
     super.dispose();
   }
 
@@ -166,28 +101,40 @@ mixin NativePlatformViewStateMixin<T extends StatefulWidget> on State<T> {
     if (refreshIntrinsicSize) {
       future?.then((_) => requestIntrinsicSize());
     }
-    // The held photo predates this change: retake it, so a transition that
-    // starts now shows the control as it is.
-    if (_warmImage != null) {
-      future?.then((_) => _refreshWarmBitmap());
-    }
   }
 
-  // Route-transition snapshots: a native view lags the Flutter page during a
-  // transition, so it can be replaced by a photo of itself while the route
-  // animates (see [hidesDuringRouteTransition]).
+  // Route-transition snapshots. A platform view is positioned on the platform
+  // thread, a step behind the Flutter layer it belongs to, so while its route
+  // animates it hangs at the wrong offset. For that time it is drawn as a photo
+  // of itself: Flutter pixels, which move in step with the page.
+  //
+  // The photo is taken when the transition starts, never ahead of time. A glass
+  // samples what is behind it, and a bar's search field changes size and
+  // material as the page scrolls, so a photo taken earlier shows the control as
+  // it was. The one this replaced was taken as soon as the view could be
+  // photographed (during the push that brought the page in, while the view
+  // still lagged) and kept: glass came back dark or boxed in, and the search
+  // field flat and 16pt off, the paint room it gained after the photo.
 
   /// Whether this widget is replaced by a photo while its route animates.
-  /// Off by default.
-  bool get hidesDuringRouteTransition => false;
+  bool get hidesDuringRouteTransition => true;
 
-  /// The route animations whose status is being watched.
-  List<Animation<double>> _watchedRouteAnimations = const [];
+  ModalRoute<dynamic>? _route;
+  Animation<double>? _routeAnimation;
+  Animation<double>? _routeSecondaryAnimation;
 
-  /// True while any watched animation is in flight.
+  /// This route has finished arriving once. Until then a moving own animation
+  /// is its first push, whose views have never rendered and so cannot be
+  /// photographed; after, it is this page leaving (a pop, a back swipe).
+  bool _routeSettled = false;
+
+  /// True while the photo stands in for the live view.
   bool _routeTransitioning = false;
 
-  /// The photograph standing in for the live view, and its pixels-per-point.
+  @visibleForTesting
+  bool get debugGuardingRouteTransition => _routeTransitioning;
+
+  /// The photograph standing in for the live view, and where it goes.
   ui.Image? _transitionImage;
   Rect _transitionDest = Rect.zero;
 
@@ -200,55 +147,52 @@ mixin NativePlatformViewStateMixin<T extends StatefulWidget> on State<T> {
     if (!hidesDuringRouteTransition) return;
     if (kIsWeb || defaultTargetPlatform != TargetPlatform.iOS) return;
     final route = ModalRoute.of(context);
-    final next = <Animation<double>>[
-      ?route?.animation,
-      ?route?.secondaryAnimation,
-    ];
-    if (listEquals(next, _watchedRouteAnimations)) return;
-    for (final animation in _watchedRouteAnimations) {
-      animation.removeStatusListener(_handleRouteAnimationStatus);
-    }
-    _watchedRouteAnimations = next;
-    for (final animation in _watchedRouteAnimations) {
-      animation.addStatusListener(_handleRouteAnimationStatus);
-    }
-    // A widget mounted mid-transition (a page built during the push, a row
-    // that scrolled in lazily) must join the transition it was born into.
-    if (_watchedRouteAnimations.any((a) => a.isAnimating)) {
-      _enterRouteTransition();
-    } else if (_routeTransitioning &&
-        _watchedRouteAnimations.every(
-          (a) => a.status == AnimationStatus.completed,
-        )) {
-      _exitRouteTransition();
-    }
-  }
-
-  void _handleRouteAnimationStatus(AnimationStatus status) {
-    switch (status) {
-      case AnimationStatus.forward:
-      case AnimationStatus.reverse:
-        _enterRouteTransition();
-      case AnimationStatus.completed:
-      case AnimationStatus.dismissed:
-        _exitRouteTransition();
-    }
-  }
-
-  void _enterRouteTransition() {
-    if (_routeTransitioning) return;
-    _routeTransitioning = true;
-    final warm = _warmImage;
-    if (warm != null && mounted && _transitionImage == null) {
-      // Same frame as the status change: the first frame of the slide
-      // already paints the photo, never the lagging live view.
-      setState(() {
-        _transitionImage = warm.clone();
-        _transitionDest = _warmDest;
-      });
+    if (route?.animation == _routeAnimation &&
+        route?.secondaryAnimation == _routeSecondaryAnimation) {
       return;
     }
-    _captureRouteSnapshot(attempt: 0);
+    _unwatchRoute();
+    _route = route;
+    _routeSettled = false;
+    _routeAnimation = route?.animation?..addStatusListener(_onRouteStatus);
+    _routeSecondaryAnimation = route?.secondaryAnimation
+      ?..addStatusListener(_onRouteStatus);
+    _updateRouteGuard();
+  }
+
+  void _unwatchRoute() {
+    _routeAnimation?.removeStatusListener(_onRouteStatus);
+    _routeSecondaryAnimation?.removeStatusListener(_onRouteStatus);
+    _route = null;
+    _routeAnimation = null;
+    _routeSecondaryAnimation = null;
+  }
+
+  void _onRouteStatus(AnimationStatus _) => _updateRouteGuard();
+
+  /// Guards while another page covers this one (from the moment it starts
+  /// sliding over until it has slid back off), and while this page leaves.
+  /// The photo taken as a page is covered is still right when it is uncovered:
+  /// nothing on it moved in between.
+  void _updateRouteGuard() {
+    final own = _routeAnimation;
+    final secondary = _routeSecondaryAnimation;
+    // Not on the offstage pass: a pushed route is first built with its
+    // animation pinned at 1.0, for Hero measurement, before it has arrived.
+    if (own != null && own.isCompleted && !(_route?.offstage ?? false)) {
+      _routeSettled = true;
+    }
+    final guard =
+        (secondary != null && !secondary.isDismissed) ||
+        (_routeSettled && own != null && !own.isCompleted);
+    if (!guard) {
+      _exitRouteTransition();
+      return;
+    }
+    _routeTransitioning = true;
+    // Also when already guarding without a photo (a capture that was declined
+    // while the page was covered): the page is about to be seen again.
+    if (_transitionImage == null) _captureRouteSnapshot(attempt: 0);
   }
 
   /// Photographs the live view and swaps it in, retrying briefly while it has

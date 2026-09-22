@@ -274,7 +274,9 @@ final class HostingContainerView: UIView {
     let contentView = UIView()
 
     /// Unclipped, outset container, so controls can paint past their bounds.
-    private let clipView = UIView()
+    /// Framed on [edgeMaskRect]: a photo of it holds the control and everything
+    /// it paints past its box (see `PlatformViewSnapshot`).
+    let clipView = UIView()
 
     override init(frame: CGRect) {
         super.init(frame: frame)
