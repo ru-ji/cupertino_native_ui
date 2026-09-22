@@ -1299,13 +1299,12 @@ CupertinoNativeSymbol('wifi',
 
 ### Icons
 
-`CupertinoNativeIcon` is the icon every native control takes.
+`CupertinoNativeIcon` is the SF Symbol every native control takes. To show a symbol in the Flutter tree, use `CupertinoSymbolImage`.
 
 | Constructor | |
 | --- | --- |
-| `.symbol(CupertinoSymbols, {size, color, renderingMode})` | SF Symbol from the enum. |
-| `.named(String, {size, color, renderingMode})` | Any SF Symbol name. |
-| `.flutter(IconData, {size, color})` | A Flutter icon. |
+| `.symbol(CupertinoSymbols, {size, weight, color, renderingMode})` | SF Symbol from the enum. |
+| `.named(String, {size, weight, color, renderingMode})` | Any SF Symbol name. |
 
 `renderingMode`: `monochrome`, `hierarchical`, `palette`, `multicolor`.
 

@@ -44,14 +44,8 @@ class CupertinoNativeTab {
     this.search,
   });
 
-  /// Resolved SF Symbol name: from [icon] if it's an SF Symbol,
-  /// or from legacy [systemImage].
-  String? get resolvedSymbolName {
-    if (icon case CupertinoNativeIcon i when i.sfSymbol != null) {
-      return i.sfSymbol;
-    }
-    return systemImage;
-  }
+  /// Resolved SF Symbol name: from [icon], or from legacy [systemImage].
+  String? get resolvedSymbolName => icon?.sfSymbol ?? systemImage;
 
   Map<String, dynamic> toMap() {
     return {

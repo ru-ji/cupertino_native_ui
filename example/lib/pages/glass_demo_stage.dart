@@ -109,7 +109,7 @@ class GlassDemoStage extends StatelessWidget {
             ),
             Padding(
               padding: const EdgeInsets.fromLTRB(18, 14, 18, 16),
-              child: CupertinoNativeButton.tinted(
+              child: CupertinoNativeButton.glass(
                 expand: true,
                 onPressed: onPressed,
                 child: Text(buttonLabel),

@@ -359,14 +359,9 @@ CupertinoNativeBody lowerGlassContainer(
   final children = <CupertinoNativeBody>[];
   final icon = widget.icon;
   if (icon != null) {
-    assert(
-      icon.sfSymbol != null,
-      'This content cannot transcribe a Flutter glyph icon; use an SF '
-      'Symbol, or CupertinoNativeFlutterView for the whole content.',
-    );
     children.add(
       CupertinoNativeBody.symbol(
-        icon.sfSymbol!,
+        icon.sfSymbol,
         size: icon.size ?? 17,
         color: icon.color,
       ),

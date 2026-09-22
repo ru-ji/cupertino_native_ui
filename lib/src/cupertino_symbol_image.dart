@@ -4,6 +4,10 @@ import 'package:flutter/widgets.dart';
 
 import 'models/cupertino_symbols.dart';
 
+/// How large the symbol is drawn for its point size, like SwiftUI's
+/// `imageScale`.
+enum CupertinoSymbolScale { small, medium, large }
+
 /// An SF Symbol drawn as **Flutter pixels**, not a platform view.
 ///
 /// Every other icon in the package rides inside a native control. This one is
@@ -23,6 +27,7 @@ class CupertinoSymbolImage extends StatefulWidget {
     this.size = 17,
     this.color,
     this.weight = FontWeight.normal,
+    this.scale = CupertinoSymbolScale.medium,
   });
 
   /// A typo-safe symbol from the [CupertinoSymbols] enum.
@@ -32,7 +37,15 @@ class CupertinoSymbolImage extends StatefulWidget {
     double size = 17,
     Color? color,
     FontWeight weight = FontWeight.normal,
-  }) : this(symbol.value, key: key, size: size, color: color, weight: weight);
+    CupertinoSymbolScale scale = CupertinoSymbolScale.medium,
+  }) : this(
+         symbol.value,
+         key: key,
+         size: size,
+         color: color,
+         weight: weight,
+         scale: scale,
+       );
 
   /// Raw SF Symbol name, e.g. `slider.horizontal.3`.
   final String name;
@@ -46,6 +59,10 @@ class CupertinoSymbolImage extends StatefulWidget {
 
   /// Mapped onto the five `UIImage.SymbolWeight` values the API accepts.
   final FontWeight weight;
+
+  /// `UIImage.SymbolScale`. UIKit draws a bar button's symbol at
+  /// [CupertinoSymbolScale.large], which is bigger than the plain point size.
+  final CupertinoSymbolScale scale;
 
   @override
   State<CupertinoSymbolImage> createState() => _CupertinoSymbolImageState();
@@ -72,7 +89,8 @@ class _CupertinoSymbolImageState extends State<CupertinoSymbolImage> {
     if (old.name != widget.name ||
         old.size != widget.size ||
         old.color != widget.color ||
-        old.weight != widget.weight) {
+        old.weight != widget.weight ||
+        old.scale != widget.scale) {
       _load();
     }
   }
@@ -85,13 +103,14 @@ class _CupertinoSymbolImageState extends State<CupertinoSymbolImage> {
     final scale = MediaQuery.devicePixelRatioOf(context);
     final key =
         '${widget.name}|${widget.size}|${widget.color?.toARGB32()}|'
-        '${widget.weight.value}|$scale';
+        '${widget.weight.value}|${widget.scale.name}|$scale';
     _bytes = _cache[key] ??= _channel
         .invokeMethod<Uint8List>('renderSymbol', {
           'name': widget.name,
           'size': widget.size,
           'color': widget.color?.toARGB32(),
           'weight': _weightName(widget.weight),
+          'symbolScale': widget.scale.name,
           'scale': scale,
         })
         // An unknown symbol name (or a non-iOS host) is a missing icon, not a

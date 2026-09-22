@@ -4,6 +4,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart' show defaultTargetPlatform;
 import 'package:flutter/services.dart';
 
+import '../cupertino_native_button.dart' show CupertinoNativeButton, ButtonLabel;
 import '../cupertino_symbol_image.dart';
 
 import 'package:flutter/rendering.dart'
@@ -551,10 +552,24 @@ class _LegacyBarDelegate extends SliverPersistentHeaderDelegate {
     // Insets from Apple's iOS 18 kit: leading 8, trailing 16. Buttons in
     // either slot hug their glyph (see [LegacyBarSlot]).
     Widget? leading = widget.leading;
+    // A bare chevron button is the iOS 26 way to write a back button. Below
+    // 26 the system draws the chevron and the previous page's title (the
+    // kit's `Controls Leading`), so it is swapped for that one.
+    if (leading is CupertinoNativeButton &&
+        ButtonLabel(leading.child).iconOnly &&
+        ButtonLabel(leading.child).icon?.sfSymbol == 'chevron.backward') {
+      leading = null;
+    }
     if (leading == null &&
         widget.automaticallyImplyLeading &&
         (route?.canPop ?? false)) {
-      leading = _BackButton(title: widget.previousPageTitle);
+      leading = _BackButton(
+        title:
+            widget.previousPageTitle ??
+            (route is CupertinoRouteTransitionMixin
+                ? route.previousTitle.value
+                : null),
+      );
     }
     if (leading != null) {
       leading = LegacyBarSlot(
@@ -646,6 +661,9 @@ class _BackButton extends StatelessWidget {
                 child: CupertinoSymbolImage(
                   'chevron.backward',
                   size: 17,
+                  // Large: UIKit's back indicator, measured 11×18.4pt on an
+                  // iPhone 8 Plus.
+                  scale: CupertinoSymbolScale.large,
                   weight: FontWeight.w600,
                   color: color,
                 ),
