@@ -40,7 +40,7 @@ that Core Animation composites between two Flutter `CAMetalLayer`s. Flutter cont
 does draw over it, because overlays are z-ordered correctly. But any Flutter operation that
 has to *read* pixels only sees its own render target:
 
-- `BackdropFilter` with `ImageFilter.shader` (Haze)
+- `BackdropFilter` with `ImageFilter.shader`
 - `ShaderMask`
 - `saveLayer` blend modes
 
@@ -93,7 +93,7 @@ incomplete. The accurate version:
 > (uniform Gaussian, no tile mode, no compose, no matrix/color filter, no shader), the platform
 > view is painted before it, and the filter rect intersects the view.
 
-Haze uses `ImageFilter.shader(haze.frag)`. That fails the `asBlur()` test, is dropped silently,
+A shader backdrop filter (`ImageFilter.shader`) fails the `asBlur()` test, is dropped silently,
 and the native control comes through crisp. **That one check is the whole limitation.**
 
 ## 3. The root constraint, stated once
@@ -162,13 +162,13 @@ snapshots are a different problem and stay.
 4. **Private-API fallback.** If the `UIVisualEffectView` layout changes, the engine sets
    `canApplyBlurBackdrop = NO` and quietly stops blurring. Keep that in mind when a new iOS
    beta lands.
-5. **Sigma vs Haze.** Haze's shader is not a stack of Gaussians. The ramp needs re-tuning by
+5. **Sigma tuning.** The ramp is a stack of Gaussians and needs tuning by
    eye against the native `.scrollEdgeEffectStyle` in `CupertinoNativeScaffold`.
 
 This is different from the rejected "hand-made `UIVisualEffectView` + gradient mask", for two
 reasons. There's no plugin-side native view: the engine inserts and positions the blur inside
 its own `CATransaction`, which is exactly the sync problem the KVO hook fights. And the same
-filter blurs Flutter content, so no second implementation has to be matched to Haze.
+filter blurs Flutter content, so no second implementation has to be matched to it.
 
 ### Option 2 — Upstream: make the mutator understand more than uniform blur
 
@@ -197,7 +197,7 @@ content under the bars can't hold Flutter-only effects. No change proposed.
 
 ### Option 4 — Current design: snapshot + cut (keep as fallback)
 
-This is correct for Haze's exact look, but frozen by nature: no live glass under the bar,
+This is correct for a shader blur's exact look, but frozen by nature: no live glass under the bar,
 a 10 Hz poll for off-screen views, and seam risk. Keep it only if Option 1's seams prove
 visible.
 
@@ -221,7 +221,7 @@ visible.
 | Glass ignores `Opacity` | `kOpacity` sets `embeddedView.alpha`. Glass and backdrop layers render at full intensity regardless of inherited alpha, which is UIKit behaviour. |
 | Glass breaks under rotate/scale | `kTransform` sets `layer.transform`. Backdrop sampling under non-translation transforms is unsupported by CA. |
 | Page correct until the first native control | Slicing: everything after PV1 lives in overlay layers (§1.2). |
-| `ShaderMask` / blend modes over a native view do nothing | Same as Haze: not blur, so there's no mutator. |
+| `ShaderMask` / blend modes over a native view do nothing | Same as a shader backdrop: not blur, so there's no mutator. |
 
 ## 6. Recommendation
 

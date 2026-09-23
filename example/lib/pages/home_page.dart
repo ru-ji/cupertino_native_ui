@@ -9,10 +9,10 @@ import 'app_bar_demo_page.dart';
 import 'button_demo_page.dart';
 import 'context_menu_demo_page.dart';
 import 'date_picker_demo_page.dart';
+import 'edge_effect_probe_page.dart';
 import 'effects_demo_page.dart';
 import 'glass_transition_demo_page.dart';
 import 'liquid_glass_demo_page.dart';
-import 'native_body_demo_page.dart';
 import 'native_list_form_demo_page.dart';
 import 'native_scaffold_demo_page.dart';
 import 'native_searchable_demo_page.dart';
@@ -126,12 +126,6 @@ class HomePage extends StatelessWidget {
                           CupertinoColors.systemPink,
                         ),
                         _row(
-                          'nativeBody',
-                          'Native Body',
-                          'swift',
-                          CupertinoColors.systemOrange,
-                        ),
-                        _row(
                           'nativeScaffold',
                           'Native Scaffold',
                           'iphone',
@@ -177,6 +171,12 @@ class HomePage extends StatelessWidget {
                           'Glass transitions',
                           'arrow.triangle.merge',
                           CupertinoColors.systemCyan,
+                        ),
+                        _row(
+                          'edgeEffect',
+                          'Scroll Edge Effect',
+                          'square.stack.3d.up',
+                          CupertinoColors.systemBlue,
                         ),
                         _row(
                           'effects',
@@ -240,7 +240,6 @@ class HomePage extends StatelessWidget {
       'textField' => const TextFieldDemoPage(),
       'datePicker' => const DatePickerDemoPage(),
       'tabBar' => const StandaloneTabBarDemoPage(),
-      'nativeBody' => const NativeBodyDemoPage(),
       'nativeScaffold' => const NativeScaffoldDemoPage(),
       'searchable' => const NativeSearchableDemoPage(),
       'sheet' => const SheetDemoPage(),
@@ -248,6 +247,7 @@ class HomePage extends StatelessWidget {
       'listForm' => const NativeListFormDemoPage(),
       'liquidGlass' => const LiquidGlassDemoPage(),
       'glassTransitions' => const GlassTransitionDemoPage(),
+      'edgeEffect' => const EdgeEffectProbePage(),
       'effects' => const EffectsDemoPage(),
       'alert' => const AlertDemoPage(),
       'progress' => const ProgressDemoPage(),

@@ -389,9 +389,9 @@ class CupertinoNativeBody {
          id: id,
          padding: padding,
          payload: {
-            'slider': {
-              'value': value,
-              'min': min,
+           'slider': {
+             'value': value,
+             'min': min,
              'max': max,
              'step': step,
              'color': color,

@@ -14,6 +14,9 @@ import 'cupertino_native_scaffold_navigation_bar.dart';
 import 'cupertino_native_tab_bar.dart';
 import 'cupertino_widgets_settings.dart';
 import 'internal/native_platform_view_mixin.dart';
+import 'models/cupertino_native_bar_item.dart';
+import 'models/cupertino_native_icon.dart';
+import 'models/cupertino_symbols.dart';
 
 /// A page pushed onto a [CupertinoNativePageScaffold]'s native NavigationStack.
 /// [route] must match a builder registered in [CupertinoNativePageScaffold.run];
@@ -384,7 +387,9 @@ class CupertinoNativePageScaffold extends StatefulWidget {
       }
     }
     if (width <= 0) width = 400; // last resort
-    return _BodyHeightReporter(child: SizedBox(width: width, child: child));
+    return _BodyHeightReporter(
+      child: SizedBox(width: width, child: child),
+    );
   }
 
   /// Pushes a page onto the enclosing scaffold's native stack. Only usable
@@ -529,11 +534,39 @@ class _CupertinoNativeScaffoldState extends State<CupertinoNativePageScaffold>
   bool get _isDark => Theme.of(context).brightness == Brightness.dark;
   bool? _lastIsDark;
 
+  /// actionId of the leading item this state injects when the scaffold has
+  /// no leading item of its own and it was pushed onto Flutter's Navigator —
+  /// the native NavigationStack has nothing above it to draw a back button
+  /// for, so without this the page would show no way back at all.
+  /// Intercepted in [_handleMethodCall], never forwarded to [onBarAction].
+  static const String _autoBackActionId = '_cupertinoNativeAutoBack';
+
+  /// [widget.navigationBar], with an automatic back item prepended to
+  /// [leading] when the caller left it empty and there is a Flutter route to
+  /// pop back to. A tab bar's own tabs are native stack roots with nothing
+  /// Flutter to pop, so this only applies without one.
+  Map<String, dynamic>? _navigationBarMap() {
+    final navBar = widget.navigationBar;
+    if (navBar == null) return null;
+    final map = navBar.toMap();
+    if (widget.tabBar == null &&
+        navBar.leading.isEmpty &&
+        Navigator.canPop(context)) {
+      map['leading'] = [
+        CupertinoNativeBarItem(
+          icon: CupertinoNativeIcon.symbol(CupertinoSymbols.chevronBackward),
+          actionId: _autoBackActionId,
+        ).toMap(),
+      ];
+    }
+    return map;
+  }
+
   Map<String, dynamic> _toMap() {
     final theme = Theme.of(context);
     return {
       'body': widget.body,
-      'appBar': widget.navigationBar?.toMap(),
+      'appBar': _navigationBarMap(),
       'tabBar': widget.tabBar?.toMap(),
       'scrollEdgeEffect': widget.scrollEdgeEffect.name,
       'isDark': _isDark,
@@ -648,7 +681,9 @@ class _CupertinoNativeScaffoldState extends State<CupertinoNativePageScaffold>
       case 'onBarAction':
         final String? route = call.arguments['route'];
         final String? id = call.arguments['id'];
-        if (route != null && id != null) {
+        if (id == _autoBackActionId) {
+          Navigator.maybePop(context);
+        } else if (route != null && id != null) {
           widget.onBarAction?.call(route, id);
         }
         break;

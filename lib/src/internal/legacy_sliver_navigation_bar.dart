@@ -4,7 +4,8 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart' show defaultTargetPlatform;
 import 'package:flutter/services.dart';
 
-import '../cupertino_native_button.dart' show CupertinoNativeButton, ButtonLabel;
+import '../cupertino_native_button.dart'
+    show CupertinoNativeButton, ButtonLabel;
 import '../cupertino_symbol_image.dart';
 
 import 'package:flutter/rendering.dart'

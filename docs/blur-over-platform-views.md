@@ -42,7 +42,7 @@ problème de couche" — est **juste**, et c'est exactement pour ça que le blur
 
 - Le **texte** est du *paint* : on écrit des pixels dans l'overlay. Une overlay
   vide suffit à écrire dedans. -> visible au-dessus du switch. ✅
-- Le **blur** (`Haze` = `BackdropFilter` = `ImageFilter` sur backdrop) est une
+- Le **blur** (`BackdropFilter` = `ImageFilter` sur backdrop) est une
   *lecture* : un backdrop filter ne peut lire que **sa propre render target**.
   Sa render target ici, c'est l'overlay — qui vient d'être effacée en
   transparent et qui ne contient ni la surface Flutter principale, ni, à plus

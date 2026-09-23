@@ -378,8 +378,7 @@ class _CupertinoNativeTextFieldState extends State<CupertinoNativeTextField>
       // already shrank for the keyboard adds nothing here, so a field that is
       // visible stays put.
       final padding = widget.scrollPadding.copyWith(
-        bottom:
-            widget.scrollPadding.bottom + keyboardCoverOfViewport(context),
+        bottom: widget.scrollPadding.bottom + keyboardCoverOfViewport(context),
       );
       box.showOnScreen(rect: padding.inflateRect(Offset.zero & box.size));
     }

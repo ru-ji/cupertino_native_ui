@@ -166,7 +166,6 @@ class _SheetDemoPageState extends State<SheetDemoPage> {
               onPressed: () => Navigator.pop(context),
               child: CupertinoSymbolImage.symbol(
                 CupertinoSymbols.chevronBackward,
-                weight: FontWeight.w600,
               ),
             ),
           ),

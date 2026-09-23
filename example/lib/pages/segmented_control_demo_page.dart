@@ -34,7 +34,6 @@ class _SegmentedControlDemoPageState extends State<SegmentedControlDemoPage> {
                     onPressed: () => Navigator.pop(context),
                     child: CupertinoSymbolImage.symbol(
                       CupertinoSymbols.chevronBackward,
-                      weight: FontWeight.w600,
                     ),
                   )
                 : null,

@@ -42,9 +42,7 @@ abstract final class CupertinoNativeBodyBridge {
   /// `CupertinoNativePageScaffold` when its view is created.
   static MethodChannel? hostChannel;
 
-  static const _bodyChannel = MethodChannel(
-    'cupertino_widgets/scaffold_body',
-  );
+  static const _bodyChannel = MethodChannel('cupertino_widgets/scaffold_body');
 
   static final ValueNotifier<Map<String, Object?>> _state =
       ValueNotifier<Map<String, Object?>>(const {});

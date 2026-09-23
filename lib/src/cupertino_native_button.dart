@@ -121,7 +121,12 @@ class ButtonLabel {
         case Text(:final data?, :final style):
           title = data;
           textStyle = style;
-        case CupertinoSymbolImage(:final name, :final size, :final color, :final weight):
+        case CupertinoSymbolImage(
+          :final name,
+          :final size,
+          :final color,
+          :final weight,
+        ):
           icon = CupertinoNativeIcon.named(
             name,
             size: size,

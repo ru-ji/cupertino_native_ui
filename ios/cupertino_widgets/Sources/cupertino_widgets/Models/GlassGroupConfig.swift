@@ -8,8 +8,18 @@ import Foundation
 /// container is the only way two glasses ever merge.
 @available(iOS 15.0, *)
 struct GlassGroupItemConfig: Codable, Hashable, Identifiable {
-    /// Sent back to Dart on tap, and the identity SwiftUI morphs along.
+    /// Sent back to Dart on tap.
     let actionId: String
+    /// The identity SwiftUI morphs along. nil = `actionId`.
+    ///
+    /// Split from `actionId` because a toggle button (add ↔ remove, select ↔
+    /// done) wants ONE continuous glass whose *payload* changes, not a glass
+    /// that gets torn down and replaced every tap — replacing it mid-flight is
+    /// what let a tap land on the outgoing view's gesture and fire the old
+    /// action, snapping the state back. Give both states the same `slotId` to
+    /// keep it one view; leave it unset for the old "different id = different
+    /// glass" replace behaviour.
+    let slotId: String?
     let icon: IconConfig?
     let title: String?
     /// "circle" | "capsule" | "roundedRect"; nil = circle.
@@ -32,7 +42,7 @@ struct GlassGroupItemConfig: Codable, Hashable, Identifiable {
     /// appearing beside it. nil or empty = a plain button.
     let menuItems: [MenuItemConfig]?
 
-    var id: String { actionId }
+    var id: String { slotId ?? actionId }
 }
 
 @available(iOS 15.0, *)

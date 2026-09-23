@@ -24,7 +24,10 @@ void main() {
     final pushed = GlobalKey<_ProbeState>();
     final nav = GlobalKey<NavigatorState>();
     await tester.pumpWidget(
-      CupertinoApp(navigatorKey: nav, home: _Probe(key: home)),
+      CupertinoApp(
+        navigatorKey: nav,
+        home: _Probe(key: home),
+      ),
     );
     expect(home.currentState!.debugGuardingRouteTransition, isFalse);
 

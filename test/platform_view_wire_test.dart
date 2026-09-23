@@ -401,10 +401,7 @@ void main() {
               child: CupertinoSymbolImage.symbol(CupertinoSymbols.chevronUp),
             ),
             const Spacer(),
-            CupertinoNativeButton(
-              onPressed: () {},
-              child: const Text('Done'),
-            ),
+            CupertinoNativeButton(onPressed: () {}, child: const Text('Done')),
           ],
         ),
       );

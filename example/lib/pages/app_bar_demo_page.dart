@@ -114,7 +114,6 @@ class _AppBarDemoPageState extends State<AppBarDemoPage> {
                 onPressed: () => Navigator.pop(context),
                 child: CupertinoSymbolImage.symbol(
                   CupertinoSymbols.chevronBackward,
-                  weight: FontWeight.w600,
                 ),
               ),
               trailing: [

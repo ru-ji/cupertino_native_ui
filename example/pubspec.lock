@@ -100,13 +100,6 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
-  haze:
-    dependency: "direct main"
-    description:
-      path: "../../haze"
-      relative: true
-    source: path
-    version: "0.5.0"
   integration_test:
     dependency: "direct dev"
     description: flutter
