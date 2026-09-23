@@ -239,7 +239,11 @@ struct AdaptiveLiquidGlassView: View {
         if expand {
             GeometryReader { geometry in
                 if geometry.size.width > 0, geometry.size.height > 0 {
+                    // No transition: `glassEffect`'s own default insertion
+                    // animation is what made the container's first
+                    // appearance read as sliding up from the bottom.
                     glassBody
+                        .transition(.identity)
                 }
             }
         } else {

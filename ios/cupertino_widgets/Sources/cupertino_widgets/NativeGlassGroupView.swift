@@ -290,7 +290,7 @@ struct AdaptiveGlassGroupView: View {
         } else {
             button(item)
                 .glassEffect(glass, in: shape(for: item, morph: morph))
-                .glassEffectID(item.actionId, in: namespace)
+                .glassEffectID(item.id, in: namespace)
                 .glassEffectUnion(id: unionId(for: item), namespace: namespace)
                 .glassEffectTransition(transition(for: item))
         }

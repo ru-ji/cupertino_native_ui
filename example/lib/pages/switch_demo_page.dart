@@ -37,7 +37,6 @@ class _SwitchDemoPageState extends State<SwitchDemoPage> {
                     onPressed: () => Navigator.pop(context),
                     child: CupertinoSymbolImage.symbol(
                       CupertinoSymbols.chevronBackward,
-                      weight: FontWeight.w600,
                     ),
                   )
                 : null,

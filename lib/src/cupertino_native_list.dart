@@ -111,7 +111,6 @@ class CupertinoNativeList extends StatelessWidget {
        _header = header,
        _footer = footer;
 
-
   /// Set by [CupertinoNativeList.builder]; the rows are built in `build`,
   /// where there is a context to hand them.
   final int? _itemCount;

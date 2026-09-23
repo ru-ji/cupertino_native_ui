@@ -165,10 +165,13 @@ void main() {
     tester.state<ScrollableState>(find.byType(Scrollable)).position.jumpTo(200);
     await tester.pump();
     expect(
-      tester.getSize(find.descendant(
-        of: _hairline,
-        matching: find.byType(SizedBox),
-      ).first).height,
+      tester
+          .getSize(
+            find
+                .descendant(of: _hairline, matching: find.byType(SizedBox))
+                .first,
+          )
+          .height,
       closeTo(1 / 3, 1e-9),
     );
   });
@@ -198,7 +201,6 @@ void main() {
     await tester.drag(find.byType(CustomScrollView), const Offset(0, -10));
     await tester.pumpAndSettle();
     expect(position.pixels, 0);
-
   });
 
   test('where a resting scroll settles', () {

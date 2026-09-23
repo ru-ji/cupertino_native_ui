@@ -29,7 +29,6 @@ class _ButtonDemoPageState extends State<ButtonDemoPage> {
                     onPressed: () => Navigator.pop(context),
                     child: CupertinoSymbolImage.symbol(
                       CupertinoSymbols.chevronBackward,
-                      weight: FontWeight.w600,
                     ),
                   )
                 : null,

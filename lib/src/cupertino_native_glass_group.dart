@@ -73,6 +73,7 @@ class CupertinoNativeGlassGroupItem {
     this.enabled = true,
     this.glassVisible = true,
     this.unionId,
+    this.slotId,
     this.transition,
     this.menuItems = const [],
   }) : assert(
@@ -83,15 +84,29 @@ class CupertinoNativeGlassGroupItem {
 
   /// Handed back to [CupertinoNativeGlassGroup.onAction] on tap.
   ///
-  /// It is also the item's identity for the morph: SwiftUI interpolates each
-  /// glass from one layout to the next by this id, so keep it stable across
-  /// rebuilds or an item will fade instead of travelling.
+  /// Also the item's identity for the morph when [slotId] is not set: SwiftUI
+  /// interpolates each glass from one layout to the next by this id, so keep
+  /// it stable across rebuilds or an item will fade instead of travelling.
   ///
-  /// The same id is what makes a glass *replaced*: give an item a new
-  /// [actionId] and SwiftUI sees a different glass where the old one stood, so
-  /// the old one leaves and the new one arrives. That is the 1 → 1 case, and it
-  /// wants [CupertinoGlassTransition.materialize].
+  /// Give an item a new [actionId] (with no [slotId]) and SwiftUI sees a
+  /// different glass where the old one stood, so the old one leaves and the
+  /// new one arrives — the 1 → 1 replace case, which wants
+  /// [CupertinoGlassTransition.materialize].
+  ///
+  /// A *toggle* button (add ↔ remove, select ↔ done) is not that case: it is
+  /// one glass whose action flips, and wants [slotId] set instead.
   final String actionId;
+
+  /// The item's identity, if it should differ from [actionId].
+  ///
+  /// A toggle button changes [actionId] every tap but should stay the *same*
+  /// glass — give both states the same [slotId] so SwiftUI never tears it
+  /// down and rebuilds it. Without this, the outgoing glass keeps its own tap
+  /// gesture alive while it fades out, so a tap during the swap can land on
+  /// it and fire the old action, snapping the state straight back.
+  ///
+  /// `null` (the default) falls back to [actionId], i.e. the old behaviour.
+  final String? slotId;
 
   final CupertinoNativeIcon? icon;
   final String? title;
@@ -150,6 +165,7 @@ class CupertinoNativeGlassGroupItem {
     'enabled': enabled,
     'glassVisible': glassVisible,
     'unionId': unionId,
+    'slotId': slotId,
     'transition': transition?.name,
     'menuItems': menuItems.map((e) => e.toMap()).toList(),
   };

@@ -494,6 +494,37 @@ CupertinoNativeList(
 | `height` / `cornerRadius` | `double?` | — | |
 | `activeColor` | `Color?` | — | |
 
+### Group
+
+Renders its children as **one** native view instead of Flutter's usual stack
+of alternating Flutter/platform-view layers — the way a hand-written SwiftUI
+form reads.
+
+```dart
+CupertinoNativeGroup(
+  child: Row(
+    children: [
+      const Text('Notifications'),
+      const Spacer(),
+      CupertinoNativeSwitch(value: on, onChanged: (v) => setState(() {})),
+    ],
+  ),
+)
+```
+
+| Parameter | Type | Default | |
+| --- | --- | --- | --- |
+| `child` | `Widget` | required | Transcribed, not mounted — see below. |
+| `padding` | `EdgeInsets` | `EdgeInsets.zero` | |
+| `width` / `height` | `double?` | — | Null hugs the content. |
+
+**The child is read, not mounted.** Only what the transcription accepts can go
+in — this package's own controls, `Text`, `Row`, `Column`, `Padding`,
+`SizedBox`, `Spacer` — and `CupertinoNativeFlutterView` for anything else,
+which costs an engine. An unsupported widget asserts with that list. For a
+settings-style form with the grouped card and rows already built, see
+[List & Form](#list--form).
+
 ### Liquid Glass
 
 <img src="https://raw.githubusercontent.com/ru-ji/cupertino_widgets/main/doc/images/glass.jpg" width="320" alt="Liquid Glass" />
@@ -847,7 +878,7 @@ obstacle, the builder is.
 | `onSearchActiveChanged` | `CupertinoNativeSearchActiveCallback?` | — | |
 | `scrollEdgeEffect` | `CupertinoScrollEdgeEffectStyle` | `.automatic` | |
 | `backgroundColor` / `activeColor` | `Color?` | — | |
-| `showLoadingIndicator` | `bool?` | — | |
+| `showLoadingIndicator` | `bool?` | — | Falls back to `CupertinoWidgetsSettings.showLoadingIndicator` (`false`), a global switch for every engine-booting surface at once. |
 | `resizeToAvoidBottomInset` | `bool` | `true` | |
 | `nativeBody` | `CupertinoNativeBody?` | — | A body rendered as SwiftUI directly. Replaces `body` / the tabs' routes. |
 | `onBodyEvent` | `void Function(String id, Object? value)?` | — | A `nativeBody` control changed. |
@@ -1007,6 +1038,44 @@ a `CupertinoNativePageScaffold`. There is no way to bring `.searchable` to an
 ordinary Flutter page: it is a modifier on a SwiftUI navigation container, and
 hosting one standalone is the same problem that keeps `navigationTitle` out of
 `CupertinoNativeSliverNavigationBar`.
+
+### Router Integration
+
+`CupertinoNativePageScaffold`'s pages live on a native `UINavigationController`,
+which your app's router (GoRouter, auto_route, Beamer, or a plain imperative
+`Navigator`) cannot drive directly — bodies run in their own engines, out of
+the router's reach. `CupertinoNativeRouteSync` mirrors the router's stack onto
+the native one in both directions: it turns a router's target stack into the
+push/pop calls that get there, and reports native back navigation (the system
+back button, the edge-swipe) so the router can catch up.
+
+```dart
+final controller = CupertinoNativePageScaffoldController();
+late final sync = CupertinoNativeRouteSync(
+  controller: controller,
+  // Native back button / back-swipe happened — tell the router.
+  onNativeStackChanged: (routes) => context.go(locationFromRoutes(routes)),
+);
+
+CupertinoNativePageScaffold(
+  controller: controller,
+  body: 'library',
+  onRouteChanged: sync.reportNativeStack,   // native -> Dart
+)
+
+// Router moved — push/pop natively to match.
+sync.syncTo(routesFromLocation(GoRouterState.of(context).uri.path));
+```
+
+The two directions cannot fight: while `syncTo` is applying its ops, the stack
+reports it produces are recognised as echoes and not forwarded to
+`onNativeStackChanged`.
+
+| Function | | |
+| --- | --- | --- |
+| `routesFromLocation(location)` | `List<String>` | `/library/album/track` → `['library', 'album', 'track']` — the default convention; map your own if locations don't nest that way. |
+| `locationFromRoutes(routes)` | `String` | The inverse. |
+| `diffNativeStack(current, desired)` | `List<CupertinoNativeStackOp>` | What `CupertinoNativeRouteSync` runs internally: the push/pop ops that turn one stack into the other, keeping the shared prefix (and always the root) untouched so a push still animates as a push. |
 
 ### Embedding Flutter in SwiftUI
 
@@ -1345,5 +1414,6 @@ CupertinoNativeSymbol('wifi',
 The [example](example/) shows every widget and its variants. Run it on an
 iOS 26 device.
 
-Contributions are welcome: <https://github.com/ru-ji/cupertino_widgets>
+Contributions are welcome — see [CONTRIBUTING.md](CONTRIBUTING.md) for setup,
+how to run the example, and what CI checks before a PR merges.
 

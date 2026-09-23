@@ -57,10 +57,22 @@ class NativeButtonView: NativeHostingView {
         }
     }
 
-    private func setupSwiftUI(with config: ButtonConfig) {
+    /// `update` is true for every call after the first: it swaps the hosted
+    /// SwiftUI view's `rootView` in place instead of tearing down and
+    /// recreating the `UIHostingController`. A title/state change (e.g. an
+    /// "Add" ↔ "Remove" toggle) used to go through `attach` here on every
+    /// update, which discarded the in-flight press gesture and
+    /// `ButtonStyleConfiguration.isPressed` animation along with the old
+    /// controller — a tap mid-press would see the button snap back to idle
+    /// because it was, underneath, a brand-new button.
+    private func setupSwiftUI(with config: ButtonConfig, update: Bool = false) {
         isDark = config.isDark
         let buttonView = AdaptiveButtonView(config: config) { [weak self] in
             self?.channel?.invokeMethod("onPressed", arguments: nil)
+        }
+        if update, hostingController != nil {
+            self.update(AnyView(buttonView))
+            return
         }
         guard config.expand != true else {
             // expand: true is explicitly "fill the box Flutter gave me".
@@ -103,7 +115,7 @@ class NativeButtonView: NativeHostingView {
             if let argsMap = call.arguments as? [String: Any],
                 let config = decodeConfig(ButtonConfig.self, from: argsMap)
             {
-                setupSwiftUI(with: config)
+                setupSwiftUI(with: config, update: true)
                 result(nil)
             } else {
                 result(

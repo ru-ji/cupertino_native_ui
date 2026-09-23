@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 
+import 'pages/edge_effect_probe_page.dart';
 import 'pages/glass_body.dart';
 import 'pages/new_event_sheet_body.dart';
 import 'pages/profile_tab_page.dart';
@@ -23,5 +24,6 @@ Map<String, Widget Function()> scaffoldRoutes() {
     // Hosted inside a glass container (see LiquidGlassDemoPage).
     'glassNowPlaying': () => const GlassNowPlayingBody(),
     'glassCard': () => const GlassCardBody(),
+    'edgeEffectProbe': () => const EdgeEffectProbeBody(),
   };
 }

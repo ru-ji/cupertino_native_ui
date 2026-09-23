@@ -178,7 +178,8 @@ CupertinoNativeBody? lowerWidgetNode(
 
     case CupertinoNativeSlider():
       final onChanged = widget.onChanged;
-      if (onChanged != null) callbacks[id] = (value) => onChanged((value as num?)?.toDouble() ?? 0);
+      if (onChanged != null)
+        callbacks[id] = (value) => onChanged((value as num?)?.toDouble() ?? 0);
       return CupertinoNativeBody.slider(
         id: id,
         value: widget.value,

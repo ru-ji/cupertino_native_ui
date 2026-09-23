@@ -48,7 +48,8 @@ class CupertinoNativeCheckbox extends StatefulWidget {
   });
 
   @override
-  State<CupertinoNativeCheckbox> createState() => _CupertinoNativeCheckboxState();
+  State<CupertinoNativeCheckbox> createState() =>
+      _CupertinoNativeCheckboxState();
 }
 
 class _CupertinoNativeCheckboxState extends State<CupertinoNativeCheckbox>
