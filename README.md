@@ -4,6 +4,11 @@ Native iOS widgets for Flutter — the real UIKit and SwiftUI controls, iOS 26
 **Liquid Glass** included — with the names and parameters of Flutter's own
 Cupertino widgets.
 
+Every control is a real platform view, so it renders however the installed
+OS renders it: the same widget is Liquid Glass on iOS 26, a plain SwiftUI
+control on 17–18, UIKit-shaped on 15–16 — no version check in your app code,
+and no rewrite needed when a future iOS changes how a control looks again.
+
 ## Installation
 
 ```bash
@@ -15,12 +20,15 @@ import 'package:cupertino_widgets/cupertino_widgets.dart';
 ```
 
 - Flutter 3.41+, Dart 3.10+
-- iOS 26+ at runtime. The package is built on Liquid Glass; there are no
-  fallbacks for earlier versions. It still **compiles and links** into an app
-  with a lower deployment target — below iOS 26 the plugin registers nothing
-  and the widgets render their non-iOS fallbacks — so adopting it does not
-  force your whole app to iOS 26.
-- Other platforms get simple Flutter fallbacks, so shared code still builds.
+- **iOS 15+ at runtime.** Liquid Glass (the material, the scroll edge effect,
+  `GlassEffectContainer`) is iOS 26+ only and falls back to plain content or
+  a bordered style below it; a handful of other APIs gate the same way at
+  their own version (`NavigationStack` at 16, `symbolEffect`/`sensoryFeedback`
+  at 17, `Tab` at 18) — everything else works the same from 15 up. Below 16
+  there is no path-driven navigation stack, so a pushed page shows only the
+  root.
+- Other platforms, and iOS below 15, get simple Flutter fallbacks, so shared
+  code still builds.
 
 Add this to `ios/Runner/Info.plist`, or the navigation bar title shows a faint
 glow over the scroll edge effect:
