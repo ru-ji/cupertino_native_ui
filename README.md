@@ -351,9 +351,11 @@ CupertinoNativeTextField(
 | `enabled` / `readOnly` / `autofocus` | `bool` | `true` / `false` / `false` | |
 | `clearButtonMode` | `OverlayVisibilityMode` | `.never` | |
 | `prefix` / `suffix` | `CupertinoNativeIcon?` | — | |
+| `iconSpacing` | `double` | `8` | Space between `prefix` / `suffix` and the text. |
 | `cursorColor` / `backgroundColor` | `Color?` | — | |
-| `cornerRadius` | `double?` | — | |
-| `glass` | `CupertinoGlass?` | — | Liquid Glass background. |
+| `cornerRadius` | `double?` | — | Background and glass corners (glass: 16 when null). |
+| `glass` | `CupertinoNativeGlass?` | — | `.regular` / `.clear` / `.identity` — SwiftUI's `Glass`, always interactive. Null: no glass. |
+| `glassTint` | `Color?` | — | `Glass.tint`. |
 | `textContentType` | `String?` | — | Autofill hint, e.g. `'password'`. |
 | `toolbarActions` | `List<Widget>` | `[]` | The bar above the keyboard — see below. |
 | `onChanged` / `onSubmitted` / `onEditingComplete` / `onTap` / `onTapOutside` | | — | |
@@ -505,7 +507,19 @@ CupertinoNativeTextEditor(
 ```
 
 `text`, `onChanged` (null makes it read-only), `placeholder`, `fontSize`,
-`height` (`120`).
+`height` (`120`), plus the text field's `style`, `cursorColor`,
+`backgroundColor`, `cornerRadius`, `keyboardType`, `textCapitalization`,
+`textContentType`, `textAlign`, `autocorrect`, `maxLength`, `readOnly`, and
+`glass` / `glassTint` (iOS 26, always interactive), and `padding` — room
+between the text and the glass or background edge, which the glass does not
+add on its own.
+
+> **Placeholder alignment.** SwiftUI's `TextEditor` has no placeholder, so it
+> is drawn over the editor and aligned by hand with where typed text starts:
+> 8 pt from the top and 5 pt from the left on `glass` (the `UITextView`'s own
+> inset), flush otherwise. If the placeholder and your text do not line up —
+> another font size, another iOS version — correct it with
+> `placeholderPadding: EdgeInsets.only(top: …, left: …)`.
 
 ### Photos Picker — *iOS 17+*
 

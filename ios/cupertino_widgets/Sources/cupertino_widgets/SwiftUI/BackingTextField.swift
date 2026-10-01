@@ -59,6 +59,23 @@ struct BackingTextField: UIViewRepresentable {
         field.spellCheckingType = c.enableSuggestions == false ? .no : .default
         field.isEnabled = c.enabled != false
         field.overrideUserInterfaceStyle = c.isDark == true ? .dark : .light
+        field.clearButtonMode = clearButtonMode
+
+        // UIKit's own side views: drawn inside the field, the text laid out
+        // between them. Rebuilt only when the icon changes.
+        let gap = CGFloat(c.iconSpacing ?? 8)
+        let rebuild = gap != context.coordinator.gap
+        context.coordinator.gap = gap
+        if rebuild || c.prefixIcon != context.coordinator.prefix {
+            context.coordinator.prefix = c.prefixIcon
+            field.leftView = c.prefixIcon.map { Self.sideView($0, gap: gap, onTrailing: true) }
+        }
+        field.leftViewMode = field.leftView == nil ? .never : .always
+        if rebuild || c.suffixIcon != context.coordinator.suffix {
+            context.coordinator.suffix = c.suffixIcon
+            field.rightView = c.suffixIcon.map { Self.sideView($0, gap: gap, onTrailing: false) }
+        }
+        field.rightViewMode = field.rightView == nil ? .never : .always
 
         if field.inputAccessoryView !== model.accessory {
             field.inputAccessoryView = model.accessory
@@ -79,6 +96,9 @@ struct BackingTextField: UIViewRepresentable {
     final class Coordinator: NSObject, UITextFieldDelegate {
         var parent: BackingTextField
         var lastFocusCommand: Int?
+        var prefix: IconConfig?
+        var suffix: IconConfig?
+        var gap: CGFloat?
 
         init(_ parent: BackingTextField) { self.parent = parent }
 
@@ -96,6 +116,14 @@ struct BackingTextField: UIViewRepresentable {
         }
         func textFieldDidEndEditing(_ field: UITextField) { parent.focused = false }
 
+        /// The native clear button: refused on a read-only field, reported
+        /// like any other edit otherwise.
+        func textFieldShouldClear(_ field: UITextField) -> Bool {
+            guard parent.model.config.readOnly != true else { return false }
+            parent.text = ""
+            return true
+        }
+
         func textFieldShouldReturn(_ field: UITextField) -> Bool {
             parent.onSubmit()
             return true
@@ -103,6 +131,57 @@ struct BackingTextField: UIViewRepresentable {
     }
 
     // MARK: - Mapping
+
+    private var clearButtonMode: UITextField.ViewMode {
+        switch c.clearButtonMode {
+        case "always": return .always
+        case "whileEditing": return .whileEditing
+        case "unlessEditing": return .unlessEditing
+        default: return .never
+        }
+    }
+
+    /// An SF Symbol for `leftView` / `rightView`, `gap` off the text: UIKit
+    /// lays the side view flush against it.
+    private static func sideView(_ icon: IconConfig, gap: CGFloat, onTrailing gapOnTrailing: Bool)
+        -> UIView
+    {
+        let weight: UIImage.SymbolWeight
+        switch icon.weight {
+        case "light": weight = .light
+        case "medium": weight = .medium
+        case "semibold": weight = .semibold
+        case "bold": weight = .bold
+        default: weight = .regular
+        }
+        let color = icon.color.map { UIColor(Color(argb: $0)) } ?? .label
+        var config = UIImage.SymbolConfiguration(
+            pointSize: CGFloat(icon.size ?? 17), weight: weight)
+        switch icon.renderingMode {
+        case "hierarchical":
+            config = config.applying(UIImage.SymbolConfiguration(hierarchicalColor: color))
+        case "multicolor":
+            config = config.applying(UIImage.SymbolConfiguration.preferringMulticolor())
+        default: break
+        }
+        let image = UIImageView(
+            image: UIImage(systemName: icon.sfSymbol ?? "questionmark", withConfiguration: config))
+        image.tintColor = color
+        image.contentMode = .center
+
+        let side = UIView()
+        image.translatesAutoresizingMaskIntoConstraints = false
+        side.addSubview(image)
+        NSLayoutConstraint.activate([
+            image.topAnchor.constraint(equalTo: side.topAnchor),
+            image.bottomAnchor.constraint(equalTo: side.bottomAnchor),
+            image.leadingAnchor.constraint(
+                equalTo: side.leadingAnchor, constant: gapOnTrailing ? 0 : gap),
+            image.trailingAnchor.constraint(
+                equalTo: side.trailingAnchor, constant: gapOnTrailing ? -gap : 0),
+        ])
+        return side
+    }
 
     private var weight: UIFont.Weight {
         switch c.fontWeight ?? 3 {

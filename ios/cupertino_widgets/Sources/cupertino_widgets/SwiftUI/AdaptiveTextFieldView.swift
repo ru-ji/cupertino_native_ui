@@ -57,8 +57,8 @@ final class TextFieldModel: ObservableObject {
     }
 }
 
-/// The package's text field: SwiftUI chrome (glass, icons, clear button)
-/// around a `UITextField` — see [BackingTextField] for why the editable part
+/// The package's text field: SwiftUI chrome (glass, background) around a
+/// `UITextField`, which draws its own icons and clear button — see [BackingTextField] for why the editable part
 /// is UIKit (the keyboard toolbar).
 @available(iOS 15.0, *)
 struct AdaptiveTextFieldView: View {
@@ -89,13 +89,7 @@ struct AdaptiveTextFieldView: View {
     // MARK: - Pieces
 
     private var row: some View {
-        HStack(spacing: 8) {
-            if let prefix = c.prefixIcon { IconView(icon: prefix) }
-            field
-            if showsClearButton { clearButton }
-            if let suffix = c.suffixIcon { IconView(icon: suffix) }
-        }
-        .opacity(model.contentOpacity)
+        field.opacity(model.contentOpacity)
     }
 
     private var field: some View {
@@ -128,26 +122,6 @@ struct AdaptiveTextFieldView: View {
                 onChanged(value)
             }
         )
-    }
-
-    private var clearButton: some View {
-        Button {
-            model.text = ""
-            onChanged("")
-        } label: {
-            Image(systemName: "xmark.circle.fill")
-                .foregroundStyle(.secondary)
-        }
-        .buttonStyle(.plain)
-    }
-
-    private var showsClearButton: Bool {
-        switch c.clearButtonMode {
-        case "always": return !model.text.isEmpty
-        case "whileEditing": return focused && !model.text.isEmpty
-        case "unlessEditing": return !focused && !model.text.isEmpty
-        default: return false
-        }
     }
 
     @ViewBuilder
@@ -187,7 +161,12 @@ struct AdaptiveTextFieldView: View {
 
         @available(iOS 26.0, *)
         private var glass: Glass {
-            var style: Glass = config.glassVariant == "clear" ? .clear : .regular
+            var style: Glass
+            switch config.glassVariant {
+            case "clear": style = .clear
+            case "identity": style = .identity
+            default: style = .regular
+            }
             if let tint = config.glassTint { style = style.tint(Color(argb: tint)) }
             if config.glassInteractive ?? true { style = style.interactive() }
             return style

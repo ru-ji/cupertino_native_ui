@@ -87,14 +87,11 @@ class _NativeControlState extends State<NativeControl>
     if (rising && _focused) _revealAboveKeyboard();
   }
 
-  void _revealAboveKeyboard() {
+  void _revealAboveKeyboard({bool animate = false}) {
     if (!mounted || !_focused) return;
     final box = context.findRenderObject();
     if (box is! RenderBox || !box.hasSize) return;
-    final padding = EdgeInsets.only(
-      bottom: 20 + keyboardCoverOfViewport(context),
-    );
-    box.showOnScreen(rect: padding.inflateRect(Offset.zero & box.size));
+    revealAboveKeyboard(context, box, animate: animate);
   }
 
   // The app's brightness, not the device's.
@@ -154,7 +151,7 @@ class _NativeControlState extends State<NativeControl>
                 // rising tick will come.
                 if (_focused) {
                   WidgetsBinding.instance.addPostFrameCallback(
-                    (_) => _revealAboveKeyboard(),
+                    (_) => _revealAboveKeyboard(animate: keyboardIsUp(context)),
                   );
                 }
               }

@@ -115,3 +115,34 @@ Rect rowInViewCoordinates({
     rowInWindow.height,
   );
 }
+
+/// Scrolls [rect] (in [box]'s coordinates) clear of the keyboard, keeping
+/// [padding] around it.
+///
+/// While the keyboard moves, the engine delivers the inset once per vsync,
+/// already on the keyboard's own spring (it evaluates the curve one frame
+/// ahead), so an instant move on each tick *is* the animation. Nothing moves
+/// when the focus goes to another field under a keyboard already up: there an
+/// instant reveal is a jump, so pass [animate] and the scroll glides instead.
+void revealAboveKeyboard(
+  BuildContext context,
+  RenderBox box, {
+  Rect? rect,
+  EdgeInsets padding = const EdgeInsets.only(bottom: 20),
+  bool animate = false,
+}) {
+  final cover = keyboardCoverOfViewport(context);
+  box.showOnScreen(
+    rect: padding
+        .copyWith(bottom: padding.bottom + cover)
+        .inflateRect(rect ?? Offset.zero & box.size),
+    // UIKit's own scroll to a newly focused field.
+    duration: animate ? const Duration(milliseconds: 300) : Duration.zero,
+    curve: Curves.easeInOut,
+  );
+}
+
+/// Whether the keyboard is already up — a focus change then needs an
+/// animated reveal, since no inset tick will come to drive it.
+bool keyboardIsUp(BuildContext context) =>
+    MediaQuery.viewInsetsOf(context).bottom > 0;

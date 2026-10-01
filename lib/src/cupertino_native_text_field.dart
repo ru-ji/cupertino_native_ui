@@ -8,8 +8,7 @@ import 'package:flutter/material.dart' show Theme;
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
-import 'cupertino_native_glass_container.dart'
-    show CupertinoGlass, CupertinoGlassVariant;
+import 'cupertino_native_glass_container.dart' show CupertinoNativeGlass;
 import 'internal/widget_lowering.dart';
 import 'internal/native_platform_view_mixin.dart';
 import 'internal/keyboard_avoidance.dart';
@@ -132,17 +131,26 @@ class CupertinoNativeTextField extends StatefulWidget {
   /// Background color. Defaults to transparent (iOS default).
   final Color? backgroundColor;
 
-  /// Corner radius of that background. Ignored when [glass] is set.
+  /// Corner radius of that background, and of the [glass] shape (16 when
+  /// null).
   final double? cornerRadius;
 
-  /// Renders the field on Liquid Glass (a material below iOS 26).
-  final CupertinoGlass? glass;
+  /// Renders the field on Liquid Glass — `.glassEffect(glass.interactive())`
+  /// (a material below iOS 26). Null: no glass effect at all.
+  final CupertinoNativeGlass? glass;
+
+  /// `Glass.tint`: a colour mixed into the [glass].
+  final Color? glassTint;
 
   /// Leading SF Symbol inside the field.
   final CupertinoNativeIcon? prefix;
 
   /// Trailing SF Symbol inside the field (native `UITextField.rightView`).
   final CupertinoNativeIcon? suffix;
+
+  /// Space between [prefix] / [suffix] and the text. UIKit lays its side
+  /// views flush against the text, so this is the only gap.
+  final double iconSpacing;
 
   /// Where the line of text sits within an explicit [height]: top, center or
   /// bottom.
@@ -234,8 +242,10 @@ class CupertinoNativeTextField extends StatefulWidget {
     this.backgroundColor,
     this.cornerRadius,
     this.glass,
+    this.glassTint,
     this.prefix,
     this.suffix,
+    this.iconSpacing = 8,
     this.verticalAlignment = TextAlignVertical.center,
     this.textContentType,
     this.onChanged,
@@ -369,7 +379,7 @@ class _CupertinoNativeTextFieldState extends State<CupertinoNativeTextField>
   /// Scrolls the minimum needed to keep the field above the keyboard.
   /// Instant, and a no-op when the field is already visible.
   void _revealAboveKeyboard({bool postFrame = false}) {
-    void run() {
+    void run({bool animate = false}) {
       if (!mounted || !_focusNode.hasFocus) return;
       final box = context.findRenderObject();
       if (box is! RenderBox || !box.hasSize) return;
@@ -377,10 +387,12 @@ class _CupertinoNativeTextFieldState extends State<CupertinoNativeTextField>
       // counts as padding — see [keyboardCoverOfViewport]. A page that
       // already shrank for the keyboard adds nothing here, so a field that is
       // visible stays put.
-      final padding = widget.scrollPadding.copyWith(
-        bottom: widget.scrollPadding.bottom + keyboardCoverOfViewport(context),
+      revealAboveKeyboard(
+        context,
+        box,
+        padding: widget.scrollPadding,
+        animate: animate,
       );
-      box.showOnScreen(rect: padding.inflateRect(Offset.zero & box.size));
     }
 
     // The engine reports the inset on every vsync of the keyboard's own
@@ -391,7 +403,11 @@ class _CupertinoNativeTextFieldState extends State<CupertinoNativeTextField>
     // keyboard for the whole animation, which is exactly the lag that reads
     // as "not native".
     if (postFrame) {
-      WidgetsBinding.instance.addPostFrameCallback((_) => run());
+      // A focus report: under a keyboard already up, glide — see
+      // [revealAboveKeyboard].
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => run(animate: mounted && keyboardIsUp(context)),
+      );
     } else {
       run();
     }
@@ -547,13 +563,13 @@ class _CupertinoNativeTextFieldState extends State<CupertinoNativeTextField>
       'backgroundColor': widget.backgroundColor?.toARGB32(),
       'cornerRadius': widget.cornerRadius,
       'glass': widget.glass != null,
-      'glassCornerRadius': widget.glass?.cornerRadius ?? 16,
-      'glassVariant':
-          (widget.glass?.variant ?? CupertinoGlassVariant.regular).name,
-      'glassInteractive': widget.glass?.interactive ?? true,
-      'glassTint': widget.glass?.tint?.toARGB32(),
+      'glassCornerRadius': widget.cornerRadius ?? 16,
+      'glassVariant': (widget.glass ?? CupertinoNativeGlass.regular).name,
+      'glassInteractive': true,
+      'glassTint': widget.glassTint?.toARGB32(),
       'prefixIcon': widget.prefix?.toMap(),
       'suffixIcon': widget.suffix?.toMap(),
+      'iconSpacing': widget.iconSpacing,
       'verticalAlignment': verticalAlignmentName(widget.verticalAlignment),
       'keyboardToolbar': _toolbar.nodes,
     };

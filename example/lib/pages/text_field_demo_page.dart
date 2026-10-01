@@ -34,7 +34,6 @@ class _TextFieldDemoPageState extends State<TextFieldDemoPage> {
   String _email = '';
   String _notes = '';
   bool _glassClear = false;
-  bool _glassInteractive = true;
 
   /// The two fields that share a keyboard bar, so its chevrons can move the
   /// focus between them and grey out at the ends.
@@ -48,11 +47,10 @@ class _TextFieldDemoPageState extends State<TextFieldDemoPage> {
   /// One field's bar: previous / next / done, in a glass capsule — the shape
   /// the system bar uses on iOS 26.
   ///
-  /// The items are white, not `CupertinoColors.label`, because the capsule is
-  /// glass over the keyboard and the system's own bar items are white there in
-  /// both themes. White is a plain `Color`, so there is nothing to resolve from
-  /// the context — where `label` is a `CupertinoDynamicColor` and would ship
-  /// its light-mode black, the bar being built by SwiftUI from an ARGB value.
+  /// The items are `label`, resolved here: the glass sits over the keyboard,
+  /// which follows the app's brightness — light keyboard, dark items, and the
+  /// other way round. Resolved, because the bar is built by SwiftUI from an
+  /// ARGB value and an unresolved `CupertinoDynamicColor` ships its light one.
   List<Widget> _keyboardToolbar(int index) {
     // No Liquid Glass below iOS 26: an empty accessory here means the native
     // side never creates one (see `syncAccessory` — a nil `keyboardToolbar`
@@ -60,7 +58,7 @@ class _TextFieldDemoPageState extends State<TextFieldDemoPage> {
     // sits flush against the keyboard instead, with nothing native behind it.
     if (!_isIOS26OrLater) return const [];
     void moveTo(int target) => _toolbarFields[target].requestFocus();
-    const itemColor = CupertinoColors.white;
+    final itemColor = CupertinoColors.label.resolveFrom(context);
     return [
       // The bar takes the height of what it is given, so the room around the
       // capsule is this padding — nothing is added natively.
@@ -248,13 +246,10 @@ class _TextFieldDemoPageState extends State<TextFieldDemoPage> {
                           CupertinoSymbols.magnifyingglass,
                         ),
                         clearButtonMode: OverlayVisibilityMode.editing,
-                        glass: CupertinoGlass(
-                          cornerRadius: 16,
-                          variant: _glassClear
-                              ? CupertinoGlassVariant.clear
-                              : CupertinoGlassVariant.regular,
-                          interactive: _glassInteractive,
-                        ),
+                        cornerRadius: 16,
+                        glass: _glassClear
+                            ? CupertinoNativeGlass.clear
+                            : CupertinoNativeGlass.regular,
                       ),
                     ),
                     // Account and Profile are one native list: card, rows and fields in a
@@ -263,13 +258,12 @@ class _TextFieldDemoPageState extends State<TextFieldDemoPage> {
                       style: CupertinoNativeListStyle.insetGrouped,
                       onToggle: (id, value) => setState(() {
                         if (id == 'glassClear') _glassClear = value;
-                        if (id == 'glassInteractive') _glassInteractive = value;
                       }),
                       sections: [
                         CupertinoNativeListSection(
                           footer:
-                              'Its variant picks regular or clear glass; '
-                              'interactive toggles the touch shimmer.',
+                              'Glass.regular or Glass.clear, always '
+                              'interactive: touch it for the shimmer.',
                           children: [
                             CupertinoNativeListTile(
                               id: 'glassClear',
@@ -277,13 +271,6 @@ class _TextFieldDemoPageState extends State<TextFieldDemoPage> {
                               subtitle: 'More transparent glass',
                               type: CupertinoNativeListTileType.toggle,
                               toggleValue: _glassClear,
-                            ),
-                            CupertinoNativeListTile(
-                              id: 'glassInteractive',
-                              title: 'Interactive',
-                              subtitle: 'Shimmer on touch',
-                              type: CupertinoNativeListTileType.toggle,
-                              toggleValue: _glassInteractive,
                             ),
                           ],
                         ),
@@ -407,6 +394,7 @@ class _TextFieldDemoPageState extends State<TextFieldDemoPage> {
                         placeholder: 'Notes…',
                         height: 140,
                         maxLength: 280,
+
                         cursorColor: CupertinoColors.systemOrange,
                         onChanged: (v) => setState(() => _notes = v),
                       ),

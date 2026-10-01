@@ -28,11 +28,12 @@ struct TextFieldConfig: Codable {
     var cornerRadius: Double? = nil  // rounds the background; nil/0 = square, no inset
     var glass: Bool? = nil  // Liquid Glass background (iOS 26; material fallback below)
     var glassCornerRadius: Double? = nil  // glass shape radius; nil = 16
-    var glassVariant: String? = nil  // "regular" | "clear"; nil = regular
+    var glassVariant: String? = nil  // "regular" | "clear" | "identity"; nil = regular
     var glassInteractive: Bool? = nil  // touch shimmer on the glass; nil = true
     var glassTint: Int? = nil  // ARGB tint mixed into the glass
-    var prefixIcon: IconConfig? = nil  // leading SF Symbol (UITextField.leftView)
-    var suffixIcon: IconConfig? = nil  // trailing SF Symbol (UITextField.rightView)
+    var prefixIcon: IconConfig? = nil  // leading SF Symbol, as `UITextField.leftView`
+    var suffixIcon: IconConfig? = nil
+    var iconSpacing: Double? = nil  // between an icon and the text; nil = 8  // trailing SF Symbol, as `UITextField.rightView`
     var verticalAlignment: String? = nil  // "top" | "center" | "bottom"
     /// The bar that rides above the keyboard while this field is focused —
     /// the items of a `ToolbarItemGroup(placement: .keyboard)`. Dart sends the

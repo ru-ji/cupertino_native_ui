@@ -516,14 +516,7 @@ class _CupertinoSliverAppBarState
         ? CupertinoNativeTextField(
             placeholder: widget.searchPlaceholder,
             style: widget.searchStyle,
-            glass: glassy
-                ? CupertinoGlass(
-                    cornerRadius: widget.bottomHeight / 2,
-                    // A bar search field does not swell under a touch the way
-                    // interactive glass does — a scroll starting on it would.
-                    interactive: false,
-                  )
-                : null,
+            glass: glassy ? CupertinoNativeGlass.regular : null,
             backgroundColor: glassy
                 ? null
                 : CupertinoColors.tertiarySystemFill.resolveFrom(context),

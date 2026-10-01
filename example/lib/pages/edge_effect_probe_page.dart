@@ -72,9 +72,8 @@ class EdgeEffectProbePage extends StatelessWidget {
 
   static void _open(BuildContext context, String id) {
     final page = id == 'native' ? const _NativeProbe() : const _FlutterProbe();
-    Navigator.of(
-      context,
-    ).push(CupertinoPageRoute<void>(builder: (_) => page, title: 'Back'));
+    Navigator.of(context)
+        .push(CupertinoPageRoute<void>(builder: (_) => page, title: 'Back'));
   }
 }
 

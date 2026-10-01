@@ -23,49 +23,19 @@ enum CupertinoGlassVariant {
   none,
 }
 
-/// Liquid Glass settings for a control that renders *on* glass rather than
-/// being a glass container itself — currently [CupertinoNativeTextField.glass].
-///
-/// Passing one enables the effect; leaving it null renders the plain control.
-/// The field names match [CupertinoNativeGlassContainer]'s, so the same
-/// vocabulary describes glass wherever it appears.
-///
-/// ```dart
-/// CupertinoNativeTextField(
-///   placeholder: 'Search',
-///   glass: CupertinoGlass(cornerRadius: 22),
-/// )
-/// ```
-class CupertinoGlass {
-  /// Corner radius of the glass shape (continuous corners).
-  final double cornerRadius;
+/// The `Glass` a control renders on, one for one with SwiftUI's variants
+/// (iOS 26). Always `.interactive()`: the glass answers touches with the
+/// system shimmer. Tint it with the control's own `glassTint`.
+enum CupertinoNativeGlass {
+  /// `Glass.regular`: the standard adaptive glass.
+  regular,
 
-  /// Standard adaptive glass, or the more transparent clear variant (iOS 26).
-  final CupertinoGlassVariant variant;
+  /// `Glass.clear`: the more transparent variant, for media-rich backdrops.
+  clear,
 
-  /// Whether the glass reacts to touches with the system shimmer (iOS 26).
-  final bool interactive;
-
-  /// Optional tint mixed into the glass material.
-  final Color? tint;
-
-  const CupertinoGlass({
-    this.cornerRadius = 16,
-    this.variant = CupertinoGlassVariant.regular,
-    this.interactive = true,
-    this.tint,
-  });
-
-  @override
-  bool operator ==(Object other) =>
-      other is CupertinoGlass &&
-      other.cornerRadius == cornerRadius &&
-      other.variant == variant &&
-      other.interactive == interactive &&
-      other.tint == tint;
-
-  @override
-  int get hashCode => Object.hash(cornerRadius, variant, interactive, tint);
+  /// `Glass.identity`: the effect applied with no glass — the control as if
+  /// it had none, keeping the same layout.
+  identity,
 }
 
 /// A container backed by the iOS 26 **Liquid Glass** material

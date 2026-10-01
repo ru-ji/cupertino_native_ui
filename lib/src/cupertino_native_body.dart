@@ -5,6 +5,7 @@ import 'package:flutter/services.dart'
 import 'package:flutter/widgets.dart';
 
 import 'internal/native_control.dart';
+import 'internal/text_field_wire.dart';
 import 'cupertino_native_glass_container.dart';
 import 'cupertino_native_photos_picker.dart';
 import 'cupertino_native_picker.dart';
@@ -263,7 +264,9 @@ class CupertinoNativeBody {
     TextAlign? textAlign,
     int? maxLength,
     OverlayVisibilityMode? clearButtonMode,
-    CupertinoGlass? glass,
+    CupertinoNativeGlass? glass,
+    Color? glassTint,
+    double? cornerRadius,
     CupertinoNativeIcon? prefix,
     CupertinoNativeIcon? suffix,
     List<Map<String, dynamic>> keyboardToolbar = const [],
@@ -286,15 +289,16 @@ class CupertinoNativeBody {
              'autocorrect': autocorrect,
              'textAlign': textAlign?.name,
              'maxLength': maxLength,
-             'clearButtonMode': clearButtonMode?.name,
+             'clearButtonMode': clearButtonMode == null
+                 ? null
+                 : clearButtonModeName(clearButtonMode),
              // The glass a standalone field sends, under the same names, so a
              // transcribed field can wear it too.
              'glass': glass != null,
-             'glassCornerRadius': glass?.cornerRadius ?? 16,
-             'glassVariant':
-                 (glass?.variant ?? CupertinoGlassVariant.regular).name,
-             'glassInteractive': glass?.interactive ?? true,
-             'glassTint': glass?.tint,
+             'glassCornerRadius': cornerRadius ?? 16,
+             'glassVariant': (glass ?? CupertinoNativeGlass.regular).name,
+             'glassInteractive': true,
+             'glassTint': glassTint,
              'prefixIcon': prefix,
              'suffixIcon': suffix,
              // Already lowered by the caller, with its callbacks.
