@@ -86,6 +86,10 @@ struct ControlConfig: Codable {
     let placeholderLeading: Double?
     /// Room between the editor and its background / glass edge.
     let padding: EdgeInsetsDTO?
+    /// A lowered Flutter widget drawn before the text, on its first line.
+    /// One node at most; an array because a struct cannot hold itself (a
+    /// body node can hold a control config).
+    let prefix: [BodyNodeConfig]?
 }
 
 /// The shown values, owned by the bridge: a value from Dart and the echo of a
@@ -97,6 +101,8 @@ final class ControlModel: ObservableObject {
     @Published var color: Color = .accentColor
     @Published var dates: Set<DateComponents> = []
     @Published var text: String = ""
+    /// State of the text editor's lowered `prefix` (its toggles, pickers…).
+    let prefixModel = NativeBodyModel()
 
     init(_ config: ControlConfig) {
         self.config = config
@@ -110,6 +116,7 @@ final class ControlModel: ObservableObject {
         dates = Set((config.dates ?? []).map { Self.day(Date(timeIntervalSince1970: $0 / 1000)) })
         // Only when it differs: re-assigning the same text still moves the caret.
         if let text = config.text, text != self.text { self.text = text }
+        prefixModel.seedAll(config.prefix ?? [])
     }
 
     static func day(_ date: Date) -> DateComponents {
@@ -147,6 +154,9 @@ class NativeControlView: NativeHostingView {
                 },
                 onFocus: { [weak self] focused in
                     self?.channel?.invokeMethod("onFocus", arguments: focused)
+                },
+                onEvent: { [weak self] id, value in
+                    self?.channel?.invokeMethod("onEvent", arguments: ["id": id, "value": value])
                 }))
         guard config.hug == true else {
             attach(content)
@@ -195,7 +205,11 @@ struct AdaptiveControlView: View {
     /// The text editor's focus: Flutter cannot see a native first responder,
     /// and needs it to lift the editor above the keyboard.
     var onFocus: (Bool) -> Void = { _ in }
+    /// An event from a lowered node (the text editor's `prefix`).
+    var onEvent: (String, Any?) -> Void = { _, _ in }
     @FocusState private var editorFocused: Bool
+    /// The prefix's measured width, added to the placeholder's leading inset.
+    @State private var prefixWidth: CGFloat = 0
 
     private var config: ControlConfig { model.config }
 
@@ -296,10 +310,51 @@ struct AdaptiveControlView: View {
     }
 
     private var textEditor: some View {
-        let font = Font.system(
+        HStack(alignment: .top, spacing: 0) {
+            if let prefix = config.prefix?.first {
+                NativeBodyNode(node: prefix, model: model.prefixModel, onEvent: onEvent)
+                    // On the first line, which sits at the text view's own
+                    // top inset.
+                    .padding(.top, placeholderInsets.top)
+                    .background(
+                        GeometryReader { geometry in
+                            Color.clear.preference(
+                                key: PrefixWidthKey.self, value: geometry.size.width)
+                        })
+            }
+            editor
+        }
+        .onPreferenceChange(PrefixWidthKey.self) { prefixWidth = $0 }
+        // TextEditor has no placeholder of its own: draw it over the editor
+        // while empty, where typed text starts — the text view's inset, past
+        // the prefix. Inside the glass, so the glass does not shift it.
+        .overlay(alignment: .topLeading) {
+            if model.text.isEmpty, let placeholder = config.placeholder {
+                Text(placeholder)
+                    .font(editorFont)
+                    .foregroundStyle(.tertiary)
+                    .padding(.top, placeholderInsets.top)
+                    .padding(.leading, placeholderInsets.leading + (config.prefix?.first == nil ? 0 : prefixWidth))
+                    .allowsHitTesting(false)
+            }
+        }
+        .padding(.top, CGFloat(config.padding?.top ?? 0))
+        .padding(.leading, CGFloat(config.padding?.left ?? 0))
+        .padding(.trailing, CGFloat(config.padding?.right ?? 0))
+        .padding(.bottom, CGFloat(config.padding?.bottom ?? 0))
+        .background(config.backgroundColor.map { Color(argb: $0) })
+        .clipShape(RoundedRectangle(cornerRadius: config.cornerRadius ?? 0, style: .continuous))
+        .modifier(EditorGlass(config: config))
+    }
+
+    private var editorFont: Font {
+        Font.system(
             size: config.fontSize ?? 17,
             weight: Font.Weight(weightIndex: config.fontWeight ?? 3))
-        return TextEditor(
+    }
+
+    private var editor: some View {
+        TextEditor(
             text: Binding(
                 get: { model.text },
                 set: { new in
@@ -314,7 +369,7 @@ struct AdaptiveControlView: View {
                     onChanged(text)
                 })
         )
-        .font(font)
+        .font(editorFont)
         .foregroundColor(config.textColor.map { Color(argb: $0) })
         .tint(config.cursorColor.map { Color(argb: $0) })
         .multilineTextAlignment(
@@ -327,37 +382,18 @@ struct AdaptiveControlView: View {
         .hiddenEditorBackground()
         .focused($editorFocused)
         .onChange(of: editorFocused) { onFocus($0) }
-        // TextEditor has no placeholder of its own: draw it behind while
-        // empty. On the editor itself, before `padding`, so the padding moves
-        // both together; inside the glass, so the glass does not shift it.
-        .overlay(alignment: .topLeading) {
-            if model.text.isEmpty, let placeholder = config.placeholder {
-                Text(placeholder)
-                    .font(font)
-                    .foregroundStyle(.tertiary)
-                    .padding(.top, placeholderInsets.top)
-                    .padding(.leading, placeholderInsets.leading)
-                    .allowsHitTesting(false)
-            }
-        }
-        .padding(.top, CGFloat(config.padding?.top ?? 0))
-        .padding(.leading, CGFloat(config.padding?.left ?? 0))
-        .padding(.trailing, CGFloat(config.padding?.right ?? 0))
-        .padding(.bottom, CGFloat(config.padding?.bottom ?? 0))
-        .background(config.backgroundColor.map { Color(argb: $0) })
-        .clipShape(RoundedRectangle(cornerRadius: config.cornerRadius ?? 0, style: .continuous))
-        .modifier(EditorGlass(config: config))
     }
 
-    /// On glass the typed text sits at the UITextView's own inset (8 top, 5
-    /// leading) and the placeholder must follow it; off glass they already
-    /// line up. Overridable from Dart (`placeholderPadding`) where it does not.
+    /// Where typed text starts: the UITextView's own inset, 8 top and 5
+    /// leading. Overridable from Dart (`placeholderPadding`) where a font or
+    /// an iOS version moves it.
     private var placeholderInsets: (top: CGFloat, leading: CGFloat) {
-        let onGlass = config.glass != nil
-        return (
-            CGFloat(config.placeholderTop ?? (onGlass ? 8 : 0)),
-            CGFloat(config.placeholderLeading ?? (onGlass ? 5 : 0))
-        )
+        (CGFloat(config.placeholderTop ?? 8), CGFloat(config.placeholderLeading ?? 5))
+    }
+
+    private struct PrefixWidthKey: PreferenceKey {
+        static var defaultValue: CGFloat = 0
+        static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = nextValue() }
     }
 
     /// `.glassEffect`, always interactive, in the editor's rounded shape.

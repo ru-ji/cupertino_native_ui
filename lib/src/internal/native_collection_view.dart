@@ -107,6 +107,7 @@ class _NativeCollectionViewState extends State<NativeCollectionView>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    watchKeyboardMotion();
   }
 
   @override
@@ -292,11 +293,18 @@ class _NativeCollectionViewState extends State<NativeCollectionView>
           _trailingCallbacks[rowId]?[nodeId]?.call(call.arguments['value']);
         }
         break;
+      case 'debugLog':
+        debugPrint('${call.arguments}');
+        break;
       case 'onContentSize':
         // Native pushes the measured content height as its layout settles
         // (rows render, fonts load), so the fixed platform-view box grows to
         // fit instead of clipping.
         final h = (call.arguments['height'] as num?)?.toDouble();
+        debugPrint(
+          'EXPAND-DEBUG ${DateTime.now().millisecondsSinceEpoch} onContentSize '
+          'h=$h animated=${call.arguments['animated']} was=$intrinsicHeight',
+        );
         if (h != null && h > 0 && mounted) {
           setState(() {
             intrinsicHeight = h;

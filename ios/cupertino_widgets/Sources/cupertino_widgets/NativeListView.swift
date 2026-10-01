@@ -110,6 +110,9 @@ class NativeListView: NativeHostingView {
         channel = FlutterMethodChannel(
             name: "cupertino_widgets/list_\(viewId)", binaryMessenger: messenger)
         sizeChannel = channel
+        NativeLog.forward = { [weak self] text in
+            self?.channel?.invokeMethod("debugLog", arguments: text)
+        }
         channel?.setMethodCallHandler { [weak self] call, result in
             self?.handle(call, result: result)
         }

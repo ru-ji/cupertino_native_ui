@@ -5,6 +5,7 @@ import 'package:flutter/widgets.dart';
 
 import 'cupertino_native_glass_container.dart' show CupertinoNativeGlass;
 import 'internal/native_control.dart';
+import 'internal/widget_lowering.dart';
 
 /// A native SwiftUI `TextEditor`: multi-line, scrolling text entry.
 ///
@@ -32,6 +33,7 @@ class CupertinoNativeTextEditor extends StatelessWidget
     this.glassTint,
     this.placeholderPadding,
     this.padding,
+    this.prefix,
     this.height = 120,
   });
 
@@ -82,6 +84,13 @@ class CupertinoNativeTextEditor extends StatelessWidget
   /// SwiftUI's `.padding`. The placeholder moves with it.
   final EdgeInsets? padding;
 
+  /// Drawn before the text, on its first line — any widget the package
+  /// transcribes natively (a `CupertinoNativeIcon`'s symbol image, a
+  /// `CupertinoNativeButton`, a `Row` of them…), keeping its callbacks. Its
+  /// measured width is added to the placeholder's left offset. Standalone
+  /// editor only: an editor inside a native list or body draws none.
+  final Widget? prefix;
+
   /// The editor scrolls inside this height.
   final double height;
 
@@ -89,46 +98,53 @@ class CupertinoNativeTextEditor extends StatelessWidget
   Widget build(BuildContext context) => nativeControl;
 
   @override
-  NativeControl get nativeControl => NativeControl(
-    kind: 'textEditor',
-    height: height,
-    // Drags scroll the text, not the page around it.
-    gestures: {
-      Factory<OneSequenceGestureRecognizer>(EagerGestureRecognizer.new),
-    },
-    props: {
-      'text': text,
-      'placeholder': placeholder,
-      'fontSize': style?.fontSize ?? fontSize,
-      'fontWeight': style?.fontWeight == null
-          ? null
-          : style!.fontWeight!.value ~/ 100 - 1,
-      'textColor': style?.color?.toARGB32(),
-      'cursorColor': cursorColor?.toARGB32(),
-      'backgroundColor': backgroundColor?.toARGB32(),
-      'cornerRadius': cornerRadius,
-      // The names the text field sends: `TextInputType` has no enum `name`.
-      'keyboardType': (keyboardType.toJson()['name'] as String).split('.').last,
-      'textCapitalization': textCapitalization.name,
-      'textContentType': textContentType,
-      'textAlign': textAlign.name,
-      'autocorrect': autocorrect,
-      'maxLength': maxLength,
-      'readOnly': readOnly,
-      'glass': glass?.name,
-      'glassTint': glassTint?.toARGB32(),
-      'placeholderTop': placeholderPadding?.top,
-      'placeholderLeading': placeholderPadding?.left,
-      'padding': padding == null
-          ? null
-          : {
-              'left': padding!.left,
-              'top': padding!.top,
-              'right': padding!.right,
-              'bottom': padding!.bottom,
-            },
-    },
-    enabled: onChanged != null,
-    onChanged: (v) => onChanged?.call(v as String),
-  );
+  NativeControl get nativeControl {
+    final lowered = prefix == null ? null : LoweredTrailing(prefix!);
+    return NativeControl(
+      prefix: lowered?.node,
+      onEvent: lowered?.dispatch,
+      kind: 'textEditor',
+      height: height,
+      // Drags scroll the text, not the page around it.
+      gestures: {
+        Factory<OneSequenceGestureRecognizer>(EagerGestureRecognizer.new),
+      },
+      props: {
+        'text': text,
+        'placeholder': placeholder,
+        'fontSize': style?.fontSize ?? fontSize,
+        'fontWeight': style?.fontWeight == null
+            ? null
+            : style!.fontWeight!.value ~/ 100 - 1,
+        'textColor': style?.color?.toARGB32(),
+        'cursorColor': cursorColor?.toARGB32(),
+        'backgroundColor': backgroundColor?.toARGB32(),
+        'cornerRadius': cornerRadius,
+        // The names the text field sends: `TextInputType` has no enum `name`.
+        'keyboardType': (keyboardType.toJson()['name'] as String)
+            .split('.')
+            .last,
+        'textCapitalization': textCapitalization.name,
+        'textContentType': textContentType,
+        'textAlign': textAlign.name,
+        'autocorrect': autocorrect,
+        'maxLength': maxLength,
+        'readOnly': readOnly,
+        'glass': glass?.name,
+        'glassTint': glassTint?.toARGB32(),
+        'placeholderTop': placeholderPadding?.top,
+        'placeholderLeading': placeholderPadding?.left,
+        'padding': padding == null
+            ? null
+            : {
+                'left': padding!.left,
+                'top': padding!.top,
+                'right': padding!.right,
+                'bottom': padding!.bottom,
+              },
+      },
+      enabled: onChanged != null,
+      onChanged: (v) => onChanged?.call(v as String),
+    );
+  }
 }

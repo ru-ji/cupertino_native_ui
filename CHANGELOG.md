@@ -47,6 +47,30 @@
 * Less boilerplate: `CupertinoNativeButton.icon(symbol)` is the round glass
   icon button;
   toolbar items take `systemImage:` or `symbol:` directly.
+* `CupertinoNativeTextEditor`: the text field's options (`style`,
+  `cursorColor`, `backgroundColor`, `cornerRadius`, `keyboardType`,
+  `textCapitalization`, `textContentType`, `textAlign`, `autocorrect`,
+  `maxLength`, `readOnly`), `glass` / `glassTint`, `padding`, a `prefix`
+  (any transcribable widget, callbacks kept) and `placeholderPadding`. Its
+  background is transparent (iOS 16+), and it now lifts above the keyboard
+  like a text field.
+* `CupertinoNativeTextField`: `prefix`, `suffix` and the clear button are
+  UIKit's own (`leftView`, `rightView`, `clearButtonMode`), drawn inside the
+  field; `iconSpacing` (default 8) sets the gap to the text. `style.fontWeight`
+  is applied — it was sent in the wrong unit and ignored.
+* Keyboard: a field is lifted from the first frame of the keyboard (its focus
+  is reported straight from UIKit), and moving focus under a keyboard that is
+  already up scrolls smoothly instead of jumping.
+* `CupertinoNativeList`: a row nobody listens to (no `onRowTap`) no longer
+  flashes the pressed highlight, nor does any row outside edit mode. Opening
+  or closing an expandable row grows the box with the rows, and the page
+  under it moves with them — it used to jump. A text field's clear button now
+  shows inside a list or native body.
+* **Breaking:** `CupertinoGlass` removed. `CupertinoNativeTextField.glass` (and
+  `CupertinoNativeBody.textField`) take a `CupertinoNativeGlass` —
+  `.regular`, `.clear`, `.identity`, SwiftUI's own `Glass` variants, always
+  interactive — with `glassTint` beside it; the glass corners follow
+  `cornerRadius`.
 * **Breaking:** `CupertinoNativeRadio` and `CupertinoNativeBody.radio` removed.
 
 ## 0.1.0

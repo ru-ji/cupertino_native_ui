@@ -4,8 +4,8 @@ import SwiftUI
 /// system alone decides the card radius, row height, margins and separators.
 ///
 /// A `List` fills the box it is given instead of reporting its content height,
-/// so it starts tall, reads its scroll content height (`onScrollGeometryChange`
-/// on iOS 18+, the underlying scroll view's `contentSize` below), then freezes
+/// so it starts tall, reads its content height off the collection view under
+/// it (see `ContentHeightReader`), then freezes
 /// to that height and reports it (`onHeight`). Flutter never sees the tall first frame.
 ///
 /// **That last sentence only holds because nothing else publishes this frame.**
@@ -81,7 +81,6 @@ struct AdaptiveSystemListView: View {
         .applyNoScroll()
         .applyClearBackground()
         .applyListTint(config.tint)
-        .readContentHeight(adopt)
         // The window's safe areas must not pad the list: in a sheet they add
         // height, and they change as the list scrolls near the screen edges,
         // changing the measure and resizing the Flutter box on every frame.
@@ -91,7 +90,12 @@ struct AdaptiveSystemListView: View {
         .opacity(contentHeight == nil ? 0 : 1)
         // Pinned to the top of the Flutter box: a list taller or shorter than
         // the box would otherwise be centred in it and slide as either resizes.
-        .frame(maxHeight: .infinity, alignment: .top)
+        // `minHeight: 0` is what makes it hold for a list *taller* than the
+        // box: a flexible frame with no minimum never shrinks below its child,
+        // so it grew past the box and the hosting view centred it — the whole
+        // list jumped up by half of what an opening row added, then slid back
+        // as the Flutter box caught up.
+        .frame(minHeight: 0, maxHeight: .infinity, alignment: .top)
         // The Flutter box animates an expansion; what it has not revealed yet
         // stays hidden instead of painting past it.
         .clipped()
@@ -100,10 +104,18 @@ struct AdaptiveSystemListView: View {
     /// The list's scroll content height — what it would need to show every
     /// row — is the only honest measure: a `List` fills whatever frame it gets.
     private func adopt(_ height: CGFloat) {
-        guard height > 1, abs(height - (contentHeight ?? 0)) > 0.5 else { return }
+        NativeLog.log("EXPAND-DEBUG adopt h=\(height) current=\(String(describing: contentHeight)) expanding=\(expanding)")
+        guard height > 1 else { return }
         contentHeight = height
+        // Against what Flutter last got, not `contentHeight`: a close sets
+        // the box's target itself (see `toggle`).
+        guard abs(height - (reported ?? 0)) > 0.5 else { return }
+        reported = height
         onHeight(height, expanding)
     }
+
+    /// The height Flutter's box was last given.
+    @State private var reported: CGFloat?
 
     /// Plain SwiftUI rows: the `List` draws cells and separators itself.
     @ViewBuilder
@@ -186,14 +198,6 @@ struct AdaptiveSystemListView: View {
     /// The Flutter box's height animation, which the close waits out.
     static let expandDuration = 0.25
 
-    /// Spare height under the content — see the List's frame.
-    /// A row's height, to make room for opening children before they are
-    /// measured; the real measure corrects it a frame later.
-    private static var estimatedRowHeight: CGFloat {
-        if #available(iOS 26.0, *) { return 52 }
-        return 44
-    }
-
     private func isOpen(_ id: String) -> Bool { expanded.contains(id) }
 
     /// While an expandable row opens or closes: its measure is reported as
@@ -210,20 +214,22 @@ struct AdaptiveSystemListView: View {
     ///
     /// One target per toggle, sent as the animation starts: a second one
     /// restarted Dart's tween and left the box trailing the rows. Opening,
-    /// that is the rows' measure — the list first makes room at an estimated
-    /// row height so it never scrolls to show rows past its frame; the room
-    /// is clipped, never shown. Closing, it is the height noted before
+    /// that is the rows' measure. Closing, it is the height noted before
     /// opening, known before the rows leave, so the box shrinks with them
     /// instead of after them.
     private func toggle(_ id: String) {
+        NativeLog.log("EXPAND-DEBUG toggle \(id) open=\(expanded.contains(id)) h=\(String(describing: contentHeight))")
         expanding = true
         if expanded.contains(id) {
-            if let height = closedHeights.removeValue(forKey: id) { onHeight(height, true) }
-        } else if let height = contentHeight {
-            closedHeights[id] = height
-            if let count = Self.row(id, in: config.sections.flatMap(\.rows))?.children?.count {
-                contentHeight = height + CGFloat(count) * Self.estimatedRowHeight
+            if let height = closedHeights.removeValue(forKey: id) {
+                reported = height
+                onHeight(height, true)
             }
+        } else if let height = contentHeight {
+            // No room made ahead for the rows: the list's content measure
+            // never reads below its frame, so a frame grown to an estimate
+            // read the estimate back and the real height was never sent.
+            closedHeights[id] = height
         }
         withAnimation(.easeInOut(duration: Self.expandDuration)) {
             if expanded.contains(id) {
@@ -272,8 +278,13 @@ struct AdaptiveSystemListView: View {
     }
 }
 
-/// Below iOS 18 SwiftUI does not expose a list's content size, so a zero-size
-/// view inside it finds the scroll view it lives in and observes `contentSize`.
+/// The list's real content height, read off the collection view under it.
+///
+/// Not SwiftUI's `ScrollGeometry.contentSize` (iOS 18+): it never reports less
+/// than the list's own frame, so while the frame is grown ahead of an opening
+/// row (see `toggle`) it reported that room back instead of the rows — the
+/// Flutter box never learned the list had grown. The layout's content size is
+/// the rows alone, whatever the frame.
 private struct ContentHeightReader: UIViewRepresentable {
     let onHeight: (CGFloat) -> Void
 
@@ -292,12 +303,20 @@ private struct ContentHeightReader: UIViewRepresentable {
 
         override func didMoveToWindow() {
             super.didMoveToWindow()
-            guard observation == nil, #unavailable(iOS 18.0) else { return }
+            guard observation == nil else { return }
             var v = superview
             while let view = v, !(view is UIScrollView) { v = view.superview }
+            // `contentSize` changes are the trigger; the value read is the
+            // layout's, unclamped.
             observation = (v as? UIScrollView)?.observe(\.contentSize, options: [.initial, .new]) {
                 [onHeight] scroll, _ in
-                DispatchQueue.main.async { onHeight(scroll.contentSize.height) }
+                DispatchQueue.main.async {
+                    let height =
+                        (scroll as? UICollectionView)?.collectionViewLayout
+                        .collectionViewContentSize.height ?? scroll.contentSize.height
+                    NativeLog.log("EXPAND-DEBUG layout content=\(height) contentSize=\(scroll.contentSize.height)")
+                    onHeight(height)
+                }
             }
         }
     }
@@ -308,14 +327,6 @@ extension View {
     /// The page's own colour shows through, not the list's grouped grey.
     @ViewBuilder fileprivate func applyClearBackground() -> some View {
         if #available(iOS 16.0, *) { self.scrollContentBackground(.hidden) } else { self }
-    }
-
-    @ViewBuilder fileprivate func readContentHeight(_ onHeight: @escaping (CGFloat) -> Void) -> some View {
-        if #available(iOS 18.0, *) {
-            self.onScrollGeometryChange(for: CGFloat.self, of: { $0.contentSize.height }) { _, h in
-                onHeight(h)
-            }
-        } else { self }
     }
 
     @ViewBuilder fileprivate func applyNoScroll() -> some View {

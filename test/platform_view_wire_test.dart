@@ -266,6 +266,123 @@ void main() {
       expect(params['clearButtonMode'], 'unlessEditing');
       expect(params['verticalAlignment'], 'bottom');
     }, variant: iOS);
+
+    testWidgets('icon spacing defaults to 8', (tester) async {
+      final params = await paramsOf(
+        tester,
+        const CupertinoNativeTextField(placeholder: 'Plain'),
+      );
+      expect(params['iconSpacing'], 8.0);
+    }, variant: iOS);
+
+    testWidgets('icon spacing is sent as given', (tester) async {
+      final params = await paramsOf(
+        tester,
+        const CupertinoNativeTextField(placeholder: 'Spaced', iconSpacing: 12),
+      );
+      expect(params['iconSpacing'], 12.0);
+    }, variant: iOS);
+
+    testWidgets('identity glass keeps its SwiftUI name', (tester) async {
+      final params = await paramsOf(
+        tester,
+        const CupertinoNativeTextField(glass: CupertinoNativeGlass.identity),
+      );
+      expect(params['glass'], true);
+      expect(params['glassVariant'], 'identity');
+    }, variant: iOS);
+
+    test('a transcribed field sends the UIKit clear-button names too', () {
+      // Sent `editing` (the Flutter name) once, which Swift never matched:
+      // the clear button of a field in a list or body never showed.
+      final map = CupertinoNativeBody.textField(
+        id: 'f',
+        clearButtonMode: OverlayVisibilityMode.editing,
+      ).toMap(isDark: false);
+      expect((map['textField'] as Map)['clearButtonMode'], 'whileEditing');
+    });
+  });
+
+  group('text editor', () {
+    testWidgets('sends the keys NativeControlView reads', (tester) async {
+      final params = await paramsOf(
+        tester,
+        CupertinoNativeTextEditor(
+          text: '',
+          onChanged: (_) {},
+          style: const TextStyle(fontWeight: FontWeight.w700),
+          glass: CupertinoNativeGlass.clear,
+          glassTint: green,
+          padding: const EdgeInsets.fromLTRB(1, 2, 3, 4),
+          placeholderPadding: const EdgeInsets.only(top: 6, left: 7),
+          maxLength: 280,
+        ),
+      );
+      expect(params['kind'], 'textEditor');
+      // `FontWeight.index`, 0...8, as the text field sends it.
+      expect(params['fontWeight'], 6);
+      expect(params['glass'], 'clear');
+      expect(params['glassTint'], green.toARGB32());
+      expect(params['padding'], {
+        'left': 1.0,
+        'top': 2.0,
+        'right': 3.0,
+        'bottom': 4.0,
+      });
+      expect(params['placeholderTop'], 6.0);
+      expect(params['placeholderLeading'], 7.0);
+      expect(params['maxLength'], 280);
+      expect(params['keyboardType'], 'multiline');
+      expect(params['textCapitalization'], 'sentences');
+      expect(params.containsKey('prefix'), isFalse);
+    }, variant: iOS);
+
+    testWidgets('a prefix travels as one lowered node', (tester) async {
+      final params = await paramsOf(
+        tester,
+        CupertinoNativeTextEditor(
+          text: '',
+          onChanged: (_) {},
+          prefix: CupertinoNativeButton(
+            onPressed: () {},
+            child: const Text('Go'),
+          ),
+        ),
+      );
+      final prefix = params['prefix'] as List;
+      expect(prefix, hasLength(1));
+      expect((prefix.single as Map)['type'], 'button');
+    }, variant: iOS);
+  });
+
+  group('list rows', () {
+    Future<Map<Object?, Object?>> firstRow(
+      WidgetTester tester,
+      CupertinoNativeListTileCallback? onRowTap,
+    ) async {
+      final params = await paramsOf(
+        tester,
+        CupertinoNativeList(
+          onRowTap: onRowTap,
+          sections: [
+            CupertinoNativeListSection(
+              children: [CupertinoNativeListTile(id: 'a', title: 'A')],
+            ),
+          ],
+        ),
+      );
+      final section = (params['sections'] as List).first as Map;
+      return (section['rows'] as List).first as Map;
+    }
+
+    testWidgets('are not buttons when nobody listens', (tester) async {
+      // A Button cell flashes the pressed highlight on every tap.
+      expect((await firstRow(tester, null))['tappable'], false);
+    }, variant: iOS);
+
+    testWidgets('are buttons once onRowTap is given', (tester) async {
+      expect((await firstRow(tester, (_) {}))['tappable'], true);
+    }, variant: iOS);
   });
 
   testWidgets('the switch keeps the pre-rename platform view id', (

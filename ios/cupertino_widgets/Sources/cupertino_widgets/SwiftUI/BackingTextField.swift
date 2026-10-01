@@ -20,7 +20,11 @@ import UIKit
 struct BackingTextField: UIViewRepresentable {
     @ObservedObject var model: TextFieldModel
     @Binding var text: String
-    @Binding var focused: Bool
+    /// Called straight from the delegate, as the field takes or gives up the
+    /// responder — before the keyboard starts to rise. Not through a SwiftUI
+    /// state and `.onChange`: that waited for the next view update, and the
+    /// keyboard was already moving when Flutter learned which field to lift.
+    let onFocusChange: (Bool) -> Void
     let onSubmit: () -> Void
 
     private var c: TextFieldConfig { model.config }
@@ -112,9 +116,9 @@ struct BackingTextField: UIViewRepresentable {
             // Before the focus report goes out: Flutter reads this to reveal
             // the row rather than the whole platform view.
             parent.model.focusFrameInWindow = field.convert(field.bounds, to: nil)
-            parent.focused = true
+            parent.onFocusChange(true)
         }
-        func textFieldDidEndEditing(_ field: UITextField) { parent.focused = false }
+        func textFieldDidEndEditing(_ field: UITextField) { parent.onFocusChange(false) }
 
         /// The native clear button: refused on a read-only field, reported
         /// like any other edit otherwise.
