@@ -348,6 +348,7 @@ class _CupertinoNativeTextFieldState extends State<CupertinoNativeTextField>
     widget.controller?.addListener(_onControllerChanged);
     _focusNode = widget.focusNode ?? _createInternalFocusNode();
     WidgetsBinding.instance.addObserver(this);
+    watchKeyboardMotion();
   }
 
   /// Bottom view inset (physical px) seen at the previous metrics tick, to

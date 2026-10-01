@@ -7,6 +7,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
+import '../cupertino_native_body.dart';
 import 'keyboard_avoidance.dart';
 import 'native_platform_view_mixin.dart';
 import 'scroll_friendly_recognizer.dart';
@@ -34,6 +35,8 @@ class NativeControl extends StatefulWidget {
     this.height,
     this.fallbackHeight = 44,
     this.gestures,
+    this.prefix,
+    this.onEvent,
   });
 
   final String kind;
@@ -51,6 +54,11 @@ class NativeControl extends StatefulWidget {
   final double fallbackHeight;
   final Set<Factory<OneSequenceGestureRecognizer>>? gestures;
 
+  /// A lowered widget the control draws before its content (the text
+  /// editor's `prefix`); its nodes report through [onEvent].
+  final CupertinoNativeBody? prefix;
+  final void Function(String id, Object? value)? onEvent;
+
   @override
   State<NativeControl> createState() => _NativeControlState();
 }
@@ -67,6 +75,7 @@ class _NativeControlState extends State<NativeControl>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    watchKeyboardMotion();
   }
 
   @override
@@ -103,11 +112,13 @@ class _NativeControlState extends State<NativeControl>
     'hug': widget.hug,
     'enabled': widget.enabled,
     'isDark': _isDark,
+    if (widget.prefix case final prefix?)
+      'prefix': [prefix.toMap(isDark: _isDark)],
   };
 
   void _push() {
     final map = _map();
-    final json = jsonEncode(map);
+    final json = jsonEncode(map, toEncodable: (o) => o.toString());
     if (_sent == null || json == _sent) return;
     _sent = json;
     updateNativeView('update', map, refreshIntrinsicSize: false);
@@ -131,7 +142,7 @@ class _NativeControlState extends State<NativeControl>
       return const SizedBox.shrink();
     }
     final params = _map();
-    _sent ??= jsonEncode(params);
+    _sent ??= jsonEncode(params, toEncodable: (o) => o.toString());
     final view = wrapForTransition(
       UiKitView(
         viewType: 'com.example.cupertino_widgets/cupertino_native_control',
@@ -145,6 +156,9 @@ class _NativeControlState extends State<NativeControl>
             onMethodCall: (call) async {
               if (call.method == 'onChanged') {
                 widget.onChanged?.call(call.arguments);
+              } else if (call.method == 'onEvent') {
+                final args = call.arguments as Map;
+                widget.onEvent?.call(args['id'] as String, args['value']);
               } else if (call.method == 'onFocus') {
                 _focused = call.arguments == true;
                 // Keyboard already up (focus moved from another field): no

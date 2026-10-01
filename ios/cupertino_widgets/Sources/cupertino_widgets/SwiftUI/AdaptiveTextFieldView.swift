@@ -69,11 +69,6 @@ struct AdaptiveTextFieldView: View {
     let onEditingComplete: () -> Void
     let onFocusChange: (Bool) -> Void
 
-    /// Mirrors the backing field's first-responder state. Not `@FocusState`:
-    /// the field is a `UITextField` (see [BackingTextField]), which SwiftUI's
-    /// focus system does not drive.
-    @State private var focused = false
-
     private var c: TextFieldConfig { model.config }
 
     var body: some View {
@@ -82,7 +77,6 @@ struct AdaptiveTextFieldView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(background)
             .modifier(GlassBackground(config: c))
-            .onChange(of: focused) { onFocusChange($0) }
             .environment(\.colorScheme, c.isDark == true ? .dark : .light)
     }
 
@@ -96,7 +90,7 @@ struct AdaptiveTextFieldView: View {
         BackingTextField(
             model: model,
             text: binding,
-            focused: $focused,
+            onFocusChange: onFocusChange,
             onSubmit: {
                 onEditingComplete()
                 onSubmitted(model.text)

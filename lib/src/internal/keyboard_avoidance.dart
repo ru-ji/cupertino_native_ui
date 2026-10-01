@@ -142,7 +142,44 @@ void revealAboveKeyboard(
   );
 }
 
-/// Whether the keyboard is already up — a focus change then needs an
+/// Whether the keyboard is up *and still* — a focus change then needs an
 /// animated reveal, since no inset tick will come to drive it.
+///
+/// Up is not enough: the first keyboard of a launch is slow to come, and the
+/// focus report lands while it is still rising. An animated scroll started
+/// then fights the per-tick reveal that is already following the keyboard.
 bool keyboardIsUp(BuildContext context) =>
-    MediaQuery.viewInsetsOf(context).bottom > 0;
+    MediaQuery.viewInsetsOf(context).bottom > 0 &&
+    DateTime.now().difference(_KeyboardMotion.instance.lastChange) >
+        const Duration(milliseconds: 100);
+
+/// Starts following the keyboard inset for [keyboardIsUp]. Called when a field
+/// is created: started on first use, it would begin with the keyboard already
+/// moving and miss exactly the first rise.
+void watchKeyboardMotion() => _KeyboardMotion.instance;
+
+/// When the keyboard inset last changed, app-wide.
+class _KeyboardMotion with WidgetsBindingObserver {
+  _KeyboardMotion._() {
+    WidgetsBinding.instance.addObserver(this);
+  }
+  static final instance = _KeyboardMotion._();
+
+  double _inset = 0;
+  DateTime lastChange = DateTime.fromMillisecondsSinceEpoch(0);
+
+  @override
+  void didChangeMetrics() {
+    final inset =
+        WidgetsBinding
+            .instance
+            .platformDispatcher
+            .implicitView
+            ?.viewInsets
+            .bottom ??
+        0;
+    if (inset == _inset) return;
+    _inset = inset;
+    lastChange = DateTime.now();
+  }
+}
