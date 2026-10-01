@@ -51,10 +51,10 @@ struct BackingTextField: UIViewRepresentable {
         field.textColor = c.textColor.map { UIColor(Color(argb: $0)) } ?? .label
         field.tintColor = c.cursorColor.map { UIColor(Color(argb: $0)) }
         field.textAlignment = textAlign
-        field.keyboardType = keyboardType
+        field.keyboardType = Self.keyboardType(c.keyboardType)
         field.returnKeyType = returnKeyType
         field.textContentType = c.textContentType.map { UITextContentType(rawValue: $0) }
-        field.autocapitalizationType = capitalization
+        field.autocapitalizationType = Self.capitalization(c.textCapitalization)
         field.autocorrectionType = c.autocorrect == false ? .no : .default
         field.spellCheckingType = c.enableSuggestions == false ? .no : .default
         field.isEnabled = c.enabled != false
@@ -126,8 +126,9 @@ struct BackingTextField: UIViewRepresentable {
         }
     }
 
-    private var keyboardType: UIKeyboardType {
-        switch c.keyboardType {
+    /// Shared with the text editor.
+    static func keyboardType(_ name: String?) -> UIKeyboardType {
+        switch name {
         case "number", "numberWithOptions", "datetime": return .numbersAndPunctuation
         case "phone": return .phonePad
         case "emailAddress": return .emailAddress
@@ -152,8 +153,8 @@ struct BackingTextField: UIViewRepresentable {
         }
     }
 
-    private var capitalization: UITextAutocapitalizationType {
-        switch c.textCapitalization {
+    static func capitalization(_ name: String?) -> UITextAutocapitalizationType {
+        switch name {
         case "words": return .words
         case "sentences": return .sentences
         case "characters": return .allCharacters

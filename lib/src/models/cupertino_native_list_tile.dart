@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 
 import 'cupertino_native_icon.dart';
+import 'cupertino_native_menu_item.dart';
 
 /// The kind of a [CupertinoNativeListTile], which decides how it renders inside
 /// the native SwiftUI `List`/`Form` row.
@@ -58,6 +59,20 @@ class CupertinoNativeListTile {
   /// island.
   final Widget? trailing;
 
+  /// Grey pill at the row's trailing edge — a count or short text
+  /// (SwiftUI `.badge`).
+  final String? badge;
+
+  /// Buttons revealed by swiping the row left (SwiftUI `.swipeActions`), the
+  /// first one being the full-swipe action. Picks report through the list's
+  /// `onSwipeAction`.
+  final List<CupertinoNativeMenuAction> swipeActions;
+
+  /// Nested rows: the tile becomes an expandable row — the look of a
+  /// SwiftUI `DisclosureGroup` in a list — whose chevron reveals them as real
+  /// rows underneath.
+  final List<CupertinoNativeListTile> children;
+
   const CupertinoNativeListTile({
     required this.id,
     required this.title,
@@ -70,6 +85,9 @@ class CupertinoNativeListTile {
     this.enabled = true,
     this.selected = false,
     this.trailing,
+    this.badge,
+    this.swipeActions = const [],
+    this.children = const [],
   });
 
   Map<String, dynamic> toMap() {
@@ -84,6 +102,8 @@ class CupertinoNativeListTile {
       'toggleValue': toggleValue,
       'enabled': enabled,
       'selected': selected,
+      'badge': badge,
+      'swipeActions': [for (final a in swipeActions) a.toMap()],
     };
   }
 }

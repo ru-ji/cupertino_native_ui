@@ -19,9 +19,9 @@ import SwiftUI
 @available(iOS 15.0, *)
 struct BodyNodeConfig: Codable {
     /// "column" | "row" | "scroll" | "padding" | "spacer" | "divider" |
-    /// "text" | "button" | "menu" | "textField" | "toggle" | "checkbox" | "radio" |
+    /// "text" | "button" | "menu" | "textField" | "toggle" | "checkbox" |
     /// "slider" | "picker" | "segmented" | "datePicker" | "progress" |
-    /// "list" | "symbol" | "flutter" | "glass"
+    /// "list" | "symbol" | "flutter" | "glass" | "control" | "photosPicker"
     let type: String
 
     /// For `type == "flutter"`: the body route to host here, registered in
@@ -58,7 +58,6 @@ struct BodyNodeConfig: Codable {
     let textField: TextFieldConfig?
     let toggle: ToggleConfig?
     let checkbox: CheckboxConfig?
-    let radio: RadioConfig?
     let slider: BodySliderConfig?
     let picker: PickerConfig?
     let list: ListConfig?
@@ -67,9 +66,15 @@ struct BodyNodeConfig: Codable {
     let segmented: SegmentedControlConfig?
     let datePicker: DatePickerConfig?
     let progress: ProgressConfig?
+    /// Stepper, color picker, gauge, multi-date picker, text editor — the
+    /// controls `NativeControlView` hosts standalone.
+    let control: ControlConfig?
+    /// The embedded system photo picker (iOS 17+). Fills the page it is the
+    /// root of — see `NativeBodyPage`.
+    let photosPicker: PhotosPickerConfig?
 }
 
-/// A compact `DatePicker` inside a native body: the same control the
+/// A `DatePicker` inside a native body: the same control the
 /// standalone platform view renders, driven by `DatePickerModel`.
 @available(iOS 15.0, *)
 struct DatePickerConfig: Codable {
@@ -77,6 +82,7 @@ struct DatePickerConfig: Codable {
     let minimumDate: Double?
     let maximumDate: Double?
     let mode: String?  // "date" | "time" | "dateAndTime"
+    let style: String?  // "compact" | "graphical" | "wheel"
     let tint: Int?
     let isDark: Bool?
 }
@@ -125,6 +131,10 @@ struct BodySliderConfig: Codable {
     let step: Double?
     let color: Int?
     let enabled: Bool?
+    let neutralValue: Double?
+    let showTicks: Bool?
+    let minimumIcon: IconConfig?
+    let maximumIcon: IconConfig?
 }
 
 /// A scroll node's own settings.

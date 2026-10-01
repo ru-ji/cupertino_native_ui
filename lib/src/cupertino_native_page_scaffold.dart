@@ -12,9 +12,10 @@ import 'cupertino_native_body_bridge.dart';
 import 'cupertino_native_flutter_view.dart';
 import 'cupertino_native_scaffold_navigation_bar.dart';
 import 'cupertino_native_tab_bar.dart';
+import 'cupertino_scroll_edge_effect.dart';
 import 'cupertino_widgets_settings.dart';
 import 'internal/native_platform_view_mixin.dart';
-import 'models/cupertino_native_bar_item.dart';
+import 'models/cupertino_native_toolbar_item.dart';
 import 'models/cupertino_native_icon.dart';
 import 'models/cupertino_symbols.dart';
 
@@ -31,7 +32,7 @@ class CupertinoNativePageScaffoldPage {
   });
 
   Map<String, dynamic> toMap() {
-    return {'route': route, 'appBar': navigationBar?.toMap()};
+    return {'route': route, 'navigationBar': navigationBar?.toMap()};
   }
 }
 
@@ -114,7 +115,12 @@ class CupertinoNativePageScaffold extends StatefulWidget {
   final CupertinoNativeTabBar? tabBar;
 
   final CupertinoNativePageScaffoldController? controller;
-  final CupertinoNativeBarActionCallback? onBarAction;
+
+  /// A toolbar item was tapped: its page's route and its `actionId`.
+  final CupertinoNativeToolbarActionCallback? onToolbarAction;
+
+  @Deprecated('Use onToolbarAction')
+  final CupertinoNativeToolbarActionCallback? onBarAction;
   final ValueChanged<String>? onTabChanged;
 
   /// iOS 26 scroll edge effect style for the native scroll views.
@@ -173,7 +179,8 @@ class CupertinoNativePageScaffold extends StatefulWidget {
     this.navigationBar,
     this.tabBar,
     this.controller,
-    this.onBarAction,
+    this.onToolbarAction,
+    @Deprecated('Use onToolbarAction') this.onBarAction,
     this.onTabChanged,
     this.scrollEdgeEffect = CupertinoScrollEdgeEffectStyle.automatic,
     this.backgroundColor,
@@ -538,7 +545,7 @@ class _CupertinoNativeScaffoldState extends State<CupertinoNativePageScaffold>
   /// no leading item of its own and it was pushed onto Flutter's Navigator —
   /// the native NavigationStack has nothing above it to draw a back button
   /// for, so without this the page would show no way back at all.
-  /// Intercepted in [_handleMethodCall], never forwarded to [onBarAction].
+  /// Intercepted in [_handleMethodCall], never forwarded to [onToolbarAction].
   static const String _autoBackActionId = '_cupertinoNativeAutoBack';
 
   /// [widget.navigationBar], with an automatic back item prepended to
@@ -553,7 +560,7 @@ class _CupertinoNativeScaffoldState extends State<CupertinoNativePageScaffold>
         navBar.leading.isEmpty &&
         Navigator.canPop(context)) {
       map['leading'] = [
-        CupertinoNativeBarItem(
+        CupertinoNativeToolbarItem(
           icon: CupertinoNativeIcon.symbol(CupertinoSymbols.chevronBackward),
           actionId: _autoBackActionId,
         ).toMap(),
@@ -566,7 +573,7 @@ class _CupertinoNativeScaffoldState extends State<CupertinoNativePageScaffold>
     final theme = Theme.of(context);
     return {
       'body': widget.body,
-      'appBar': _navigationBarMap(),
+      'navigationBar': _navigationBarMap(),
       'tabBar': widget.tabBar?.toMap(),
       'scrollEdgeEffect': widget.scrollEdgeEffect.name,
       'isDark': _isDark,
@@ -678,13 +685,14 @@ class _CupertinoNativeScaffoldState extends State<CupertinoNativePageScaffold>
 
   Future<dynamic> _handleMethodCall(MethodCall call) async {
     switch (call.method) {
-      case 'onBarAction':
+      case 'onToolbarAction':
         final String? route = call.arguments['route'];
         final String? id = call.arguments['id'];
         if (id == _autoBackActionId) {
           Navigator.maybePop(context);
         } else if (route != null && id != null) {
-          widget.onBarAction?.call(route, id);
+          // ignore: deprecated_member_use_from_same_package
+          (widget.onToolbarAction ?? widget.onBarAction)?.call(route, id);
         }
         break;
       case 'onBodyAction':

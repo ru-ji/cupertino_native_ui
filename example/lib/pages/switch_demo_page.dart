@@ -20,7 +20,6 @@ class _SwitchDemoPageState extends State<SwitchDemoPage> {
 
   bool _agree = false;
   bool _backup = true;
-  String _color = 'blue';
   String _appearance = 'dark';
   final Set<String> _allergies = {'peanuts', 'gluten'};
 
@@ -175,32 +174,6 @@ class _SwitchDemoPageState extends State<SwitchDemoPage> {
                             onChanged: null,
                           ),
                         ),
-                      ],
-                    ),
-                    CupertinoNativeListSection(
-                      header: 'Radio',
-                      footer:
-                          'CupertinoNativeRadio — one selection per group; '
-                          'managing the group state is the app\'s job.',
-                      children: [
-                        for (final (id, name) in const [
-                          ('blue', 'Blue'),
-                          ('green', 'Green'),
-                          ('orange', 'Orange'),
-                        ])
-                          CupertinoNativeListTile(
-                            id: 'radio_$id',
-                            title: name,
-                            trailing: CupertinoNativeRadio(
-                              value: _color == id,
-                              activeColor: id == 'green'
-                                  ? CupertinoColors.systemGreen
-                                  : id == 'orange'
-                                  ? CupertinoColors.systemOrange
-                                  : null,
-                              onChanged: (_) => setState(() => _color = id),
-                            ),
-                          ),
                       ],
                     ),
                     CupertinoNativeListSection(

@@ -111,18 +111,21 @@ void main() {
       expect(params['enabled'], isFalse, reason: 'onChanged is null: disabled');
     }, variant: iOS);
 
-    testWidgets('radio sends it as "color"', (tester) async {
+    testWidgets('stepper goes through the shared control view', (tester) async {
       final params = await paramsOf(
         tester,
-        CupertinoNativeRadio(
-          value: false,
+        CupertinoNativeStepper(
+          value: 3,
+          max: 10,
           activeColor: green,
           onChanged: (_) {},
         ),
       );
-      expect(params['color'], green.toARGB32());
-      expect(params['value'], false);
-      expect(params['enabled'], true, reason: 'onChanged is set: enabled');
+      expect(params['kind'], 'stepper');
+      expect(params['value'], 3);
+      expect(params['tint'], green.toARGB32());
+      expect(params['hug'], true, reason: 'no label: sized to the control');
+      expect(params['enabled'], true);
     }, variant: iOS);
 
     testWidgets('segmented control sends it as "color"', (tester) async {
@@ -506,25 +509,38 @@ void main() {
       expect((node['checkbox'] as Map)['enabled'], isTrue);
     });
 
-    testWidgets('a radio lowers to a native radio node', variant: iOS, (
+    testWidgets('a stepper lowers to a native control node', variant: iOS, (
       tester,
     ) async {
+      double? got;
       final params = await paramsOf(
         tester,
-        CupertinoNativeTextField(
-          toolbarActions: [
-            CupertinoNativeRadio(value: false, onChanged: (_) {}),
-            const Spacer(),
+        CupertinoNativeList(
+          sections: [
+            CupertinoNativeListSection(
+              children: [
+                CupertinoNativeListTile(
+                  id: 'guests',
+                  title: 'Guests',
+                  trailing: CupertinoNativeStepper(
+                    value: 2,
+                    onChanged: (v) => got = v,
+                  ),
+                ),
+              ],
+            ),
           ],
         ),
       );
 
-      final toolbar = params['keyboardToolbar'] as List;
-      expect(toolbar, hasLength(2));
-      final node = toolbar[0] as Map;
-      expect(node['type'], 'radio');
-      expect(node['id'], 'item0');
-      expect((node['radio'] as Map)['value'], isFalse);
+      final rows = ((params['sections'] as List).single as Map)['rows'] as List;
+      final node = ((rows.single as Map)['trailing'] as List).single as Map;
+      expect(node['type'], 'control');
+      final control = node['control'] as Map;
+      expect(control['kind'], 'stepper');
+      expect(control['value'], 2);
+      expect(control['enabled'], isTrue);
+      expect(got, isNull);
     });
 
     testWidgets('containers lower recursively, ids stay unique', variant: iOS, (

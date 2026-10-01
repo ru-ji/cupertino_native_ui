@@ -36,7 +36,7 @@ class NativeScaffoldFactory: NSObject, FlutterPlatformViewFactory {
 struct PushedRoute: Hashable {
     let id: UUID
     let route: String
-    let appBar: AppBarConfig?
+    let navigationBar: NavigationBarConfig?
 }
 
 /// Observable state shared between the platform view (which mutates it from
@@ -199,7 +199,7 @@ class NativeScaffoldView: NativeHostingView {
         } else {
             model = ScaffoldModel(
                 config: ScaffoldConfig(
-                    body: nil, nativeBody: nil, appBar: nil, tabBar: nil,
+                    body: nil, nativeBody: nil, navigationBar: nil, tabBar: nil,
                     scrollEdgeEffect: nil, isDark: nil,
                     backgroundColor: nil, primaryColor: nil,
                     showLoadingIndicator: nil))
@@ -429,7 +429,7 @@ class NativeScaffoldView: NativeHostingView {
             AnyView(
                 ScaffoldView(model: model) { [weak self] route, actionId in
                     self?.channel.invokeMethod(
-                        "onBarAction", arguments: ["route": route, "id": actionId])
+                        "onToolbarAction", arguments: ["route": route, "id": actionId])
                 }),
             keyboardAvoidance: true)
         applyKeyboardAvoidance()
@@ -460,11 +460,11 @@ class NativeScaffoldView: NativeHostingView {
                         code: "INVALID_ARGS", message: "push requires a route", details: nil))
                 return
             }
-            var appBar: AppBarConfig? = nil
-            if let appBarMap = args["appBar"] as? [String: Any] {
-                appBar = decodeConfig(AppBarConfig.self, from: appBarMap)
+            var navigationBar: NavigationBarConfig? = nil
+            if let navigationBarMap = args["navigationBar"] as? [String: Any] {
+                navigationBar = decodeConfig(NavigationBarConfig.self, from: navigationBarMap)
             }
-            let pushed = PushedRoute(id: UUID(), route: route, appBar: appBar)
+            let pushed = PushedRoute(id: UUID(), route: route, navigationBar: navigationBar)
             model.pushedEngines[pushed.id] = makeEngine(
                 route: route, key: pushed.id.uuidString)
             model.paths[currentPathKey, default: []].append(pushed)
@@ -477,16 +477,17 @@ class NativeScaffoldView: NativeHostingView {
         case "setTitle":
             if let args = call.arguments as? [String: Any],
                 let title = args["title"] as? String,
-                let bar = model.config.appBar
+                let bar = model.config.navigationBar
             {
                 model.config = ScaffoldConfig(
                     body: model.config.body,
                     nativeBody: model.config.nativeBody,
-                    appBar: AppBarConfig(
+                    navigationBar: NavigationBarConfig(
                         title: title, subtitle: bar.subtitle,
                         displayMode: bar.displayMode,
                         leading: bar.leading, trailing: bar.trailing,
-                        bottom: bar.bottom, search: bar.search),
+                        bottom: bar.bottom, search: bar.search,
+                        overflow: bar.overflow, minimizeBehavior: bar.minimizeBehavior),
                     tabBar: model.config.tabBar,
                     scrollEdgeEffect: model.config.scrollEdgeEffect,
                     isDark: model.config.isDark,

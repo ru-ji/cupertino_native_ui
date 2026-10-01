@@ -58,6 +58,25 @@ class CupertinoNativeList extends StatelessWidget {
   final CupertinoNativeListTileCallback? onRowTap;
   final CupertinoNativeListToggleCallback? onToggle;
 
+  /// Edit mode: the system slides a selection circle in at each row's leading
+  /// edge (SwiftUI `List(selection:)` + `editMode`). Drive it from your own
+  /// Edit / Done button.
+  final bool editing;
+
+  /// Ids of the rows checked in edit mode. Controlled: echo what
+  /// [onSelectionChanged] reports back into it.
+  final Set<String> selection;
+
+  /// Called with the new selection when the user checks or unchecks a row.
+  final ValueChanged<Set<String>>? onSelectionChanged;
+
+  /// Called when the user picks a row's swipe action.
+  final CupertinoNativeListSwipeCallback? onSwipeAction;
+
+  /// Makes rows draggable in [editing] mode (the system reorder handles).
+  /// Reorder your own data here and rebuild.
+  final CupertinoNativeListReorderCallback? onReorder;
+
   const CupertinoNativeList({
     super.key,
     required this.sections,
@@ -68,6 +87,11 @@ class CupertinoNativeList extends StatelessWidget {
     this.cornerRadius,
     this.onRowTap,
     this.onToggle,
+    this.editing = false,
+    this.selection = const {},
+    this.onSelectionChanged,
+    this.onSwipeAction,
+    this.onReorder,
   }) : _itemCount = null,
        _itemBuilder = null,
        _header = null,
@@ -105,6 +129,11 @@ class CupertinoNativeList extends StatelessWidget {
     this.cornerRadius,
     this.onRowTap,
     this.onToggle,
+    this.editing = false,
+    this.selection = const {},
+    this.onSelectionChanged,
+    this.onSwipeAction,
+    this.onReorder,
   }) : sections = const [],
        _itemCount = itemCount,
        _itemBuilder = itemBuilder,
@@ -143,6 +172,11 @@ class CupertinoNativeList extends StatelessWidget {
       cornerRadius: cornerRadius,
       onRowTap: onRowTap,
       onToggle: onToggle,
+      editing: editing,
+      selection: selection,
+      onSelectionChanged: onSelectionChanged,
+      onSwipeAction: onSwipeAction,
+      onReorder: onReorder,
     );
   }
 }

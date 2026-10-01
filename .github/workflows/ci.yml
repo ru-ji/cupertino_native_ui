@@ -27,6 +27,34 @@ jobs:
       - name: Test
         run: flutter test
 
+      # The example is the visual test bed: it must at least analyze.
+      - name: Analyze example
+        working-directory: example
+        run: |
+          flutter pub get
+          flutter analyze
+
+  # Nothing else compiles the Swift: a type error there would only show up in
+  # an app build. Typechecks every source against the real Flutter framework.
+  # The iOS 27 branches (`#if compiler(>=6.4)`) are only checked when the
+  # runner's Xcode is 27 or later.
+  swift:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - run: flutter precache --ios
+      - name: Typecheck Swift
+        run: |
+          FLUTTER_ROOT="$(dirname "$(dirname "$(command -v flutter)")")"
+          FRAMEWORK="$FLUTTER_ROOT/bin/cache/artifacts/engine/ios/Flutter.xcframework/ios-arm64_x86_64-simulator"
+          xcrun swift --version
+          find ios/cupertino_widgets/Sources -name '*.swift' -print0 \
+            | xargs -0 xcrun -sdk iphonesimulator swiftc -typecheck \
+                -target arm64-apple-ios15.0-simulator -F "$FRAMEWORK"
+
   # Reports the same score pub.dev will show, so surprises land here first.
   score:
     runs-on: ubuntu-latest

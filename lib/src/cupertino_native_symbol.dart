@@ -71,6 +71,9 @@ class CupertinoNativeSymbol extends StatefulWidget {
     this.trigger = 0,
     this.repeating = false,
     this.replaceOnChange = false,
+    this.variableValue,
+    this.paletteColors = const [],
+    this.gradient = false,
   });
 
   /// A typo-safe symbol from the [CupertinoSymbols] enum.
@@ -85,6 +88,9 @@ class CupertinoNativeSymbol extends StatefulWidget {
     int trigger = 0,
     bool repeating = false,
     bool replaceOnChange = false,
+    double? variableValue,
+    List<Color> paletteColors = const [],
+    bool gradient = false,
   }) : this(
          symbol.value,
          key: key,
@@ -96,6 +102,9 @@ class CupertinoNativeSymbol extends StatefulWidget {
          trigger: trigger,
          repeating: repeating,
          replaceOnChange: replaceOnChange,
+         variableValue: variableValue,
+         paletteColors: paletteColors,
+         gradient: gradient,
        );
 
   /// Raw SF Symbol name, e.g. `bell.badge`.
@@ -119,6 +128,18 @@ class CupertinoNativeSymbol extends StatefulWidget {
 
   /// Morph between symbols when [name] changes, instead of cutting.
   final bool replaceOnChange;
+
+  /// 0...1: how many layers of a variable symbol are lit — the bars of
+  /// `wifi` or `speaker.wave.3` (`Image(systemName:variableValue:)`, iOS 16+).
+  final double? variableValue;
+
+  /// Up to three layer colours for
+  /// [CupertinoNativeSymbolRenderingMode.palette], primary first.
+  final List<Color> paletteColors;
+
+  /// Fills the symbol with a gradient of its colour
+  /// (`.symbolColorRenderingMode(.gradient)`, iOS 26+).
+  final bool gradient;
 
   @override
   State<CupertinoNativeSymbol> createState() => _CupertinoNativeSymbolState();
@@ -157,7 +178,10 @@ class _CupertinoNativeSymbolState extends State<CupertinoNativeSymbol>
         oldWidget.effect != widget.effect ||
         oldWidget.trigger != widget.trigger ||
         oldWidget.repeating != widget.repeating ||
-        oldWidget.replaceOnChange != widget.replaceOnChange) {
+        oldWidget.replaceOnChange != widget.replaceOnChange ||
+        oldWidget.variableValue != widget.variableValue ||
+        !listEquals(oldWidget.paletteColors, widget.paletteColors) ||
+        oldWidget.gradient != widget.gradient) {
       // Size only changes with the symbol itself, and re-measuring on every
       // trigger bump would round-trip once per animation.
       updateNativeView(
@@ -180,6 +204,9 @@ class _CupertinoNativeSymbolState extends State<CupertinoNativeSymbol>
     'trigger': widget.trigger,
     'repeating': widget.repeating,
     'replaceOnChange': widget.replaceOnChange,
+    'variableValue': widget.variableValue,
+    'paletteColors': [for (final c in widget.paletteColors) c.toARGB32()],
+    'gradient': widget.gradient,
     'isDark': _isDark,
   };
 

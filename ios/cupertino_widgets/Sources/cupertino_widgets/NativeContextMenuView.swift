@@ -321,6 +321,13 @@ class NativeContextMenuView: NSObject, FlutterPlatformView, UIContextMenuInterac
             return UIMenu(
                 title: item.title ?? "", options: .displayInline,
                 children: (item.items ?? []).map { element(from: $0) })
+        case .controlGroup:
+            // UIKit's spelling of a menu `ControlGroup`: an inline menu with
+            // small elements, drawn as one row of icons.
+            let menu = UIMenu(
+                options: .displayInline, children: (item.items ?? []).map { element(from: $0) })
+            if #available(iOS 16.0, *) { menu.preferredElementSize = .small }
+            return menu
         case .toggle:
             return UIAction(
                 title: item.title ?? "", image: image,

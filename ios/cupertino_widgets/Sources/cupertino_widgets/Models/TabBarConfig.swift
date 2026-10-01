@@ -28,6 +28,8 @@ struct TabItemConfig: Codable, Identifiable {
     let id: String
     let role: String?
     let search: SearchConfig?
+    /// `.badge` on the tab: a count or short text; nil for none.
+    let badge: String?
 
     /// Resolved SF Symbol name: from [icon] if it's an SF Symbol, or from
     /// legacy [systemImage].

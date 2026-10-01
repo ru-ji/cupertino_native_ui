@@ -4,13 +4,35 @@ import SwiftUI
 struct AdaptiveMenuView: View {
     let config: MenuConfiguration
     let onAction: (String, Any?) -> Void
+    var onPrimaryAction: () -> Void = {}
 
     var body: some View {
-        let menu = Menu {
-            ForEach(config.items) { item in
-                MenuItemMapper(item: item, onAction: onAction)
+        let menu = Group {
+            if config.hasPrimaryAction == true {
+                Menu { items } label: { label } primaryAction: { onPrimaryAction() }
+            } else {
+                Menu { items } label: { label }
             }
-        } label: {
+        }
+        .applyFixedOrder(config.fixedOrder == true)
+
+        // Same three the button uses: the label style decides what the anchor
+        // shows, the button style draws the material, the border shape decides
+        // its outline. A circle needs `iconOnly` — a label with text is laid
+        // out as a capsule whatever shape is asked for.
+        applyMenuButtonStyle(menu.applyLabelStyle(config.labelStyle))
+            .applyButtonShape(config.borderShape)
+            .applyControlSize(config.controlSize)
+    }
+
+    private var items: some View {
+        ForEach(config.items) { item in
+            MenuItemMapper(item: item, onAction: onAction)
+        }
+    }
+
+    @ViewBuilder
+    private var label: some View {
             if let sysImg = config.systemImage, config.labelStyle == "iconOnly" {
                 // A Menu drops the button styles' content insets, so the glyph
                 // gets its own square, like an icon-only Button's.
@@ -24,15 +46,6 @@ struct AdaptiveMenuView: View {
             } else {
                 applyCustomTextColor(to: Text(config.title).font(customFont))
             }
-        }
-
-        // Same three the button uses: the label style decides what the anchor
-        // shows, the button style draws the material, the border shape decides
-        // its outline. A circle needs `iconOnly` — a label with text is laid
-        // out as a capsule whatever shape is asked for.
-        applyMenuButtonStyle(menu.applyLabelStyle(config.labelStyle))
-            .applyButtonShape(config.borderShape)
-            .applyControlSize(config.controlSize)
     }
 
     @ViewBuilder
@@ -131,6 +144,15 @@ struct MenuItemMapper: View {
                 menuLabel
             }
 
+        case .controlGroup:
+            // Inside a menu, SwiftUI lays a `ControlGroup` out as one row of
+            // compact icon buttons — the Copy / Paste / Share strip.
+            ControlGroup {
+                ForEach(item.items ?? []) { child in
+                    MenuItemMapper(item: child, onAction: onAction)
+                }
+            }
+
         case .section:
             Section(header: Text(item.title ?? "")) {
                 if let children = item.items {
@@ -169,6 +191,19 @@ struct MenuItemMapper: View {
     func triggerAction() {
         if let id = item.actionId {
             onAction(id, nil)
+        }
+    }
+}
+
+@available(iOS 15.0, *)
+extension View {
+    /// `.menuOrder(.fixed)` — iOS 16+; the system order before.
+    @ViewBuilder
+    fileprivate func applyFixedOrder(_ fixed: Bool) -> some View {
+        if fixed, #available(iOS 16.0, *) {
+            self.menuOrder(.fixed)
+        } else {
+            self
         }
     }
 }

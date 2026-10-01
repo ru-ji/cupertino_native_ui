@@ -4,7 +4,9 @@ import 'package:flutter/services.dart'
     show TextCapitalization, TextInputAction, TextInputType;
 import 'package:flutter/widgets.dart';
 
+import 'internal/native_control.dart';
 import 'cupertino_native_glass_container.dart';
+import 'cupertino_native_photos_picker.dart';
 import 'cupertino_native_picker.dart';
 import 'cupertino_native_symbol.dart';
 import 'models/cupertino_native_button_style.dart';
@@ -12,8 +14,8 @@ import 'models/cupertino_native_button_extra_options.dart';
 import 'models/cupertino_native_icon.dart';
 import 'models/cupertino_native_list_section.dart';
 
-/// A node of a [CupertinoNativePageScaffold]'s **native body** — a SwiftUI
-/// view tree described from Dart.
+/// A node of a **native body** — a SwiftUI view tree described from Dart, for
+/// a [CupertinoNativePageScaffold] or a `CupertinoNativeSheet`.
 ///
 /// The ordinary body is a route running in its own FlutterEngine, so a native
 /// control inside it goes Flutter → SwiftUI → FlutterView → SwiftUI: a
@@ -352,28 +354,6 @@ class CupertinoNativeBody {
          },
        );
 
-  /// A radio button, reporting `(id, bool)`.
-  CupertinoNativeBody.radio({
-    required String id,
-    required bool value,
-    String? label,
-    Color? color,
-    bool enabled = true,
-    EdgeInsets? padding,
-  }) : this._(
-         type: 'radio',
-         id: id,
-         padding: padding,
-         payload: {
-           'radio': {
-             'label': label,
-             'value': value,
-             'color': color,
-             'enabled': enabled,
-           },
-         },
-       );
-
   /// A `Slider`, reporting `(id, double)` on every step of the drag.
   CupertinoNativeBody.slider({
     required String id,
@@ -383,6 +363,10 @@ class CupertinoNativeBody {
     double? step,
     Color? color,
     bool enabled = true,
+    double? neutralValue,
+    bool showTicks = false,
+    CupertinoNativeIcon? minimumIcon,
+    CupertinoNativeIcon? maximumIcon,
     EdgeInsets? padding,
   }) : this._(
          type: 'slider',
@@ -396,6 +380,10 @@ class CupertinoNativeBody {
              'step': step,
              'color': color,
              'enabled': enabled,
+             'neutralValue': neutralValue,
+             'showTicks': showTicks,
+             'minimumIcon': minimumIcon?.toMap(),
+             'maximumIcon': maximumIcon?.toMap(),
            },
          },
        );
@@ -551,6 +539,7 @@ class CupertinoNativeBody {
     DateTime? minimumDate,
     DateTime? maximumDate,
     String? mode,
+    String? style,
     Color? tint,
     EdgeInsets? padding,
   }) : this._(
@@ -563,9 +552,69 @@ class CupertinoNativeBody {
              'minimumDate': minimumDate?.millisecondsSinceEpoch,
              'maximumDate': maximumDate?.millisecondsSinceEpoch,
              'mode': mode,
+             'style': style,
              'tint': tint,
            },
          },
+       );
+
+  /// One of the single-value controls — a [CupertinoNativeStepper],
+  /// [CupertinoNativeColorPicker], [CupertinoNativeGauge],
+  /// [CupertinoNativeMultiDatePicker] or [CupertinoNativeTextEditor] — as a
+  /// node. The widget describes the control; its changes report as
+  /// `(id, value)` like every other node (a double, an ARGB int, a list of
+  /// milliseconds since epoch, a string); the widget's own `onChanged` is
+  /// not called, so pass null. [enabled] defaults to true.
+  CupertinoNativeBody.control({
+    required String id,
+    required Widget control,
+    bool? enabled,
+    EdgeInsets? padding,
+  }) : this._(
+         type: 'control',
+         id: id,
+         padding: padding,
+         payload: {'control': _controlPayload(control, enabled)},
+       );
+
+  static Map<String, Object?> _controlPayload(Widget widget, bool? enabled) {
+    assert(
+      widget is NativeControlProvider,
+      'CupertinoNativeBody.control takes a CupertinoNativeStepper, '
+      'CupertinoNativeColorPicker, CupertinoNativeGauge, '
+      'CupertinoNativeMultiDatePicker or CupertinoNativeTextEditor.',
+    );
+    final control = (widget as NativeControlProvider).nativeControl;
+    return {...control.props, 'kind': control.kind, 'enabled': enabled ?? true};
+  }
+
+  /// The embedded system photo picker (iOS 17+) as a node — the way to put
+  /// it in a native sheet with no Flutter engine behind it:
+  ///
+  /// ```dart
+  /// CupertinoNativeSheet.show(
+  ///   nativeBody: CupertinoNativeBody.photosPicker(
+  ///     id: 'photos',
+  ///     picker: CupertinoNativePhotosPicker(showsAlbums: true, onChanged: (_) {}),
+  ///   ),
+  ///   onBodyEvent: (id, value) =>
+  ///       _media = CupertinoNativePickedMedia.listFrom(value),
+  /// );
+  /// ```
+  ///
+  /// The [picker] widget carries the settings; its own `onChanged` is not
+  /// called — selections report through `onBodyEvent`, read with
+  /// [CupertinoNativePickedMedia.listFrom]. As a page's only node it fills
+  /// the page and scrolls itself.
+  CupertinoNativeBody.photosPicker({
+    required String id,
+    required CupertinoNativePhotosPicker picker,
+    EdgeInsets? padding,
+  }) : this._(
+         type: 'photosPicker',
+         id: id,
+         padding: padding,
+         payload: {'photosPicker': picker.nativeConfig},
        );
 
   /// A native `ProgressView` — determinate with [value], or an indeterminate

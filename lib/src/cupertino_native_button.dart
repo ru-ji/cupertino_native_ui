@@ -10,6 +10,7 @@ import 'models/cupertino_native_button_style.dart';
 import 'models/cupertino_native_button_extra_options.dart';
 import 'cupertino_symbol_image.dart';
 import 'models/cupertino_native_icon.dart';
+import 'models/cupertino_symbols.dart';
 
 /// iOS's button, rendered by SwiftUI. Shaped like Flutter's [CupertinoButton]:
 /// the label is [child], and the style comes from the constructor —
@@ -27,6 +28,7 @@ class CupertinoNativeButton extends StatefulWidget {
     this.color,
     this.borderShape = CupertinoNativeButtonBorderShape.automatic,
     this.expand = false,
+    this.role,
     this.width,
     this.height,
   }) : style = CupertinoNativeButtonStyle.plain;
@@ -39,6 +41,7 @@ class CupertinoNativeButton extends StatefulWidget {
     this.color,
     this.borderShape = CupertinoNativeButtonBorderShape.automatic,
     this.expand = false,
+    this.role,
     this.width,
     this.height,
   }) : style = CupertinoNativeButtonStyle.filled;
@@ -51,6 +54,7 @@ class CupertinoNativeButton extends StatefulWidget {
     this.color,
     this.borderShape = CupertinoNativeButtonBorderShape.automatic,
     this.expand = false,
+    this.role,
     this.width,
     this.height,
   }) : style = CupertinoNativeButtonStyle.tinted;
@@ -64,6 +68,7 @@ class CupertinoNativeButton extends StatefulWidget {
     this.color,
     this.borderShape = CupertinoNativeButtonBorderShape.automatic,
     this.expand = false,
+    this.role,
     this.width,
     this.height,
   }) : style = CupertinoNativeButtonStyle.glass;
@@ -77,9 +82,28 @@ class CupertinoNativeButton extends StatefulWidget {
     this.color,
     this.borderShape = CupertinoNativeButtonBorderShape.automatic,
     this.expand = false,
+    this.role,
     this.width,
     this.height,
   }) : style = CupertinoNativeButtonStyle.glassProminent;
+
+  /// A round icon button — the bar button of iOS 26: an SF Symbol in a
+  /// circle, Liquid Glass by default. The shorthand for
+  /// `CupertinoNativeButton.glass(borderShape: circle, child:
+  /// CupertinoSymbolImage.symbol(symbol))`.
+  CupertinoNativeButton.icon(
+    CupertinoSymbols symbol, {
+    super.key,
+    required this.onPressed,
+    this.style = CupertinoNativeButtonStyle.glass,
+    this.sizeStyle = CupertinoNativeControlSize.regular,
+    this.color,
+    this.role,
+  }) : child = CupertinoSymbolImage.symbol(symbol),
+       borderShape = CupertinoNativeButtonBorderShape.circle,
+       expand = false,
+       width = null,
+       height = null;
 
   /// A [Text], [CupertinoSymbolImage], [Icon], or a [Row] of an icon and a
   /// [Text].
@@ -96,6 +120,11 @@ class CupertinoNativeButton extends StatefulWidget {
 
   /// Fill the width offered.
   final bool expand;
+
+  /// The button's semantic role (SwiftUI `Button(role:)`): a destructive
+  /// button is drawn red; a cancel one is recognised as such by alerts and
+  /// menus.
+  final CupertinoNativeButtonRole? role;
 
   /// Explicit point size, sizing the SwiftUI control itself and not just the
   /// Flutter box around it. Left null the control is sized by [sizeStyle] —
@@ -210,6 +239,7 @@ class _CupertinoNativeButtonState extends State<CupertinoNativeButton>
           ? CupertinoNativeButtonLabelStyle.titleOnly.name
           : CupertinoNativeButtonLabelStyle.titleAndIcon.name,
       'expand': widget.expand,
+      'role': widget.role?.name,
       'color': widget.color?.toARGB32(),
       'fontSize': label.textStyle?.fontSize,
       'fontWeight': label.textStyle?.fontWeight?.value,
@@ -343,3 +373,6 @@ class _CupertinoNativeButtonState extends State<CupertinoNativeButton>
     );
   }
 }
+
+/// SwiftUI's `ButtonRole`.
+enum CupertinoNativeButtonRole { destructive, cancel }

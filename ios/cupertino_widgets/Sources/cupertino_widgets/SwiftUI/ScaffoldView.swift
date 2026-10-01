@@ -9,7 +9,7 @@ import SwiftUI
 @available(iOS 15.0, *)
 struct ScaffoldView: View {
     @ObservedObject var model: ScaffoldModel
-    let onBarAction: (String, String) -> Void  // (route, actionId)
+    let onToolbarAction: (String, String) -> Void  // (route, actionId)
 
     var body: some View {
         if let tabBar = model.config.tabBar {
@@ -17,12 +17,12 @@ struct ScaffoldView: View {
                 .applyTabTint(tabBar.accentColor)
                 .applyTabBarMinimizeBehavior(tabBar.minimizeBehavior)
                 .applyTabBottomAccessory(tabBar.accessory) { actionId in
-                    onBarAction(model.selection, actionId)
+                    onToolbarAction(model.selection, actionId)
                 }
         } else {
             navStack(
                 key: model.config.body ?? "", rootRoute: model.config.body ?? "",
-                search: model.config.appBar?.search)
+                search: model.config.navigationBar?.search)
         }
     }
 
@@ -43,6 +43,7 @@ struct ScaffoldView: View {
                                     ?? (tab.role == "search" ? "magnifyingglass" : "circle"))
                         }
                         .tag(tab.id)
+                        .badge(tab.badge.map { Text($0) })
                 }
             }
         }
@@ -53,20 +54,39 @@ struct ScaffoldView: View {
     private func tabbedContent18(_ tabBar: TabBarConfig) -> some View {
         TabView(selection: $model.selection) {
             ForEach(tabBar.tabs) { tab in
-                if tab.role == "search" {
+                if tab.role == "prominent", let prominent = Self.prominentRole {
+                    Tab(
+                        tab.title, systemImage: tab.resolvedSymbolName ?? "circle",
+                        value: tab.id, role: prominent
+                    ) {
+                        navStack(key: tab.id, rootRoute: tab.id, search: tab.search)
+                    }
+                    .badge(tab.badge.map { Text($0) })
+                } else if tab.role == "search" {
                     Tab(
                         tab.title, systemImage: tab.resolvedSymbolName ?? "magnifyingglass",
                         value: tab.id, role: .search
                     ) {
                         navStack(key: tab.id, rootRoute: tab.id, search: tab.search)
                     }
+                    .badge(tab.badge.map { Text($0) })
                 } else {
                     Tab(tab.title, systemImage: tab.resolvedSymbolName ?? "circle", value: tab.id) {
                         navStack(key: tab.id, rootRoute: tab.id, search: tab.search)
                     }
+                    .badge(tab.badge.map { Text($0) })
                 }
             }
         }
+    }
+
+    /// `TabRole.prominent` (iOS 27+); nil before, and the tab stays a plain one.
+    @available(iOS 18.0, *)
+    private static var prominentRole: TabRole? {
+        #if compiler(>=6.4)
+            if #available(iOS 27.0, *) { return .prominent }
+        #endif
+        return nil
     }
 
     private func pathBinding(_ key: String) -> Binding<[PushedRoute]> {
@@ -106,7 +126,7 @@ struct ScaffoldView: View {
 
     private func root(_ rootRoute: String, search: SearchConfig?) -> some View {
         pageRoot(rootRoute: rootRoute)
-            .applyAppBar(model.config.appBar) { onBarAction(rootRoute, $0) }
+            .applyNavigationBar(model.config.navigationBar) { onToolbarAction(rootRoute, $0) }
             .applySearchable(
                 search,
                 text: searchBinding(rootRoute)
@@ -126,7 +146,7 @@ struct ScaffoldView: View {
                         scrollEdgeEffect: model.config.scrollEdgeEffect,
                         showLoadingIndicator: model.config.showLoadingIndicator ?? false
                     )
-                    .applyAppBar(pushed.appBar) { onBarAction(pushed.route, $0) }
+                    .applyNavigationBar(pushed.navigationBar) { onToolbarAction(pushed.route, $0) }
                 }
         }
     }
@@ -140,17 +160,11 @@ struct ScaffoldView: View {
     @ViewBuilder
     private func pageRoot(rootRoute: String) -> some View {
         if model.config.nativeBody != nil {
-            ScrollView {
-                NativeBodyView(model: model.bodyModel) { id, value in
-                    model.onBodyEvent?(id, value)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
+            NativeBodyPage(
+                model: model.bodyModel, scrollEdgeEffect: model.config.scrollEdgeEffect
+            ) { id, value in
+                model.onBodyEvent?(id, value)
             }
-            .applyScrollEdgeEffect(model.config.scrollEdgeEffect)
-            // The body's own choice wins: this outer scroll is the one the
-            // user actually drags, so a `.never` hard-written here silently
-            // overrode `CupertinoNativeBody.scroll(dismissKeyboard:)`.
-            .applyScrollDismiss(model.config.nativeBody)
         } else {
             SearchablePageBody(
                 engine: model.rootEngines[rootRoute],
@@ -279,5 +293,36 @@ struct TabBottomAccessoryView: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+    }
+}
+
+/// A native body as a whole page: the SwiftUI tree in the page's scroll view.
+/// Shared by the scaffold and the sheet.
+@available(iOS 15.0, *)
+struct NativeBodyPage: View {
+    @ObservedObject var model: NativeBodyModel
+    let scrollEdgeEffect: String?
+    let onEvent: (String, Any?) -> Void
+
+    var body: some View {
+        if model.root?.type == "photosPicker" {
+            // The picker scrolls itself and fills the page (a sheet's body):
+            // inside a ScrollView it would have no height at all.
+            NativeBodyView(model: model, onEvent: onEvent)
+        } else {
+            scrollingBody
+        }
+    }
+
+    private var scrollingBody: some View {
+        ScrollView {
+            NativeBodyView(model: model, onEvent: onEvent)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .applyScrollEdgeEffect(scrollEdgeEffect)
+        // The body's own choice wins: this outer scroll is the one the
+        // user actually drags, so a `.never` hard-written here silently
+        // overrode `CupertinoNativeBody.scroll(dismissKeyboard:)`.
+        .applyScrollDismiss(model.root)
     }
 }

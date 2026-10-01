@@ -58,13 +58,18 @@ class NativeMenuView: NativeHostingView {
     }
 
     private func setupSwiftUI(with config: MenuConfiguration) {
-        let menuView = AdaptiveMenuView(config: config) { [weak self] actionId, value in
-            var args: [String: Any] = ["id": actionId]
-            if let val = value {
-                args["value"] = val
-            }
-            self?.channel?.invokeMethod("onAction", arguments: args)
-        }
+        let menuView = AdaptiveMenuView(
+            config: config,
+            onAction: { [weak self] actionId, value in
+                var args: [String: Any] = ["id": actionId]
+                if let val = value {
+                    args["value"] = val
+                }
+                self?.channel?.invokeMethod("onAction", arguments: args)
+            },
+            onPrimaryAction: { [weak self] in
+                self?.channel?.invokeMethod("onPrimaryAction", arguments: nil)
+            })
         isDark = config.isDark
         attach(AnyView(menuView))
     }

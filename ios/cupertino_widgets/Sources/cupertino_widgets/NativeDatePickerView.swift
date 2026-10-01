@@ -43,6 +43,8 @@ final class DatePickerModel: ObservableObject {
     @Published var minimumDate: Date?
     @Published var maximumDate: Date?
     @Published var tint: Color?
+    /// "compact" | "graphical" | "wheel" — `.datePickerStyle`.
+    @Published var style = "compact"
 
     /// Set while applying an update that came FROM Dart, so it isn't echoed.
     var suppressCallback = false
@@ -106,6 +108,7 @@ class NativeDatePickerView: NativeHostingView {
                 "onChanged", arguments: Int(date.timeIntervalSince1970 * 1000))
         }
 
+        model.style = argsMap["style"] as? String ?? "compact"
         setupSwiftUI(isDark: argsMap["isDark"] as? Bool)
     }
 
@@ -138,6 +141,7 @@ class NativeDatePickerView: NativeHostingView {
             model.suppressCallback = true
             if let date = Self.date(from: args["value"]) { model.date = date }
             if let mode = args["mode"] as? String { model.mode = mode }
+            if let style = args["style"] as? String { model.style = style }
             model.minimumDate = Self.date(from: args["minimumDate"])
             model.maximumDate = Self.date(from: args["maximumDate"])
             model.tint = (args["tint"] as? Int).map { Color(argb: $0) }
@@ -168,7 +172,19 @@ struct AdaptiveDatePickerView: View {
             displayedComponents: model.components
         )
         .labelsHidden()
-        .datePickerStyle(.compact)
+        .applyDatePickerStyle(model.style)
         .tint(model.tint)
+    }
+}
+
+@available(iOS 15.0, *)
+extension View {
+    @ViewBuilder
+    fileprivate func applyDatePickerStyle(_ style: String) -> some View {
+        switch style {
+        case "graphical": self.datePickerStyle(.graphical)
+        case "wheel": self.datePickerStyle(.wheel)
+        default: self.datePickerStyle(.compact)
+        }
     }
 }

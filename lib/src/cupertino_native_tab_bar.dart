@@ -11,7 +11,7 @@ import 'models/cupertino_native_tab.dart';
 /// (like the Music mini-player). Only takes effect inside
 /// `CupertinoNativePageScaffold` on iOS 26+. It adapts between the system's
 /// `.inline` (single line) and `.expanded` (shows [subtitle]) placements. Taps
-/// report through the scaffold's `onBarAction` with [actionId] and the current
+/// report through the scaffold's `onToolbarAction` with [actionId] and the current
 /// tab's route.
 class CupertinoNativeTabBarAccessory {
   final String title;
@@ -44,11 +44,6 @@ enum CupertinoNativeTabBarMinimizeBehavior {
   onScrollUp,
   never,
 }
-
-/// iOS 26 Liquid Glass scroll-edge-effect style. Used both by the standalone
-/// [CupertinoNativeTabBar] (mapped to the bar's background material) and by
-/// `CupertinoNativePageScaffold`'s native scroll views. No effect below iOS 26.
-enum CupertinoScrollEdgeEffectStyle { automatic, soft, hard }
 
 /// A native iOS tab bar rendered by a bare `UITabBar` in a transparent
 /// container — no UITabBarController, so Flutter content stays visible
@@ -138,6 +133,7 @@ class _CupertinoNativeTabBarState extends State<CupertinoNativeTabBar> {
   bool? _lastIsDark;
   List<String>? _lastLabels;
   List<String>? _lastSymbols;
+  List<String>? _lastBadges;
   bool? _lastSplit;
   int? _lastRightCount;
   double? _lastSplitSpacing;
@@ -151,6 +147,7 @@ class _CupertinoNativeTabBarState extends State<CupertinoNativeTabBar> {
   }
 
   List<String> get _labels => widget.items.map((t) => t.title).toList();
+  List<String> get _badges => widget.items.map((t) => t.badge ?? '').toList();
   List<String> get _symbols =>
       widget.items.map((t) => t.resolvedSymbolName ?? '').toList();
 
@@ -190,6 +187,7 @@ class _CupertinoNativeTabBarState extends State<CupertinoNativeTabBar> {
     _lastIsDark = _isDark;
     _lastLabels = _labels;
     _lastSymbols = _symbols;
+    _lastBadges = _badges;
     _lastSplit = widget.split;
     _lastRightCount = widget.rightCount;
     _lastSplitSpacing = widget.splitSpacing;
@@ -218,6 +216,7 @@ class _CupertinoNativeTabBarState extends State<CupertinoNativeTabBar> {
     final bg = widget.backgroundColor?.toARGB32();
     final labels = _labels;
     final symbols = _symbols;
+    final badges = _badges;
 
     if (_lastIndex != idx) {
       await channel.invokeMethod('setSelectedIndex', {'index': idx});
@@ -243,14 +242,17 @@ class _CupertinoNativeTabBarState extends State<CupertinoNativeTabBar> {
     }
 
     if (!listEquals(_lastLabels, labels) ||
-        !listEquals(_lastSymbols, symbols)) {
+        !listEquals(_lastSymbols, symbols) ||
+        !listEquals(_lastBadges, badges)) {
       await channel.invokeMethod('setItems', {
         'labels': labels,
         'sfSymbols': symbols,
+        'badges': badges,
         'selectedIndex': idx,
       });
       _lastLabels = labels;
       _lastSymbols = symbols;
+      _lastBadges = badges;
       _requestIntrinsicSize();
     }
 
@@ -328,6 +330,7 @@ class _CupertinoNativeTabBarState extends State<CupertinoNativeTabBar> {
     final creationParams = <String, dynamic>{
       'labels': _labels,
       'sfSymbols': _symbols,
+      'badges': _badges,
       'icons': _iconConfigs,
       'selectedIndex': _selectedIndex,
       'isDark': _isDark,

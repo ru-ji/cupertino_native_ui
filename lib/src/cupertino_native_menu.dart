@@ -34,6 +34,15 @@ class CupertinoNativeMenu extends StatefulWidget {
   final TextStyle? textStyle;
   final List<CupertinoNativeMenuItem> items;
   final CupertinoNativeMenuActionCallback? onAction;
+
+  /// Makes the anchor a split action: a tap calls this, a long press opens
+  /// the menu (SwiftUI `Menu(primaryAction:)`).
+  final VoidCallback? onPressed;
+
+  /// Keeps [items] in the order given even when the menu opens upward
+  /// (`.menuOrder(.fixed)`, iOS 16+). By default the system puts the first
+  /// item nearest the finger.
+  final bool fixedOrder;
   final double? width;
   final double? height;
 
@@ -49,6 +58,8 @@ class CupertinoNativeMenu extends StatefulWidget {
     this.activeColor,
     this.textStyle,
     this.onAction,
+    this.onPressed,
+    this.fixedOrder = false,
     this.width,
     this.height,
   });
@@ -102,6 +113,8 @@ class _CupertinoNativeMenuState extends State<CupertinoNativeMenu>
       'fontWeight': widget.textStyle?.fontWeight?.value,
       'textColor': widget.textStyle?.color?.toARGB32(),
       'isDark': _isDark,
+      'hasPrimaryAction': widget.onPressed != null,
+      'fixedOrder': widget.fixedOrder,
     };
   }
 
@@ -115,7 +128,9 @@ class _CupertinoNativeMenuState extends State<CupertinoNativeMenu>
   }
 
   Future<dynamic> _handleMethodCall(MethodCall call) async {
-    if (call.method == 'onAction') {
+    if (call.method == 'onPrimaryAction') {
+      widget.onPressed?.call();
+    } else if (call.method == 'onAction') {
       final String id = call.arguments['id'];
       final dynamic value = call.arguments['value'];
       widget.onAction?.call(id, value);

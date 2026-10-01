@@ -1,4 +1,4 @@
-import 'models/cupertino_native_bar_item.dart';
+import 'models/cupertino_native_toolbar_item.dart';
 
 /// How a [CupertinoNativeScaffoldNavigationBar] title is displayed, mapped to SwiftUI's
 /// `.toolbarTitleDisplayMode(...)`.
@@ -97,22 +97,30 @@ class CupertinoNativeScaffoldNavigationBar {
   /// [CupertinoNativeToolbarTitleDisplayMode.automatic].
   final CupertinoNativeToolbarTitleDisplayMode titleDisplayMode;
 
-  /// Leading/trailing entries: [CupertinoNativeBarItem] renders its own glass
-  /// capsule, [CupertinoNativeBarItemGroup] renders several buttons sharing
-  /// one capsule.
-  final List<CupertinoNativeBarEntry> leading;
-  final List<CupertinoNativeBarEntry> trailing;
+  /// Leading/trailing toolbar entries. Consecutive entries share ONE glass
+  /// capsule, like consecutive SwiftUI `ToolbarItem`s; put a
+  /// [CupertinoNativeToolbarSpacer] between two to split it.
+  final List<CupertinoNativeToolbarContent> leading;
+  final List<CupertinoNativeToolbarContent> trailing;
 
   /// Entries for the bottom toolbar — SwiftUI's `.bottomBar` placement, the
   /// glass bar that rides above the home indicator in Mail, Safari and Notes.
-  /// Insert a [CupertinoNativeBarSpacer] to split its shared capsule.
+  /// Insert a [CupertinoNativeToolbarSpacer] to split its shared capsule.
   ///
   /// Up to 5 entries; extra ones are dropped.
-  final List<CupertinoNativeBarEntry> bottom;
+  final List<CupertinoNativeToolbarContent> bottom;
 
   /// Optional native search field attached to this page's navigation bar.
   /// When set, the page becomes `.searchable`.
   final CupertinoNativeSearchField? search;
+
+  /// Items that always live in the bar's overflow ("…") menu —
+  /// `.toolbarOverflowMenu` (iOS 27+; not shown earlier).
+  final List<CupertinoNativeToolbarItem> overflow;
+
+  /// Whether the navigation bar collapses as the content scrolls —
+  /// `.toolbarMinimizationBehavior(_:for: .navigationBar)` (iOS 27+).
+  final CupertinoNativeToolbarMinimizeBehavior minimizeBehavior;
 
   const CupertinoNativeScaffoldNavigationBar({
     required this.title,
@@ -122,6 +130,8 @@ class CupertinoNativeScaffoldNavigationBar {
     this.trailing = const [],
     this.bottom = const [],
     this.search,
+    this.overflow = const [],
+    this.minimizeBehavior = CupertinoNativeToolbarMinimizeBehavior.automatic,
   });
 
   /// Serialized form consumed by `CupertinoNativePageScaffold` to configure each
@@ -135,6 +145,16 @@ class CupertinoNativeScaffoldNavigationBar {
       'trailing': trailing.map((e) => e.toMap()).toList(),
       'bottom': bottom.map((e) => e.toMap()).toList(),
       'search': search?.toMap(),
+      'overflow': overflow.map((e) => e.toMap()).toList(),
+      'minimizeBehavior': minimizeBehavior.name,
     };
   }
+}
+
+/// SwiftUI's `ToolbarMinimizationBehavior` (iOS 27+; ignored earlier).
+enum CupertinoNativeToolbarMinimizeBehavior {
+  automatic,
+  never,
+  onScrollDown,
+  onScrollUp,
 }

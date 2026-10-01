@@ -1,8 +1,7 @@
 import SwiftUI
 
-/// The iOS 26-style checkbox SwiftUI draws: a rounded square that sits quiet
-/// (quaternary fill, separator stroke) when off and fills with the tint — a
-/// springy white checkmark bouncing in — when on.
+/// The checkbox: iOS has none, so this is the selection symbol Reminders and
+/// Mail use — `circle` when off, `checkmark.circle.fill` in the tint when on.
 ///
 /// Driven by a `Binding`, not its own state: the standalone platform view
 /// binds the value it echoes to Dart, and a native body node binds the
@@ -41,23 +40,13 @@ struct AdaptiveCheckboxView: View {
         .applySelectionFeedback(trigger: isOn)
     }
 
+    // No SwiftUI checkbox on iOS (`.toggleStyle(.checkbox)` is macOS-only):
+    // the system's own idiom is the Reminders / Mail selection symbol.
     private var box: some View {
-        RoundedRectangle(cornerRadius: 7, style: .continuous)
-            .fill(isOn ? AnyShapeStyle(tint) : AnyShapeStyle(.tertiary))
-            .overlay(
-                RoundedRectangle(cornerRadius: 7, style: .continuous)
-                    .stroke(
-                        isOn ? AnyShapeStyle(tint) : AnyShapeStyle(Color(uiColor: .separator)),
-                        lineWidth: 1.5)
-            )
-            .frame(width: 22, height: 22)
-            .overlay {
-                Image(systemName: "checkmark")
-                    .font(.system(size: 12, weight: .bold))
-                    .foregroundStyle(.white)
-                    .scaleEffect(isOn ? 1 : 0.5)
-                    .opacity(isOn ? 1 : 0)
-            }
+        Image(systemName: isOn ? "checkmark.circle.fill" : "circle")
+            .font(.system(size: 22))
+            .foregroundStyle(isOn ? tint : Color(uiColor: .tertiaryLabel))
+            .modifier(SymbolReplaceTransition())
     }
 
     private func toggle() {
@@ -89,5 +78,29 @@ struct AdaptiveCheckboxView: View {
     var customTextColor: Color? {
         guard let val = config.textColor else { return nil }
         return Color(argb: val)
+    }
+}
+
+@available(iOS 15.0, *)
+extension View {
+    @ViewBuilder
+    func applySelectionFeedback(trigger: Bool) -> some View {
+        if #available(iOS 17.0, *) {
+            self.sensoryFeedback(.selection, trigger: trigger)
+        } else {
+            self
+        }
+    }
+}
+
+/// The iOS 17+ symbol swap animation; a plain cross-fade before.
+@available(iOS 15.0, *)
+struct SymbolReplaceTransition: ViewModifier {
+    func body(content: Content) -> some View {
+        if #available(iOS 17.0, *) {
+            content.contentTransition(.symbolEffect(.replace))
+        } else {
+            content
+        }
     }
 }

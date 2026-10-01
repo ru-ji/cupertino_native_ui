@@ -20,12 +20,30 @@ typedef CupertinoNativeListToggleCallback = void Function(
   bool value,
 );
 
-/// Reports a bar item tap: the route the bar belongs to, and the item's
-/// `actionId`. Used by `CupertinoNativePageScaffold.onBarAction`.
-typedef CupertinoNativeBarActionCallback = void Function(
+/// Reports a swipe action picked on a list row: the row's
+/// `CupertinoNativeListTile.id` and the action's `actionId`.
+typedef CupertinoNativeListSwipeCallback = void Function(
+  String rowId,
+  String actionId,
+);
+
+/// Reports a row dragged to a new place in edit mode, within its section —
+/// indices as `List.insert` expects them after the removal.
+typedef CupertinoNativeListReorderCallback = void Function(
+  int section,
+  int oldIndex,
+  int newIndex,
+);
+
+/// Reports a toolbar item tap: the route the bar belongs to, and the item's
+/// `actionId`. Used by `CupertinoNativePageScaffold.onToolbarAction`.
+typedef CupertinoNativeToolbarActionCallback = void Function(
   String route,
   String actionId,
 );
+
+@Deprecated('Renamed CupertinoNativeToolbarActionCallback, after SwiftUI')
+typedef CupertinoNativeBarActionCallback = CupertinoNativeToolbarActionCallback;
 
 /// Reports the current native navigation stack, root route first. Used by
 /// `CupertinoNativePageScaffold.onRouteChanged`.

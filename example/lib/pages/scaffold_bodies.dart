@@ -52,10 +52,8 @@ class ScaffoldHomeBody extends StatelessWidget {
                   navigationBar: CupertinoNativeScaffoldNavigationBar(
                     title: 'Now Playing',
                     trailing: [
-                      CupertinoNativeBarItem(
-                        icon: CupertinoNativeIcon.symbol(
-                          CupertinoSymbols.squareAndArrowUp,
-                        ),
+                      CupertinoNativeToolbarItem(
+                        symbol: CupertinoSymbols.squareAndArrowUp,
                         actionId: 'share_details',
                       ),
                     ],

@@ -8,7 +8,6 @@ import 'cupertino_native_button.dart';
 import 'models/cupertino_native_button_style.dart';
 import 'models/cupertino_native_button_extra_options.dart';
 import 'cupertino_native_glass_container.dart';
-import 'cupertino_native_tab_bar.dart' show CupertinoScrollEdgeEffectStyle;
 import 'cupertino_native_text_field.dart';
 import 'cupertino_scroll_edge_effect.dart';
 import 'cupertino_symbol_image.dart';
@@ -16,9 +15,9 @@ import 'internal/ios_version.dart';
 import 'internal/legacy_sliver_navigation_bar.dart';
 import 'models/cupertino_native_icon.dart';
 import 'models/cupertino_symbols.dart';
-import 'search_row_visibility.dart';
+import 'cupertino_search_row_visibility.dart';
 
-export 'search_row_visibility.dart' show CupertinoSearchRowVisibility;
+export 'cupertino_search_row_visibility.dart' show CupertinoSearchRowVisibility;
 
 /// An iOS 26-style navigation bar drawn in Flutter.
 ///

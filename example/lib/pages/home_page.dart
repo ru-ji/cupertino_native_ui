@@ -22,6 +22,8 @@ import 'sheet_demo_page.dart';
 import 'slider_demo_page.dart';
 import 'standalone_tab_bar_demo_page.dart';
 import 'switch_demo_page.dart';
+import 'more_controls_demo_page.dart';
+import 'photos_picker_demo_page.dart';
 import 'text_field_demo_page.dart';
 
 /// The demo catalog — a native SwiftUI list of rows, like every page in the
@@ -83,6 +85,18 @@ class HomePage extends StatelessWidget {
                           'Switch',
                           'switch.2',
                           CupertinoColors.systemGreen,
+                        ),
+                        _row(
+                          'photosPicker',
+                          'Photos Picker',
+                          'photo.on.rectangle',
+                          CupertinoColors.systemPink,
+                        ),
+                        _row(
+                          'moreControls',
+                          'More Controls',
+                          'plusminus',
+                          CupertinoColors.systemIndigo,
                         ),
                         _row(
                           'segmented',
@@ -234,6 +248,8 @@ class HomePage extends StatelessWidget {
     final Widget page = switch (id) {
       'slider' => const SliderDemoPage(),
       'switch' => const SwitchDemoPage(),
+      'moreControls' => const MoreControlsDemoPage(),
+      'photosPicker' => const PhotosPickerDemoPage(),
       'segmented' => const SegmentedControlDemoPage(),
       'button' => const ButtonDemoPage(),
       'contextMenu' => const ContextMenuDemoPage(),

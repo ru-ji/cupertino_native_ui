@@ -19,13 +19,21 @@ struct AdaptiveButtonView: View {
         }
     }
 
+    private var buttonRole: ButtonRole? {
+        switch config.role {
+        case "destructive": .destructive
+        case "cancel": .cancel
+        default: nil
+        }
+    }
+
     var body: some View {
 
         // An explicit size has to reach the label, not just frame the button, so
         // the style's background stretches to it.
         let fills = config.expand == true || config.width != nil || config.height != nil
 
-        let button = Button(action: onPressed) {
+        let button = Button(role: buttonRole, action: onPressed) {
             if let icon = config.icon, !config.title.isEmpty,
                 config.labelStyle != "iconOnly", config.labelStyle != "titleOnly"
             {

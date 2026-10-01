@@ -32,6 +32,7 @@ class TextFieldDemoPage extends StatefulWidget {
 class _TextFieldDemoPageState extends State<TextFieldDemoPage> {
   final _nameController = TextEditingController(text: 'Casey Rivera');
   String _email = '';
+  String _notes = '';
   bool _glassClear = false;
   bool _glassInteractive = true;
 
@@ -385,6 +386,44 @@ class _TextFieldDemoPageState extends State<TextFieldDemoPage> {
                       ],
                     ),
                     Padding(
+                      padding: const EdgeInsets.fromLTRB(32, 20, 32, 6),
+                      child: Text(
+                        'TEXT EDITOR',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: CupertinoColors.secondaryLabel.resolveFrom(
+                            context,
+                          ),
+                        ),
+                      ),
+                    ),
+                    // Multi-line native TextEditor: it scrolls inside its
+                    // own height, controlled by echoing onChanged back.
+                    // No card padding: the TextEditor keeps its own inset.
+                    _Card(
+                      padding: EdgeInsets.zero,
+                      child: CupertinoNativeTextEditor(
+                        text: _notes,
+                        placeholder: 'Notes…',
+                        height: 140,
+                        maxLength: 280,
+                        cursorColor: CupertinoColors.systemOrange,
+                        onChanged: (v) => setState(() => _notes = v),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(32, 6, 32, 0),
+                      child: Text(
+                        '${_notes.length} / 280',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: CupertinoColors.secondaryLabel.resolveFrom(
+                            context,
+                          ),
+                        ),
+                      ),
+                    ),
+                    Padding(
                       padding: const EdgeInsets.all(16),
                       child: CupertinoNativeButton.filled(
                         expand: true,
@@ -414,15 +453,19 @@ class _TextFieldDemoPageState extends State<TextFieldDemoPage> {
 /// The grouped card a standalone native control sits in, so it matches the
 /// native list sections around it.
 class _Card extends StatelessWidget {
-  const _Card({required this.child});
+  const _Card({
+    required this.child,
+    this.padding = const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+  });
 
   final Widget child;
+  final EdgeInsets padding;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: padding,
       decoration: BoxDecoration(
         color: CupertinoColors.secondarySystemGroupedBackground.resolveFrom(
           context,

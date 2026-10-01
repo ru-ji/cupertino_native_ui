@@ -63,9 +63,15 @@ class NativeSliderView: NativeHostingView {
     /// takes for `expand: true`; a slider has no natural width to hug. Its
     /// height still comes back through `getIntrinsicSize`, same as the button's.
     private func setupSwiftUI() {
-        let sliderView = AdaptiveSliderView(viewModel: viewModel) { [weak self] value in
-            self?.channel.invokeMethod("onChanged", arguments: value)
-        }
+        let sliderView = AdaptiveSliderView(
+            viewModel: viewModel,
+            onChanged: { [weak self] value in
+                self?.channel.invokeMethod("onChanged", arguments: value)
+            },
+            onEditing: { [weak self] started in
+                self?.channel.invokeMethod(
+                    started ? "onChangeStart" : "onChangeEnd", arguments: self?.viewModel.value)
+            })
         attach(AnyView(sliderView))
     }
 
@@ -108,6 +114,21 @@ class NativeSliderView: NativeHostingView {
         }
         if let max = args["max"] as? NSNumber {
             viewModel.max = max.doubleValue
+        }
+        // Only on a full props push: a theme-only update carries just `isDark`,
+        // and absent keys here mean "none", not "unchanged".
+        if args["value"] != nil {
+            let divisions = (args["divisions"] as? NSNumber)?.intValue ?? 0
+            viewModel.step =
+                divisions > 0 ? (viewModel.max - viewModel.min) / Double(divisions) : nil
+            viewModel.neutralValue = (args["neutralValue"] as? NSNumber)?.doubleValue
+            viewModel.showTicks = args["showTicks"] as? Bool ?? false
+            viewModel.minimumIcon = (args["minimumIcon"] as? [String: Any]).flatMap {
+                decodeConfig(IconConfig.self, from: $0)
+            }
+            viewModel.maximumIcon = (args["maximumIcon"] as? [String: Any]).flatMap {
+                decodeConfig(IconConfig.self, from: $0)
+            }
         }
         if let isEnabled = args["isEnabled"] as? Bool {
             viewModel.isEnabled = isEnabled
