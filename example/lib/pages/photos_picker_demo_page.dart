@@ -156,14 +156,17 @@ class _Card extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Padding(
     padding: const EdgeInsets.symmetric(horizontal: 16),
-    child: ClipRRect(
-      borderRadius: BorderRadius.circular(26),
-      child: ColoredBox(
+    // A rounded background, not a ClipRRect: a Flutter clip around a native
+    // view is composited, and the engine applies it to every native view
+    // painted before it in the frame too.
+    child: DecoratedBox(
+      decoration: BoxDecoration(
         color: CupertinoColors.secondarySystemGroupedBackground.resolveFrom(
           context,
         ),
-        child: SizedBox(height: height, child: child),
+        borderRadius: BorderRadius.circular(26),
       ),
+      child: SizedBox(height: height, child: child),
     ),
   );
 }
@@ -245,10 +248,32 @@ class _MediaGrid extends StatelessWidget {
                   ),
                   CupertinoNativePickedMedia(path: null) =>
                     const CupertinoActivityIndicator(),
-                  CupertinoNativePickedMedia(isVideo: true) => Icon(
-                    CupertinoIcons.play_fill,
-                    color: secondary,
-                  ),
+                  CupertinoNativePickedMedia(
+                    isVideo: true,
+                    :final thumbnailPath,
+                  ) =>
+                    Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        if (thumbnailPath != null)
+                          Image.file(
+                            File(thumbnailPath),
+                            fit: BoxFit.cover,
+                            cacheWidth: 300,
+                          ),
+                        const Align(
+                          alignment: Alignment.bottomLeft,
+                          child: Padding(
+                            padding: EdgeInsets.all(6),
+                            child: Icon(
+                              CupertinoIcons.play_fill,
+                              size: 16,
+                              color: CupertinoColors.white,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   // Decoded at thumbnail size, not the file's.
                   CupertinoNativePickedMedia(:final path?) => Image.file(
                     File(path),

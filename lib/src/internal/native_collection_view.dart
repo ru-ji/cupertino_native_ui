@@ -9,6 +9,7 @@ import '../callbacks.dart';
 import '../models/cupertino_native_list_tile.dart';
 import '../models/cupertino_native_list_section.dart';
 import 'native_platform_view_mixin.dart';
+import 'scroll_friendly_recognizer.dart';
 import 'keyboard_avoidance.dart';
 import 'widget_lowering.dart';
 
@@ -364,6 +365,13 @@ class _NativeCollectionViewState extends State<NativeCollectionView>
         creationParams: _creationParams ??= _toMap(),
         creationParamsCodec: const StandardMessageCodec(),
         onPlatformViewCreated: _onPlatformViewCreated,
+        // With no recognizer of its own, the view only got a touch once
+        // nothing else in Flutter wanted it — at the finger's lift, at best.
+        // A tap still worked; a press-and-hold that turns into a drag (moving
+        // a field's cursor, the magnifier, a selection) never reached the
+        // native field. A hold or a sideways drag is the row's now; a
+        // vertical drag still scrolls the page.
+        gestureRecognizers: scrollFriendlyGestures,
       ),
     );
 

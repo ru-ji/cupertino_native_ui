@@ -367,7 +367,7 @@ class _CupertinoNativeTextFieldState extends State<CupertinoNativeTextField>
     final bottomInset = view.viewInsets.bottom;
     final rising = bottomInset > _lastBottomInset;
     _lastBottomInset = bottomInset;
-    if (rising && _focusNode.hasFocus) _revealAboveKeyboard();
+    if (rising && _keyboardOwner) _revealAboveKeyboard();
   }
 
   /// Resigns the native first responder as the route starts leaving, so the
@@ -377,11 +377,20 @@ class _CupertinoNativeTextFieldState extends State<CupertinoNativeTextField>
     if (_focusNode.hasFocus) _focusNode.unfocus();
   }
 
+  /// The native field holds the responder, as UIKit last reported it.
+  bool _nativeFocused = false;
+
+  /// Who the keyboard is for. The native report, not only the Flutter node:
+  /// the node follows it through the focus manager, which on the first focus
+  /// of a debug run took over a second — the keyboard had finished rising
+  /// before the node said this field was focused, so it was never lifted.
+  bool get _keyboardOwner => _nativeFocused || _focusNode.hasFocus;
+
   /// Scrolls the minimum needed to keep the field above the keyboard.
   /// Instant, and a no-op when the field is already visible.
   void _revealAboveKeyboard({bool postFrame = false}) {
     void run({bool animate = false}) {
-      if (!mounted || !_focusNode.hasFocus) return;
+      if (!mounted || !_keyboardOwner) return;
       final box = context.findRenderObject();
       if (box is! RenderBox || !box.hasSize) return;
       // Only the part of the keyboard that really covers this viewport
@@ -631,6 +640,7 @@ class _CupertinoNativeTextFieldState extends State<CupertinoNativeTextField>
         break;
       case 'onFocusChange':
         final focused = (call.arguments['focused'] as bool?) ?? false;
+        _nativeFocused = focused;
         if (focused) {
           if (!_focusNode.hasFocus) _focusNode.requestFocus();
           widget.onTap?.call();

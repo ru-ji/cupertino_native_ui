@@ -455,7 +455,9 @@ class _Card extends StatelessWidget {
       margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: padding,
       decoration: BoxDecoration(
-        color: CupertinoColors.activeGreen,
+        color: CupertinoColors.secondarySystemGroupedBackground.resolveFrom(
+          context,
+        ),
         borderRadius: BorderRadius.circular(26),
       ),
       child: child,

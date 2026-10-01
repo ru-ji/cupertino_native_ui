@@ -42,6 +42,15 @@ glow over the scroll edge effect:
 <true/>
 ```
 
+## Don't clip native widgets
+
+Never wrap a native widget in `ClipRRect`, `ClipRect` or `ClipPath` — nor in
+anything that clips, like a `Container` with `clipBehavior` or a `Card`. On
+iOS, Flutter applies that clip to every native view drawn before it on the
+screen, not only to its child: other native widgets get cut or covered,
+most visibly during page transitions. Round a native widget with its own
+`cornerRadius` instead.
+
 ## What's in the package
 
 Every widget is `CupertinoNative` + the name of its Flutter counterpart.

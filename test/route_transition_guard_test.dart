@@ -16,7 +16,7 @@ class _ProbeState extends State<_Probe> with NativePlatformViewStateMixin {
 }
 
 void main() {
-  testWidgets('guards a covered page and a leaving one, never a first push', (
+  testWidgets('guards a covered page, never an arriving or leaving one', (
     tester,
   ) async {
     debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
@@ -48,8 +48,10 @@ void main() {
     nav.currentState!.pop();
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
-    // Mid-pop: the leaving page is guarded now that it has settled once.
-    expect(pushed.currentState!.debugGuardingRouteTransition, isTrue);
+    // Mid-pop: the uncovered page shows its photo; the leaving one stays
+    // live — photographing it as the pop starts held the main thread long
+    // enough to lose a back swipe under the finger.
+    expect(pushed.currentState!.debugGuardingRouteTransition, isFalse);
     expect(home.currentState!.debugGuardingRouteTransition, isTrue);
 
     await tester.pumpAndSettle();

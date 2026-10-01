@@ -123,14 +123,7 @@ mixin NativePlatformViewStateMixin<T extends StatefulWidget> on State<T> {
   /// Whether this widget is replaced by a photo while its route animates.
   bool get hidesDuringRouteTransition => true;
 
-  ModalRoute<dynamic>? _route;
-  Animation<double>? _routeAnimation;
   Animation<double>? _routeSecondaryAnimation;
-
-  /// This route has finished arriving once. Until then a moving own animation
-  /// is its first push, whose views have never rendered and so cannot be
-  /// photographed; after, it is this page leaving (a pop, a back swipe).
-  bool _routeSettled = false;
 
   /// True while the photo stands in for the live view.
   bool _routeTransitioning = false;
@@ -151,44 +144,34 @@ mixin NativePlatformViewStateMixin<T extends StatefulWidget> on State<T> {
     if (!hidesDuringRouteTransition) return;
     if (kIsWeb || defaultTargetPlatform != TargetPlatform.iOS) return;
     final route = ModalRoute.of(context);
-    if (route?.animation == _routeAnimation &&
-        route?.secondaryAnimation == _routeSecondaryAnimation) {
-      return;
-    }
+    if (route?.secondaryAnimation == _routeSecondaryAnimation) return;
     _unwatchRoute();
-    _route = route;
-    _routeSettled = false;
-    _routeAnimation = route?.animation?..addStatusListener(_onRouteStatus);
     _routeSecondaryAnimation = route?.secondaryAnimation
       ?..addStatusListener(_onRouteStatus);
     _updateRouteGuard();
   }
 
   void _unwatchRoute() {
-    _routeAnimation?.removeStatusListener(_onRouteStatus);
     _routeSecondaryAnimation?.removeStatusListener(_onRouteStatus);
-    _route = null;
-    _routeAnimation = null;
     _routeSecondaryAnimation = null;
   }
 
   void _onRouteStatus(AnimationStatus _) => _updateRouteGuard();
 
-  /// Guards while another page covers this one (from the moment it starts
-  /// sliding over until it has slid back off), and while this page leaves.
-  /// The photo taken as a page is covered is still right when it is uncovered:
-  /// nothing on it moved in between.
+  /// Guards while another page covers this one, from the moment it starts
+  /// sliding over until it has slid back off. The photo taken as a page is
+  /// covered is still right when it is uncovered: nothing on it moved in
+  /// between, and it is ready before a back swipe starts.
+  ///
+  /// Not while this page leaves (a pop, a back swipe): its photos had to be
+  /// taken the instant the transition started — every native view drawn on
+  /// the main thread at once, megabytes of pixels each — and on a page of
+  /// lists that held the main thread long enough to lose the swipe under the
+  /// finger, which then snapped back or finished on its own. The leaving
+  /// page keeps its live views.
   void _updateRouteGuard() {
-    final own = _routeAnimation;
     final secondary = _routeSecondaryAnimation;
-    // Not on the offstage pass: a pushed route is first built with its
-    // animation pinned at 1.0, for Hero measurement, before it has arrived.
-    if (own != null && own.isCompleted && !(_route?.offstage ?? false)) {
-      _routeSettled = true;
-    }
-    final guard =
-        (secondary != null && !secondary.isDismissed) ||
-        (_routeSettled && own != null && !own.isCompleted);
+    final guard = secondary != null && !secondary.isDismissed;
     if (!guard) {
       _exitRouteTransition();
       return;

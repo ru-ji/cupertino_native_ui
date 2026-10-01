@@ -1,3 +1,4 @@
+import AVFoundation
 import Flutter
 import ImageIO
 import PhotosUI
@@ -191,7 +192,8 @@ enum PhotoCache {
     }
 
     /// The payload for one item: `id`, `path`, `isVideo`, `width`, `height`
-    /// — or `id` + `error` when it could not be loaded.
+    /// (and `thumbnail` for a video) — or `id` + `error` when it could not be
+    /// loaded.
     static func load(_ item: PhotosPickerItem, key: String, config: PhotosPickerConfig) async
         -> [String: Any]
     {
@@ -212,6 +214,18 @@ enum PhotoCache {
                     throw CocoaError(.fileReadUnknown)
                 }
                 payload["path"] = file.url.path
+                // A video has no picture of its own to show in a grid: its
+                // first frame, as a JPEG next to it. Optional — the video
+                // stands without it.
+                let thumb = directory.appendingPathComponent(UUID().uuidString + ".jpg")
+                if let (w, h) = await videoThumbnail(
+                    file.url, to: thumb, maxPixel: config.maxDimension ?? 600,
+                    quality: config.jpegQuality ?? 0.8)
+                {
+                    payload["thumbnail"] = thumb.path
+                    payload["width"] = w
+                    payload["height"] = h
+                }
             } else {
                 guard let file = try await item.loadTransferable(type: PickedImage.self) else {
                     throw CocoaError(.fileReadUnknown)
@@ -259,6 +273,24 @@ enum PhotoCache {
             kCGImageSourceThumbnailMaxPixelSize: maxPixel,
         ]
         guard let image = CGImageSourceCreateThumbnailAtIndex(src, 0, options as CFDictionary),
+            let out = CGImageDestinationCreateWithURL(
+                dest as CFURL, UTType.jpeg.identifier as CFString, 1, nil)
+        else { return nil }
+        CGImageDestinationAddImage(
+            out, image, [kCGImageDestinationLossyCompressionQuality: quality] as CFDictionary)
+        guard CGImageDestinationFinalize(out) else { return nil }
+        return (image.width, image.height)
+    }
+
+    /// The video's first frame, upright, no larger than `maxPixel`, written as
+    /// a JPEG. Returns its pixel size, or nil when no frame could be read.
+    private static func videoThumbnail(
+        _ video: URL, to dest: URL, maxPixel: Double, quality: Double
+    ) async -> (Int, Int)? {
+        let generator = AVAssetImageGenerator(asset: AVURLAsset(url: video))
+        generator.appliesPreferredTrackTransform = true
+        generator.maximumSize = CGSize(width: maxPixel, height: maxPixel)
+        guard let image = try? await generator.image(at: .zero).image,
             let out = CGImageDestinationCreateWithURL(
                 dest as CFURL, UTType.jpeg.identifier as CFString, 1, nil)
         else { return nil }

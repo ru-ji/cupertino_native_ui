@@ -29,6 +29,7 @@ class CupertinoNativePickedMedia {
     required this.id,
     this.path,
     this.isVideo = false,
+    this.thumbnailPath,
     this.width,
     this.height,
     this.failed = false,
@@ -45,7 +46,13 @@ class CupertinoNativePickedMedia {
   final String? path;
   final bool isVideo;
 
-  /// Pixel size, for images.
+  /// For a video: its first frame, as a JPEG no larger than
+  /// [CupertinoNativePhotosPicker.maxDimension] (600 when null) — what to
+  /// show in a grid. Same lifetime as [path]. Null for an image, or when no
+  /// frame could be read.
+  final String? thumbnailPath;
+
+  /// Pixel size: the image's, or the video thumbnail's.
   final int? width;
   final int? height;
 
@@ -66,6 +73,7 @@ class CupertinoNativePickedMedia {
         id: map['id'] as String,
         path: map['path'] as String?,
         isVideo: map['isVideo'] as bool? ?? false,
+        thumbnailPath: map['thumbnail'] as String?,
         width: map['width'] as int?,
         height: map['height'] as int?,
         failed: map['error'] as bool? ?? false,
