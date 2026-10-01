@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
 import 'internal/native_platform_view_mixin.dart';
+import 'models/cupertino_native_icon.dart';
 import 'internal/scroll_friendly_recognizer.dart';
 
 class CupertinoNativeSlider extends StatefulWidget {
@@ -16,6 +17,12 @@ class CupertinoNativeSlider extends StatefulWidget {
     this.divisions,
     this.activeColor,
     this.thumbColor,
+    this.onChangeStart,
+    this.onChangeEnd,
+    this.minimumIcon,
+    this.maximumIcon,
+    this.showTicks = false,
+    this.neutralValue,
   }) : assert(min <= max),
        assert(value >= min && value <= max);
 
@@ -26,6 +33,26 @@ class CupertinoNativeSlider extends StatefulWidget {
   final int? divisions;
   final Color? activeColor;
   final Color? thumbColor;
+
+  /// Called with the value when the user starts dragging.
+  final ValueChanged<double>? onChangeStart;
+
+  /// Called with the value when the user lets go.
+  final ValueChanged<double>? onChangeEnd;
+
+  /// Icon at the minimum end of the track (SwiftUI `minimumValueLabel`),
+  /// e.g. `speaker.fill`.
+  final CupertinoNativeIcon? minimumIcon;
+
+  /// Icon at the maximum end of the track (`maximumValueLabel`).
+  final CupertinoNativeIcon? maximumIcon;
+
+  /// A tick mark at every one of the [divisions] (iOS 26+; needs [divisions]).
+  final bool showTicks;
+
+  /// The value the filled track grows from, e.g. 0 in a -1...1 balance
+  /// slider (iOS 26+).
+  final double? neutralValue;
 
   @override
   State<CupertinoNativeSlider> createState() => _CupertinoNativeSliderState();
@@ -55,16 +82,7 @@ class _CupertinoNativeSliderState extends State<CupertinoNativeSlider>
   Widget build(BuildContext context) {
     const String viewType =
         'com.example.cupertino_widgets/cupertino_native_slider';
-    final Map<String, dynamic> creationParams = <String, dynamic>{
-      'value': widget.value,
-      'min': widget.min,
-      'max': widget.max,
-      'divisions': widget.divisions,
-      'activeColor': widget.activeColor?.toARGB32(),
-      'thumbColor': widget.thumbColor?.toARGB32(),
-      'isEnabled': widget.onChanged != null,
-      'isDark': _isDark,
-    };
+    final Map<String, dynamic> creationParams = _props();
 
     // The slider fills the width offered, so only its height needs stating:
     // SwiftUI's own, through the same `getIntrinsicSize` round trip the button
@@ -85,17 +103,36 @@ class _CupertinoNativeSliderState extends State<CupertinoNativeSlider>
     );
   }
 
+  Map<String, dynamic> _props() => {
+    'value': widget.value,
+    'min': widget.min,
+    'max': widget.max,
+    'divisions': widget.divisions,
+    'activeColor': widget.activeColor?.toARGB32(),
+    'thumbColor': widget.thumbColor?.toARGB32(),
+    'isEnabled': widget.onChanged != null,
+    'isDark': _isDark,
+    'minimumIcon': widget.minimumIcon?.toMap(),
+    'maximumIcon': widget.maximumIcon?.toMap(),
+    'showTicks': widget.showTicks,
+    'neutralValue': widget.neutralValue,
+  };
+
   Future<void> _onPlatformViewCreated(int id) async {
     setUpChannel(id, 'adaptive_slider_$id', onMethodCall: _handleMethodCall);
     requestIntrinsicSize();
   }
 
   Future<void> _handleMethodCall(MethodCall call) async {
-    if (call.method == 'onChanged') {
-      if (widget.onChanged != null) {
-        final double value = call.arguments as double;
-        widget.onChanged!(value);
-      }
+    final value = (call.arguments as num?)?.toDouble();
+    if (value == null) return;
+    switch (call.method) {
+      case 'onChanged':
+        widget.onChanged?.call(value);
+      case 'onChangeStart':
+        widget.onChangeStart?.call(value);
+      case 'onChangeEnd':
+        widget.onChangeEnd?.call(value);
     }
   }
 
@@ -105,17 +142,15 @@ class _CupertinoNativeSliderState extends State<CupertinoNativeSlider>
     if (oldWidget.value != widget.value ||
         oldWidget.min != widget.min ||
         oldWidget.max != widget.max ||
+        oldWidget.divisions != widget.divisions ||
         oldWidget.activeColor != widget.activeColor ||
-        oldWidget.onChanged != widget.onChanged) {
-      updateNativeView('updateProps', {
-        'value': widget.value,
-        'min': widget.min,
-        'max': widget.max,
-        'activeColor': widget.activeColor?.toARGB32(),
-        'thumbColor': widget.thumbColor?.toARGB32(),
-        'isEnabled': widget.onChanged != null,
-        'isDark': _isDark,
-      }, refreshIntrinsicSize: false);
+        oldWidget.thumbColor != widget.thumbColor ||
+        oldWidget.minimumIcon != widget.minimumIcon ||
+        oldWidget.maximumIcon != widget.maximumIcon ||
+        oldWidget.showTicks != widget.showTicks ||
+        oldWidget.neutralValue != widget.neutralValue ||
+        (oldWidget.onChanged == null) != (widget.onChanged == null)) {
+      updateNativeView('updateProps', _props(), refreshIntrinsicSize: false);
     }
   }
 }

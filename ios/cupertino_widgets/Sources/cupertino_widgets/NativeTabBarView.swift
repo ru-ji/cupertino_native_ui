@@ -45,6 +45,7 @@ class NativeTabBarView: NSObject, FlutterPlatformView, UITabBarDelegate {
     private var scrollEdgeEffectVal = "automatic"
     private var currentLabels: [String] = []
     private var currentSymbols: [String] = []
+    private var currentBadges: [String] = []
 
     init(
         frame: CGRect,
@@ -58,6 +59,7 @@ class NativeTabBarView: NSObject, FlutterPlatformView, UITabBarDelegate {
 
         var labels: [String] = []
         var symbols: [String] = []
+        var badges: [String] = []
         var selectedIndex = 0
         var isDark = false
         var tint: UIColor? = nil
@@ -68,6 +70,7 @@ class NativeTabBarView: NSObject, FlutterPlatformView, UITabBarDelegate {
         if let dict = args as? [String: Any] {
             labels = (dict["labels"] as? [String]) ?? []
             symbols = (dict["sfSymbols"] as? [String]) ?? []
+            badges = (dict["badges"] as? [String]) ?? []
             if let v = dict["selectedIndex"] as? NSNumber { selectedIndex = v.intValue }
             if let v = dict["isDark"] as? NSNumber { isDark = v.boolValue }
             if let n = dict["tint"] as? NSNumber { tint = UIColor(argb: n.intValue) }
@@ -87,6 +90,7 @@ class NativeTabBarView: NSObject, FlutterPlatformView, UITabBarDelegate {
 
         currentLabels = labels
         currentSymbols = symbols
+        currentBadges = badges
         isSplit = split
         rightCountVal = rightCount
 
@@ -110,7 +114,11 @@ class NativeTabBarView: NSObject, FlutterPlatformView, UITabBarDelegate {
             }
             let title: String? =
                 (i < currentLabels.count && !currentLabels[i].isEmpty) ? currentLabels[i] : nil
-            items.append(UITabBarItem(title: title, image: image, selectedImage: image))
+            let item = UITabBarItem(title: title, image: image, selectedImage: image)
+            if i < currentBadges.count, !currentBadges[i].isEmpty {
+                item.badgeValue = currentBadges[i]
+            }
+            items.append(item)
         }
         return items
     }
@@ -260,6 +268,7 @@ class NativeTabBarView: NSObject, FlutterPlatformView, UITabBarDelegate {
             if let args = call.arguments as? [String: Any] {
                 currentLabels = (args["labels"] as? [String]) ?? []
                 currentSymbols = (args["sfSymbols"] as? [String]) ?? []
+                currentBadges = (args["badges"] as? [String]) ?? []
                 let selectedIndex = (args["selectedIndex"] as? NSNumber)?.intValue ?? 0
                 rebuildBars(selectedIndex: selectedIndex)
                 result(nil)

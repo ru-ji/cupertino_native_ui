@@ -26,5 +26,12 @@ struct SymbolConfig: Codable {
     /// one symbol into the other instead of cutting.
     let replaceOnChange: Bool?
 
+    /// 0...1 fill of a variable symbol's layers (iOS 16+).
+    let variableValue: Double?
+    /// ARGB layer colours for the palette rendering mode, primary first.
+    let paletteColors: [Int]?
+    /// `.symbolColorRenderingMode(.gradient)` (iOS 26+).
+    let gradient: Bool?
+
     let isDark: Bool?
 }

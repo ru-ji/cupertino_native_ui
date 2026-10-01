@@ -29,12 +29,14 @@ class _SheetDemoPageState extends State<SheetDemoPage> {
     });
   }
 
-  CupertinoNativeScaffoldNavigationBar _appBar({bool withSearch = false}) {
+  CupertinoNativeScaffoldNavigationBar _navigationBar({
+    bool withSearch = false,
+  }) {
     return CupertinoNativeScaffoldNavigationBar(
       title: 'New Event',
       titleDisplayMode: CupertinoNativeToolbarTitleDisplayMode.inline,
       leading: [
-        CupertinoNativeBarItem(
+        CupertinoNativeToolbarItem(
           icon: CupertinoNativeIcon.symbol(
             _glass ? CupertinoSymbols.xmark : CupertinoSymbols.chevronBackward,
           ),
@@ -42,7 +44,9 @@ class _SheetDemoPageState extends State<SheetDemoPage> {
           actionId: 'close',
         ),
       ],
-      trailing: [const CupertinoNativeBarItem(title: 'Add', actionId: 'add')],
+      trailing: [
+        const CupertinoNativeToolbarItem(title: 'Add', actionId: 'add'),
+      ],
       search: withSearch
           ? const CupertinoNativeSearchField(
               placeholder: 'Search invitees',
@@ -53,14 +57,14 @@ class _SheetDemoPageState extends State<SheetDemoPage> {
     );
   }
 
-  void _onBarAction(String id) {
+  void _onToolbarAction(String id) {
     setState(() => _last = 'Bar action: $id');
     if (id == 'close' || id == 'add') CupertinoNativeSheet.dismiss();
   }
 
   Future<void> _present({
     required String label,
-    CupertinoNativeScaffoldNavigationBar? appBar,
+    CupertinoNativeScaffoldNavigationBar? navigationBar,
     CupertinoNativeSheetSegmentedControl? bottom,
     List<CupertinoNativeSheetDetent> detents = const [
       CupertinoNativeSheetDetent.medium,
@@ -71,7 +75,7 @@ class _SheetDemoPageState extends State<SheetDemoPage> {
     await CupertinoNativeSheet.show(
       route: 'newEvent',
       isDark: CupertinoTheme.brightnessOf(context) == Brightness.dark,
-      appBar: appBar,
+      navigationBar: navigationBar,
       bottom: bottom,
       detents: detents,
       showDragHandle: true,
@@ -80,11 +84,56 @@ class _SheetDemoPageState extends State<SheetDemoPage> {
       backgroundColor: CupertinoColors.systemGroupedBackground.resolveFrom(
         context,
       ),
-      onBarAction: _onBarAction,
+      onToolbarAction: _onToolbarAction,
       onBottomChanged: (i) => setState(() => _last = 'Segment: $i'),
       onSearchChanged: (q) => setState(() => _last = 'Search: "$q"'),
     );
     if (mounted) setState(() => _last = '$label — dismissed');
+  }
+
+  int _guests = 2;
+  bool _reminder = true;
+
+  CupertinoNativeBody _nativeBody() => CupertinoNativeBody.column(
+    padding: const EdgeInsets.all(20),
+    spacing: 16,
+    children: [
+      CupertinoNativeBody.text('Guests: $_guests'),
+      CupertinoNativeBody.control(
+        id: 'guests',
+        control: CupertinoNativeStepper(
+          value: _guests.toDouble(),
+          min: 1,
+          max: 10,
+          onChanged: null,
+        ),
+      ),
+      CupertinoNativeBody.toggle(
+        id: 'reminder',
+        label: 'Remind me',
+        value: _reminder,
+      ),
+    ],
+  );
+
+  Future<void> _presentNative() async {
+    await CupertinoNativeSheet.show(
+      nativeBody: _nativeBody(),
+      navigationBar: _navigationBar(),
+      detents: const [CupertinoNativeSheetDetent.medium],
+      showDragHandle: true,
+      onToolbarAction: _onToolbarAction,
+      onBodyEvent: (id, value) {
+        switch (id) {
+          case 'guests':
+            _guests = (value as num).round();
+          case 'reminder':
+            _reminder = value as bool;
+        }
+        // Controlled: push the tree back so the label follows.
+        CupertinoNativeSheet.updateNativeBody(_nativeBody());
+      },
+    );
   }
 
   @override
@@ -102,12 +151,15 @@ class _SheetDemoPageState extends State<SheetDemoPage> {
               CupertinoNativeList(
                 onRowTap: (id) {
                   switch (id) {
-                    case 'appBar':
-                      _present(label: 'App bar sheet', appBar: _appBar());
+                    case 'navigationBar':
+                      _present(
+                        label: 'App bar sheet',
+                        navigationBar: _navigationBar(),
+                      );
                     case 'segmented':
                       _present(
                         label: 'Segmented sheet',
-                        appBar: _appBar(),
+                        navigationBar: _navigationBar(),
                         bottom: const CupertinoNativeSheetSegmentedControl(
                           segments: ['Event', 'Reminder', 'Call'],
                         ),
@@ -115,11 +167,13 @@ class _SheetDemoPageState extends State<SheetDemoPage> {
                     case 'search':
                       _present(
                         label: 'Search sheet',
-                        appBar: _appBar(withSearch: true),
+                        navigationBar: _navigationBar(withSearch: true),
                         detents: const [CupertinoNativeSheetDetent.large],
                       );
                     case 'bare':
                       _present(label: 'Bare sheet');
+                    case 'native':
+                      _presentNative();
                   }
                 },
                 sections: [
@@ -128,7 +182,7 @@ class _SheetDemoPageState extends State<SheetDemoPage> {
                     footer: 'Last event: $_last',
                     children: const [
                       CupertinoNativeListTile(
-                        id: 'appBar',
+                        id: 'navigationBar',
                         title: 'With App Bar',
                         subtitle: 'Pinned title, ✕ leading, Add trailing — scrollable',
                         showChevron: true,
@@ -147,6 +201,12 @@ class _SheetDemoPageState extends State<SheetDemoPage> {
                         showChevron: true,
                       ),
                       CupertinoNativeListTile(
+                        id: 'native',
+                        title: 'Native Body',
+                        subtitle: 'Pure SwiftUI content — no Flutter engine',
+                        showChevron: true,
+                      ),
+                      CupertinoNativeListTile(
                         id: 'bare',
                         title: 'Bare Sheet',
                         subtitle:
@@ -159,16 +219,7 @@ class _SheetDemoPageState extends State<SheetDemoPage> {
               ),
             ],
           ),
-          CupertinoNativeNavigationBar(
-            title: 'Sheet',
-            leading: CupertinoNativeButton.glass(
-              borderShape: CupertinoNativeButtonBorderShape.circle,
-              onPressed: () => Navigator.pop(context),
-              child: CupertinoSymbolImage.symbol(
-                CupertinoSymbols.chevronBackward,
-              ),
-            ),
-          ),
+          CupertinoNativeNavigationBar(title: 'Sheet'),
         ],
       ),
     );

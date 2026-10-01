@@ -1,12 +1,13 @@
 import SwiftUI
 
-/// Maps `AppBarConfig` entries to system toolbar items for scaffold pages.
-/// Each entry gets its own ToolbarItem (own glass capsule on iOS 26); a
-/// "group" entry renders its buttons in one HStack sharing a capsule.
+/// Maps `NavigationBarConfig` entries to system toolbar items for scaffold pages.
+/// Each entry is its own ToolbarItem; consecutive items share the system's
+/// glass capsule on iOS 26 until a `ToolbarSpacer` splits it. A "group" entry
+/// renders its buttons in one HStack inside a single item.
 /// Supports up to 4 entries per side.
 @available(iOS 26.0, *)
-struct AppBarToolbar: ToolbarContent {
-    let config: AppBarConfig
+struct NavigationBarToolbar: ToolbarContent {
+    let config: NavigationBarConfig
     let onAction: (String) -> Void
 
     /// Split by side, because `@ToolbarContentBuilder` — like every SwiftUI
@@ -23,7 +24,7 @@ struct AppBarToolbar: ToolbarContent {
     /// own statically-known item.
     @ToolbarContentBuilder
     private func side(
-        _ entries: [BarEntryConfig]?, _ placement: ToolbarItemPlacement
+        _ entries: [ToolbarContentConfig]?, _ placement: ToolbarItemPlacement
     ) -> some ToolbarContent {
         item(entries, 0, placement)
         item(entries, 1, placement)
@@ -44,7 +45,7 @@ struct AppBarToolbar: ToolbarContent {
     /// from plain text. `glass: false` is exactly that plain look, on purpose.
     @ToolbarContentBuilder
     private func item(
-        _ entries: [BarEntryConfig]?, _ index: Int, _ placement: ToolbarItemPlacement
+        _ entries: [ToolbarContentConfig]?, _ index: Int, _ placement: ToolbarItemPlacement
     ) -> some ToolbarContent {
         if let entry = entry(entries, index) {
             if entry.isSpacer {
@@ -53,21 +54,34 @@ struct AppBarToolbar: ToolbarContent {
                 ToolbarSpacer(
                     entry.hidesSharedBackground ? .flexible : .fixed, placement: placement)
             } else if entry.hidesSharedBackground {
-                ToolbarItem(placement: placement) { entryView(entry) }
+                ToolbarItem(placement: resolved(placement, entry)) { entryView(entry) }
                     .sharedBackgroundVisibility(.hidden)
+                    .applyVisibilityPriority(entry.visibilityPriority)
             } else {
-                ToolbarItem(placement: placement) { entryView(entry) }
+                ToolbarItem(placement: resolved(placement, entry)) { entryView(entry) }
+                    .applyVisibilityPriority(entry.visibilityPriority)
             }
         }
     }
 
-    private func entry(_ entries: [BarEntryConfig]?, _ index: Int) -> BarEntryConfig? {
+    /// A pinned trailing entry takes `.topBarPinnedTrailing` (iOS 27+), the
+    /// slot the bar never folds into its overflow menu.
+    private func resolved(_ placement: ToolbarItemPlacement, _ entry: ToolbarContentConfig)
+        -> ToolbarItemPlacement
+    {
+        #if compiler(>=6.4)
+            if entry.pinned == true, #available(iOS 27.0, *) { return .topBarPinnedTrailing }
+        #endif
+        return placement
+    }
+
+    private func entry(_ entries: [ToolbarContentConfig]?, _ index: Int) -> ToolbarContentConfig? {
         guard let entries = entries, index < entries.count else { return nil }
         return entries[index]
     }
 
     @ViewBuilder
-    private func entryView(_ entry: BarEntryConfig) -> some View {
+    private func entryView(_ entry: ToolbarContentConfig) -> some View {
         let items = entry.groupItems
         let ownBackground = entry.hidesSharedBackground
         if items.count > 1 {
@@ -82,7 +96,7 @@ struct AppBarToolbar: ToolbarContent {
     }
 
     @ViewBuilder
-    private func barButton(_ item: BarItemConfig, ownBackground: Bool) -> some View {
+    private func barButton(_ item: ToolbarItemConfig, ownBackground: Bool) -> some View {
         applyGlassStyle(to: rawButton(item), enabled: item.glass != false && ownBackground)
     }
 
@@ -98,15 +112,15 @@ struct AppBarToolbar: ToolbarContent {
         }
     }
 
-    private func rawButton(_ item: BarItemConfig) -> some View {
-        BarRawButton(item: item, onAction: onAction)
+    private func rawButton(_ item: ToolbarItemConfig) -> some View {
+        ToolbarButton(item: item, onAction: onAction)
     }
 }
 
 /// One bar button: the icon, the title, or both.
 @available(iOS 15.0, *)
-struct BarRawButton: View {
-    let item: BarItemConfig
+struct ToolbarButton: View {
+    let item: ToolbarItemConfig
     let onAction: (String) -> Void
 
     var body: some View {
@@ -134,8 +148,8 @@ struct BarRawButton: View {
 /// conditional toolbar content do not exist there, so this is one group per
 /// side with the spacers dropped.
 @available(iOS 15.0, *)
-struct LegacyAppBarToolbar: ToolbarContent {
-    let config: AppBarConfig
+struct LegacyNavigationBarToolbar: ToolbarContent {
+    let config: NavigationBarConfig
     let onAction: (String) -> Void
 
     var body: some ToolbarContent {
@@ -145,17 +159,17 @@ struct LegacyAppBarToolbar: ToolbarContent {
     }
 
     @ViewBuilder
-    private func buttons(_ entries: [BarEntryConfig]?) -> some View {
+    private func buttons(_ entries: [ToolbarContentConfig]?) -> some View {
         let items = (entries ?? []).filter { !$0.isSpacer }.flatMap { $0.groupItems }
-        ForEach(items, id: \.actionId) { LegacyBarButton(item: $0, onAction: onAction) }
+        ForEach(items, id: \.actionId) { LegacyToolbarButton(item: $0, onAction: onAction) }
     }
 }
 
 /// A bar button as iOS 15–18 draws a back button: the symbol, 6pt, then the
 /// title, both at 17pt. Icon-only and title-only items are the plain button.
 @available(iOS 15.0, *)
-private struct LegacyBarButton: View {
-    let item: BarItemConfig
+private struct LegacyToolbarButton: View {
+    let item: ToolbarItemConfig
     let onAction: (String) -> Void
 
     var body: some View {
@@ -169,18 +183,18 @@ private struct LegacyBarButton: View {
                 }
             }
         } else {
-            BarRawButton(item: item, onAction: onAction)
+            ToolbarButton(item: item, onAction: onAction)
         }
     }
 }
 
 @available(iOS 15.0, *)
 extension View {
-    /// Applies an optional `AppBarConfig` (title, display mode, toolbar items)
+    /// Applies an optional `NavigationBarConfig` (title, display mode, toolbar items)
     /// to a navigation destination. No-op when `config` is nil.
     @available(iOS 15.0, *)
     @ViewBuilder
-    func applyAppBar(_ config: AppBarConfig?, onAction: @escaping (String) -> Void) -> some View {
+    func applyNavigationBar(_ config: NavigationBarConfig?, onAction: @escaping (String) -> Void) -> some View {
         if let config = config {
             self
                 .navigationTitle(config.title)
@@ -193,13 +207,14 @@ extension View {
     }
 
     @ViewBuilder
-    fileprivate func applyToolbar(_ config: AppBarConfig, onAction: @escaping (String) -> Void)
+    fileprivate func applyToolbar(_ config: NavigationBarConfig, onAction: @escaping (String) -> Void)
         -> some View
     {
         if #available(iOS 26.0, *) {
-            self.toolbar { AppBarToolbar(config: config, onAction: onAction) }
+            self.toolbar { NavigationBarToolbar(config: config, onAction: onAction) }
+                .applyToolbar27(config, onAction: onAction)
         } else {
-            self.toolbar { LegacyAppBarToolbar(config: config, onAction: onAction) }
+            self.toolbar { LegacyNavigationBarToolbar(config: config, onAction: onAction) }
         }
     }
 
@@ -239,4 +254,67 @@ extension View {
         default: self.toolbarTitleDisplayMode(.automatic)
         }
     }
+}
+
+// MARK: - iOS 27
+
+/// The iOS 27 toolbar APIs. Behind `compiler(>=6.4)` (Xcode 27) as well as
+/// `#available`: an older SDK does not know the symbols at all.
+@available(iOS 26.0, *)
+extension ToolbarContent {
+    @ToolbarContentBuilder
+    func applyVisibilityPriority(_ priority: String?) -> some ToolbarContent {
+        #if compiler(>=6.4)
+            if #available(iOS 27.0, *) {
+                if priority == "low" {
+                    self.visibilityPriority(.low)
+                } else if priority == "high" {
+                    self.visibilityPriority(.high)
+                } else {
+                    self
+                }
+            } else {
+                self
+            }
+        #else
+            self
+        #endif
+    }
+}
+
+@available(iOS 26.0, *)
+extension View {
+    @ViewBuilder
+    fileprivate func applyToolbar27(_ config: NavigationBarConfig, onAction: @escaping (String) -> Void)
+        -> some View
+    {
+        #if compiler(>=6.4)
+            if #available(iOS 27.0, *) {
+                self
+                    .toolbarOverflowMenu {
+                        ForEach(config.overflow ?? [], id: \.actionId) { item in
+                            ToolbarButton(item: item, onAction: onAction)
+                        }
+                    }
+                    .toolbarMinimizationBehavior(
+                        Self.minimization(config.minimizeBehavior), for: .navigationBar)
+            } else {
+                self
+            }
+        #else
+            self
+        #endif
+    }
+
+    #if compiler(>=6.4)
+        @available(iOS 27.0, *)
+        fileprivate static func minimization(_ name: String?) -> ToolbarMinimizationBehavior {
+            switch name {
+            case "never": .never
+            case "onScrollDown": .onScrollDown
+            case "onScrollUp": .onScrollUp
+            default: .automatic
+            }
+        }
+    #endif
 }

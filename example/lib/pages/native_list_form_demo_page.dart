@@ -17,6 +17,8 @@ class _NativeListFormDemoPageState extends State<NativeListFormDemoPage> {
   bool _airplane = false;
   bool _wifi = true;
   bool _bluetooth = true;
+  bool _editing = false;
+  Set<String> _picked = {'john', 'bob'};
 
   @override
   Widget build(BuildContext context) {
@@ -34,6 +36,12 @@ class _NativeListFormDemoPageState extends State<NativeListFormDemoPage> {
                     ),
                   )
                 : null,
+            trailing: [
+              CupertinoNativeButton(
+                onPressed: () => setState(() => _editing = !_editing),
+                child: Text(_editing ? 'Done' : 'Edit'),
+              ),
+            ],
           ),
           SliverPadding(
             padding: EdgeInsets.only(
@@ -44,6 +52,25 @@ class _NativeListFormDemoPageState extends State<NativeListFormDemoPage> {
             ),
             sliver: SliverList.list(
               children: [
+                // ---- Edit mode: system selection circles -------------------------
+                CupertinoNativeList(
+                  editing: _editing,
+                  selection: _picked,
+                  onSelectionChanged: (ids) => setState(() => _picked = ids),
+                  sections: [
+                    CupertinoNativeListSection(
+                      header: 'Contacts',
+                      footer:
+                          'Edit shows the selection circles '
+                          '(selected: ${_picked.join(', ')}).',
+                      children: const [
+                        CupertinoNativeListTile(id: 'john', title: 'John'),
+                        CupertinoNativeListTile(id: 'alice', title: 'Alice'),
+                        CupertinoNativeListTile(id: 'bob', title: 'Bob'),
+                      ],
+                    ),
+                  ],
+                ),
                 // ---- CupertinoNativeList: navigation-style rows -------------------
                 CupertinoNativeList(
                   style: CupertinoNativeListStyle.insetGrouped,

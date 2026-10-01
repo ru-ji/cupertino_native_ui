@@ -3,8 +3,10 @@ import 'dart:ui' as ui;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
+import 'cupertino_native_body.dart';
+
 import 'cupertino_native_scaffold_navigation_bar.dart';
-import 'cupertino_native_tab_bar.dart' show CupertinoScrollEdgeEffectStyle;
+import 'cupertino_scroll_edge_effect.dart';
 import 'cupertino_widgets_settings.dart';
 
 /// The heights a [CupertinoNativeSheet] can rest at, mirroring
@@ -34,22 +36,22 @@ class CupertinoNativeSheetSegmentedControl {
 /// ```dart
 /// await CupertinoNativeSheet.show(
 ///   route: 'newEvent', // same route table as CupertinoNativePageScaffold bodies
-///   appBar: CupertinoNativeScaffoldNavigationBar(
+///   navigationBar: CupertinoNativeScaffoldNavigationBar(
 ///     title: 'New Event',
 ///     leading: [
-///       CupertinoNativeBarItem(
+///       CupertinoNativeToolbarItem(
 ///         icon: CupertinoNativeIcon.symbol(CupertinoSymbols.xmark),
 ///         actionId: 'close',
 ///       ),
 ///     ],
-///     trailing: [CupertinoNativeBarItem(title: 'Add', actionId: 'add')],
+///     trailing: [CupertinoNativeToolbarItem(title: 'Add', actionId: 'add')],
 ///   ),
 ///   bottom: CupertinoNativeSheetSegmentedControl(
 ///     segments: ['Event', 'Reminder'],
 ///   ),
 ///   detents: [CupertinoNativeSheetDetent.medium, CupertinoNativeSheetDetent.large],
 ///   showDragHandle: true,
-///   onBarAction: (id) => CupertinoNativeSheet.dismiss(),
+///   onToolbarAction: (id) => CupertinoNativeSheet.dismiss(),
 /// );
 /// // The future completes when the sheet is dismissed.
 /// ```
@@ -61,22 +63,36 @@ abstract final class CupertinoNativeSheet {
   static const _eventsChannel = MethodChannel('cupertino_widgets/sheet_events');
 
   static bool _eventsHandlerInstalled = false;
-  static void Function(String actionId)? _onBarAction;
+  static void Function(String actionId)? _onToolbarAction;
   static ValueChanged<int>? _onBottomChanged;
   static ValueChanged<String>? _onSearchChanged;
   static ValueChanged<String>? _onSearchSubmitted;
+  static void Function(String id, Object? value)? _onBodyEvent;
+  static bool _dark = false;
 
   /// Presents the sheet and completes when it has been dismissed (either by
   /// [dismiss]/[pop], a bar action calling them, or the user's swipe).
   ///
-  /// [appBar] pins native chrome above the content; its
+  /// [navigationBar] pins native chrome above the content; its
   /// [CupertinoNativeScaffoldNavigationBar.search] field reports through [onSearchChanged] /
   /// [onSearchSubmitted]. [bottom] pins a native segmented control under the
   /// bar, reporting through [onBottomChanged]. Bar item taps report their
-  /// `actionId` through [onBarAction].
+  /// `actionId` through [onToolbarAction].
   ///
   /// [isDark] pins the sheet's appearance; when null it follows the platform
   /// brightness.
+  ///
+  /// [detentHeights] adds stops at fixed heights in points, next to
+  /// [detents] (`.custom`, iOS 16+). [undimmedUpTo] leaves the content behind
+  /// the sheet undimmed and interactive up to that detent (Maps' search
+  /// sheet). `dismissible: false` blocks swipe-to-dismiss
+  /// (`isModalInPresentation`).
+  ///
+  /// Give [nativeBody] instead of [route] for a sheet whose content is pure
+  /// SwiftUI — a native list, a form of transcribed controls — with no
+  /// FlutterEngine behind it: it opens faster and costs no isolate. Its
+  /// controls report through [onBodyEvent] as `(nodeId, value)`; push a
+  /// changed tree with [updateNativeBody].
   ///
   /// Pass [anchor] to present a **popover** instead: the same engine and the
   /// same chrome, pointing at the control it came from rather than rising
@@ -85,19 +101,28 @@ abstract final class CupertinoNativeSheet {
   /// to the sheet presentation and are ignored; [preferredSize] sizes the
   /// popover. See [CupertinoNativePopover] for the direct call.
   static Future<void> show({
-    required String route,
+    String? route,
+    CupertinoNativeBody? nativeBody,
+    void Function(String id, Object? value)? onBodyEvent,
+    CupertinoNativeScaffoldNavigationBar? navigationBar,
+    @Deprecated('Use navigationBar')
     CupertinoNativeScaffoldNavigationBar? appBar,
     CupertinoNativeSheetSegmentedControl? bottom,
     List<CupertinoNativeSheetDetent> detents = const [
       CupertinoNativeSheetDetent.large,
     ],
     bool showDragHandle = false,
+    List<double> detentHeights = const [],
+    CupertinoNativeSheetDetent? undimmedUpTo,
+    bool dismissible = true,
     double? cornerRadius,
     CupertinoScrollEdgeEffectStyle scrollEdgeEffect =
         CupertinoScrollEdgeEffectStyle.soft,
     Color? backgroundColor,
     bool? showLoadingIndicator,
     bool? isDark,
+    void Function(String actionId)? onToolbarAction,
+    @Deprecated('Use onToolbarAction')
     void Function(String actionId)? onBarAction,
     ValueChanged<int>? onBottomChanged,
     ValueChanged<String>? onSearchChanged,
@@ -105,9 +130,15 @@ abstract final class CupertinoNativeSheet {
     Rect? anchor,
     Size? preferredSize,
   }) async {
+    assert(
+      (route == null) != (nativeBody == null),
+      'Give CupertinoNativeSheet.show a route or a nativeBody — exactly one.',
+    );
     if (defaultTargetPlatform != TargetPlatform.iOS) return;
 
-    _onBarAction = onBarAction;
+    // ignore: deprecated_member_use_from_same_package
+    _onToolbarAction = onToolbarAction ?? onBarAction;
+    _onBodyEvent = onBodyEvent;
     _onBottomChanged = onBottomChanged;
     _onSearchChanged = onSearchChanged;
     _onSearchSubmitted = onSearchSubmitted;
@@ -116,13 +147,18 @@ abstract final class CupertinoNativeSheet {
     final dark =
         isDark ??
         ui.PlatformDispatcher.instance.platformBrightness == ui.Brightness.dark;
+    _dark = dark;
     try {
       await _channel.invokeMethod<void>('showSheet', {
         'route': route,
-        'appBar': appBar?.toMap(),
+        'nativeBody': nativeBody?.toMap(isDark: dark),
+        'navigationBar': (navigationBar ?? appBar)?.toMap(),
         'bottomSegments': bottom?.segments,
         'bottomSelectedIndex': bottom?.selectedIndex,
         'detents': detents.map((d) => d.name).toList(),
+        'detentHeights': detentHeights,
+        'undimmedUpTo': undimmedUpTo?.name,
+        'dismissible': dismissible,
         'showGrabber': showDragHandle,
         'cornerRadius': cornerRadius,
         'scrollEdgeEffect': scrollEdgeEffect.name,
@@ -145,11 +181,22 @@ abstract final class CupertinoNativeSheet {
           },
       });
     } finally {
-      _onBarAction = null;
+      _onToolbarAction = null;
       _onBottomChanged = null;
       _onSearchChanged = null;
       _onSearchSubmitted = null;
+      _onBodyEvent = null;
     }
+  }
+
+  /// Replaces the open sheet's [show] `nativeBody` — how a controlled value
+  /// (a stepper's count, a toggle) gets back to the native side.
+  static Future<void> updateNativeBody(CupertinoNativeBody nativeBody) async {
+    if (defaultTargetPlatform != TargetPlatform.iOS) return;
+    await _channel.invokeMethod<void>(
+      'updateSheetBody',
+      nativeBody.toMap(isDark: _dark),
+    );
   }
 
   static void _ensureEventsHandler() {
@@ -157,14 +204,17 @@ abstract final class CupertinoNativeSheet {
     _eventsHandlerInstalled = true;
     _eventsChannel.setMethodCallHandler((call) async {
       switch (call.method) {
-        case 'barAction':
-          _onBarAction?.call(call.arguments as String);
+        case 'toolbarAction':
+          _onToolbarAction?.call(call.arguments as String);
         case 'segmentChanged':
           _onBottomChanged?.call(call.arguments as int);
         case 'searchChanged':
           _onSearchChanged?.call(call.arguments as String);
         case 'searchSubmitted':
           _onSearchSubmitted?.call(call.arguments as String);
+        case 'bodyEvent':
+          final args = call.arguments as Map;
+          _onBodyEvent?.call(args['id'] as String, args['value']);
       }
     });
   }

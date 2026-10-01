@@ -98,5 +98,6 @@ class NativeSymbolView: NativeHostingView {
 class SymbolModel: ObservableObject {
     @Published var config: SymbolConfig = SymbolConfig(
         name: "questionmark", size: nil, weight: nil, color: nil, renderingMode: nil,
-        effect: nil, trigger: nil, repeating: nil, replaceOnChange: nil, isDark: nil)
+        effect: nil, trigger: nil, repeating: nil, replaceOnChange: nil,
+        variableValue: nil, paletteColors: nil, gradient: nil, isDark: nil)
 }

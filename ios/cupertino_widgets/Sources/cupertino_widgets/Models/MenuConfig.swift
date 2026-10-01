@@ -6,6 +6,8 @@ enum MenuItemType: String, Codable, Hashable {
     case submenu
     case section
     case toggle
+    /// A row of compact icon buttons at the top of a menu (`ControlGroup`).
+    case controlGroup
 }
 
 /// `Hashable` so that anything holding one stays hashable too — a glass group
@@ -42,4 +44,8 @@ struct MenuConfiguration: Codable {
     let fontWeight: Int?
     let textColor: Int?
     let isDark: Bool?
+    /// A tap runs the primary action; a long press opens the menu.
+    let hasPrimaryAction: Bool?
+    /// `.menuOrder(.fixed)`: items stay in the given order (iOS 16+).
+    let fixedOrder: Bool?
 }

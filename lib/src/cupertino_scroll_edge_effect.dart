@@ -4,7 +4,11 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 
 import 'cupertino_native_edge_blur.dart';
-import 'cupertino_native_tab_bar.dart' show CupertinoScrollEdgeEffectStyle;
+
+/// iOS 26 Liquid Glass scroll-edge-effect style. Used both by the standalone
+/// `CupertinoNativeTabBar` (mapped to the bar's background material) and by
+/// `CupertinoNativePageScaffold`'s native scroll views. No effect below iOS 26.
+enum CupertinoScrollEdgeEffectStyle { automatic, soft, hard }
 
 /// Which screen edge a [CupertinoScrollEdgeEffect] hugs.
 enum CupertinoScrollEdgeEffectEdge { top, bottom }

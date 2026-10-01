@@ -26,6 +26,25 @@ class _ContextMenuDemoPageState extends State<ContextMenuDemoPage> {
   bool _blur = true;
 
   List<CupertinoNativeMenuItem> _itemsFor(String title) => [
+    CupertinoNativeMenuControlGroup(
+      items: [
+        CupertinoNativeMenuAction(
+          title: 'Copy',
+          systemImage: 'doc.on.doc',
+          actionId: 'copy:$title',
+        ),
+        CupertinoNativeMenuAction(
+          title: 'Edit',
+          systemImage: 'slider.horizontal.3',
+          actionId: 'edit:$title',
+        ),
+        CupertinoNativeMenuAction(
+          title: 'Rotate',
+          systemImage: 'rotate.right',
+          actionId: 'rotate:$title',
+        ),
+      ],
+    ),
     CupertinoNativeMenuAction(
       title: 'Share',
       systemImage: 'square.and.arrow.up',

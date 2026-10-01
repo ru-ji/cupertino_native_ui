@@ -11,7 +11,7 @@ struct ScaffoldConfig: Codable {
     /// of an embedded FlutterEngine. When set it replaces `body`/the tabs'
     /// engines entirely: no nested FlutterView, no platform views.
     let nativeBody: BodyNodeConfig?
-    let appBar: AppBarConfig?
+    let navigationBar: NavigationBarConfig?
     let tabBar: TabBarConfig?
     let scrollEdgeEffect: String?  // "automatic" | "soft" | "hard" (iOS 26)
     let isDark: Bool?

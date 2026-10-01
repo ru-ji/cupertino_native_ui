@@ -43,13 +43,17 @@ public class FlutterCupertinoPlugin: NSObject, FlutterPlugin {
         registrar.register(
             toggleFactory, withId: "com.example.cupertino_widgets/cupertino_native_toggle")
 
+        registrar.register(
+            NativePhotosPickerFactory(messenger: registrar.messenger()),
+            withId: "com.example.cupertino_widgets/cupertino_native_photos_picker")
+
+        registrar.register(
+            NativeControlFactory(messenger: registrar.messenger()),
+            withId: "com.example.cupertino_widgets/cupertino_native_control")
+
         let checkboxFactory = NativeCheckboxFactory(messenger: registrar.messenger())
         registrar.register(
             checkboxFactory, withId: "com.example.cupertino_widgets/cupertino_native_checkbox")
-
-        let radioFactory = NativeRadioFactory(messenger: registrar.messenger())
-        registrar.register(
-            radioFactory, withId: "com.example.cupertino_widgets/cupertino_native_radio")
 
         let segmentedFactory = NativeSegmentedControlFactory(messenger: registrar.messenger())
         registrar.register(
@@ -167,6 +171,16 @@ public class FlutterCupertinoPlugin: NSObject, FlutterPlugin {
         if call.method == "showSheet" {
             NativeSheetManager.shared.show(
                 args: call.arguments as? [String: Any] ?? [:], result: result)
+            return
+        }
+        if call.method == "updateSheetBody" {
+            NativeSheetManager.shared.updateBody(
+                args: call.arguments as? [String: Any] ?? [:], result: result)
+            return
+        }
+        if call.method == "clearPhotoCache" {
+            if #available(iOS 17.0, *) { PhotoCache.clear() }
+            result(nil)
             return
         }
         if call.method == "dismissSheet" {

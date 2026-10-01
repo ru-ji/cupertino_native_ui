@@ -190,6 +190,17 @@ class NativeListView: NativeHostingView {
                     self?.shownToggles[id] = value
                     self?.channel?.invokeMethod("onToggle", arguments: ["id": id, "value": value])
                 },
+                onSelectionChanged: { [weak self] ids in
+                    self?.channel?.invokeMethod("onSelectionChanged", arguments: ["ids": ids])
+                },
+                onSwipeAction: { [weak self] rowId, actionId in
+                    self?.channel?.invokeMethod(
+                        "onSwipeAction", arguments: ["rowId": rowId, "actionId": actionId])
+                },
+                onReorder: { [weak self] section, from, to in
+                    self?.channel?.invokeMethod(
+                        "onReorder", arguments: ["section": section, "from": from, "to": to])
+                },
                 onTrailingEvent: { [weak self] rowId, nodeId, value in
                     self?.noteTranscribedFocus(rowId: rowId, nodeId: nodeId, value: value)
                     NativeLog.log("list trailing event \(rowId).\(nodeId) = \(String(describing: value))")
@@ -197,12 +208,13 @@ class NativeListView: NativeHostingView {
                         "onTrailingEvent",
                         arguments: ["rowId": rowId, "nodeId": nodeId, "value": value])
                 },
-                onHeight: { [weak self] h in
+                onHeight: { [weak self] h, animated in
                     // The probe's number is the list's real height: keep it for
                     // `getIntrinsicSize`, and push it so the Flutter box grows to
                     // fit. See `systemListHeight`.
                     self?.systemListHeight = h
-                    self?.channel?.invokeMethod("onContentSize", arguments: ["height": Double(h)])
+                    self?.channel?.invokeMethod(
+                        "onContentSize", arguments: ["height": Double(h), "animated": animated])
                 }))
     }
 

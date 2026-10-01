@@ -4,12 +4,13 @@ import '../cupertino_native_activity_indicator.dart';
 import '../cupertino_native_body.dart';
 import '../cupertino_native_button.dart';
 import '../cupertino_native_checkbox.dart';
+import 'native_control.dart';
 import '../cupertino_native_date_picker.dart';
 import '../cupertino_native_flutter_view.dart';
 import '../cupertino_native_glass_container.dart';
 import '../cupertino_native_menu.dart';
+import '../cupertino_native_photos_picker.dart';
 import '../cupertino_native_picker.dart';
-import '../cupertino_native_radio.dart';
 import '../cupertino_native_slider.dart';
 import '../cupertino_native_sliding_segmented_control.dart';
 import '../cupertino_native_switch.dart';
@@ -132,19 +133,6 @@ CupertinoNativeBody? lowerWidgetNode(
         enabled: onChanged != null,
       );
 
-    case CupertinoNativeRadio():
-      final onChanged = widget.onChanged;
-      if (onChanged != null) {
-        callbacks[id] = (value) => onChanged(value as bool? ?? false);
-      }
-      return CupertinoNativeBody.radio(
-        id: id,
-        value: widget.value,
-        label: widget.label,
-        color: widget.activeColor,
-        enabled: onChanged != null,
-      );
-
     case CupertinoNativePicker():
       final onChanged = widget.onChanged;
       if (onChanged != null) {
@@ -181,6 +169,13 @@ CupertinoNativeBody? lowerWidgetNode(
       if (onChanged != null) {
         callbacks[id] = (value) => onChanged((value as num?)?.toDouble() ?? 0);
       }
+      double valueOf(Object? v) => (v as num?)?.toDouble() ?? widget.value;
+      if (widget.onChangeStart case final start?) {
+        callbacks['$id.start'] = (v) => start(valueOf(v));
+      }
+      if (widget.onChangeEnd case final end?) {
+        callbacks['$id.end'] = (v) => end(valueOf(v));
+      }
       return CupertinoNativeBody.slider(
         id: id,
         value: widget.value,
@@ -191,6 +186,26 @@ CupertinoNativeBody? lowerWidgetNode(
             : (widget.max - widget.min) / widget.divisions!,
         color: widget.activeColor,
         enabled: onChanged != null,
+        neutralValue: widget.neutralValue,
+        showTicks: widget.showTicks,
+        minimumIcon: widget.minimumIcon,
+        maximumIcon: widget.maximumIcon,
+      );
+
+    case CupertinoNativePhotosPicker():
+      callbacks[id] = (value) =>
+          widget.onChanged(CupertinoNativePickedMedia.listFrom(value));
+      return CupertinoNativeBody.photosPicker(id: id, picker: widget);
+
+    case final NativeControlProvider provider:
+      final control = provider.nativeControl;
+      if (control.onChanged case final onChanged? when control.enabled) {
+        callbacks[id] = onChanged;
+      }
+      return CupertinoNativeBody.control(
+        id: id,
+        control: widget,
+        enabled: control.enabled,
       );
 
     case CupertinoNativeTextField():
@@ -270,6 +285,7 @@ CupertinoNativeBody? lowerWidgetNode(
         minimumDate: widget.minimumDate,
         maximumDate: widget.maximumDate,
         mode: widget.mode.name,
+        style: widget.style.name,
         tint: widget.activeColor,
       );
 
@@ -312,7 +328,9 @@ CupertinoNativeBody? lowerWidgetNode(
         'built by SwiftUI in a window Flutter cannot draw, so its items are '
         'read rather than mounted. Use the package\'s own controls — '
         'CupertinoNativeButton, CupertinoNativeSwitch, CupertinoNativeCheckbox, '
-        'CupertinoNativeMenu, CupertinoNativeRadio, CupertinoNativeSlider, CupertinoNativePicker, '
+        'CupertinoNativeMenu, CupertinoNativeSlider, CupertinoNativeStepper, '
+        'CupertinoNativeColorPicker, CupertinoNativeGauge, '
+        'CupertinoNativeMultiDatePicker, CupertinoNativeTextEditor, CupertinoNativePicker, '
         'CupertinoNativeSegmentedControl, CupertinoNativeDatePicker, '
         'CupertinoNativeActivityIndicator, CupertinoNativeSymbol, '
         'CupertinoNativeTextField, CupertinoNativeGlassContainer, Text, '

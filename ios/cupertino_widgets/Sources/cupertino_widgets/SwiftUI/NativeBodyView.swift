@@ -13,8 +13,6 @@ final class NativeBodyModel: ObservableObject {
 
     @Published var toggles: [String: Bool] = [:]
     @Published var checks: [String: Bool] = [:]
-    @Published var radios: [String: Bool] = [:]
-    @Published var sliders: [String: Double] = [:]
     @Published var pickers: [String: Int] = [:]
     @Published var segmenteds: [String: Int] = [:]
 
@@ -33,7 +31,56 @@ final class NativeBodyModel: ObservableObject {
             minimumDate: config.minimumDate.map { Date(timeIntervalSince1970: $0 / 1000) },
             maximumDate: config.maximumDate.map { Date(timeIntervalSince1970: $0 / 1000) },
             tint: config.tint.map { Color(argb: $0) })
+        model.style = config.style ?? "compact"
         dateModels[id] = model
+        return model
+    }
+
+    /// One `SliderViewModel` per slider node: the body renders the same
+    /// `AdaptiveSliderView` as the standalone slider.
+    private var sliderModels: [String: SliderViewModel] = [:]
+
+    func sliderModel(for id: String, config: BodySliderConfig) -> SliderViewModel {
+        if let existing = sliderModels[id] { return existing }
+        let model = SliderViewModel()
+        Self.apply(config, to: model)
+        sliderModels[id] = model
+        return model
+    }
+
+    fileprivate static func apply(_ config: BodySliderConfig, to model: SliderViewModel) {
+        model.value = config.value
+        model.min = config.min
+        model.max = config.max
+        model.step = config.step
+        model.neutralValue = config.neutralValue
+        model.showTicks = config.showTicks ?? false
+        model.minimumIcon = config.minimumIcon
+        model.maximumIcon = config.maximumIcon
+        model.activeColor = config.color.map { Color(argb: $0) }
+        model.isEnabled = config.enabled != false
+    }
+
+    /// One `PhotosPickerModel` per photos-picker node (typed `AnyObject`: the
+    /// model is iOS 17, this class is not).
+    private var photosModels: [String: AnyObject] = [:]
+
+    @available(iOS 17.0, *)
+    @MainActor
+    func photosModel(for id: String, config: PhotosPickerConfig) -> PhotosPickerModel {
+        if let existing = photosModels[id] as? PhotosPickerModel { return existing }
+        let model = PhotosPickerModel(config: config) { _ in }
+        photosModels[id] = model
+        return model
+    }
+
+    /// One `ControlModel` per stepper / color picker / gauge / … node.
+    private var controlModels: [String: ControlModel] = [:]
+
+    func controlModel(for id: String, config: ControlConfig) -> ControlModel {
+        if let existing = controlModels[id] { return existing }
+        let model = ControlModel(config)
+        controlModels[id] = model
         return model
     }
 
@@ -83,6 +130,17 @@ final class NativeBodyModel: ObservableObject {
         if let id = node.id, let config = node.textField, let model = fieldModels[id] {
             model.config = config
         }
+        // Controlled from Dart, like their standalone views: a pushed tree
+        // carries the value Dart holds.
+        if let id = node.id, let config = node.control, let model = controlModels[id] {
+            model.apply(config)
+        }
+        if let id = node.id, let config = node.slider, let model = sliderModels[id] {
+            Self.apply(config, to: model)
+        }
+        if let id = node.id, let config = node.datePicker, let model = dateModels[id] {
+            model.style = config.style ?? "compact"
+        }
         for child in node.children ?? [] { applyConfigs(child) }
     }
 
@@ -100,8 +158,6 @@ final class NativeBodyModel: ObservableObject {
             if let checkbox = node.checkbox, checks[id] == nil {
                 checks[id] = checkbox.value
             }
-            if let radio = node.radio, radios[id] == nil { radios[id] = radio.value }
-            if let slider = node.slider, sliders[id] == nil { sliders[id] = slider.value }
             if let picker = node.picker, pickers[id] == nil {
                 pickers[id] = picker.selectedIndex
             }
@@ -197,8 +253,6 @@ struct NativeBodyNode: View {
             toggleView
         case "checkbox":
             checkboxView
-        case "radio":
-            radioView
         case "slider":
             sliderView
         case "picker":
@@ -213,6 +267,10 @@ struct NativeBodyNode: View {
             segmentedView
         case "datePicker":
             datePickerView
+        case "control":
+            controlView
+        case "photosPicker":
+            photosPickerView
         case "progress":
             progressView
         case "flutter":
@@ -323,39 +381,35 @@ struct NativeBodyNode: View {
     }
 
     @ViewBuilder
-    private var radioView: some View {
-        if let config = node.radio, let id = node.id {
-            AdaptiveRadioView(
-                config: config,
-                isOn: Binding(
-                    get: { model.radios[id] ?? config.value },
-                    set: { newValue in
-                        model.radios[id] = newValue
-                        onEvent(id, newValue)
-                    })
-            )
+    private var sliderView: some View {
+        if let config = node.slider, let id = node.id {
+            let sliderModel = model.sliderModel(for: id, config: config)
+            AdaptiveSliderView(
+                viewModel: sliderModel,
+                onChanged: { onEvent(id, $0) },
+                // Drag start / end answer under their own ids, so each maps
+                // to its own Dart callback.
+                onEditing: { started in
+                    onEvent("\(id).\(started ? "start" : "end")", sliderModel.value)
+                })
         }
     }
 
     @ViewBuilder
-    private var sliderView: some View {
-        if let config = node.slider, let id = node.id {
-            let binding = Binding<Double>(
-                get: { model.sliders[id] ?? config.value },
-                set: { newValue in
-                    NativeLog.log("slider \(id) set \(newValue)")
-                    model.sliders[id] = newValue
-                    onEvent(id, newValue)
-                })
-            Group {
-                if let step = config.step, step > 0 {
-                    Slider(value: binding, in: config.min...config.max, step: step)
-                } else {
-                    Slider(value: binding, in: config.min...config.max)
-                }
+    private var controlView: some View {
+        if let config = node.control, let id = node.id {
+            AdaptiveControlView(model: model.controlModel(for: id, config: config)) {
+                onEvent(id, $0)
             }
-            .applyBodyTint(config.color)
-            .disabled(config.enabled == false)
+        }
+    }
+
+    @ViewBuilder
+    private var photosPickerView: some View {
+        if #available(iOS 17.0, *), let config = node.photosPicker, let id = node.id {
+            let picker = model.photosModel(for: id, config: config)
+            let _ = picker.onChange = { onEvent(id, $0) }
+            InlinePhotosPickerView(model: picker)
         }
     }
 
@@ -379,10 +433,11 @@ struct NativeBodyNode: View {
                 store: model.listStore(for: node.id ?? "list"),
                 onRowTap: { onEvent(node.id ?? "list", $0) },
                 onToggle: { rowId, value in onEvent("\(node.id ?? "list").\(rowId)", value) },
+                onSelectionChanged: { onEvent("\(node.id ?? "list").selection", $0) },
                 onTrailingEvent: { rowId, itemId, value in
                     onEvent("\(node.id ?? "list").\(rowId).\(itemId)", value)
                 },
-                onHeight: { _ in }
+                onHeight: { _, _ in }
             )
         }
     }

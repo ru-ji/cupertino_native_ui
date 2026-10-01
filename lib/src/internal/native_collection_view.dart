@@ -40,6 +40,11 @@ class NativeCollectionView extends StatefulWidget {
 
   final CupertinoNativeListTileCallback? onRowTap;
   final CupertinoNativeListToggleCallback? onToggle;
+  final bool editing;
+  final Set<String> selection;
+  final ValueChanged<Set<String>>? onSelectionChanged;
+  final CupertinoNativeListSwipeCallback? onSwipeAction;
+  final CupertinoNativeListReorderCallback? onReorder;
 
   const NativeCollectionView({
     super.key,
@@ -52,6 +57,11 @@ class NativeCollectionView extends StatefulWidget {
     this.cornerRadius,
     this.onRowTap,
     this.onToggle,
+    this.editing = false,
+    this.selection = const {},
+    this.onSelectionChanged,
+    this.onSwipeAction,
+    this.onReorder,
   });
 
   @override
@@ -64,6 +74,11 @@ class _NativeCollectionViewState extends State<NativeCollectionView>
         WidgetsBindingObserver,
         RouteKeyboardDismissal {
   bool? _lastIsDark;
+
+  /// Whether the last height came from an expandable row opening or
+  /// closing. Matches `AdaptiveSystemListView.expandDuration`.
+  bool _animateHeight = false;
+  static const _expandDuration = Duration(milliseconds: 250);
 
   // Match the app's own theme brightness, NOT the device brightness: a light
   // app on a dark-mode device should still render a light (systemGrouped
@@ -82,6 +97,9 @@ class _NativeCollectionViewState extends State<NativeCollectionView>
           widget.activeColor?.toARGB32() ??
           theme.colorScheme.primary.toARGB32(),
       'sections': widget.sections.map(_sectionMap).toList(),
+      'editing': widget.editing,
+      'selection': widget.selection.toList(),
+      'reorderable': widget.onReorder != null,
     };
   }
 
@@ -156,7 +174,10 @@ class _NativeCollectionViewState extends State<NativeCollectionView>
   }
 
   Map<String, dynamic> _rowMap(CupertinoNativeListTile row) {
-    final map = row.toMap();
+    final map = row.toMap()..['tappable'] = widget.onRowTap != null;
+    if (row.children.isNotEmpty) {
+      map['children'] = [for (final child in row.children) _rowMap(child)];
+    }
     final trailing = row.trailing;
     if (trailing == null) return map;
     final lowered = LoweredTrailing(trailing);
@@ -229,6 +250,25 @@ class _NativeCollectionViewState extends State<NativeCollectionView>
         final value = call.arguments['value'] as bool?;
         if (id != null && value != null) widget.onToggle?.call(id, value);
         break;
+      case 'onSelectionChanged':
+        final ids = (call.arguments['ids'] as List?)?.cast<String>();
+        if (ids != null) widget.onSelectionChanged?.call(ids.toSet());
+        break;
+      case 'onSwipeAction':
+        final rowId = call.arguments['rowId'] as String?;
+        final actionId = call.arguments['actionId'] as String?;
+        if (rowId != null && actionId != null) {
+          widget.onSwipeAction?.call(rowId, actionId);
+        }
+        break;
+      case 'onReorder':
+        final args = call.arguments as Map;
+        widget.onReorder?.call(
+          args['section'] as int,
+          args['from'] as int,
+          args['to'] as int,
+        );
+        break;
       case 'onTrailingEvent':
         // A lowered trailing control changed: (rowId, nodeId, value).
         final rowId = call.arguments['rowId'] as String?;
@@ -258,7 +298,10 @@ class _NativeCollectionViewState extends State<NativeCollectionView>
         // fit instead of clipping.
         final h = (call.arguments['height'] as num?)?.toDouble();
         if (h != null && h > 0 && mounted) {
-          setState(() => intrinsicHeight = h);
+          setState(() {
+            intrinsicHeight = h;
+            _animateHeight = call.arguments['animated'] == true;
+          });
         }
         break;
     }
@@ -329,7 +372,18 @@ class _NativeCollectionViewState extends State<NativeCollectionView>
     // Width fills the parent; height is fixed (given) or the measured content
     // height, with a generous placeholder until the native measurement arrives.
     final h = widget.height ?? intrinsicHeight ?? 400.0;
-    return SizedBox(height: h, child: platformView);
+    // Only an expandable row opening or closing animates the height — with
+    // the same duration and curve as the native row animation, so what is
+    // under the list moves with the rows. Every other change (the first
+    // measurement, rows pushed from Dart) lands at once.
+    return TweenAnimationBuilder<double>(
+      tween: Tween(end: h),
+      duration: _animateHeight ? _expandDuration : Duration.zero,
+      curve: Curves.easeInOut,
+      builder: (context, height, child) =>
+          SizedBox(height: height, child: child),
+      child: platformView,
+    );
   }
 
   /// Plain-Flutter fallback for non-iOS platforms.

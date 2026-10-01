@@ -5,7 +5,13 @@
 import '../cupertino_native_scaffold_navigation_bar.dart';
 import 'cupertino_native_icon.dart';
 
-enum CupertinoNativeTabRole { search }
+enum CupertinoNativeTabRole {
+  search,
+
+  /// `TabRole.prominent` (iOS 27+): stronger emphasis in the tab bar. A
+  /// plain tab on earlier releases.
+  prominent,
+}
 
 class CupertinoNativeTab {
   final String title;
@@ -32,6 +38,10 @@ class CupertinoNativeTab {
   /// renders the results via [CupertinoNativePageScaffold.searchState].
   final CupertinoNativeSearchField? search;
 
+  /// Red badge on the tab icon — a count like `'3'`, or any short text.
+  /// SwiftUI `.badge` / `UITabBarItem.badgeValue`.
+  final String? badge;
+
   const CupertinoNativeTab({
     required this.title,
     required this.id,
@@ -42,6 +52,7 @@ class CupertinoNativeTab {
     this.systemImage,
     this.role,
     this.search,
+    this.badge,
   });
 
   /// Resolved SF Symbol name: from [icon], or from legacy [systemImage].
@@ -55,6 +66,7 @@ class CupertinoNativeTab {
       'id': id,
       'role': role?.name,
       'search': search?.toMap(),
+      'badge': badge,
     };
   }
 
@@ -66,9 +78,10 @@ class CupertinoNativeTab {
         other.icon == icon &&
         other.systemImage == systemImage &&
         other.id == id &&
-        other.role == role;
+        other.role == role &&
+        other.badge == badge;
   }
 
   @override
-  int get hashCode => Object.hash(title, icon, systemImage, id, role);
+  int get hashCode => Object.hash(title, icon, systemImage, id, role, badge);
 }

@@ -19,10 +19,18 @@ struct AdaptiveSymbolView: View {
     }
 
     private var styled: some View {
-        Image(systemName: config.name)
+        image
             .font(.system(size: CGFloat(config.size ?? 17), weight: fontWeight))
             .applySymbolRenderingMode(config.renderingMode)
-            .applyForeground(config.color)
+            .applyForeground(config.color, palette: config.paletteColors ?? [])
+            .applyGradient(config.gradient == true)
+    }
+
+    private var image: Image {
+        if let value = config.variableValue, #available(iOS 16.0, *) {
+            return Image(systemName: config.name, variableValue: value)
+        }
+        return Image(systemName: config.name)
     }
 
     private var fontWeight: Font.Weight {
@@ -102,8 +110,13 @@ extension View {
     }
 
     @ViewBuilder
-    fileprivate func applyForeground(_ argb: Int?) -> some View {
-        if let argb = argb {
+    fileprivate func applyForeground(_ argb: Int?, palette: [Int]) -> some View {
+        let colors = palette.map { Color(argb: $0) }
+        if colors.count >= 3 {
+            self.foregroundStyle(colors[0], colors[1], colors[2])
+        } else if colors.count == 2 {
+            self.foregroundStyle(colors[0], colors[1])
+        } else if let argb = argb {
             self.foregroundStyle(Color(argb: argb))
         } else {
             self
@@ -116,6 +129,19 @@ extension View {
     fileprivate func applyReplaceTransition(_ enabled: Bool) -> some View {
         if enabled, #available(iOS 17.0, *) {
             self.contentTransition(.symbolEffect(.replace))
+        } else {
+            self
+        }
+    }
+}
+
+@available(iOS 15.0, *)
+extension View {
+    /// `.symbolColorRenderingMode(.gradient)` — iOS 26+; flat colour before.
+    @ViewBuilder
+    fileprivate func applyGradient(_ enabled: Bool) -> some View {
+        if enabled, #available(iOS 26.0, *) {
+            self.symbolColorRenderingMode(.gradient)
         } else {
             self
         }

@@ -14,7 +14,7 @@ import 'internal/widget_lowering.dart';
 import 'internal/native_platform_view_mixin.dart';
 import 'internal/keyboard_avoidance.dart';
 import 'internal/text_field_wire.dart';
-import 'search_row_visibility.dart';
+import 'cupertino_search_row_visibility.dart';
 import 'models/cupertino_native_icon.dart';
 
 /// Disambiguates a quick drag (scroll the ancestor `Scrollable`, like a plain
@@ -536,7 +536,9 @@ class _CupertinoNativeTextFieldState extends State<CupertinoNativeTextField>
       'readOnly': widget.readOnly,
       'autofocus': widget.autofocus,
       'fontSize': widget.style?.fontSize,
-      'fontWeight': widget.style?.fontWeight?.value,
+      'fontWeight': widget.style?.fontWeight == null
+          ? null
+          : widget.style!.fontWeight!.value ~/ 100 - 1,
       'textColor': widget.style?.color?.toARGB32(),
       'cursorColor': widget.cursorColor?.toARGB32(),
       'clearButtonMode': clearButtonModeName(widget.clearButtonMode),

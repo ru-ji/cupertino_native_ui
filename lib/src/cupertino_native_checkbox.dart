@@ -6,13 +6,11 @@ import 'package:flutter/services.dart';
 import 'internal/native_platform_view_mixin.dart';
 import 'internal/scroll_friendly_recognizer.dart';
 
-/// A native iOS 26 checkbox rendered by SwiftUI — the square selection
-/// control with the Liquid Glass fill and a springy checkmark.
+/// A checkbox rendered by SwiftUI.
 ///
-/// iOS has no system checkbox, so the native side draws this one: an
-/// unchecked box is a quiet quaternary fill with a separator stroke, a
-/// checked one takes the [activeColor] (system accent by default) with a
-/// white checkmark that bounces in. Taps report through [onChanged]; pass
+/// iOS has no system checkbox, so this is the selection symbol Reminders and
+/// Mail use: `circle` when off, `checkmark.circle.fill` in the [activeColor]
+/// (system accent by default) when on. Taps report through [onChanged]; pass
 /// null (or omit it) for a disabled box, Flutter-style.
 ///
 /// [label] turns the control into a full-width list row (text leading, box

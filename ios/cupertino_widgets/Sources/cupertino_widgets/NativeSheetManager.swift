@@ -2,7 +2,8 @@ import Flutter
 import SwiftUI
 import UIKit
 
-/// Presents a Flutter-rendered page as a native iOS sheet
+/// Presents a page — a Flutter route in its own engine, or a native body with
+/// no engine at all — as a native iOS sheet
 /// (`UISheetPresentationController`) — the standard page-sheet modal that
 /// pushes the presenting screen back as it rises, with system detents, the
 /// grabber, and the swipe-to-dismiss gesture.
@@ -18,39 +19,15 @@ final class NativeSheetManager: NSObject, UIAdaptivePresentationControllerDelega
     private var eventsChannel: FlutterMethodChannel?
 
     private var engine: FlutterEngine?
+    /// The sheet's native body, when it has one instead of a Flutter route.
+    private var bodyModel: NativeBodyModel?
     private var controller: UIViewController?
     /// Completes the Dart `show()` future when the sheet is fully dismissed.
     private var showResult: FlutterResult?
 
-    func show(args: [String: Any], result: @escaping FlutterResult) {
-        guard controller == nil else {
-            result(
-                FlutterError(
-                    code: "SHEET_ALREADY_PRESENTED",
-                    message: "A CupertinoNativeSheet is already presented",
-                    details: nil))
-            return
-        }
-        guard let route = args["route"] as? String, !route.isEmpty else {
-            result(
-                FlutterError(
-                    code: "INVALID_ARGS", message: "Missing 'route'", details: nil))
-            return
-        }
-        guard let presenter = Self.topViewController() else {
-            result(
-                FlutterError(
-                    code: "NO_PRESENTER",
-                    message: "No view controller available to present from",
-                    details: nil))
-            return
-        }
-        if eventsChannel == nil, let messenger = mainMessenger {
-            eventsChannel = FlutterMethodChannel(
-                name: "cupertino_widgets/sheet_events", binaryMessenger: messenger)
-        }
-
-        let isDark = args["isDark"] as? Bool ?? false
+    /// The body route's engine — pooled if it was prewarmed — with the body
+    /// channel `CupertinoNativeSheet.pop()` talks to.
+    private func makeEngine(route: String, isDark: Bool) -> FlutterEngine {
         let engine: FlutterEngine
         if let pooled = NativeScaffoldView.takePooledEngine(route: route) {
             // Route was prewarmed: attach the already-booted engine.
@@ -83,9 +60,67 @@ final class NativeSheetManager: NSObject, UIAdaptivePresentationControllerDelega
         // A pooled engine booted, and pulled its brightness, long before this
         // sheet: push the app's current one so the body matches the sheet.
         bodyChannel.invokeMethod("setBrightness", arguments: ["isDark": isDark])
+        return engine
+    }
 
-        let appBar = (args["appBar"] as? [String: Any]).flatMap {
-            decodeConfig(AppBarConfig.self, from: $0)
+    /// Dart pushed a new native body (a controlled value changed).
+    func updateBody(args: [String: Any], result: @escaping FlutterResult) {
+        if let model = bodyModel,
+            let body = decodeConfig(BodyNodeConfig.self, from: args)
+        {
+            model.root = body
+            model.seed(body)
+            model.applyConfigs(body)
+        }
+        result(nil)
+    }
+
+    func show(args: [String: Any], result: @escaping FlutterResult) {
+        guard controller == nil else {
+            result(
+                FlutterError(
+                    code: "SHEET_ALREADY_PRESENTED",
+                    message: "A CupertinoNativeSheet is already presented",
+                    details: nil))
+            return
+        }
+        let nativeBody = (args["nativeBody"] as? [String: Any]).flatMap {
+            decodeConfig(BodyNodeConfig.self, from: $0)
+        }
+        let route = args["route"] as? String ?? ""
+        guard nativeBody != nil || !route.isEmpty else {
+            result(
+                FlutterError(
+                    code: "INVALID_ARGS", message: "Missing 'route' or 'nativeBody'",
+                    details: nil))
+            return
+        }
+        guard let presenter = Self.topViewController() else {
+            result(
+                FlutterError(
+                    code: "NO_PRESENTER",
+                    message: "No view controller available to present from",
+                    details: nil))
+            return
+        }
+        if eventsChannel == nil, let messenger = mainMessenger {
+            eventsChannel = FlutterMethodChannel(
+                name: "cupertino_widgets/sheet_events", binaryMessenger: messenger)
+        }
+
+        let isDark = args["isDark"] as? Bool ?? false
+        // A native body IS the content: no engine, no isolate.
+        let engine: FlutterEngine? = nativeBody == nil ? makeEngine(route: route, isDark: isDark) : nil
+        bodyModel = nil
+        if let nativeBody {
+            let model = NativeBodyModel()
+            model.root = nativeBody
+            model.seed(nativeBody)
+            bodyModel = model
+        }
+
+        let navigationBar = (args["navigationBar"] as? [String: Any]).flatMap {
+            decodeConfig(NavigationBarConfig.self, from: $0)
         }
         let segments = args["bottomSegments"] as? [String]
         let initialSegment = args["bottomSelectedIndex"] as? Int ?? 0
@@ -93,19 +128,35 @@ final class NativeSheetManager: NSObject, UIAdaptivePresentationControllerDelega
         let showLoadingIndicator = args["showLoadingIndicator"] as? Bool ?? false
         let backgroundArgb = args["backgroundColor"] as? Int
 
+        let content: AnyView
+        if let model = bodyModel {
+            content = AnyView(
+                NativeBodyPage(model: model, scrollEdgeEffect: scrollEdgeEffect) {
+                    [weak self] id, value in
+                    self?.eventsChannel?.invokeMethod(
+                        "bodyEvent", arguments: ["id": id, "value": value])
+                })
+        } else {
+            // The body rides a native ScrollView — self-sized Columns scroll
+            // instead of overflowing, and pull-down-at-top drags the sheet.
+            content = AnyView(
+                PageScrollBody(
+                    engine: engine,
+                    scrollEdgeEffect: scrollEdgeEffect,
+                    showLoadingIndicator: showLoadingIndicator))
+        }
+
         let presented: UIViewController
-        if appBar != nil || segments != nil {
-            // Native chrome: pinned nav bar + native ScrollView over Flutter.
+        if navigationBar != nil || segments != nil {
+            // Native chrome: pinned nav bar over the content.
             let root = SheetRootView(
-                engine: engine,
-                appBar: appBar,
+                content: content,
+                navigationBar: navigationBar,
                 segments: segments,
                 initialSegment: initialSegment,
-                scrollEdgeEffect: scrollEdgeEffect,
-                showLoadingIndicator: showLoadingIndicator,
                 backgroundColor: backgroundArgb,
-                onBarAction: { [weak self] id in
-                    self?.eventsChannel?.invokeMethod("barAction", arguments: id)
+                onToolbarAction: { [weak self] id in
+                    self?.eventsChannel?.invokeMethod("toolbarAction", arguments: id)
                 },
                 onSegment: { [weak self] index in
                     self?.eventsChannel?.invokeMethod("segmentChanged", arguments: index)
@@ -119,14 +170,8 @@ final class NativeSheetManager: NSObject, UIAdaptivePresentationControllerDelega
             )
             presented = UIHostingController(rootView: root)
         } else {
-            // Bare sheet: no chrome, but the body still rides a native
-            // ScrollView — self-sized Columns scroll instead of
-            // overflowing, and pull-down-at-top drags the sheet.
-            presented = UIHostingController(
-                rootView: PageScrollBody(
-                    engine: engine,
-                    scrollEdgeEffect: scrollEdgeEffect,
-                    showLoadingIndicator: showLoadingIndicator))
+            // Bare sheet: no chrome.
+            presented = UIHostingController(rootView: content)
         }
 
         presented.overrideUserInterfaceStyle = isDark ? .dark : .light
@@ -163,6 +208,7 @@ final class NativeSheetManager: NSObject, UIAdaptivePresentationControllerDelega
         }
 
         presented.modalPresentationStyle = .pageSheet
+        presented.isModalInPresentation = !(args["dismissible"] as? Bool ?? true)
         if let sheet = presented.sheetPresentationController {
             var detents: [UISheetPresentationController.Detent] = []
             for name in (args["detents"] as? [String]) ?? [] {
@@ -171,7 +217,18 @@ final class NativeSheetManager: NSObject, UIAdaptivePresentationControllerDelega
                 default: detents.append(.large())
                 }
             }
+            if #available(iOS 16.0, *) {
+                for (i, h) in ((args["detentHeights"] as? [Double]) ?? []).enumerated() {
+                    detents.append(
+                        .custom(identifier: .init("height\(i)")) { _ in CGFloat(h) })
+                }
+            }
             sheet.detents = detents.isEmpty ? [.large()] : detents
+            switch args["undimmedUpTo"] as? String {
+            case "medium": sheet.largestUndimmedDetentIdentifier = .medium
+            case "large": sheet.largestUndimmedDetentIdentifier = .large
+            default: break
+            }
             sheet.prefersGrabberVisible = args["showGrabber"] as? Bool ?? false
             if let radius = args["cornerRadius"] as? Double {
                 sheet.preferredCornerRadius = CGFloat(radius)
@@ -220,6 +277,7 @@ final class NativeSheetManager: NSObject, UIAdaptivePresentationControllerDelega
         controller = nil
         // Releasing the engine shuts down the sheet's isolate.
         engine = nil
+        bodyModel = nil
     }
 
     /// The controller currently on top of the key window's presented chain.
@@ -237,19 +295,18 @@ final class NativeSheetManager: NSObject, UIAdaptivePresentationControllerDelega
 
 /// The sheet's native chrome: NavigationStack with the scaffold's app-bar
 /// toolbar, optional searchable field, optional segmented control pinned
-/// under the bar, and the Flutter body in a native ScrollView.
+/// under the bar, over the content (Flutter or native body).
 @available(iOS 15.0, *)
 struct SheetRootView: View {
-    let engine: FlutterEngine
-    let appBar: AppBarConfig?
+    /// The Flutter body in its scroll view, or the native body.
+    let content: AnyView
+    let navigationBar: NavigationBarConfig?
     let segments: [String]?
     let initialSegment: Int
-    let scrollEdgeEffect: String?
-    let showLoadingIndicator: Bool
     /// Sheet background (ARGB), re-applied inside the NavigationStack, which
     /// draws its own opaque background.
     let backgroundColor: Int?
-    let onBarAction: (String) -> Void
+    let onToolbarAction: (String) -> Void
     let onSegment: (Int) -> Void
     let onSearchChanged: (String) -> Void
     let onSearchSubmitted: (String) -> Void
@@ -258,26 +315,22 @@ struct SheetRootView: View {
     @State private var segment: Int
 
     init(
-        engine: FlutterEngine,
-        appBar: AppBarConfig?,
+        content: AnyView,
+        navigationBar: NavigationBarConfig?,
         segments: [String]?,
         initialSegment: Int,
-        scrollEdgeEffect: String?,
-        showLoadingIndicator: Bool,
         backgroundColor: Int?,
-        onBarAction: @escaping (String) -> Void,
+        onToolbarAction: @escaping (String) -> Void,
         onSegment: @escaping (Int) -> Void,
         onSearchChanged: @escaping (String) -> Void,
         onSearchSubmitted: @escaping (String) -> Void
     ) {
-        self.engine = engine
-        self.appBar = appBar
+        self.content = content
+        self.navigationBar = navigationBar
         self.segments = segments
         self.initialSegment = initialSegment
-        self.scrollEdgeEffect = scrollEdgeEffect
-        self.showLoadingIndicator = showLoadingIndicator
         self.backgroundColor = backgroundColor
-        self.onBarAction = onBarAction
+        self.onToolbarAction = onToolbarAction
         self.onSegment = onSegment
         self.onSearchChanged = onSearchChanged
         self.onSearchSubmitted = onSearchSubmitted
@@ -293,14 +346,10 @@ struct SheetRootView: View {
     }
 
     private var pageContent: some View {
-        PageScrollBody(
-            engine: engine,
-            scrollEdgeEffect: scrollEdgeEffect,
-            showLoadingIndicator: showLoadingIndicator
-        )
+        content
         .safeAreaInset(edge: .top, spacing: 0) { segmentedBar }
-        .applyAppBar(appBar, onAction: onBarAction)
-        .applySearchable(appBar?.search, text: $searchText) {
+        .applyNavigationBar(navigationBar, onAction: onToolbarAction)
+        .applySearchable(navigationBar?.search, text: $searchText) {
             onSearchSubmitted(searchText)
         }
         .onChange(of: searchText) { onSearchChanged($0) }

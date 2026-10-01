@@ -17,9 +17,18 @@ struct ListRowConfig: Codable {
     let enabled: Bool?
     /// Trailing checkmark of a selection row.
     let selected: Bool?
+    /// False when no `onRowTap` listens: the plain row is then no `Button`.
+    /// Nil (body lists, which always report taps) keeps it tappable.
+    let tappable: Bool?
     /// A lowered `CupertinoNativeListTile.trailing` — native nodes (switch,
     /// slider, button, picker, …) rendered in the row by SwiftUI.
     let trailing: [BodyNodeConfig]?
+    /// `.badge` text; nil for none.
+    let badge: String?
+    /// `.swipeActions` buttons (menu "action" items), first = full swipe.
+    let swipeActions: [MenuItemConfig]?
+    /// Nested rows: the row expands them as real rows beneath it.
+    let children: [ListRowConfig]?
 }
 
 /// A `Section` of a native `List`/`Form`: optional header/footer + rows.
@@ -59,4 +68,10 @@ struct ListConfig: Codable {
     let cornerRadius: Double?  // inset-grouped card radius; nil = default (26 on iOS 26+, else 10)
     let tint: Int?        // ARGB accent color
     let sections: [ListSectionConfig]
+    /// Edit mode: the system selection circles at each row's leading edge.
+    let editing: Bool?
+    /// Ids of the rows checked in edit mode.
+    let selection: [String]?
+    /// Rows get the system reorder handles in edit mode (`.onMove`).
+    let reorderable: Bool?
 }

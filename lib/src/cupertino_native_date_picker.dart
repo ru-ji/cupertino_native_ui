@@ -8,10 +8,11 @@ import 'package:flutter/widgets.dart';
 
 import 'internal/native_platform_view_mixin.dart';
 
-/// The **compact** system date picker: renders as the tappable gray pill used
-/// throughout iOS Settings/Calendar, and pops the native calendar or time
-/// wheel over the app when tapped — overlay, dimming and animations are all
-/// UIKit's.
+/// The system date picker. By default the **compact** style: the tappable
+/// gray pill used throughout iOS Settings/Calendar, which pops the native
+/// calendar or time wheel over the app when tapped — overlay, dimming and
+/// animations are all UIKit's. [style] switches to the inline calendar or the
+/// wheel.
 ///
 /// ```dart
 /// CupertinoNativeDatePicker(
@@ -29,6 +30,7 @@ class CupertinoNativeDatePicker extends StatefulWidget {
     this.minimumDate,
     this.maximumDate,
     this.activeColor,
+    this.style = CupertinoNativeDatePickerStyle.compact,
     this.width,
     this.height,
   });
@@ -46,6 +48,10 @@ class CupertinoNativeDatePicker extends StatefulWidget {
 
   /// Accent color of the popped-open calendar / selected values.
   final Color? activeColor;
+
+  /// `compact` (a field that pops a calendar), `graphical` (the calendar
+  /// inline) or `wheel` — SwiftUI's `.datePickerStyle`.
+  final CupertinoNativeDatePickerStyle style;
 
   final double? width;
   final double? height;
@@ -75,6 +81,7 @@ class _CupertinoNativeDatePickerState extends State<CupertinoNativeDatePicker>
       'minimumDate': widget.minimumDate?.millisecondsSinceEpoch,
       'maximumDate': widget.maximumDate?.millisecondsSinceEpoch,
       'tint': widget.activeColor?.toARGB32(),
+      'style': widget.style.name,
       'isDark': _isDark,
     };
   }
@@ -100,11 +107,13 @@ class _CupertinoNativeDatePickerState extends State<CupertinoNativeDatePicker>
         oldWidget.mode != widget.mode ||
         oldWidget.minimumDate != widget.minimumDate ||
         oldWidget.maximumDate != widget.maximumDate ||
-        oldWidget.activeColor != widget.activeColor) {
+        oldWidget.activeColor != widget.activeColor ||
+        oldWidget.style != widget.style) {
       updateNativeView(
         'updateDatePicker',
         _toMap(),
-        refreshIntrinsicSize: false,
+        // A new style is a new size (a pill vs a whole calendar).
+        refreshIntrinsicSize: oldWidget.style != widget.style,
       );
     }
   }
@@ -156,9 +165,23 @@ class _CupertinoNativeDatePickerState extends State<CupertinoNativeDatePicker>
     );
 
     return SizedBox(
-      width: widget.width ?? intrinsicWidth ?? 148,
-      height: widget.height ?? intrinsicHeight ?? 36,
+      // Stand-ins until the native measurement lands.
+      width:
+          widget.width ??
+          intrinsicWidth ??
+          (widget.style == CupertinoNativeDatePickerStyle.compact ? 148 : 320),
+      height:
+          widget.height ??
+          intrinsicHeight ??
+          switch (widget.style) {
+            CupertinoNativeDatePickerStyle.compact => 36,
+            CupertinoNativeDatePickerStyle.graphical => 330,
+            CupertinoNativeDatePickerStyle.wheel => 216,
+          },
       child: platformView,
     );
   }
 }
+
+/// SwiftUI's `DatePickerStyle`.
+enum CupertinoNativeDatePickerStyle { compact, graphical, wheel }

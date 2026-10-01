@@ -60,6 +60,23 @@ class CupertinoNativeSubmenu extends CupertinoNativeMenuItem {
   }
 }
 
+/// A row of compact icon buttons at the top of a menu — SwiftUI's
+/// `ControlGroup` (the Copy / Paste / Share strip of a text menu). Give each
+/// action a `systemImage`; up to 3 fit, each with its title under the icon.
+class CupertinoNativeMenuControlGroup extends CupertinoNativeMenuItem {
+  final List<CupertinoNativeMenuAction> items;
+
+  const CupertinoNativeMenuControlGroup({required this.items});
+
+  @override
+  Map<String, dynamic> toMap() {
+    return {
+      'type': 'controlGroup',
+      'items': items.map((e) => e.toMap()).toList(),
+    };
+  }
+}
+
 /// A section (grouped items)
 class CupertinoNativeMenuSection extends CupertinoNativeMenuItem {
   final String? title;

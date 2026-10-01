@@ -19,14 +19,14 @@ class NativeScaffoldDemoPage extends StatelessWidget {
           subtitle: '128 items',
           titleDisplayMode: CupertinoNativeToolbarTitleDisplayMode.large,
           trailing: [
-            // Each CupertinoNativeBarItem gets its own glass capsule (iOS 26).
-            // Wrap multiple items in CupertinoNativeBarItemGroup to share one capsule.
-            CupertinoNativeBarItem(
-              icon: CupertinoNativeIcon.symbol(CupertinoSymbols.plus),
+            // Consecutive items share one glass capsule (iOS 26); a
+            // CupertinoNativeToolbarSpacer between them splits it.
+            CupertinoNativeToolbarItem(
+              symbol: CupertinoSymbols.plus,
               actionId: 'add',
             ),
-            CupertinoNativeBarItem(
-              icon: CupertinoNativeIcon.symbol(CupertinoSymbols.ellipsisCircle),
+            CupertinoNativeToolbarItem(
+              symbol: CupertinoSymbols.ellipsisCircle,
               actionId: 'more',
             ),
           ],
@@ -71,7 +71,7 @@ class NativeScaffoldDemoPage extends StatelessWidget {
             ),
           ],
         ),
-        onBarAction: (route, actionId) {
+        onToolbarAction: (route, actionId) {
           debugPrint('Scaffold bar action on $route: $actionId');
         },
         onTabChanged: (id) => debugPrint('Scaffold tab changed: $id'),
