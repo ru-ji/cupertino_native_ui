@@ -77,6 +77,15 @@ struct ControlConfig: Codable {
     let autocorrect: Bool?
     let maxLength: Int?
     let readOnly: Bool?
+    /// "regular" | "clear" | "identity"; nil = no glass. Always interactive.
+    let glass: String?
+    let glassTint: Int?
+    /// The placeholder's offset from the editor's corner; nil = the default
+    /// (see `placeholderInsets`).
+    let placeholderTop: Double?
+    let placeholderLeading: Double?
+    /// Room between the editor and its background / glass edge.
+    let padding: EdgeInsetsDTO?
 }
 
 /// The shown values, owned by the bridge: a value from Dart and the echo of a
@@ -315,22 +324,67 @@ struct AdaptiveControlView: View {
         .autocapitalization(BackingTextField.capitalization(config.textCapitalization))
         .disableAutocorrection(config.autocorrect == false)
         .textContentType(config.textContentType.map { UITextContentType(rawValue: $0) })
-        .hiddenEditorBackground(config.backgroundColor != nil)
-        .background(config.backgroundColor.map { Color(argb: $0) })
-        .clipShape(RoundedRectangle(cornerRadius: config.cornerRadius ?? 0, style: .continuous))
+        .hiddenEditorBackground()
         .focused($editorFocused)
         .onChange(of: editorFocused) { onFocus($0) }
         // TextEditor has no placeholder of its own: draw it behind while
-        // empty, at the text's inset.
+        // empty. On the editor itself, before `padding`, so the padding moves
+        // both together; inside the glass, so the glass does not shift it.
         .overlay(alignment: .topLeading) {
             if model.text.isEmpty, let placeholder = config.placeholder {
                 Text(placeholder)
                     .font(font)
                     .foregroundStyle(.tertiary)
-                    .padding(.top, 8)
-                    .padding(.leading, 5)
+                    .padding(.top, placeholderInsets.top)
+                    .padding(.leading, placeholderInsets.leading)
                     .allowsHitTesting(false)
             }
+        }
+        .padding(.top, CGFloat(config.padding?.top ?? 0))
+        .padding(.leading, CGFloat(config.padding?.left ?? 0))
+        .padding(.trailing, CGFloat(config.padding?.right ?? 0))
+        .padding(.bottom, CGFloat(config.padding?.bottom ?? 0))
+        .background(config.backgroundColor.map { Color(argb: $0) })
+        .clipShape(RoundedRectangle(cornerRadius: config.cornerRadius ?? 0, style: .continuous))
+        .modifier(EditorGlass(config: config))
+    }
+
+    /// On glass the typed text sits at the UITextView's own inset (8 top, 5
+    /// leading) and the placeholder must follow it; off glass they already
+    /// line up. Overridable from Dart (`placeholderPadding`) where it does not.
+    private var placeholderInsets: (top: CGFloat, leading: CGFloat) {
+        let onGlass = config.glass != nil
+        return (
+            CGFloat(config.placeholderTop ?? (onGlass ? 8 : 0)),
+            CGFloat(config.placeholderLeading ?? (onGlass ? 5 : 0))
+        )
+    }
+
+    /// `.glassEffect`, always interactive, in the editor's rounded shape.
+    private struct EditorGlass: ViewModifier {
+        let config: ControlConfig
+
+        func body(content: Content) -> some View {
+            if let variant = config.glass, #available(iOS 26.0, *) {
+                content.glassEffect(
+                    glass(variant),
+                    in: RoundedRectangle(
+                        cornerRadius: config.cornerRadius ?? 16, style: .continuous))
+            } else {
+                content
+            }
+        }
+
+        @available(iOS 26.0, *)
+        private func glass(_ variant: String) -> Glass {
+            var style: Glass
+            switch variant {
+            case "clear": style = .clear
+            case "identity": style = .identity
+            default: style = .regular
+            }
+            if let tint = config.glassTint { style = style.tint(Color(argb: tint)) }
+            return style.interactive()
         }
     }
 
@@ -357,10 +411,11 @@ extension View {
 
 @available(iOS 15.0, *)
 extension View {
-    /// TextEditor paints its own system background over a custom one; iOS 16+
-    /// can hide it. Below that the custom colour shows only around the text.
-    @ViewBuilder fileprivate func hiddenEditorBackground(_ hidden: Bool) -> some View {
-        if #available(iOS 16.0, *), hidden {
+    /// TextEditor paints the system background (white / black) whatever sits
+    /// behind it: hidden, it is transparent like a text field, and
+    /// `backgroundColor` is the only fill. iOS 16+; below, it stays.
+    @ViewBuilder fileprivate func hiddenEditorBackground() -> some View {
+        if #available(iOS 16.0, *) {
             self.scrollContentBackground(.hidden)
         } else {
             self

@@ -3,6 +3,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
+import 'cupertino_native_glass_container.dart' show CupertinoNativeGlass;
 import 'internal/native_control.dart';
 
 /// A native SwiftUI `TextEditor`: multi-line, scrolling text entry.
@@ -27,6 +28,10 @@ class CupertinoNativeTextEditor extends StatelessWidget
     this.autocorrect = true,
     this.maxLength,
     this.readOnly = false,
+    this.glass,
+    this.glassTint,
+    this.placeholderPadding,
+    this.padding,
     this.height = 120,
   });
 
@@ -43,7 +48,7 @@ class CupertinoNativeTextEditor extends StatelessWidget
   final TextStyle? style;
   final Color? cursorColor;
 
-  /// Null keeps the system's own (transparent in a card).
+  /// Null is transparent (iOS 16+; the system background below).
   final Color? backgroundColor;
   final double? cornerRadius;
   final TextInputType keyboardType;
@@ -59,6 +64,23 @@ class CupertinoNativeTextEditor extends StatelessWidget
 
   /// Selectable and copyable, but not editable.
   final bool readOnly;
+
+  /// `.glassEffect(glass.interactive())`, in a [cornerRadius] rounded shape
+  /// (16 when null). iOS 26; null: no glass.
+  final CupertinoNativeGlass? glass;
+
+  /// `Glass.tint`: a colour mixed into the [glass].
+  final Color? glassTint;
+
+  /// Where the [placeholder] sits from the editor's top-left corner. The
+  /// placeholder is drawn over the editor (SwiftUI's `TextEditor` has none),
+  /// so it is aligned by hand with where typed text starts: 8 top / 5 left on
+  /// [glass], 0 otherwise. Set it if the two do not line up.
+  final EdgeInsets? placeholderPadding;
+
+  /// Room between the text and the editor's background or [glass] edge —
+  /// SwiftUI's `.padding`. The placeholder moves with it.
+  final EdgeInsets? padding;
 
   /// The editor scrolls inside this height.
   final double height;
@@ -93,6 +115,18 @@ class CupertinoNativeTextEditor extends StatelessWidget
       'autocorrect': autocorrect,
       'maxLength': maxLength,
       'readOnly': readOnly,
+      'glass': glass?.name,
+      'glassTint': glassTint?.toARGB32(),
+      'placeholderTop': placeholderPadding?.top,
+      'placeholderLeading': placeholderPadding?.left,
+      'padding': padding == null
+          ? null
+          : {
+              'left': padding!.left,
+              'top': padding!.top,
+              'right': padding!.right,
+              'bottom': padding!.bottom,
+            },
     },
     enabled: onChanged != null,
     onChanged: (v) => onChanged?.call(v as String),

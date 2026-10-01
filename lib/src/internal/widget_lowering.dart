@@ -242,6 +242,8 @@ CupertinoNativeBody? lowerWidgetNode(
         maxLength: widget.maxLength,
         clearButtonMode: widget.clearButtonMode,
         glass: widget.glass,
+        glassTint: widget.glassTint,
+        cornerRadius: widget.cornerRadius,
         prefix: widget.prefix,
         suffix: widget.suffix,
         keyboardToolbar: toolbar?.nodes ?? const [],

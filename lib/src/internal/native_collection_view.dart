@@ -312,31 +312,21 @@ class _NativeCollectionViewState extends State<NativeCollectionView>
   /// one. The row's rect comes from the native side with its focus report,
   /// already converted into this view's coordinates — see [_focusedRow].
   void _revealAboveKeyboard({bool postFrame = false}) {
-    void run() {
+    void run({bool animate = false}) {
       if (!mounted) return;
       final box = context.findRenderObject();
       if (box is! RenderBox || !box.hasSize) return;
-      // Only the part of the keyboard that really covers this viewport, the
-      // way the standalone field's reveal does it — see
-      // [keyboardCoverOfViewport].
-      // No early return on a zero cover: the row may still be plainly
-      // off-screen, and `showOnScreen` is the thing that decides.
-      final inset = keyboardCoverOfViewport(context);
-      // No duration: the engine already delivers the inset once per vsync of
-      // the keyboard's own animation, so an instant move on each tick *is*
-      // the animation — and it is the keyboard's curve, not a second one
-      // running alongside it at a different speed.
       final row = _focusedRow;
       final target = row == null
           ? Offset.zero & box.size
           : Rect.fromLTWH(0, row.top, box.size.width, row.height);
-      box.showOnScreen(
-        rect: EdgeInsets.only(bottom: inset + 20).inflateRect(target),
-      );
+      revealAboveKeyboard(context, box, rect: target, animate: animate);
     }
 
     if (postFrame) {
-      WidgetsBinding.instance.addPostFrameCallback((_) => run());
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => run(animate: mounted && keyboardIsUp(context)),
+      );
     } else {
       run();
     }

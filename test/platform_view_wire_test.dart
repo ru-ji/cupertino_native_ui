@@ -8,7 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 ///
 /// The Dart-facing parameter names were unified in 0.1.0 (`color` / `tint` /
 /// `accentColor` / `primaryColor` all became `activeColor`, `selection` became
-/// `value`, the five `glass*` parameters became one `CupertinoGlass`) while the
+/// `value`, the five `glass*` parameters became `glass` + `glassTint`) while the
 /// method-channel keys deliberately did **not** change — the Swift side still
 /// reads the old spellings.
 ///
@@ -222,25 +222,21 @@ void main() {
   });
 
   group('text field', () {
-    testWidgets('CupertinoGlass expands back to the five glass keys', (
-      tester,
-    ) async {
+    testWidgets('glass expands back to the five glass keys', (tester) async {
       final params = await paramsOf(
         tester,
         const CupertinoNativeTextField(
           placeholder: 'Search',
-          glass: CupertinoGlass(
-            cornerRadius: 22,
-            variant: CupertinoGlassVariant.clear,
-            interactive: false,
-            tint: green,
-          ),
+          cornerRadius: 22,
+          glass: CupertinoNativeGlass.clear,
+          glassTint: green,
         ),
       );
       expect(params['glass'], true);
       expect(params['glassCornerRadius'], 22.0);
       expect(params['glassVariant'], 'clear');
-      expect(params['glassInteractive'], false);
+      // Always interactive.
+      expect(params['glassInteractive'], true);
       expect(params['glassTint'], green.toARGB32());
     }, variant: iOS);
 
