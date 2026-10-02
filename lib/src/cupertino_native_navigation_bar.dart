@@ -57,6 +57,10 @@ class CupertinoNativeSliverNavigationBar extends StatefulWidget {
     this.bottom,
     this.bottomHeight = 44,
     this.scrollEdgeEffect = CupertinoScrollEdgeEffectStyle.soft,
+    @Deprecated(
+      'The edge effect takes the page background, as the system\'s does; it '
+      'cannot be tinted on its own.',
+    )
     this.tintColor,
   }) : searchPlaceholder = null,
        searchStyle = null,
@@ -95,6 +99,10 @@ class CupertinoNativeSliverNavigationBar extends StatefulWidget {
     this.onSearchChanged,
     this.onSearchActiveChanged,
     this.scrollEdgeEffect = CupertinoScrollEdgeEffectStyle.soft,
+    @Deprecated(
+      'The edge effect takes the page background, as the system\'s does; it '
+      'cannot be tinted on its own.',
+    )
     this.tintColor,
   }) : bottom = null,
        bottomHeight = searchFieldHeight,
@@ -189,7 +197,8 @@ class CupertinoNativeSliverNavigationBar extends StatefulWidget {
 
   final CupertinoScrollEdgeEffectStyle scrollEdgeEffect;
 
-  /// Tint of the edge effect. Defaults to the system background.
+  /// Ignored: the edge effect takes the page background, as the system's
+  /// does.
   final Color? tintColor;
 
   @override
@@ -376,7 +385,13 @@ class _CupertinoSliverAppBarState
     if (_controller.value > 0.0) return;
 
     final double bottomScrollOffset = _bottomScrollOffset;
-    final double largeTitleHeight = _largeTitleHeight;
+    // What the header actually travels: the large title, less the space the
+    // collapsed bar keeps under its row.
+    final double largeTitleHeight =
+        _IOS26SliverAppBarDelegate._titleCollapseRange(
+          expandedTitle: widget.expandedTitle,
+          hasSubtitle: widget.subtitle != null,
+        );
 
     double? target;
     if (bottomScrollOffset > 0.0 && position.pixels < bottomScrollOffset) {
@@ -604,7 +619,6 @@ class _CupertinoSliverAppBarState
               child: CupertinoScrollEdgeEffect(
                 edge: CupertinoScrollEdgeEffectEdge.top,
                 style: widget.scrollEdgeEffect,
-                color: widget.tintColor,
                 intensity: _titleT.value,
                 onBrightnessChanged: (behind) {
                   if (mounted && behind != _effectBehind) {
@@ -716,11 +730,12 @@ class _IOS26SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
   static const double _collapseDeadZone = 10;
 
   /// How far below the header the edge effect keeps fading.
-  static const double _effectOverhang = 44;
+  static const double _effectOverhang = 42;
 
-  /// The system's `.hard` band is its iOS 26 bar, 54pt under the status bar
-  /// (it ended at 101pt on an iPhone 12 Pro Max: 47 + 54); ours is 44pt.
-  static const double _hardOverhang = 10;
+  /// What the iOS 26 bar keeps under its 44pt title row: it is 54pt in all.
+  /// A collapsed page's content stops there, and the `.hard` band covers it
+  /// — both ended at 101pt on an iPhone 12 Pro Max (47 + 54).
+  static const double _barSpacing = 10;
 
   /// The search row: the field, the gap above it and the bottom padding.
   static double _searchRowHeight(double fieldHeight) =>
@@ -814,7 +829,20 @@ class _IOS26SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
             _barH +
             (_hasSearch && bottomMode == NavigationBarBottomMode.always
                 ? _searchRowH
-                : 0);
+                // The bar's own space under its title row: a collapsed
+                // page's content stops 54pt under the status bar, as the
+                // system's.
+                : _barSpacing);
+
+  /// How far the large title collapses: the header's travel from resting to
+  /// collapsed, past the search row. Where the snap settles.
+  static double _titleCollapseRange({
+    required bool expandedTitle,
+    required bool hasSubtitle,
+  }) =>
+      (_largeTitleH(expandedTitle: expandedTitle, hasSubtitle: hasSubtitle) -
+              _barSpacing)
+          .clamp(0.0, double.infinity);
   double get _activeExtent => topPadding + fieldHeight + 12;
 
   @override
@@ -977,7 +1005,7 @@ class _IOS26SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
     // Fixed height: resizing the native blur every scroll frame re-renders
     // its masks and makes it lag.
     final effectH =
-        topPadding + _barH + (hardEdge ? _hardOverhang : _effectOverhang);
+        topPadding + _barH + (hardEdge ? _barSpacing : _effectOverhang);
 
     return Stack(
       clipBehavior: Clip.none,
@@ -1229,6 +1257,10 @@ class CupertinoNativeNavigationBar extends StatelessWidget {
     this.automaticallyImplyLeading = true,
     this.trailing = const [],
     this.scrollEdgeEffect = CupertinoScrollEdgeEffectStyle.soft,
+    @Deprecated(
+      'The edge effect takes the page background, as the system\'s does; it '
+      'cannot be tinted on its own.',
+    )
     this.tintColor,
   });
 
@@ -1241,6 +1273,8 @@ class CupertinoNativeNavigationBar extends StatelessWidget {
   final bool automaticallyImplyLeading;
   final List<Widget> trailing;
   final CupertinoScrollEdgeEffectStyle scrollEdgeEffect;
+
+  /// See [CupertinoNativeSliverNavigationBar.tintColor].
   final Color? tintColor;
 
   @override
@@ -1338,13 +1372,12 @@ class CupertinoNativeNavigationBar extends StatelessWidget {
                 topPadding +
                 44 +
                 (scrollEdgeEffect == CupertinoScrollEdgeEffectStyle.hard
-                    ? _IOS26SliverAppBarDelegate._hardOverhang
+                    ? _IOS26SliverAppBarDelegate._barSpacing
                     : _IOS26SliverAppBarDelegate._effectOverhang),
             child: RepaintBoundary(
               child: CupertinoScrollEdgeEffect(
                 edge: CupertinoScrollEdgeEffectEdge.top,
                 style: scrollEdgeEffect,
-                color: tintColor,
                 onBrightnessChanged: onBrightnessChanged,
               ),
             ),

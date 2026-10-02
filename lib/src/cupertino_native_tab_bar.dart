@@ -363,9 +363,9 @@ class _CupertinoNativeTabBarState extends State<CupertinoNativeTabBar> {
     }
 
     // The standalone bar draws the scroll edge effect itself when one is
-    // requested (iOS 26+), with the navigation bar's geometry mirrored: from
-    // the screen edge to 44pt past the bar. `hard` covers the system tab
-    // bar's place instead, whatever this bar's own box.
+    // requested (iOS 26+): over the system tab bar's place, from the screen
+    // edge up to where that bar stops, in either style — whatever this bar's
+    // own box.
     if (isIOS26OrLater &&
         widget.scrollEdgeEffect != CupertinoScrollEdgeEffectStyle.automatic) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _measureBelow());
@@ -376,11 +376,10 @@ class _CupertinoNativeTabBarState extends State<CupertinoNativeTabBar> {
           Positioned(
             left: 0,
             right: 0,
-            top: widget.scrollEdgeEffect == CupertinoScrollEdgeEffectStyle.hard
-                ? h +
-                      _belowBar -
-                      (MediaQuery.viewPaddingOf(context).bottom + _hardBand)
-                : -_effectOverhang,
+            top:
+                h +
+                _belowBar -
+                (MediaQuery.viewPaddingOf(context).bottom + _effectBand),
             // Down to the physical screen edge — measured, not assumed: a
             // bar that already reaches it (no SafeArea around it) took the
             // home-indicator inset again, so the strongest part of the ramp
@@ -400,13 +399,10 @@ class _CupertinoNativeTabBarState extends State<CupertinoNativeTabBar> {
     return bar;
   }
 
-  /// How far the effect runs past the bar, like the navigation bar's.
-  static const double _effectOverhang = 44;
-
-  /// The system's `.hard` band: the classic tab bar's 49pt over the home
-  /// indicator, measured up from the screen's bottom edge (83pt on an iPhone
-  /// 12 Pro Max).
-  static const double _hardBand = 49;
+  /// Where the effect stops, `.soft` and `.hard` alike: the system tab bar's
+  /// place, the classic 49pt over the home indicator, measured up from the
+  /// screen's bottom edge (83pt on an iPhone 12 Pro Max).
+  static const double _effectBand = 49;
 
   final GlobalKey _barKey = GlobalKey();
 

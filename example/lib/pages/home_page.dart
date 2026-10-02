@@ -52,8 +52,6 @@ class HomePage extends StatelessWidget {
                   child: CupertinoSymbolImage(isDark ? 'sun.max' : 'moon'),
                 ),
               ],
-              // Edge effect tinted like the page background.
-              tintColor: CupertinoColors.systemGroupedBackground,
             ),
             SliverPadding(
               padding: EdgeInsets.only(

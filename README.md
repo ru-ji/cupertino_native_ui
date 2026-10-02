@@ -958,15 +958,13 @@ CustomScrollView(
 | `collapseTitle` | `bool` | Whether the large title collapses into the bar on scroll; false keeps it large. Default `true`. *iOS 26+* |
 | `bottom` / `bottomHeight` | `Widget?` / `double` | A widget under the large title, and its height. Default height `44`. |
 | `scrollEdgeEffect` | `CupertinoScrollEdgeEffectStyle` | Blur where content scrolls under the bar. Default `soft`. |
-| `tintColor` | `Color?` | Colour the edge effect blends into, usually the page background. |
 
 `.search` adds `searchPlaceholder`, `searchStyle`, `searchPrefixIcon`,
 `searchSuffixIcon`, `searchGlass`, `searchFieldHeight`, `bottomMode`,
 `scrollToTopOnSearch`, `onSearchChanged` and `onSearchActiveChanged`.
 
 `CupertinoNativeNavigationBar` is the version for pages that do not scroll:
-`title`, `subtitle`, `centerTitle`, `leading`, `trailing`, `scrollEdgeEffect`,
-`tintColor`.
+`title`, `subtitle`, `centerTitle`, `leading`, `trailing`, `scrollEdgeEffect`.
 
 Add this to `ios/Runner/Info.plist`, or the title shows a faint glow over the
 scroll edge effect:

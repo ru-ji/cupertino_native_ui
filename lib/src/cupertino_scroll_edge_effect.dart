@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart'
     show CupertinoDynamicColor, CupertinoPageScaffold, CupertinoTheme;
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart' show Scaffold, Theme;
 import 'package:flutter/widgets.dart';
 
 import 'cupertino_native_edge_blur.dart';
@@ -35,6 +36,10 @@ class CupertinoScrollEdgeEffect extends StatelessWidget {
     super.key,
     this.edge = CupertinoScrollEdgeEffectEdge.top,
     this.style = CupertinoScrollEdgeEffectStyle.soft,
+    @Deprecated(
+      'The effect takes the page background, as the system\'s does; it '
+      'cannot be tinted on its own.',
+    )
     this.color,
     this.intensity = 1,
     this.onBrightnessChanged,
@@ -46,9 +51,9 @@ class CupertinoScrollEdgeEffect extends StatelessWidget {
   /// over a blur, ending in a hard cutoff. `automatic` is `soft`.
   final CupertinoScrollEdgeEffectStyle style;
 
-  /// Colour of the `hard` style. Defaults to the page's background — the
-  /// enclosing [CupertinoPageScaffold]'s, or the theme's — which is what the
-  /// system uses.
+  /// Ignored. Both styles take the page's background — the nearest
+  /// [CupertinoPageScaffold]'s or [Scaffold]'s, else the theme's — as the
+  /// system's do, and offer no tint of their own.
   final Color? color;
 
   /// Kept for API stability: the iOS effect is always at full strength.
@@ -68,16 +73,35 @@ class CupertinoScrollEdgeEffect extends StatelessWidget {
   static const double _hardOpacity = 0.91;
   static const double _hardSigma = 4;
 
-  @override
-  Widget build(BuildContext context) {
-    final background = CupertinoDynamicColor.resolve(
+  /// The page's background: the nearest scaffold's, Cupertino or Material,
+  /// else its theme's.
+  static Color _pageBackground(BuildContext context) {
+    Color? color;
+    var material = false;
+    context.visitAncestorElements((element) {
+      switch (element.widget) {
+        case CupertinoPageScaffold(:final backgroundColor):
+          color = backgroundColor;
+          return false;
+        case Scaffold(:final backgroundColor):
+          color = backgroundColor;
+          material = true;
+          return false;
+      }
+      return true;
+    });
+    return CupertinoDynamicColor.resolve(
       color ??
-          context
-              .findAncestorWidgetOfExactType<CupertinoPageScaffold>()
-              ?.backgroundColor ??
-          CupertinoTheme.of(context).scaffoldBackgroundColor,
+          (material
+              ? Theme.of(context).scaffoldBackgroundColor
+              : CupertinoTheme.of(context).scaffoldBackgroundColor),
       context,
     );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final background = _pageBackground(context);
     // `hard` is not a denser fade, it is the absence of one: one blur and
     // one wash that stop at a hard line.
     if (style == CupertinoScrollEdgeEffectStyle.hard) {
@@ -92,11 +116,13 @@ class CupertinoScrollEdgeEffect extends StatelessWidget {
       return IgnorePointer(child: ColoredBox(color: background));
     }
     if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) {
-      // No tint and no intensity: the system's white bright wash, always on.
+      // No intensity: always on. The bright wash is the page's background,
+      // as the system's (grey on a grouped page); the dark one stays black.
       return CupertinoNativeEdgeBlur(
         edge: edge,
         sigma: _radius,
         adaptiveTint: true,
+        tint: background,
         onBrightnessChanged: onBrightnessChanged,
       );
     }

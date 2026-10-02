@@ -1,5 +1,6 @@
 import 'package:cupertino_widgets/cupertino_widgets.dart';
-import 'package:flutter/cupertino.dart' show OverlayVisibilityMode;
+import 'package:flutter/cupertino.dart'
+    show CupertinoPageScaffold, OverlayVisibilityMode;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -432,12 +433,19 @@ void main() {
   testWidgets('scroll edge effect runs the adaptive native blur', (
     tester,
   ) async {
-    final params = await paramsOf(tester, const CupertinoScrollEdgeEffect());
+    final params = await paramsOf(
+      tester,
+      const CupertinoPageScaffold(
+        backgroundColor: green,
+        child: CupertinoScrollEdgeEffect(),
+      ),
+    );
     expect(params['adaptive'], true);
     expect(params['edge'], 'top');
     expect(params['intensity'], 1.0);
     expect(params['sigma'], lessThanOrEqualTo(1.0));
-    expect(params['tint'], isNull);
+    // The bright wash is the page's background, as the system's.
+    expect(params['tint'], green.toARGB32());
   }, variant: iOS);
 
   // The group is one platform view for several glasses — the only arrangement

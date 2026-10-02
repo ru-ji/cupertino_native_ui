@@ -1,5 +1,10 @@
 ## Unreleased
 
+* The scroll edge effect takes the page background, as SwiftUI's does: the
+  nearest `CupertinoPageScaffold`'s or `Scaffold`'s colour, else the theme's —
+  `.soft`'s bright wash and `.hard` alike. `tintColor` on the navigation bars
+  and `color` on `CupertinoScrollEdgeEffect` are deprecated and ignored: the
+  effect cannot be tinted on its own.
 * iOS 15–18: between two pages with `CupertinoNativeSliverNavigationBar`, the
   system's bar transition — the page's title, large or inline, flies into the
   next page's back button, whose label it becomes; bar items fade. Swipe-back
