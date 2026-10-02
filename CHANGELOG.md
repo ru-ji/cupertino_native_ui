@@ -1,5 +1,30 @@
 ## Unreleased
 
+* iOS 15–18: between two pages with `CupertinoNativeSliverNavigationBar`, the
+  system's bar transition — the page's title, large or inline, flies into the
+  next page's back button, whose label it becomes; bar items fade. Swipe-back
+  drives it too.
+* `CupertinoNativeContextMenu.blurBackground` is deprecated and ignored: the
+  system already blurs the app behind the menu, and this stacked a second,
+  stronger blur on top of it.
+* Navigation bars add the back button themselves on a page that can pop
+  (`automaticallyImplyLeading`, default `true`): a glass chevron on iOS 26,
+  as the iOS 15–18 bar already did.
+* Bar buttons take the system's weights (medium title and symbol on iOS 26;
+  medium symbol, regular title, semibold `glassProminent` below) and its
+  edge insets on 414pt-wide phones; 12pt between trailing glass buttons.
+* Fixed: `CupertinoDynamicColor`s (`CupertinoColors.label`, the grouped
+  backgrounds…) reached the native side as their light variant in dark mode.
+* Fixed: a `TextStyle.fontWeight` on a button, switch, checkbox or menu label
+  was ignored (sent as 100–900, read as 0–8).
+* Fixed: dragging a text field's selection handle up or down scrolled the
+  page instead.
+* Fixed: a list scrolled off screen could report a wrong height and blank the
+  page; a wheel in a list row now spins instead of scrolling the page.
+* Fixed: on iOS 26 an action sheet without an anchor floated mid-screen
+  without its Cancel button.
+* `CupertinoNativeTextEditor.padding` insets the text inside the scroll view;
+  the placeholder follows it.
 * **iOS 27** (needs Xcode 27 to take effect; ignored on older SDKs/releases):
   `CupertinoNativeTabRole.prominent`; bar entries get `visibilityPriority`
   and `pinned` (`.topBarPinnedTrailing`); `CupertinoNativeScaffoldNavigationBar`

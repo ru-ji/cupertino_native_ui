@@ -66,7 +66,7 @@ class CupertinoNativeGauge extends StatelessWidget
       'minimumValueLabel': minimumValueLabel,
       'maximumValueLabel': maximumValueLabel,
       'gaugeStyle': style.name,
-      'tint': color?.toARGB32(),
+      'tint': color,
     },
   );
 }

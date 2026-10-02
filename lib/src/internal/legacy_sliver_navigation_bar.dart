@@ -6,7 +6,8 @@ import 'package:flutter/services.dart';
 
 import '../cupertino_native_button.dart'
     show CupertinoNativeButton, ButtonLabel;
-import '../cupertino_symbol_image.dart';
+import 'bar_slot.dart';
+import 'legacy_bar_transition.dart';
 
 import 'package:flutter/rendering.dart'
     show OverScrollHeaderStretchConfiguration, PlatformViewHitTestBehavior;
@@ -288,6 +289,9 @@ class LegacySliverNavigationBar extends StatefulWidget {
 class _LegacySliverNavigationBarState extends State<LegacySliverNavigationBar> {
   ScrollableState? _scrollable;
 
+  /// What the transition to or from another page's bar flies.
+  final LegacyBarFlight _flight = LegacyBarFlight();
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -299,6 +303,7 @@ class _LegacySliverNavigationBarState extends State<LegacySliverNavigationBar> {
   @override
   void dispose() {
     _scrollable?.position.isScrollingNotifier.removeListener(_snap);
+    _flight.dispose();
     super.dispose();
   }
 
@@ -327,6 +332,7 @@ class _LegacySliverNavigationBarState extends State<LegacySliverNavigationBar> {
       pinned: true,
       delegate: _LegacyBarDelegate(
         widget: widget,
+        flight: _flight,
         topPadding: MediaQuery.paddingOf(context).top,
         margin: _barMargin(context),
         theme: CupertinoTheme.of(context),
@@ -358,12 +364,14 @@ double _barMargin(BuildContext context) =>
 class _LegacyBarDelegate extends SliverPersistentHeaderDelegate {
   const _LegacyBarDelegate({
     required this.widget,
+    required this.flight,
     required this.topPadding,
     required this.margin,
     required this.theme,
   });
 
   final LegacySliverNavigationBar widget;
+  final LegacyBarFlight flight;
   final double topPadding;
   final double margin;
   final CupertinoThemeData theme;
@@ -433,6 +441,48 @@ class _LegacyBarDelegate extends SliverPersistentHeaderDelegate {
         ? LegacyBarMetrics.searchRowHeight
         : LegacyBarMetrics.searchRowHeight - consumed;
 
+    // Read by the transition to the next page's bar, as it starts.
+    final title = widget.middle ?? widget.largeTitle;
+    flight
+      ..showsLargeTitle = showLargeTitle
+      ..title = title is Text ? title.data : null
+      ..largeTitleStyle = _largeTitleStyle
+      ..middleStyle = _middleStyle
+      ..backStyle = theme.textTheme.navActionTextStyle.copyWith(
+        letterSpacing: -0.43,
+        color: theme.primaryColor,
+      )
+      ..chevronColor = theme.primaryColor;
+
+    return legacyBarHero(
+      context: context,
+      flight: flight,
+      child: _content(
+        context,
+        height,
+        consumed,
+        rowHeight,
+        showLargeTitle,
+        scrolledUnder,
+      ),
+    );
+  }
+
+  TextStyle get _largeTitleStyle => theme.textTheme.navLargeTitleTextStyle
+      .copyWith(height: 41 / 34, decoration: TextDecoration.none);
+
+  TextStyle get _middleStyle => theme.textTheme.navTitleTextStyle.copyWith(
+    decoration: TextDecoration.none,
+  );
+
+  Widget _content(
+    BuildContext context,
+    double height,
+    double consumed,
+    double rowHeight,
+    bool showLargeTitle,
+    double scrolledUnder,
+  ) {
     return Stack(
       clipBehavior: Clip.none,
       fit: StackFit.expand,
@@ -483,16 +533,19 @@ class _LegacyBarDelegate extends SliverPersistentHeaderDelegate {
                   padding: const EdgeInsets.only(top: 3, bottom: 8),
                   child: Align(
                     alignment: AlignmentDirectional.bottomStart,
-                    child: Semantics(
-                      header: true,
-                      child: DefaultTextStyle(
-                        style: theme.textTheme.navLargeTitleTextStyle.copyWith(
-                          height: 41 / 34,
-                          decoration: TextDecoration.none,
+                    child: LegacyBarFlyingPart(
+                      flyingAs: LegacyBarRole.bottom,
+                      child: KeyedSubtree(
+                        key: flight.largeTitleKey,
+                        child: Semantics(
+                          header: true,
+                          child: DefaultTextStyle(
+                            style: _largeTitleStyle,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            child: widget.largeTitle,
+                          ),
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        child: widget.largeTitle,
                       ),
                     ),
                   ),
@@ -550,8 +603,11 @@ class _LegacyBarDelegate extends SliverPersistentHeaderDelegate {
 
   Widget _barRow(BuildContext context, bool showLargeTitle) {
     final route = ModalRoute.of(context);
-    // Insets from Apple's iOS 18 kit: leading 8, trailing 16. Buttons in
-    // either slot hug their glyph (see [LegacyBarSlot]).
+    // Insets from Apple's iOS 18 kit (393pt wide): leading 8, trailing 16.
+    // On an iPhone 8 Plus (414pt) the system's back chevron sits 2.5pt further
+    // in and a trailing title ends 20pt from the edge — the wider phones'
+    // layout margin. Buttons in either slot hug their glyph (see [BarSlot]).
+    final wide = MediaQuery.sizeOf(context).width >= 414;
     Widget? leading = widget.leading;
     // A bare chevron button is the iOS 26 way to write a back button. Below
     // 26 the system draws the chevron and the previous page's title (the
@@ -561,31 +617,48 @@ class _LegacyBarDelegate extends SliverPersistentHeaderDelegate {
         ButtonLabel(leading.child).icon?.sfSymbol == 'chevron.backward') {
       leading = null;
     }
-    if (leading == null &&
+    flight.hasBackButton =
+        leading == null &&
         widget.automaticallyImplyLeading &&
-        (route?.canPop ?? false)) {
-      leading = _BackButton(
-        title:
-            widget.previousPageTitle ??
-            (route is CupertinoRouteTransitionMixin
-                ? route.previousTitle.value
-                : null),
+        (route?.canPop ?? false);
+    if (flight.hasBackButton) {
+      // The route's own label wins; without one, the previous bar's title,
+      // handed over by the transition.
+      final named =
+          widget.previousPageTitle ??
+          (route is CupertinoRouteTransitionMixin
+              ? route.previousTitle.value
+              : null);
+      leading = LegacyBarFlyingPart(
+        flyingAs: LegacyBarRole.top,
+        child: ValueListenableBuilder<String?>(
+          valueListenable: flight.inheritedBackTitle,
+          builder: (context, inherited, _) {
+            final label = legacyBackLabel(named ?? inherited);
+            flight.backLabel = label;
+            return _BackButton(
+              title: label,
+              chevronKey: flight.backChevronKey,
+              labelKey: flight.backLabelKey,
+            );
+          },
+        ),
       );
     }
     if (leading != null) {
-      leading = LegacyBarSlot(
+      leading = BarSlot(
         child: Padding(
-          padding: const EdgeInsetsDirectional.only(start: 8),
-          child: leading,
+          padding: EdgeInsetsDirectional.only(start: wide ? 10.5 : 8),
+          child: LegacyBarRouteFade(child: leading),
         ),
       );
     }
     final trailing = widget.trailing == null
         ? null
-        : LegacyBarSlot(
+        : BarSlot(
             child: Padding(
-              padding: const EdgeInsetsDirectional.only(end: 16),
-              child: widget.trailing,
+              padding: EdgeInsetsDirectional.only(end: _barMargin(context)),
+              child: LegacyBarRouteFade(child: widget.trailing!),
             ),
           );
     return Positioned(
@@ -604,15 +677,19 @@ class _LegacyBarDelegate extends SliverPersistentHeaderDelegate {
           AnimatedOpacity(
             opacity: showLargeTitle ? 0.0 : 1.0,
             duration: LegacyBarMetrics.titleFade,
-            child: Semantics(
-              header: true,
-              child: DefaultTextStyle(
-                style: theme.textTheme.navTitleTextStyle.copyWith(
-                  decoration: TextDecoration.none,
+            child: LegacyBarFlyingPart(
+              flyingAs: LegacyBarRole.bottom,
+              child: KeyedSubtree(
+                key: flight.middleKey,
+                child: Semantics(
+                  header: true,
+                  child: DefaultTextStyle(
+                    style: _middleStyle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    child: widget.middle ?? widget.largeTitle,
+                  ),
                 ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                child: widget.middle ?? widget.largeTitle,
               ),
             ),
           ),
@@ -622,26 +699,14 @@ class _LegacyBarDelegate extends SliverPersistentHeaderDelegate {
   }
 }
 
-/// Marks the iOS 15–18 bar's leading and trailing slots. An icon-only
-/// [CupertinoNativeButton] inside one hugs its glyph, as a `UIBarButtonItem`
-/// does, instead of centring it in a 44pt square that would push it off the
-/// bar's 8pt / 16pt insets.
-class LegacyBarSlot extends InheritedWidget {
-  const LegacyBarSlot({super.key, required super.child});
-
-  static bool isIn(BuildContext context) =>
-      context.dependOnInheritedWidgetOfExactType<LegacyBarSlot>() != null;
-
-  @override
-  bool updateShouldNotify(LegacyBarSlot oldWidget) => false;
-}
-
 /// The system back button from the iOS 18 kit: the native `chevron.backward`
 /// in a 17×22 box, 6pt, then the previous title.
 class _BackButton extends StatelessWidget {
-  const _BackButton({this.title});
+  const _BackButton({this.title, this.chevronKey, this.labelKey});
 
   final String? title;
+  final Key? chevronKey;
+  final Key? labelKey;
 
   @override
   Widget build(BuildContext context) {
@@ -655,24 +720,11 @@ class _BackButton extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           spacing: 6,
           children: [
-            SizedBox(
-              width: 17,
-              height: 22,
-              child: Center(
-                child: CupertinoSymbolImage(
-                  'chevron.backward',
-                  size: 17,
-                  // Large: UIKit's back indicator, measured 11×18.4pt on an
-                  // iPhone 8 Plus.
-                  scale: CupertinoSymbolScale.large,
-                  weight: FontWeight.w600,
-                  color: color,
-                ),
-              ),
-            ),
+            LegacyBackChevron(key: chevronKey, color: color),
             if (title != null)
               Text(
                 title!,
+                key: labelKey,
                 style: TextStyle(
                   fontSize: 17,
                   letterSpacing: -0.43,

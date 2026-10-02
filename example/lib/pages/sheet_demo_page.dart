@@ -30,10 +30,11 @@ class _SheetDemoPageState extends State<SheetDemoPage> {
   }
 
   CupertinoNativeScaffoldNavigationBar _navigationBar({
+    String title = 'New Event',
     bool withSearch = false,
   }) {
     return CupertinoNativeScaffoldNavigationBar(
-      title: 'New Event',
+      title: title,
       titleDisplayMode: CupertinoNativeToolbarTitleDisplayMode.inline,
       leading: [
         CupertinoNativeToolbarItem(
@@ -91,49 +92,170 @@ class _SheetDemoPageState extends State<SheetDemoPage> {
     if (mounted) setState(() => _last = '$label — dismissed');
   }
 
-  int _guests = 2;
-  bool _reminder = true;
+  // The native-body sheet: Display & Brightness, as in Settings, SwiftUI end
+  // to end. Nothing here runs in a Flutter engine — every change comes back
+  // through `onBodyEvent` and the tree is pushed back.
+  int _appearance = 1;
+  double _brightness = 0.7;
+  bool _trueTone = true;
+  int _nightShift = 0;
+  int _textSize = 3;
+  bool _boldText = false;
+  int _autoLock = 1;
+  bool _raiseToWake = true;
+  static const _nightShifts = ['Off', 'Sunset to Sunrise', '10 PM to 7 AM'];
+  static const _autoLocks = ['Never', '30 seconds', '1 minute', '5 minutes'];
+
+  static CupertinoNativeBody _header(String text) => CupertinoNativeBody.text(
+    text,
+    style: CupertinoNativeTextStyle.footnote,
+    color: CupertinoColors.secondaryLabel,
+    padding: const EdgeInsets.fromLTRB(36, 14, 36, 0),
+  );
 
   CupertinoNativeBody _nativeBody() => CupertinoNativeBody.column(
-    padding: const EdgeInsets.all(20),
-    spacing: 16,
+    spacing: 8,
+    padding: const EdgeInsets.only(bottom: 32),
     children: [
-      CupertinoNativeBody.text('Guests: $_guests'),
-      CupertinoNativeBody.control(
-        id: 'guests',
-        control: CupertinoNativeStepper(
-          value: _guests.toDouble(),
-          min: 1,
-          max: 10,
-          onChanged: null,
-        ),
+      _header('APPEARANCE'),
+      CupertinoNativeBody.segmented(
+        id: 'appearance',
+        items: const ['Light', 'Dark', 'Automatic'],
+        selectedIndex: _appearance,
+        padding: const EdgeInsets.symmetric(horizontal: 20),
       ),
-      CupertinoNativeBody.toggle(
-        id: 'reminder',
-        label: 'Remind me',
-        value: _reminder,
+      _header('BRIGHTNESS'),
+      CupertinoNativeBody.slider(
+        id: 'brightness',
+        value: _brightness,
+        minimumIcon: const CupertinoNativeIcon.named('sun.min'),
+        maximumIcon: const CupertinoNativeIcon.named('sun.max.fill'),
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+      ),
+      CupertinoNativeBody.list(
+        id: 'display',
+        sections: [
+          CupertinoNativeListSection(
+            footer:
+                'Automatically adapt the display based on ambient lighting '
+                'conditions to make colors appear consistent.',
+            children: [
+              CupertinoNativeListTile(
+                id: 'trueTone',
+                title: 'True Tone',
+                type: CupertinoNativeListTileType.toggle,
+                toggleValue: _trueTone,
+              ),
+              CupertinoNativeListTile(
+                id: 'nightShift',
+                title: 'Night Shift',
+                additionalInfo: _nightShifts[_nightShift],
+                showChevron: true,
+              ),
+            ],
+          ),
+        ],
+      ),
+      _header('TEXT SIZE'),
+      CupertinoNativeBody.slider(
+        id: 'textSize',
+        value: _textSize.toDouble(),
+        max: 6,
+        step: 1,
+        minimumIcon: const CupertinoNativeIcon.named('textformat.size.smaller'),
+        maximumIcon: const CupertinoNativeIcon.named('textformat.size.larger'),
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+      ),
+      CupertinoNativeBody.text(
+        'Apps that support Dynamic Type will adjust to your preferred '
+        'reading size.',
+        fontSize: 13.0 + _textSize * 2,
+        fontWeight: _boldText ? FontWeight.w700 : FontWeight.w400,
+        padding: const EdgeInsets.symmetric(horizontal: 36, vertical: 4),
+      ),
+      CupertinoNativeBody.list(
+        id: 'text',
+        sections: [
+          CupertinoNativeListSection(
+            children: [
+              CupertinoNativeListTile(
+                id: 'boldText',
+                title: 'Bold Text',
+                type: CupertinoNativeListTileType.toggle,
+                toggleValue: _boldText,
+              ),
+            ],
+          ),
+          CupertinoNativeListSection(
+            children: [
+              CupertinoNativeListTile(
+                id: 'autoLock',
+                title: 'Auto-Lock',
+                additionalInfo: _autoLocks[_autoLock],
+                showChevron: true,
+              ),
+              CupertinoNativeListTile(
+                id: 'raiseToWake',
+                title: 'Raise to Wake',
+                type: CupertinoNativeListTileType.toggle,
+                toggleValue: _raiseToWake,
+              ),
+            ],
+          ),
+        ],
       ),
     ],
   );
 
   Future<void> _presentNative() async {
+    setState(() => _last = 'Display & Brightness — presented');
     await CupertinoNativeSheet.show(
       nativeBody: _nativeBody(),
-      navigationBar: _navigationBar(),
-      detents: const [CupertinoNativeSheetDetent.medium],
+      navigationBar: const CupertinoNativeScaffoldNavigationBar(
+        title: 'Display & Brightness',
+        titleDisplayMode: CupertinoNativeToolbarTitleDisplayMode.inline,
+        trailing: [CupertinoNativeToolbarItem(title: 'Done', actionId: 'done')],
+      ),
+      detents: const [
+        CupertinoNativeSheetDetent.medium,
+        CupertinoNativeSheetDetent.large,
+      ],
       showDragHandle: true,
-      onToolbarAction: _onToolbarAction,
+      backgroundColor: CupertinoColors.systemGroupedBackground.resolveFrom(
+        context,
+      ),
+      onToolbarAction: (_) => CupertinoNativeSheet.dismiss(),
       onBodyEvent: (id, value) {
         switch (id) {
-          case 'guests':
-            _guests = (value as num).round();
-          case 'reminder':
-            _reminder = value as bool;
+          case 'appearance':
+            _appearance = (value as num).toInt();
+          case 'brightness':
+            _brightness = (value as num).toDouble();
+          case 'textSize':
+            _textSize = (value as num).round();
+          case 'display.trueTone':
+            _trueTone = value as bool;
+          case 'text.boldText':
+            _boldText = value as bool;
+          case 'text.raiseToWake':
+            _raiseToWake = value as bool;
+          case 'display' when value == 'nightShift':
+            _nightShift = (_nightShift + 1) % _nightShifts.length;
+          case 'text' when value == 'autoLock':
+            _autoLock = (_autoLock + 1) % _autoLocks.length;
         }
-        // Controlled: push the tree back so the label follows.
+        // Controlled: push the tree back so the rows follow.
         CupertinoNativeSheet.updateNativeBody(_nativeBody());
       },
     );
+    if (mounted) {
+      setState(
+        () => _last =
+            'Display — ${const ['Light', 'Dark', 'Automatic'][_appearance]}, '
+            'brightness ${(_brightness * 100).round()}%, '
+            'text size ${_textSize + 1}/7',
+      );
+    }
   }
 
   @override
@@ -203,7 +325,7 @@ class _SheetDemoPageState extends State<SheetDemoPage> {
                       CupertinoNativeListTile(
                         id: 'native',
                         title: 'Native Body',
-                        subtitle: 'Pure SwiftUI content — no Flutter engine',
+                        subtitle: 'A reminder form in pure SwiftUI — no Flutter engine',
                         showChevron: true,
                       ),
                       CupertinoNativeListTile(

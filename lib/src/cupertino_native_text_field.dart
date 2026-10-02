@@ -15,6 +15,7 @@ import 'internal/keyboard_avoidance.dart';
 import 'internal/text_field_wire.dart';
 import 'cupertino_search_row_visibility.dart';
 import 'models/cupertino_native_icon.dart';
+import 'internal/native_color.dart';
 
 /// Disambiguates a quick drag (scroll the ancestor `Scrollable`, like a plain
 /// Flutter `TextField` allows) from a press-and-hold (enter native text
@@ -565,20 +566,20 @@ class _CupertinoNativeTextFieldState extends State<CupertinoNativeTextField>
       'fontWeight': widget.style?.fontWeight == null
           ? null
           : widget.style!.fontWeight!.value ~/ 100 - 1,
-      'textColor': widget.style?.color?.toARGB32(),
-      'cursorColor': widget.cursorColor?.toARGB32(),
+      'textColor': nativeArgb(widget.style?.color, isDark: _isDark),
+      'cursorColor': nativeArgb(widget.cursorColor, isDark: _isDark),
       'clearButtonMode': clearButtonModeName(widget.clearButtonMode),
       'textContentType': widget.textContentType,
       'isDark': _isDark,
-      'backgroundColor': widget.backgroundColor?.toARGB32(),
+      'backgroundColor': nativeArgb(widget.backgroundColor, isDark: _isDark),
       'cornerRadius': widget.cornerRadius,
       'glass': widget.glass != null,
       'glassCornerRadius': widget.cornerRadius ?? 16,
       'glassVariant': (widget.glass ?? CupertinoNativeGlass.regular).name,
       'glassInteractive': true,
-      'glassTint': widget.glassTint?.toARGB32(),
-      'prefixIcon': widget.prefix?.toMap(),
-      'suffixIcon': widget.suffix?.toMap(),
+      'glassTint': nativeArgb(widget.glassTint, isDark: _isDark),
+      'prefixIcon': widget.prefix?.toMap(isDark: _isDark),
+      'suffixIcon': widget.suffix?.toMap(isDark: _isDark),
       'iconSpacing': widget.iconSpacing,
       'verticalAlignment': verticalAlignmentName(widget.verticalAlignment),
       'keyboardToolbar': _toolbar.nodes,

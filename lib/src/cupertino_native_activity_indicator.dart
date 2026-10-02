@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
 import 'internal/native_platform_view_mixin.dart';
+import 'internal/native_color.dart';
 
 /// iOS's spinning activity indicator, rendered by SwiftUI. Same shape as
 /// Flutter's [CupertinoActivityIndicator].
@@ -83,7 +84,7 @@ class _NativeProgressState extends State<_NativeProgress>
     'label': null,
     // Native style index: 0 automatic, 1 linear, 2 circular.
     'style': widget.circular ? 2 : 1,
-    'color': widget.color?.toARGB32(),
+    'color': nativeArgb(widget.color, isDark: _isDark),
     'isDark': _isDark,
   };
 

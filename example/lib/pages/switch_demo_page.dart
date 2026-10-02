@@ -18,28 +18,12 @@ class _SwitchDemoPageState extends State<SwitchDemoPage> {
   bool _notifications = true;
   bool _critical = false;
 
-  bool _agree = false;
-  bool _backup = true;
-  String _appearance = 'dark';
-  final Set<String> _allergies = {'peanuts', 'gluten'};
-
   @override
   Widget build(BuildContext context) {
     return CupertinoPageScaffold(
       child: CustomScrollView(
         slivers: [
-          CupertinoNativeSliverNavigationBar(
-            largeTitle: 'Switch',
-            leading: Navigator.canPop(context)
-                ? CupertinoNativeButton.glass(
-                    borderShape: CupertinoNativeButtonBorderShape.circle,
-                    onPressed: () => Navigator.pop(context),
-                    child: CupertinoSymbolImage.symbol(
-                      CupertinoSymbols.chevronBackward,
-                    ),
-                  )
-                : null,
-          ),
+          CupertinoNativeSliverNavigationBar(largeTitle: 'Switch'),
           SliverPadding(
             padding: EdgeInsets.only(
               bottom:
@@ -50,18 +34,6 @@ class _SwitchDemoPageState extends State<SwitchDemoPage> {
             sliver: SliverList.list(
               children: [
                 CupertinoNativeList(
-                  onRowTap: (id) {
-                    if (const ['light', 'dark', 'system'].contains(id)) {
-                      setState(() => _appearance = id);
-                    } else if (id.startsWith('allergy_')) {
-                      final key = id.substring(8);
-                      setState(
-                        () => _allergies.contains(key)
-                            ? _allergies.remove(key)
-                            : _allergies.add(key),
-                      );
-                    }
-                  },
                   sections: [
                     CupertinoNativeListSection(
                       header: 'Connectivity',
@@ -140,73 +112,6 @@ class _SwitchDemoPageState extends State<SwitchDemoPage> {
                             onChanged: null,
                           ),
                         ),
-                      ],
-                    ),
-                    CupertinoNativeListSection(
-                      header: 'Checkbox',
-                      footer:
-                          'CupertinoNativeCheckbox — SwiftUI-drawn, lowered into '
-                          'the row like the switches above.',
-                      children: [
-                        CupertinoNativeListTile(
-                          id: 'agree',
-                          title: 'I agree to the terms',
-                          subtitle: 'Squared box, springy checkmark',
-                          trailing: CupertinoNativeCheckbox(
-                            value: _agree,
-                            onChanged: (v) => setState(() => _agree = v),
-                          ),
-                        ),
-                        CupertinoNativeListTile(
-                          id: 'backup',
-                          title: 'Back up to iCloud',
-                          trailing: CupertinoNativeCheckbox(
-                            value: _backup,
-                            activeColor: CupertinoColors.systemGreen,
-                            onChanged: (v) => setState(() => _backup = v),
-                          ),
-                        ),
-                        const CupertinoNativeListTile(
-                          id: 'locked',
-                          title: 'Locked by admin',
-                          trailing: CupertinoNativeCheckbox(
-                            value: true,
-                            onChanged: null,
-                          ),
-                        ),
-                      ],
-                    ),
-                    CupertinoNativeListSection(
-                      header: 'Appearance',
-                      footer:
-                          'One row selected at a time, like an inline Picker.',
-                      children: [
-                        for (final (id, name) in const [
-                          ('light', 'Light'),
-                          ('dark', 'Dark'),
-                          ('system', 'System Default'),
-                        ])
-                          CupertinoNativeListTile(
-                            id: id,
-                            title: name,
-                            selected: _appearance == id,
-                          ),
-                      ],
-                    ),
-                    CupertinoNativeListSection(
-                      header: 'Allergies',
-                      footer: 'Several rows can be selected: each tap flips its checkmark.',
-                      children: [
-                        for (final (id, name) in const [
-                          ('peanuts', 'Peanuts'),
-                          ('shellfish', 'Shellfish'),
-                          ('gluten', 'Gluten'),
-                        ])
-                          CupertinoNativeListTile(
-                            id: 'allergy_$id',
-                            title: name,
-                            selected: _allergies.contains(id),
-                          ),
                       ],
                     ),
                   ],

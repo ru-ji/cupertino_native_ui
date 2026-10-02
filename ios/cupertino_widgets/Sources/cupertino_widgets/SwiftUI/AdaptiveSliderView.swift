@@ -16,6 +16,18 @@ class SliderViewModel: ObservableObject {
     @Published var activeColor: Color? = nil
     @Published var thumbColor: Color? = nil
     @Published var isEnabled: Bool = true
+
+    /// The finger is on the slider. A value pushed from Dart meanwhile is the
+    /// echo of an earlier step of this very drag, one round trip late: applied,
+    /// it dragged the thumb back under the finger on every frame — on a first
+    /// drag in a debug build, so far back that the slider seemed stuck.
+    var isEditing = false
+
+    /// Applies a value from Dart unless the user is dragging.
+    func setFromDart(_ value: Double) {
+        guard !isEditing else { return }
+        self.value = value
+    }
 }
 
 @available(iOS 15.0, *)
@@ -42,7 +54,10 @@ struct AdaptiveSliderView: View {
 
     private var range: ClosedRange<Double> { viewModel.min...viewModel.max }
 
-    private func editing(_ started: Bool) { onEditing?(started) }
+    private func editing(_ started: Bool) {
+        viewModel.isEditing = started
+        onEditing?(started)
+    }
 
     /// One function for both ends: `Slider` wants the two labels the same type.
     @ViewBuilder

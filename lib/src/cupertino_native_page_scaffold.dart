@@ -18,6 +18,7 @@ import 'internal/native_platform_view_mixin.dart';
 import 'models/cupertino_native_toolbar_item.dart';
 import 'models/cupertino_native_icon.dart';
 import 'models/cupertino_symbols.dart';
+import 'internal/native_color.dart';
 
 /// A page pushed onto a [CupertinoNativePageScaffold]'s native NavigationStack.
 /// [route] must match a builder registered in [CupertinoNativePageScaffold.run];
@@ -574,15 +575,15 @@ class _CupertinoNativeScaffoldState extends State<CupertinoNativePageScaffold>
     return {
       'body': widget.body,
       'navigationBar': _navigationBarMap(),
-      'tabBar': widget.tabBar?.toMap(),
+      'tabBar': widget.tabBar?.toMap(isDark: _isDark),
       'scrollEdgeEffect': widget.scrollEdgeEffect.name,
       'isDark': _isDark,
       'backgroundColor':
-          widget.backgroundColor?.toARGB32() ??
-          theme.scaffoldBackgroundColor.toARGB32(),
+          nativeArgb(widget.backgroundColor, isDark: _isDark) ??
+          nativeArgb(theme.scaffoldBackgroundColor, isDark: _isDark)!,
       'primaryColor':
-          widget.activeColor?.toARGB32() ??
-          theme.colorScheme.primary.toARGB32(),
+          nativeArgb(widget.activeColor, isDark: _isDark) ??
+          nativeArgb(theme.colorScheme.primary, isDark: _isDark)!,
       'showLoadingIndicator':
           widget.showLoadingIndicator ??
           CupertinoWidgetsSettings.showLoadingIndicator,

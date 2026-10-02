@@ -364,12 +364,7 @@ class NativeScaffoldView: NativeHostingView {
     /// demand via `ensureEngine(for:)` when the user switches tabs, which
     /// keeps the init-time main-thread blocking to a single engine.
     private func createRootEngines() {
-        let activeRoute: String?
-        if let tabBar = model.config.tabBar {
-            activeRoute = model.selection
-        } else {
-            activeRoute = model.config.body
-        }
+        let activeRoute: String? = model.config.tabBar != nil ? model.selection : model.config.body
         if let route = activeRoute, !route.isEmpty {
             model.rootEngines[route] = makeEngine(route: route, key: route)
         }

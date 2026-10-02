@@ -56,9 +56,15 @@ class AlertManager {
         // Ensure we present on the top-most controller
         DispatchQueue.main.async {
             let topController = self.getTopViewController(base: rootVC)
-            // On a regular-width environment UIKit presents an action sheet as
-            // a popover, and a popover without an anchor traps.
-            if let popover = alertController.popoverPresentationController {
+            // An action sheet with a source grows out of it — a popover on
+            // iPad, and on iOS 26 a bubble on iPhone too, which drops the
+            // Cancel button. Without a source on iPhone it is the sheet at the
+            // bottom of the screen. Only a regular width needs one anyway: a
+            // popover without an anchor traps, so it gets the screen centre.
+            let regular = topController?.traitCollection.horizontalSizeClass == .regular
+            if let popover = alertController.popoverPresentationController,
+                sourceRect != nil || regular
+            {
                 popover.sourceView = topController?.view
                 popover.sourceRect =
                     sourceRect

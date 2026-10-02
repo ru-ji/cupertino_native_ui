@@ -7,6 +7,7 @@ import 'package:flutter/widgets.dart';
 import 'internal/native_platform_view_mixin.dart';
 import 'models/cupertino_native_icon.dart';
 import 'internal/scroll_friendly_recognizer.dart';
+import 'internal/native_color.dart';
 
 /// The shape of a [CupertinoNativeGlassContainer].
 enum CupertinoGlassShape { capsule, circle, roundedRect }
@@ -173,10 +174,10 @@ class _CupertinoNativeGlassContainerState
       'shape': widget.shape.name,
       'cornerRadius': widget.cornerRadius,
       'variant': widget.variant.name,
-      'tint': widget.tint?.toARGB32(),
+      'tint': nativeArgb(widget.tint, isDark: _isDark),
       'interactive': widget.interactive,
       'pressable': widget.onPressed != null,
-      'icon': widget.icon?.toMap(),
+      'icon': widget.icon?.toMap(isDark: _isDark),
       // No width/height: the platform view's frame is already the Flutter box.
       'paddingLeft': _padding.left,
       'paddingTop': _padding.top,

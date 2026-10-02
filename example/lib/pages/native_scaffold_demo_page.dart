@@ -1,11 +1,11 @@
 import 'package:flutter/cupertino.dart';
 import 'package:cupertino_widgets/cupertino_widgets.dart';
 
-/// Full native SwiftUI scaffold: large title that collapses on scroll,
-/// grouped toolbar items, a tab bar with a search-role tab and
-/// minimize-on-scroll (iOS 26), soft scroll edge effect, and native push/pop
-/// transitions (see ScaffoldHomeBody). Bodies come from `scaffoldRoutes()`
-/// via `CupertinoNativePageScaffold.maybeRun` in main() — no entry point needed.
+/// Mail, on a fully native SwiftUI scaffold: a large title with a subtitle
+/// that collapses on scroll, the native search drawer, a glass bottom
+/// toolbar, and native push and pop into a message — which brings its own
+/// toolbars. The inbox and the messages are Flutter bodies (`mail_bodies.dart`),
+/// registered in `scaffoldRoutes()`.
 class NativeScaffoldDemoPage extends StatelessWidget {
   const NativeScaffoldDemoPage({super.key});
 
@@ -13,70 +13,37 @@ class NativeScaffoldDemoPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return SizedBox.expand(
       child: CupertinoNativePageScaffold(
+        body: 'inbox',
         scrollEdgeEffect: CupertinoScrollEdgeEffectStyle.soft,
-        navigationBar: CupertinoNativeScaffoldNavigationBar(
-          title: 'Library',
-          subtitle: '128 items',
+        navigationBar: const CupertinoNativeScaffoldNavigationBar(
+          title: 'Inbox',
+          subtitle: 'Updated Just Now',
           titleDisplayMode: CupertinoNativeToolbarTitleDisplayMode.large,
           trailing: [
-            // Consecutive items share one glass capsule (iOS 26); a
-            // CupertinoNativeToolbarSpacer between them splits it.
-            CupertinoNativeToolbarItem(
-              symbol: CupertinoSymbols.plus,
-              actionId: 'add',
-            ),
-            CupertinoNativeToolbarItem(
-              symbol: CupertinoSymbols.ellipsisCircle,
-              actionId: 'more',
-            ),
+            CupertinoNativeToolbarItem(title: 'Select', actionId: 'select'),
           ],
-        ),
-        tabBar: CupertinoNativeTabBar(
-          minimizeBehavior: CupertinoNativeTabBarMinimizeBehavior.onScrollDown,
-          // iOS 26 bottom accessory (a persistent bar above the tab bar). It
-          // shows its subtitle only in the system's `.expanded` placement.
-          accessory: CupertinoNativeTabBarAccessory(
-            title: 'Now Playing',
-            subtitle: 'Deep Focus — Track 3',
-            icon: CupertinoNativeIcon.named('music.note'),
-            actionId: 'accessory',
+          search: CupertinoNativeSearchField(
+            placeholder: 'Search',
+            placement: CupertinoNativeSearchPlacement.navigationBarDrawerAlways,
           ),
-          items: [
-            CupertinoNativeTab(
-              title: 'Home',
-              icon: CupertinoNativeIcon.symbol(CupertinoSymbols.houseFill),
-              id: 'home',
+          // Mail's bottom bar: the filter on one side, compose on the other,
+          // each in its own glass — the spacer breaks the shared capsule.
+          bottom: [
+            CupertinoNativeToolbarItem(
+              systemImage: 'line.3.horizontal.decrease.circle',
+              actionId: 'filter',
             ),
-            CupertinoNativeTab(
-              title: 'Search',
-              icon: CupertinoNativeIcon.symbol(
-                CupertinoSymbols.magnifyingglass,
-              ),
-              id: 'search',
-              role: CupertinoNativeTabRole.search,
-              // The search-role tab presents itself as a native search field.
-              search: CupertinoNativeSearchField(
-                placeholder: 'Search your library',
-              ),
-            ),
-            CupertinoNativeTab(
-              title: 'Profile',
-              icon: CupertinoNativeIcon.symbol(CupertinoSymbols.personFill),
-              id: 'profile',
-            ),
-            CupertinoNativeTab(
-              title: 'Settings',
-              icon: CupertinoNativeIcon.symbol(CupertinoSymbols.gear),
-              id: 'settings',
+            CupertinoNativeToolbarSpacer(),
+            CupertinoNativeToolbarItem(
+              systemImage: 'square.and.pencil',
+              actionId: 'compose',
             ),
           ],
         ),
-        onToolbarAction: (route, actionId) {
-          debugPrint('Scaffold bar action on $route: $actionId');
-        },
-        onTabChanged: (id) => debugPrint('Scaffold tab changed: $id'),
+        onToolbarAction: (route, actionId) =>
+            debugPrint('Mail toolbar on $route: $actionId'),
         onRouteChanged: (routes) =>
-            debugPrint('Scaffold stack: ${routes.join(' > ')}'),
+            debugPrint('Mail stack: ${routes.join(' > ')}'),
       ),
     );
   }

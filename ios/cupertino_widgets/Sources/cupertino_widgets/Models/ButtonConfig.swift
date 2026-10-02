@@ -25,4 +25,7 @@ struct ButtonConfig: Codable {
     /// just the Flutter box around it.
     let width: Double?
     let height: Double?
+    /// A titled glass button in an iOS 26 navigation bar: drawn at the
+    /// system bar button's size, not a free-standing button's.
+    let barItem: Bool?
 }

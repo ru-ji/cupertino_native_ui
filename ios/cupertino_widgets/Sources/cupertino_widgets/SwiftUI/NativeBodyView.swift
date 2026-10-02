@@ -49,7 +49,7 @@ final class NativeBodyModel: ObservableObject {
     }
 
     fileprivate static func apply(_ config: BodySliderConfig, to model: SliderViewModel) {
-        model.value = config.value
+        model.setFromDart(config.value)
         model.min = config.min
         model.max = config.max
         model.step = config.step

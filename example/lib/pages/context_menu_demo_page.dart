@@ -23,7 +23,6 @@ class _ContextMenuDemoPageState extends State<ContextMenuDemoPage> {
 
   String? _lastAction;
   bool _menuOpen = false;
-  bool _blur = true;
 
   List<CupertinoNativeMenuItem> _itemsFor(String title) => [
     CupertinoNativeMenuControlGroup(
@@ -90,18 +89,7 @@ class _ContextMenuDemoPageState extends State<ContextMenuDemoPage> {
     return CupertinoPageScaffold(
       child: CustomScrollView(
         slivers: [
-          CupertinoNativeSliverNavigationBar(
-            largeTitle: 'Context Menu',
-            leading: Navigator.canPop(context)
-                ? CupertinoNativeButton.glass(
-                    borderShape: CupertinoNativeButtonBorderShape.circle,
-                    onPressed: () => Navigator.pop(context),
-                    child: CupertinoSymbolImage.symbol(
-                      CupertinoSymbols.chevronBackward,
-                    ),
-                  )
-                : null,
-          ),
+          CupertinoNativeSliverNavigationBar(largeTitle: 'Context Menu'),
           SliverPadding(
             padding: EdgeInsets.only(
               bottom:
@@ -140,14 +128,6 @@ class _ContextMenuDemoPageState extends State<ContextMenuDemoPage> {
                           'while its menu is open.',
                       children: [
                         CupertinoNativeListTile(
-                          id: 'blur',
-                          title: 'Blur background',
-                          trailing: CupertinoNativeSwitch(
-                            value: _blur,
-                            onChanged: (v) => setState(() => _blur = v),
-                          ),
-                        ),
-                        CupertinoNativeListTile(
                           id: 'menuOpen',
                           title: 'Menu open',
                           additionalInfo: _menuOpen ? 'Yes' : 'No',
@@ -173,8 +153,7 @@ class _ContextMenuDemoPageState extends State<ContextMenuDemoPage> {
     final (title, start, end) = photo;
     return CupertinoNativeContextMenu(
       actions: _itemsFor(title),
-      onAction: _onAction, // Blurs the whole page (root overlay), not just this subtree.
-      blurBackground: _blur,
+      onAction: _onAction,
       onOpenChanged: (open) => setState(
         () => _menuOpen = open,
       ), // A DIFFERENT view while the menu is open: the photo enlarged with a

@@ -4,26 +4,19 @@ import 'package:flutter/material.dart' show Scaffold, Theme, ThemeMode;
 import 'package:flutter/services.dart' show SystemUiOverlayStyle;
 
 import '../app.dart';
-import 'alert_demo_page.dart';
-import 'app_bar_demo_page.dart';
+import 'bars_demo_page.dart';
 import 'button_demo_page.dart';
 import 'context_menu_demo_page.dart';
-import 'date_picker_demo_page.dart';
 import 'edge_effect_probe_page.dart';
-import 'effects_demo_page.dart';
-import 'glass_transition_demo_page.dart';
+import 'hard_edge_demo_page.dart';
 import 'liquid_glass_demo_page.dart';
-import 'native_list_form_demo_page.dart';
+import 'native_list_demo_page.dart';
 import 'native_scaffold_demo_page.dart';
 import 'native_searchable_demo_page.dart';
-import 'progress_demo_page.dart';
-import 'segmented_control_demo_page.dart';
+import 'pickers_demo_page.dart';
 import 'sheet_demo_page.dart';
 import 'slider_demo_page.dart';
-import 'standalone_tab_bar_demo_page.dart';
 import 'switch_demo_page.dart';
-import 'more_controls_demo_page.dart';
-import 'photos_picker_demo_page.dart';
 import 'text_field_demo_page.dart';
 
 /// The demo catalog — a native SwiftUI list of rows, like every page in the
@@ -75,10 +68,10 @@ class HomePage extends StatelessWidget {
                       header: 'Controls',
                       children: [
                         _row(
-                          'slider',
-                          'Slider',
-                          'slider.horizontal.3',
-                          CupertinoColors.systemBlue,
+                          'button',
+                          'Button',
+                          'hand.tap',
+                          CupertinoColors.systemPurple,
                         ),
                         _row(
                           'switch',
@@ -87,34 +80,16 @@ class HomePage extends StatelessWidget {
                           CupertinoColors.systemGreen,
                         ),
                         _row(
-                          'photosPicker',
-                          'Photos Picker',
-                          'photo.on.rectangle',
-                          CupertinoColors.systemPink,
+                          'slider',
+                          'Slider',
+                          'slider.horizontal.3',
+                          CupertinoColors.systemBlue,
                         ),
                         _row(
-                          'moreControls',
-                          'More Controls',
-                          'plusminus',
-                          CupertinoColors.systemIndigo,
-                        ),
-                        _row(
-                          'segmented',
-                          'Segmented Control',
-                          'rectangle.split.3x1',
+                          'pickers',
+                          'Pickers',
+                          'filemenu.and.selection',
                           CupertinoColors.systemOrange,
-                        ),
-                        _row(
-                          'button',
-                          'Button',
-                          'hand.tap',
-                          CupertinoColors.systemPurple,
-                        ),
-                        _row(
-                          'contextMenu',
-                          'Context Menu',
-                          'hand.point.up.left',
-                          CupertinoColors.systemBrown,
                         ),
                         _row(
                           'textField',
@@ -123,10 +98,10 @@ class HomePage extends StatelessWidget {
                           CupertinoColors.systemTeal,
                         ),
                         _row(
-                          'datePicker',
-                          'Date Picker',
-                          'calendar',
-                          CupertinoColors.systemRed,
+                          'contextMenu',
+                          'Context Menu',
+                          'hand.point.up.left',
+                          CupertinoColors.systemBrown,
                         ),
                       ],
                     ),
@@ -134,16 +109,22 @@ class HomePage extends StatelessWidget {
                       header: 'Navigation',
                       children: [
                         _row(
-                          'tabBar',
-                          'Tab Bar',
-                          'square.grid.2x2',
-                          CupertinoColors.systemPink,
+                          'bars',
+                          'Navigation & Tab Bar',
+                          'rectangle.topthird.inset.filled',
+                          CupertinoColors.systemIndigo,
                         ),
                         _row(
                           'nativeScaffold',
                           'Native Scaffold',
                           'iphone',
                           CupertinoColors.systemBlue,
+                        ),
+                        _row(
+                          'hardEdge',
+                          'Hard Edge Effect',
+                          'rectangle.split.1x2',
+                          CupertinoColors.systemTeal,
                         ),
                         _row(
                           'searchable',
@@ -157,20 +138,17 @@ class HomePage extends StatelessWidget {
                           'rectangle.portrait.bottomhalf.inset.filled',
                           CupertinoColors.systemGreen,
                         ),
-                        _row(
-                          'navigationBar',
-                          'Navigation Bar',
-                          'rectangle.topthird.inset.filled',
-                          CupertinoColors.systemIndigo,
-                        ),
                       ],
                     ),
                     CupertinoNativeListSection(
                       header: 'Views',
+                      footer:
+                          'Every control on these pages is a real UIKit/SwiftUI '
+                          'view rendered inside Flutter.',
                       children: [
                         _row(
-                          'listForm',
-                          'List & Form',
+                          'list',
+                          'List',
                           'list.bullet',
                           CupertinoColors.systemYellow,
                         ),
@@ -181,42 +159,10 @@ class HomePage extends StatelessWidget {
                           CupertinoColors.systemCyan,
                         ),
                         _row(
-                          'glassTransitions',
-                          'Glass transitions',
-                          'arrow.triangle.merge',
-                          CupertinoColors.systemCyan,
-                        ),
-                        _row(
                           'edgeEffect',
                           'Scroll Edge Effect',
                           'square.stack.3d.up',
                           CupertinoColors.systemBlue,
-                        ),
-                        _row(
-                          'effects',
-                          'Widget Effects',
-                          'wand.and.stars',
-                          CupertinoColors.systemPurple,
-                        ),
-                      ],
-                    ),
-                    CupertinoNativeListSection(
-                      header: 'Feedback',
-                      footer:
-                          'Every control on these pages is a real UIKit/SwiftUI '
-                          'view rendered inside Flutter.',
-                      children: [
-                        _row(
-                          'alert',
-                          'Alert',
-                          'exclamationmark.triangle',
-                          CupertinoColors.systemRed,
-                        ),
-                        _row(
-                          'progress',
-                          'Progress',
-                          'chart.bar.xaxis',
-                          CupertinoColors.systemCyan,
                         ),
                       ],
                     ),
@@ -246,30 +192,25 @@ class HomePage extends StatelessWidget {
 
   static void _open(BuildContext context, String id) {
     final Widget page = switch (id) {
-      'slider' => const SliderDemoPage(),
-      'switch' => const SwitchDemoPage(),
-      'moreControls' => const MoreControlsDemoPage(),
-      'photosPicker' => const PhotosPickerDemoPage(),
-      'segmented' => const SegmentedControlDemoPage(),
       'button' => const ButtonDemoPage(),
-      'contextMenu' => const ContextMenuDemoPage(),
+      'switch' => const SwitchDemoPage(),
+      'slider' => const SliderDemoPage(),
+      'pickers' => const PickersDemoPage(),
       'textField' => const TextFieldDemoPage(),
-      'datePicker' => const DatePickerDemoPage(),
-      'tabBar' => const StandaloneTabBarDemoPage(),
+      'contextMenu' => const ContextMenuDemoPage(),
+      'bars' => const BarsDemoPage(),
       'nativeScaffold' => const NativeScaffoldDemoPage(),
+      'hardEdge' => const HardEdgeDemoPage(),
       'searchable' => const NativeSearchableDemoPage(),
       'sheet' => const SheetDemoPage(),
-      'navigationBar' => const AppBarDemoPage(),
-      'listForm' => const NativeListFormDemoPage(),
+      'list' => const NativeListDemoPage(),
       'liquidGlass' => const LiquidGlassDemoPage(),
-      'glassTransitions' => const GlassTransitionDemoPage(),
       'edgeEffect' => const EdgeEffectProbePage(),
-      'effects' => const EffectsDemoPage(),
-      'alert' => const AlertDemoPage(),
-      'progress' => const ProgressDemoPage(),
       _ => const SliderDemoPage(),
     };
     Navigator.of(context)
-        .push(CupertinoPageRoute(builder: (_) => page, title: 'Back'));
+    // No route title: on iOS 15–18 the next bar's back button takes the
+    // title of the page it came from, as UIKit's does.
+    .push(CupertinoPageRoute(builder: (_) => page));
   }
 }

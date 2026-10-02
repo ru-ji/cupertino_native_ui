@@ -1,5 +1,3 @@
-import 'package:flutter/foundation.dart';
-import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
@@ -74,14 +72,17 @@ class CupertinoNativeTextEditor extends StatelessWidget
   /// `Glass.tint`: a colour mixed into the [glass].
   final Color? glassTint;
 
-  /// Where the [placeholder] sits from the editor's top-left corner. The
-  /// placeholder is drawn over the editor (SwiftUI's `TextEditor` has none),
-  /// so it is aligned by hand with where typed text starts: 8 top / 5 left on
-  /// [glass], 0 otherwise. Set it if the two do not line up.
+  /// Where the [placeholder] sits from the editor's top-left corner, before
+  /// [padding]. The placeholder is drawn over the editor (SwiftUI's
+  /// `TextEditor` has none), so it is aligned by hand with where typed text
+  /// starts: 8 top / 5 left, the text view's own inset. Set it if the two do
+  /// not line up.
   final EdgeInsets? placeholderPadding;
 
-  /// Room between the text and the editor's background or [glass] edge —
-  /// SwiftUI's `.padding`. The placeholder moves with it.
+  /// Room between the editor's edge and its text, added to the text view's
+  /// own inset. Above and below, it is inside the scrolling text, which
+  /// scrolls through it up to the edge. The placeholder and the [prefix]
+  /// move with it.
   final EdgeInsets? padding;
 
   /// Drawn before the text, on its first line — any widget the package
@@ -105,20 +106,19 @@ class CupertinoNativeTextEditor extends StatelessWidget
       onEvent: lowered?.dispatch,
       kind: 'textEditor',
       height: height,
-      // Drags scroll the text, not the page around it.
-      gestures: {
-        Factory<OneSequenceGestureRecognizer>(EagerGestureRecognizer.new),
-      },
+      // A drag scrolls the text or the page as UIKit would decide — see
+      // NestedScrollPlatformViewRecognizer.
       props: {
         'text': text,
+        'height': height,
         'placeholder': placeholder,
         'fontSize': style?.fontSize ?? fontSize,
         'fontWeight': style?.fontWeight == null
             ? null
             : style!.fontWeight!.value ~/ 100 - 1,
-        'textColor': style?.color?.toARGB32(),
-        'cursorColor': cursorColor?.toARGB32(),
-        'backgroundColor': backgroundColor?.toARGB32(),
+        'textColor': style?.color,
+        'cursorColor': cursorColor,
+        'backgroundColor': backgroundColor,
         'cornerRadius': cornerRadius,
         // The names the text field sends: `TextInputType` has no enum `name`.
         'keyboardType': (keyboardType.toJson()['name'] as String)
@@ -131,7 +131,7 @@ class CupertinoNativeTextEditor extends StatelessWidget
         'maxLength': maxLength,
         'readOnly': readOnly,
         'glass': glass?.name,
-        'glassTint': glassTint?.toARGB32(),
+        'glassTint': glassTint,
         'placeholderTop': placeholderPadding?.top,
         'placeholderLeading': placeholderPadding?.left,
         'padding': padding == null

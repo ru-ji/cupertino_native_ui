@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 
 import 'internal/native_platform_view_mixin.dart';
 import 'internal/scroll_friendly_recognizer.dart';
+import 'internal/native_color.dart';
 
 /// A checkbox rendered by SwiftUI.
 ///
@@ -85,10 +86,12 @@ class _CupertinoNativeCheckboxState extends State<CupertinoNativeCheckbox>
       'value': widget.value,
       'enabled': widget.onChanged != null,
       'label': widget.label,
-      'color': widget.activeColor?.toARGB32(),
+      'color': nativeArgb(widget.activeColor, isDark: _isDark),
       'fontSize': widget.textStyle?.fontSize,
-      'fontWeight': widget.textStyle?.fontWeight?.value,
-      'textColor': widget.textStyle?.color?.toARGB32(),
+      'fontWeight': widget.textStyle?.fontWeight == null
+          ? null
+          : widget.textStyle!.fontWeight!.value ~/ 100 - 1,
+      'textColor': nativeArgb(widget.textStyle?.color, isDark: _isDark),
       'isDark': _isDark,
     };
   }

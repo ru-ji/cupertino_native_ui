@@ -43,7 +43,6 @@ class NativeListView: NativeHostingView {
     /// controller applies it; every other edit — labels, sections, tint — takes
     /// the cheap path, which is the common one for a list.
     private var shownToggles: [String: Bool] = [:]
-    private var isSystemList = false
 
     /// The content height the system list's probe has reported, in points.
     ///
@@ -56,9 +55,9 @@ class NativeListView: NativeHostingView {
     /// Flutter `Column` of lists (the sheet's form) the boxes then added up to
     /// ~3700pt of content inside one sheet, which is the endless scroll.
     ///
-    /// The probe is the only thing that knows the real height, so it is the only
-    /// source this view reports from — see `measuresIntrinsicSize` in
-    /// `setupSwiftUI` and the `intrinsicSize()` override.
+    /// The probe is the only thing that knows the real height, so once it has
+    /// one it is the only source this view reports from — see the
+    /// `intrinsicSize()` override.
     private var systemListHeight: CGFloat?
 
     /// Keyboard bars for the fields transcribed into rows, and the models
@@ -110,9 +109,6 @@ class NativeListView: NativeHostingView {
         channel = FlutterMethodChannel(
             name: "cupertino_widgets/list_\(viewId)", binaryMessenger: messenger)
         sizeChannel = channel
-        NativeLog.forward = { [weak self] text in
-            self?.channel?.invokeMethod("debugLog", arguments: text)
-        }
         channel?.setMethodCallHandler { [weak self] call, result in
             self?.handle(call, result: result)
         }
@@ -128,7 +124,6 @@ class NativeListView: NativeHostingView {
     /// as the button's, through the `intrinsicSize()` override below.
     private func setupSwiftUI(with config: ListConfig, isDark: Bool?) {
         shownToggles = Self.toggleValues(in: config)
-        isSystemList = true
         self.isDark = isDark
         attach(AnyView(makeContent(config)))
         _view.backgroundColor = .clear
@@ -153,7 +148,6 @@ class NativeListView: NativeHostingView {
                 NativeLog.log("list refocus → \(key)")
             }
         }
-        scheduleSizeReports()
     }
 
     /// A row's `.focused` report is the only place that says which transcribed
@@ -218,7 +212,39 @@ class NativeListView: NativeHostingView {
                     self?.systemListHeight = h
                     self?.channel?.invokeMethod(
                         "onContentSize", arguments: ["height": Double(h), "animated": animated])
+                    self?.reportWheels()
                 }))
+    }
+
+    /// The wheels last reported to Dart, in this view's coordinates.
+    private var reportedWheels: [CGRect] = []
+
+    /// Tells Dart where the rows' wheels are. Flutter decides who gets a
+    /// touch before UIKit sees it, and in a scrolling page a vertical drag
+    /// goes to the page — unless it lands on a wheel, which it spins.
+    ///
+    /// Sent whenever the rows move: a new height or a new config. On the next
+    /// turn, once the collection view has laid its cells out.
+    private func reportWheels() {
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            var wheels: [CGRect] = []
+            func find(_ view: UIView) {
+                if view is UIPickerView || (view as? UIDatePicker)?.datePickerStyle == .wheels {
+                    wheels.append(view.convert(view.bounds, to: self._view))
+                    return
+                }
+                view.subviews.forEach(find)
+            }
+            find(self._view)
+            guard wheels != self.reportedWheels else { return }
+            self.reportedWheels = wheels
+            self.channel?.invokeMethod(
+                "onWheels",
+                arguments: wheels.map {
+                    [Double($0.minX), Double($0.minY), Double($0.width), Double($0.height)]
+                })
+        }
     }
 
     private func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
@@ -248,7 +274,7 @@ class NativeListView: NativeHostingView {
                 if Self.toggleValues(in: config) == shownToggles {
                     update(AnyView(makeContent(config)))
                     if let isDark = isDark { self.isDark = isDark }
-                    scheduleSizeReports()
+                    reportWheels()
                 } else {
                     setupSwiftUI(with: config, isDark: isDark)
                 }
@@ -280,7 +306,7 @@ class NativeListView: NativeHostingView {
     /// page renders empty. Only the *value* changes here, and only once there is
     /// a real one to change it to.
     override func intrinsicSize() -> [String: Double] {
-        if isSystemList, let height = systemListHeight {
+        if let height = systemListHeight {
             let width = _view.bounds.width > 1 ? _view.bounds.width : UIScreen.main.bounds.width
             return ["width": Double(width), "height": Double(height)]
         }
@@ -318,30 +344,5 @@ class NativeListView: NativeHostingView {
                 ).height
         }
         return CGSize(width: width, height: height)
-    }
-
-    /// Pushes the measured content height to Flutter as layout settles (initial
-    /// render, cell rendering, font/async loads), so the fixed platform-view
-    /// box grows to fit instead of clipping content.
-    ///
-    /// Nothing to do for a system list: its height arrives from the probe
-    /// (`onHeight`), and every delayed pass here would early-return in
-    /// [reportContentSize]. Seven timers that measure nothing are not free.
-    private func scheduleSizeReports() {
-        if isSystemList { return }
-        let delays: [Double] = [0.0, 0.1, 0.3, 0.6, 1.0, 1.5, 2.0]
-        for delay in delays {
-            DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
-                self?.reportContentSize()
-            }
-        }
-    }
-
-    private func reportContentSize() {
-        // The system list reports its own height, once measured (see AdaptiveSystemListView).
-        if isSystemList { return }
-        let height = measuredSize().height
-        guard height > 1 else { return }
-        channel?.invokeMethod("onContentSize", arguments: ["height": Double(height)])
     }
 }

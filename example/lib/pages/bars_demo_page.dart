@@ -2,273 +2,447 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart' show Scaffold;
 import 'package:cupertino_widgets/cupertino_widgets.dart';
 
-/// A music library, built the way an iOS app builds one — and a full workout
-/// for [CupertinoNativeSliverNavigationBar].
+/// The App Store, built the way an iOS app builds one: the native navigation
+/// bar on top and the standalone native tab bar at the bottom — a workout for
+/// [CupertinoNativeSliverNavigationBar] and [CupertinoNativeTabBar] together.
 ///
-/// Everything here is Flutter-drawn on purpose: artwork gradients are what
-/// make the scroll edge effect legible, since its blur samples the Flutter
-/// scene (a native list, being a UIKit view, gives it nothing to read).
-/// Scroll and watch the large title blur-morph into the inline one over that
-/// effect, the search row lift off the page and turn to glass as it goes, and
-/// the field morph to the top with a glass ✕ when tapped.
-class AppBarDemoPage extends StatefulWidget {
-  const AppBarDemoPage({super.key});
+/// Every tab is its own page with its own bar: Today, Games, Apps, and Search
+/// as the split-off search-role tab with the bar's native search field. The
+/// content is Flutter-drawn on purpose: colourful artwork is what makes the
+/// scroll edge effect under the bars legible.
+class BarsDemoPage extends StatefulWidget {
+  const BarsDemoPage({super.key});
 
   @override
-  State<AppBarDemoPage> createState() => _AppBarDemoPageState();
+  State<BarsDemoPage> createState() => _BarsDemoPageState();
 }
 
-class _AppBarDemoPageState extends State<AppBarDemoPage> {
-  static const _hero = _Album(
-    'Chill Mix',
-    'Updated Wednesday',
-    Color(0xFF3A1C71),
-    Color(0xFFD76D77),
-  );
+enum _Tab {
+  today('Today'),
+  games('Games'),
+  apps('Apps'),
+  search('Search');
 
-  static const _recent = <_Album>[
-    _Album(
-      'Midnight Drive',
-      'Kite Season',
-      Color(0xFF0F2027),
-      Color(0xFF2C5364),
-    ),
-    _Album('Golden Hour', 'Mara Lune', Color(0xFFF7971E), Color(0xFFFFD200)),
-    _Album('Paper Boats', 'Hollow Coast', Color(0xFF11998E), Color(0xFF38EF7D)),
-    _Album('Neon Fields', 'Ruby Atlas', Color(0xFF7F00FF), Color(0xFFE100FF)),
-    _Album('Slow Burn', 'The Ember Set', Color(0xFFCB356B), Color(0xFFBD3F32)),
-    _Album('Winter Static', 'Nils Havre', Color(0xFF232526), Color(0xFF6D7B8D)),
-  ];
+  const _Tab(this.title);
 
-  static const _playlists = <_Album>[
-    _Album(
-      'Focus Flow',
-      '48 songs · 3 hr 12 min',
-      Color(0xFF1A2980),
-      Color(0xFF26D0CE),
-    ),
-    _Album(
-      'Sunday Morning',
-      '32 songs · 2 hr 04 min',
-      Color(0xFFFFB75E),
-      Color(0xFFED8F03),
-    ),
-    _Album(
-      'Late Night Drive',
-      '61 songs · 4 hr 27 min',
-      Color(0xFF41295A),
-      Color(0xFF2F0743),
-    ),
-    _Album(
-      'Kitchen Radio',
-      '25 songs · 1 hr 38 min',
-      Color(0xFF56AB2F),
-      Color(0xFFA8E063),
-    ),
-    _Album(
-      'Rainy Day Jazz',
-      '40 songs · 2 hr 51 min',
-      Color(0xFF2C3E50),
-      Color(0xFF4CA1AF),
-    ),
-    _Album(
-      'Running Club',
-      '18 songs · 1 hr 06 min',
-      Color(0xFFFF512F),
-      Color(0xFFDD2476),
-    ),
-  ];
+  final String title;
+}
 
-  static const _recentSearches = [
-    'Mara Lune',
-    'Focus Flow',
-    'Paper Boats',
-    'Ambient',
-  ];
-
-  bool _searching = false;
+class _BarsDemoPageState extends State<BarsDemoPage> {
+  _Tab _tab = _Tab.today;
   String _query = '';
-
-  List<_Album> get _results {
-    final q = _query.trim().toLowerCase();
-    if (q.isEmpty) return const [];
-    return [..._recent, ..._playlists]
-        .where((a) => '${a.title} ${a.subtitle}'.toLowerCase().contains(q))
-        .toList();
-  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: CupertinoColors.systemBackground.resolveFrom(context),
-      body: DefaultTextStyle(
-        style: CupertinoTheme.of(context).textTheme.textStyle,
-        child: CustomScrollView(
-          slivers: [
-            CupertinoNativeSliverNavigationBar.search(
-              largeTitle: 'Library',
-              subtitle: '128 albums',
-              centerTitle: true,
-              leading: CupertinoNativeButton.glass(
-                borderShape: CupertinoNativeButtonBorderShape.circle,
-                onPressed: () => Navigator.pop(context),
-                child: CupertinoSymbolImage.symbol(
-                  CupertinoSymbols.chevronBackward,
-                ),
-              ),
-              trailing: [
-                // Icon-only actions sharing one glass, like a toolbar group.
-                CupertinoNativeGlassGroup(
-                  spacing: 0,
-                  onAction: (_) {},
-                  items: [
-                    CupertinoNativeGlassGroupItem(
-                      actionId: 'sort',
-                      icon: CupertinoNativeIcon.symbol(
-                        CupertinoSymbols.arrowUpArrowDown,
-                      ),
-                    ),
-                    CupertinoNativeGlassGroupItem(
-                      actionId: 'more',
-                      icon: CupertinoNativeIcon.named('ellipsis'),
-                    ),
-                  ],
-                ),
-              ],
-              searchPlaceholder: 'Artists, Songs, Albums',
-              // Kept on screen while the page scrolls: on iOS 26 the row lifts
-              // off the content as the title collapses, and turns to glass.
-              bottomMode: NavigationBarBottomMode.always,
-              onSearchChanged: (q) => setState(() => _query = q),
-              onSearchActiveChanged: (active) => setState(() {
-                _searching = active;
-                if (!active) _query = '';
-              }),
-            ),
-            if (_searching)
-              ..._searchSlivers(context)
-            else
-              ..._librarySlivers(),
-          ],
-        ),
-      ),
-    );
-  }
-
-  List<Widget> _librarySlivers() => [
-    SliverToBoxAdapter(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-        child: _HeroCard(album: _hero),
-      ),
-    ),
-    const SliverToBoxAdapter(child: _SectionHeader('Recently Played')),
-    SliverToBoxAdapter(
-      child: SizedBox(
-        height: 208,
-        child: ListView.separated(
-          scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          itemCount: _recent.length,
-          separatorBuilder: (_, _) => const SizedBox(width: 14),
-          itemBuilder: (context, i) => _ArtCard(album: _recent[i]),
-        ),
-      ),
-    ),
-    const SliverToBoxAdapter(child: _SectionHeader('Your Playlists')),
-    SliverList.builder(
-      itemCount: _playlists.length,
-      itemBuilder: (context, i) => _LibraryRow(
-        album: _playlists[i],
-        showSeparator: i != _playlists.length - 1,
-      ),
-    ),
-    SliverToBoxAdapter(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 24, 16, 48),
-        child: Builder(
-          builder: (context) => Text(
-            '${_playlists.length} playlists · Synced just now',
-            style: TextStyle(
-              fontSize: 13,
-              color: CupertinoColors.secondaryLabel.resolveFrom(context),
-            ),
-          ),
-        ),
-      ),
-    ),
-  ];
-
-  List<Widget> _searchSlivers(BuildContext context) {
-    if (_query.trim().isEmpty) {
-      return [
-        const SliverToBoxAdapter(child: _SectionHeader('Recent Searches')),
-        SliverList.builder(
-          itemCount: _recentSearches.length,
-          itemBuilder: (context, i) => _SearchTermRow(
-            term: _recentSearches[i],
-            showSeparator: i != _recentSearches.length - 1,
-          ),
-        ),
-      ];
-    }
-    final results = _results;
-    if (results.isEmpty) {
-      return [
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 72, 16, 0),
-            child: Column(
-              children: [
-                Text(
-                  'No Results',
-                  style: CupertinoTheme.of(context).textTheme.textStyle
-                      .copyWith(fontSize: 20, fontWeight: FontWeight.w600),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  'Try a different artist, song or album.',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: CupertinoColors.secondaryLabel.resolveFrom(context),
+      body: Stack(
+        children: [
+          DefaultTextStyle(
+            style: CupertinoTheme.of(context).textTheme.textStyle,
+            // One page per tab: its own scroll position and its own bar.
+            child: CustomScrollView(
+              key: ValueKey(_tab),
+              slivers: [
+                _navigationBar(),
+                ...switch (_tab) {
+                  _Tab.today => _todaySlivers(),
+                  _Tab.games => _storeSlivers(_games, 'Games'),
+                  _Tab.apps => _storeSlivers(_apps, 'Apps'),
+                  _Tab.search => _searchSlivers(),
+                },
+                // Room for the tab bar floating over the end of the page.
+                SliverToBoxAdapter(
+                  child: SizedBox(
+                    height: MediaQuery.paddingOf(context).bottom + 96,
                   ),
                 ),
               ],
             ),
           ),
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: CupertinoNativeTabBar(
+              currentIndex: _tab.index,
+              scrollEdgeEffect: CupertinoScrollEdgeEffectStyle.soft,
+              // The search tab splits off into its own glass, as in the App
+              // Store.
+              split: true,
+              rightCount: 1,
+              items: const [
+                CupertinoNativeTab(
+                  id: 'today',
+                  title: 'Today',
+                  icon: CupertinoNativeIcon.named('doc.text.image'),
+                ),
+                CupertinoNativeTab(
+                  id: 'games',
+                  title: 'Games',
+                  icon: CupertinoNativeIcon.named('gamecontroller.fill'),
+                ),
+                CupertinoNativeTab(
+                  id: 'apps',
+                  title: 'Apps',
+                  icon: CupertinoNativeIcon.named('square.stack.3d.up.fill'),
+                  badge: '3',
+                ),
+                CupertinoNativeTab(
+                  id: 'search',
+                  title: '',
+                  icon: CupertinoNativeIcon.named('magnifyingglass'),
+                  role: CupertinoNativeTabRole.search,
+                ),
+              ],
+              onTap: (i) => setState(() {
+                _tab = _Tab.values[i];
+                _query = '';
+              }),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// The account button every App Store tab carries.
+  Widget get _account => CupertinoNativeButton.glass(
+    borderShape: CupertinoNativeButtonBorderShape.circle,
+    onPressed: () {},
+    child: const CupertinoSymbolImage('person.crop.circle'),
+  );
+
+  Widget _navigationBar() {
+    if (_tab == _Tab.search) {
+      return CupertinoNativeSliverNavigationBar.search(
+        largeTitle: 'Search',
+        trailing: [_account],
+        searchPlaceholder: 'Games, Apps, Stories and More',
+        bottomMode: NavigationBarBottomMode.always,
+        onSearchChanged: (q) => setState(() => _query = q),
+        onSearchActiveChanged: (active) {
+          if (!active) setState(() => _query = '');
+        },
+      );
+    }
+    return CupertinoNativeSliverNavigationBar(
+      largeTitle: _tab.title,
+      subtitle: _tab == _Tab.today ? _today() : null,
+      trailing: [_account],
+    );
+  }
+
+  static String _today() {
+    const days = [
+      'Monday',
+      'Tuesday',
+      'Wednesday',
+      'Thursday',
+      'Friday',
+      'Saturday',
+      'Sunday',
+    ];
+    const months = [
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
+    ];
+    final now = DateTime.now();
+    return '${days[now.weekday - 1]}, ${months[now.month - 1]} ${now.day}';
+  }
+
+  // ---------------------------------------------------------------- Today
+
+  List<Widget> _todaySlivers() => [
+    SliverPadding(
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+      sliver: SliverList.list(
+        children: [
+          _StoryCard(
+            eyebrow: 'APP OF THE DAY',
+            title: 'Stillwater',
+            subtitle: 'Sleep sounds that fade with you',
+            app: _apps[2],
+          ),
+          const SizedBox(height: 28),
+          _ListCard(
+            eyebrow: 'OUR FAVORITES',
+            title: 'Apps We Love Right Now',
+            apps: [_apps[0], _apps[4], _apps[1], _apps[5]],
+          ),
+          const SizedBox(height: 28),
+          _StoryCard(
+            eyebrow: 'GAME OF THE DAY',
+            title: 'Lumen Drift',
+            subtitle: 'Bend light through a living maze',
+            app: _games[0],
+          ),
+          const SizedBox(height: 28),
+          _StoryCard(
+            eyebrow: 'GET STARTED',
+            title: 'Make Your Mornings Count',
+            subtitle: 'Five apps for a calmer start to the day',
+            app: _apps[3],
+          ),
+        ],
+      ),
+    ),
+  ];
+
+  // ---------------------------------------------------------------- Games / Apps
+
+  List<Widget> _storeSlivers(List<_App> apps, String kind) => [
+    SliverToBoxAdapter(
+      child: SizedBox(
+        height: 300,
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+          itemCount: 3,
+          separatorBuilder: (_, _) => const SizedBox(width: 12),
+          itemBuilder: (context, i) => _Banner(
+            eyebrow: const ['NEW', 'MAJOR UPDATE', 'NOW AVAILABLE'][i],
+            app: apps[i],
+          ),
+        ),
+      ),
+    ),
+    _SectionHeader(
+      kind == 'Games' ? 'Must-Play Games' : 'Essential Apps',
+      kind == 'Games' ? 'Picked by our editors' : 'Everyday favourites',
+    ),
+    SliverToBoxAdapter(
+      child: SizedBox(
+        height: 3 * 76,
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          itemCount: 2,
+          separatorBuilder: (_, _) => const SizedBox(width: 16),
+          itemBuilder: (context, column) => SizedBox(
+            width: MediaQuery.sizeOf(context).width - 72,
+            child: Column(
+              children: [
+                for (var row = 0; row < 3; row++)
+                  _AppRow(
+                    app: apps[(column * 3 + row) % apps.length],
+                    showSeparator: row != 2,
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    ),
+    const _SectionHeader('Top Free', null),
+    SliverPadding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      sliver: SliverList.builder(
+        itemCount: apps.length,
+        itemBuilder: (context, i) => _AppRow(
+          app: apps[i],
+          rank: i + 1,
+          showSeparator: i != apps.length - 1,
+        ),
+      ),
+    ),
+  ];
+
+  // ---------------------------------------------------------------- Search
+
+  List<Widget> _searchSlivers() {
+    final q = _query.trim().toLowerCase();
+    if (q.isNotEmpty) {
+      final results = [
+        ..._apps,
+        ..._games,
+      ].where((a) => '${a.name} ${a.category}'.toLowerCase().contains(q));
+      return [
+        SliverPadding(
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+          sliver: SliverList.list(
+            children: [
+              if (results.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 60),
+                  child: Center(
+                    child: Text(
+                      'No Results for “$_query”',
+                      style: TextStyle(
+                        fontSize: 17,
+                        color: CupertinoColors.secondaryLabel.resolveFrom(
+                          context,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              for (final (i, app) in results.indexed)
+                _AppRow(app: app, showSeparator: i != results.length - 1),
+            ],
+          ),
         ),
       ];
     }
+    const discover = [
+      'sleep sounds',
+      'puzzle games',
+      'photo editor',
+      'habit tracker',
+      'offline maps',
+    ];
     return [
-      const SliverToBoxAdapter(child: _SectionHeader('Results')),
-      SliverList.builder(
-        itemCount: results.length,
-        itemBuilder: (context, i) => _LibraryRow(
-          album: results[i],
-          showSeparator: i != results.length - 1,
+      const _SectionHeader('Discover', null),
+      SliverPadding(
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        sliver: SliverList.list(
+          children: [
+            for (final (i, term) in discover.indexed)
+              _SuggestionRow(
+                term: term,
+                showSeparator: i != discover.length - 1,
+              ),
+          ],
+        ),
+      ),
+      const _SectionHeader('Suggested', null),
+      SliverPadding(
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        sliver: SliverList.list(
+          children: [
+            for (final (i, app) in [_apps[1], _games[2], _apps[5]].indexed)
+              _AppRow(app: app, showSeparator: i != 2),
+          ],
         ),
       ),
     ];
   }
 }
 
-/// Title, subtitle and the two gradient stops of one piece of artwork.
-class _Album {
-  const _Album(this.title, this.subtitle, this.start, this.end);
+// ------------------------------------------------------------------ data
 
-  final String title;
-  final String subtitle;
+class _App {
+  const _App(this.name, this.category, this.icon, this.start, this.end);
+
+  final String name;
+  final String category;
+  final IconData icon;
   final Color start;
   final Color end;
 }
 
-/// Rounded gradient artwork — the stand-in for a cover image.
-class _Artwork extends StatelessWidget {
-  const _Artwork({required this.album, required this.size, this.radius = 10});
+const _apps = <_App>[
+  _App(
+    'Pocket Budget',
+    'Finance',
+    CupertinoIcons.money_euro_circle_fill,
+    Color(0xFF11998E),
+    Color(0xFF38EF7D),
+  ),
+  _App(
+    'Canvas Studio',
+    'Graphics & Design',
+    CupertinoIcons.paintbrush_fill,
+    Color(0xFFFF5F6D),
+    Color(0xFFFFC371),
+  ),
+  _App(
+    'Stillwater',
+    'Health & Fitness',
+    CupertinoIcons.moon_stars_fill,
+    Color(0xFF1A2980),
+    Color(0xFF26D0CE),
+  ),
+  _App(
+    'Sunrise Habits',
+    'Productivity',
+    CupertinoIcons.sunrise_fill,
+    Color(0xFFF7971E),
+    Color(0xFFFFD200),
+  ),
+  _App(
+    'Trailhead',
+    'Navigation',
+    CupertinoIcons.map_fill,
+    Color(0xFF56AB2F),
+    Color(0xFFA8E063),
+  ),
+  _App(
+    'Lingo Loop',
+    'Education',
+    CupertinoIcons.chat_bubble_2_fill,
+    Color(0xFF8E2DE2),
+    Color(0xFF4A00E0),
+  ),
+];
 
-  final _Album album;
+const _games = <_App>[
+  _App(
+    'Lumen Drift',
+    'Puzzle',
+    CupertinoIcons.lightbulb_fill,
+    Color(0xFF7F00FF),
+    Color(0xFFE100FF),
+  ),
+  _App(
+    'Skyline Racers',
+    'Racing',
+    CupertinoIcons.car_detailed,
+    Color(0xFFCB356B),
+    Color(0xFFBD3F32),
+  ),
+  _App(
+    'Tiny Kingdoms',
+    'Strategy',
+    CupertinoIcons.house_fill,
+    Color(0xFF00B4DB),
+    Color(0xFF0083B0),
+  ),
+  _App(
+    'Word Garden',
+    'Word',
+    CupertinoIcons.textformat_abc,
+    Color(0xFF56AB2F),
+    Color(0xFFA8E063),
+  ),
+  _App(
+    'Orbit Pop',
+    'Arcade',
+    CupertinoIcons.circle_grid_hex_fill,
+    Color(0xFFF953C6),
+    Color(0xFFB91D73),
+  ),
+  _App(
+    'Deep Tide',
+    'Adventure',
+    CupertinoIcons.drop_fill,
+    Color(0xFF141E30),
+    Color(0xFF243B55),
+  ),
+];
+
+// ------------------------------------------------------------------ pieces
+
+LinearGradient _gradient(_App app) => LinearGradient(
+  begin: Alignment.topLeft,
+  end: Alignment.bottomRight,
+  colors: [app.start, app.end],
+);
+
+/// The app icon: its glyph on its gradient, in the squircle's proportions.
+class _AppIcon extends StatelessWidget {
+  const _AppIcon({required this.app, required this.size});
+
+  final _App app;
   final double size;
-  final double radius;
 
   @override
   Widget build(BuildContext context) {
@@ -276,100 +450,163 @@ class _Artwork extends StatelessWidget {
       width: size,
       height: size,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(radius),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [album.start, album.end],
+        borderRadius: BorderRadius.circular(size * 0.225),
+        gradient: _gradient(app),
+        border: Border.all(
+          color: CupertinoColors.separator.resolveFrom(context),
+          width: 0.5,
+        ),
+      ),
+      child: Icon(app.icon, size: size * 0.52, color: CupertinoColors.white),
+    );
+  }
+}
+
+/// The App Store's "Get" capsule. Flutter-drawn: a page lists dozens.
+class _GetButton extends StatelessWidget {
+  const _GetButton({this.onDark = false});
+
+  final bool onDark;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        color: onDark
+            ? CupertinoColors.white.withValues(alpha: 0.25)
+            : CupertinoColors.tertiarySystemFill.resolveFrom(context),
+      ),
+      child: Text(
+        'Get',
+        style: TextStyle(
+          fontSize: 15,
+          fontWeight: FontWeight.w700,
+          color: onDark
+              ? CupertinoColors.white
+              : CupertinoColors.systemBlue.resolveFrom(context),
         ),
       ),
     );
   }
 }
 
-/// The featured card: full-width artwork with its label over it and a Liquid
-/// Glass play button — clear glass, the variant iOS uses over media.
-class _HeroCard extends StatelessWidget {
-  const _HeroCard({required this.album});
+/// A Today story: tall artwork with the eyebrow and title on top and the app
+/// along the bottom, on a frosted strip.
+class _StoryCard extends StatelessWidget {
+  const _StoryCard({
+    required this.eyebrow,
+    required this.title,
+    required this.subtitle,
+    required this.app,
+  });
 
-  final _Album album;
+  final String eyebrow;
+  final String title;
+  final String subtitle;
+  final _App app;
 
   @override
   Widget build(BuildContext context) {
-    const white = Color(0xFFFFFFFF);
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(22),
+    const white = CupertinoColors.white;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(22),
+        gradient: _gradient(app),
+        boxShadow: [
+          BoxShadow(
+            color: app.end.withValues(alpha: 0.35),
+            blurRadius: 24,
+            offset: const Offset(0, 12),
+          ),
+        ],
+      ),
       child: SizedBox(
-        height: 208,
-        width: double.infinity,
+        height: 440,
         child: Stack(
-          fit: StackFit.expand,
           children: [
-            DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [album.start, album.end],
-                ),
+            // The artwork: the app's glyph, huge and faded.
+            Positioned(
+              right: -40,
+              top: 90,
+              child: Icon(
+                app.icon,
+                size: 300,
+                color: white.withValues(alpha: 0.18),
               ),
             ),
             Padding(
-              padding: const EdgeInsets.all(20),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'MADE FOR YOU',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: 0.6,
-                            decoration: TextDecoration.none,
-                            color: white.withValues(alpha: 0.75),
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          album.title,
-                          style: const TextStyle(
-                            fontSize: 28,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: -0.5,
-                            decoration: TextDecoration.none,
-                            color: white,
-                          ),
-                        ),
-                        Text(
-                          album.subtitle,
-                          style: TextStyle(
-                            fontSize: 14,
-                            decoration: TextDecoration.none,
-                            color: white.withValues(alpha: 0.8),
-                          ),
-                        ),
-                      ],
+                  Text(
+                    eyebrow,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.4,
+                      color: white.withValues(alpha: 0.75),
                     ),
                   ),
-                  CupertinoNativeGlassContainer(
-                    shape: CupertinoGlassShape.circle,
-                    variant: CupertinoGlassVariant.clear,
-                    interactive: true,
-                    width: 52,
-                    height: 52,
-                    icon: CupertinoNativeIcon.symbol(
-                      CupertinoSymbols.playFill,
-                      size: 22,
+                  const SizedBox(height: 6),
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 30,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -0.6,
+                      height: 1.1,
                       color: white,
                     ),
-                    onPressed: () {},
                   ),
                 ],
+              ),
+            ),
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: Container(
+                padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+                decoration: BoxDecoration(
+                  borderRadius: const BorderRadius.vertical(
+                    bottom: Radius.circular(22),
+                  ),
+                  color: CupertinoColors.black.withValues(alpha: 0.18),
+                ),
+                child: Row(
+                  children: [
+                    _AppIcon(app: app, size: 48),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            app.name,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: white,
+                            ),
+                          ),
+                          Text(
+                            subtitle,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: white.withValues(alpha: 0.8),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const _GetButton(onDark: true),
+                  ],
+                ),
               ),
             ),
           ],
@@ -379,192 +616,282 @@ class _HeroCard extends StatelessWidget {
   }
 }
 
-/// A section heading, sized like the ones iOS puts above a shelf.
-class _SectionHeader extends StatelessWidget {
-  const _SectionHeader(this.title);
+/// A Today collection: a plain card listing a few apps.
+class _ListCard extends StatelessWidget {
+  const _ListCard({
+    required this.eyebrow,
+    required this.title,
+    required this.apps,
+  });
 
+  final String eyebrow;
   final String title;
+  final List<_App> apps;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            title,
-            style: CupertinoTheme.of(context).textTheme.textStyle.copyWith(
-              fontSize: 22,
-              fontWeight: FontWeight.w700,
-              letterSpacing: -0.4,
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(22),
+        color: CupertinoColors.secondarySystemBackground.resolveFrom(context),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              eyebrow,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.4,
+                color: CupertinoColors.secondaryLabel.resolveFrom(context),
+              ),
             ),
-          ),
-          Text(
-            'See All',
-            style: CupertinoTheme.of(context).textTheme.textStyle
-                .copyWith(
-                  color: CupertinoColors.systemBlue.resolveFrom(context),
-                )
-                .copyWith(fontSize: 15),
-          ),
-        ],
+            const SizedBox(height: 4),
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 26,
+                fontWeight: FontWeight.w800,
+                letterSpacing: -0.5,
+              ),
+            ),
+            const SizedBox(height: 12),
+            for (final (i, app) in apps.indexed)
+              _AppRow(app: app, showSeparator: i != apps.length - 1),
+          ],
+        ),
       ),
     );
   }
 }
 
-/// One item of the horizontal shelf: artwork over two lines of text.
-class _ArtCard extends StatelessWidget {
-  const _ArtCard({required this.album});
+/// A wide featured banner of the Games and Apps tabs.
+class _Banner extends StatelessWidget {
+  const _Banner({required this.eyebrow, required this.app});
 
-  final _Album album;
+  final String eyebrow;
+  final _App app;
 
   @override
   Widget build(BuildContext context) {
+    const white = CupertinoColors.white;
     return SizedBox(
-      width: 150,
+      width: MediaQuery.sizeOf(context).width - 56,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _Artwork(album: album, size: 150, radius: 14),
-          const SizedBox(height: 10),
           Text(
-            album.title,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: CupertinoTheme.of(context).textTheme.textStyle
-                .copyWith(fontSize: 15),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            album.subtitle,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
+            eyebrow,
             style: TextStyle(
-              fontSize: 13,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: CupertinoColors.systemBlue.resolveFrom(context),
+            ),
+          ),
+          Text(
+            app.name,
+            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w600),
+          ),
+          Text(
+            app.category,
+            style: TextStyle(
+              fontSize: 17,
               color: CupertinoColors.secondaryLabel.resolveFrom(context),
             ),
           ),
+          const SizedBox(height: 10),
+          Expanded(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                gradient: _gradient(app),
+              ),
+              child: Stack(
+                children: [
+                  Center(
+                    child: Icon(
+                      app.icon,
+                      size: 110,
+                      color: white.withValues(alpha: 0.3),
+                    ),
+                  ),
+                  Positioned(
+                    left: 14,
+                    bottom: 14,
+                    right: 14,
+                    child: Row(
+                      children: [
+                        _AppIcon(app: app, size: 40),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            app.name,
+                            style: const TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                              color: white,
+                            ),
+                          ),
+                        ),
+                        const _GetButton(onDark: true),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ],
       ),
     );
   }
 }
 
-/// A playlist / result row: artwork, two lines, chevron, and a hairline inset
-/// past the artwork — the iOS table row.
-class _LibraryRow extends StatelessWidget {
-  const _LibraryRow({required this.album, required this.showSeparator});
+/// An app row: icon, name, category, Get — numbered in a chart.
+class _AppRow extends StatelessWidget {
+  const _AppRow({required this.app, required this.showSeparator, this.rank});
 
-  final _Album album;
+  final _App app;
   final bool showSeparator;
+  final int? rank;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(left: 16),
-      child: Column(
+    final secondary = CupertinoColors.secondaryLabel.resolveFrom(context);
+    return SizedBox(
+      height: 76,
+      child: Row(
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(0, 8, 16, 8),
-            child: Row(
-              children: [
-                _Artwork(album: album, size: 52, radius: 8),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        album.title,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: CupertinoTheme.of(context).textTheme.textStyle,
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        album.subtitle,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: CupertinoColors.secondaryLabel.resolveFrom(
-                            context,
-                          ),
+          _AppIcon(app: app, size: 58),
+          const SizedBox(width: 12),
+          if (rank != null) ...[
+            SizedBox(
+              width: 22,
+              child: Text(
+                '$rank',
+                style: const TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
+          Expanded(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                border: showSeparator
+                    ? Border(
+                        bottom: BorderSide(
+                          color: CupertinoColors.separator.resolveFrom(context),
+                          width: 0.5,
                         ),
+                      )
+                    : null,
+              ),
+              child: SizedBox(
+                height: 76,
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            app.name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(fontSize: 16),
+                          ),
+                          Text(
+                            app.category,
+                            style: TextStyle(fontSize: 13, color: secondary),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
+                    ),
+                    const _GetButton(),
+                  ],
                 ),
-                Icon(
-                  CupertinoIcons.chevron_right,
-                  size: 14,
-                  color: CupertinoColors.tertiaryLabel.resolveFrom(context),
-                ),
-              ],
+              ),
             ),
           ),
-          if (showSeparator) const _Separator(inset: 64),
         ],
       ),
     );
   }
 }
 
-/// A past query, the way Music lists them under the field.
-class _SearchTermRow extends StatelessWidget {
-  const _SearchTermRow({required this.term, required this.showSeparator});
+/// A Discover suggestion: the magnifying glass and the term, in blue.
+class _SuggestionRow extends StatelessWidget {
+  const _SuggestionRow({required this.term, required this.showSeparator});
 
   final String term;
   final bool showSeparator;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(left: 16),
-      child: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(0, 14, 16, 14),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    term,
-                    style: CupertinoTheme.of(context).textTheme.textStyle,
-                  ),
+    final blue = CupertinoColors.systemBlue.resolveFrom(context);
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        border: showSeparator
+            ? Border(
+                bottom: BorderSide(
+                  color: CupertinoColors.separator.resolveFrom(context),
+                  width: 0.5,
                 ),
-                Icon(
-                  CupertinoIcons.chevron_right,
-                  size: 14,
-                  color: CupertinoColors.tertiaryLabel.resolveFrom(context),
-                ),
-              ],
-            ),
-          ),
-          if (showSeparator) const _Separator(inset: 0),
-        ],
+              )
+            : null,
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        child: Row(
+          children: [
+            Icon(CupertinoIcons.search, size: 18, color: blue),
+            const SizedBox(width: 10),
+            Text(term, style: TextStyle(fontSize: 19, color: blue)),
+          ],
+        ),
       ),
     );
   }
 }
 
-/// Hairline of the current appearance, one physical pixel tall.
-class _Separator extends StatelessWidget {
-  const _Separator({required this.inset});
+/// A section title, with an optional line under it.
+class _SectionHeader extends StatelessWidget {
+  const _SectionHeader(this.title, this.subtitle);
 
-  final double inset;
+  final String title;
+  final String? subtitle;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.only(left: inset),
-      child: Container(
-        height: 1 / MediaQuery.devicePixelRatioOf(context),
-        color: CupertinoDynamicColor.resolve(
-          CupertinoColors.separator,
-          context,
+    return SliverPadding(
+      padding: const EdgeInsets.fromLTRB(20, 28, 20, 8),
+      sliver: SliverToBoxAdapter(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.w700,
+                letterSpacing: -0.4,
+              ),
+            ),
+            if (subtitle != null)
+              Text(
+                subtitle!,
+                style: TextStyle(
+                  fontSize: 15,
+                  color: CupertinoColors.secondaryLabel.resolveFrom(context),
+                ),
+              ),
+          ],
         ),
       ),
     );

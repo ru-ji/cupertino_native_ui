@@ -32,11 +32,7 @@ class CupertinoNativeColorPicker extends StatelessWidget
   NativeControl get nativeControl => NativeControl(
     kind: 'colorPicker',
     hug: label == null,
-    props: {
-      'color': color.toARGB32(),
-      'label': label,
-      'supportsOpacity': supportsOpacity,
-    },
+    props: {'color': color, 'label': label, 'supportsOpacity': supportsOpacity},
     enabled: onChanged != null,
     onChanged: (v) => onChanged?.call(Color(v as int)),
   );

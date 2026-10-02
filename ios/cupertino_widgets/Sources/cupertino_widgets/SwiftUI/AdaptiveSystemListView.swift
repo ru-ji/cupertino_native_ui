@@ -13,9 +13,8 @@ import SwiftUI
 /// reader that treats it as the content's size will adopt it: `NativeListView`
 /// used to, through the base class's intrinsic-size measurement, and a Flutter
 /// box sized to twice the screen is what made a sheet's form scroll forever.
-/// The host therefore sets `measuresIntrinsicSize = false` and answers
-/// `intrinsicSize()` from this reported number alone — see `systemListHeight`
-/// there. Keep the two in step.
+/// The host therefore answers `intrinsicSize()` from this reported number
+/// once there is one — see `systemListHeight` there. Keep the two in step.
 @available(iOS 15.0, *)
 struct AdaptiveSystemListView: View {
     let config: ListConfig
@@ -104,7 +103,6 @@ struct AdaptiveSystemListView: View {
     /// The list's scroll content height — what it would need to show every
     /// row — is the only honest measure: a `List` fills whatever frame it gets.
     private func adopt(_ height: CGFloat) {
-        NativeLog.log("EXPAND-DEBUG adopt h=\(height) current=\(String(describing: contentHeight)) expanding=\(expanding)")
         guard height > 1 else { return }
         contentHeight = height
         // Against what Flutter last got, not `contentHeight`: a close sets
@@ -218,7 +216,6 @@ struct AdaptiveSystemListView: View {
     /// opening, known before the rows leave, so the box shrinks with them
     /// instead of after them.
     private func toggle(_ id: String) {
-        NativeLog.log("EXPAND-DEBUG toggle \(id) open=\(expanded.contains(id)) h=\(String(describing: contentHeight))")
         expanding = true
         if expanded.contains(id) {
             if let height = closedHeights.removeValue(forKey: id) {
@@ -303,21 +300,37 @@ private struct ContentHeightReader: UIViewRepresentable {
 
         override func didMoveToWindow() {
             super.didMoveToWindow()
-            guard observation == nil else { return }
+            if observation != nil {
+                // Back in the window: whatever changed while it was out was
+                // not reported.
+                if window != nil, let scroll { DispatchQueue.main.async { self.report(scroll) } }
+                return
+            }
             var v = superview
             while let view = v, !(view is UIScrollView) { v = view.superview }
+            scroll = v as? UIScrollView
             // `contentSize` changes are the trigger; the value read is the
             // layout's, unclamped.
-            observation = (v as? UIScrollView)?.observe(\.contentSize, options: [.initial, .new]) {
-                [onHeight] scroll, _ in
-                DispatchQueue.main.async {
-                    let height =
-                        (scroll as? UICollectionView)?.collectionViewLayout
-                        .collectionViewContentSize.height ?? scroll.contentSize.height
-                    NativeLog.log("EXPAND-DEBUG layout content=\(height) contentSize=\(scroll.contentSize.height)")
-                    onHeight(height)
-                }
+            observation = scroll?.observe(\.contentSize, options: [.initial, .new]) {
+                [weak self] scroll, _ in
+                DispatchQueue.main.async { self?.report(scroll) }
             }
+        }
+
+        private weak var scroll: UIScrollView?
+
+        /// Only from inside a window. The engine takes a platform view out of
+        /// it on any frame it is not composited — a list scrolled off screen —
+        /// and a list re-laid out there measures wrong: it reported other
+        /// heights, then one far too tall, and the Flutter box above the
+        /// screen grew and pushed the whole page out of view.
+        private func report(_ scroll: UIScrollView) {
+            guard scroll.window != nil else { return }
+            let height =
+                (scroll as? UICollectionView)?.collectionViewLayout
+                .collectionViewContentSize.height ?? scroll.contentSize.height
+            NativeLog.log("list content height \(height)")
+            onHeight(height)
         }
     }
 }

@@ -52,7 +52,7 @@ class CupertinoNativeStepper extends StatelessWidget
       'max': max,
       'step': step,
       'label': label,
-      'tint': activeColor?.toARGB32(),
+      'tint': activeColor,
     },
     enabled: onChanged != null,
     onChanged: (v) => onChanged?.call((v as num).toDouble()),

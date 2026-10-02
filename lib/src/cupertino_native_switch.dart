@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 
 import 'internal/native_platform_view_mixin.dart';
 import 'internal/scroll_friendly_recognizer.dart';
+import 'internal/native_color.dart';
 
 class CupertinoNativeSwitch extends StatefulWidget {
   final bool value;
@@ -63,10 +64,12 @@ class _CupertinoNativeSwitchState extends State<CupertinoNativeSwitch>
     return {
       'value': widget.value,
       'label': widget.label,
-      'color': widget.activeTrackColor?.toARGB32(),
+      'color': nativeArgb(widget.activeTrackColor, isDark: _isDark),
       'fontSize': widget.textStyle?.fontSize,
-      'fontWeight': widget.textStyle?.fontWeight?.value,
-      'textColor': widget.textStyle?.color?.toARGB32(),
+      'fontWeight': widget.textStyle?.fontWeight == null
+          ? null
+          : widget.textStyle!.fontWeight!.value ~/ 100 - 1,
+      'textColor': nativeArgb(widget.textStyle?.color, isDark: _isDark),
       'isDark': _isDark,
     };
   }

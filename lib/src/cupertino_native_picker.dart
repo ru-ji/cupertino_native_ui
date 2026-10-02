@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/material.dart' show Theme;
 import 'package:flutter/services.dart';
@@ -8,6 +9,7 @@ import 'internal/native_platform_view_mixin.dart';
 import 'internal/scroll_friendly_recognizer.dart';
 import 'models/cupertino_native_button_style.dart';
 import 'models/cupertino_native_icon.dart';
+import 'internal/native_color.dart';
 
 /// SwiftUI's `PickerStyle`. The style is what makes this a different control,
 /// so it is the constructor rather than a parameter.
@@ -209,7 +211,10 @@ class _CupertinoNativePickerState extends State<CupertinoNativePicker>
       ],
       'selectedIndex': _selectedIndex,
       'style': widget.style.name,
-      'color': (widget.activeColor ?? theme.colorScheme.primary).toARGB32(),
+      'color': nativeArgb(
+        widget.activeColor ?? theme.colorScheme.primary,
+        isDark: _isDark,
+      )!,
       'controlSize': widget.sizeStyle?.name,
       'isDark': _isDark,
     };
@@ -243,9 +248,12 @@ class _CupertinoNativePickerState extends State<CupertinoNativePicker>
         creationParamsCodec: const StandardMessageCodec(),
         onPlatformViewCreated: _onPlatformViewCreated,
         // The wheel is a drag control: it has to win the gesture arena
-        // against the scroll view it usually sits in.
+        // against the scroll view it usually sits in. The other styles only
+        // take taps and leave vertical drags to the page.
         hitTestBehavior: PlatformViewHitTestBehavior.opaque,
-        gestureRecognizers: scrollFriendlyGestures,
+        gestureRecognizers: widget.style == CupertinoNativePickerStyle.wheel
+            ? {Factory<EagerGestureRecognizer>(EagerGestureRecognizer.new)}
+            : scrollFriendlyGestures,
       ),
     );
 

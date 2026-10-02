@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
 import 'internal/native_platform_view_mixin.dart';
+import 'internal/native_color.dart';
 
 /// The system date picker. By default the **compact** style: the tappable
 /// gray pill used throughout iOS Settings/Calendar, which pops the native
@@ -80,7 +81,7 @@ class _CupertinoNativeDatePickerState extends State<CupertinoNativeDatePicker>
           : widget.mode.name,
       'minimumDate': widget.minimumDate?.millisecondsSinceEpoch,
       'maximumDate': widget.maximumDate?.millisecondsSinceEpoch,
-      'tint': widget.activeColor?.toARGB32(),
+      'tint': nativeArgb(widget.activeColor, isDark: _isDark),
       'style': widget.style.name,
       'isDark': _isDark,
     };

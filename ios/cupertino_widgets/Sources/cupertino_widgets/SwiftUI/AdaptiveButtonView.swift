@@ -46,6 +46,7 @@ struct AdaptiveButtonView: View {
                         Text(config.title).font(customFont)
                     }
                 )
+                .applyBarItemPadding(config.barItem == true)
                 .applyFill(fills, bothAxes: config.height != nil)
             } else if let icon = config.icon {
                 applyCustomTextColor(
@@ -60,6 +61,7 @@ struct AdaptiveButtonView: View {
                 .applyFill(fills, bothAxes: config.height != nil)
             } else {
                 applyCustomTextColor(to: Text(config.title).font(customFont))
+                    .applyBarItemPadding(config.barItem == true)
                     .applyFill(fills, bothAxes: config.height != nil)
             }
         }
@@ -201,6 +203,18 @@ extension View {
     func applyFill(_ fill: Bool, bothAxes: Bool) -> some View {
         if fill {
             self.frame(maxWidth: .infinity, maxHeight: bothAxes ? .infinity : nil)
+        } else {
+            self
+        }
+    }
+
+    /// The iOS 26 bar's titled buttons are 44pt high with 16pt either side of
+    /// the title; a regular glass button is 34pt with 12. Measured against
+    /// "Edit" in Settings on an iPhone 12 Pro Max.
+    @ViewBuilder
+    func applyBarItemPadding(_ on: Bool) -> some View {
+        if on {
+            self.padding(.horizontal, 4).padding(.vertical, 5)
         } else {
             self
         }

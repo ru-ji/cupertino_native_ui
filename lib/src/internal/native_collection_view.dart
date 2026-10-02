@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -12,6 +13,7 @@ import 'native_platform_view_mixin.dart';
 import 'scroll_friendly_recognizer.dart';
 import 'keyboard_avoidance.dart';
 import 'widget_lowering.dart';
+import 'native_color.dart';
 
 /// Shared platform-view implementation behind `CupertinoNativeList` and
 /// `CupertinoNativeForm`. Both render a native SwiftUI `List`/`Form` of
@@ -95,8 +97,8 @@ class _NativeCollectionViewState extends State<NativeCollectionView>
       'isDark': _isDark,
       'cornerRadius': widget.cornerRadius,
       'tint':
-          widget.activeColor?.toARGB32() ??
-          theme.colorScheme.primary.toARGB32(),
+          nativeArgb(widget.activeColor, isDark: _isDark) ??
+          nativeArgb(theme.colorScheme.primary, isDark: _isDark)!,
       'sections': widget.sections.map(_sectionMap).toList(),
       'editing': widget.editing,
       'selection': widget.selection.toList(),
@@ -170,13 +172,14 @@ class _NativeCollectionViewState extends State<NativeCollectionView>
   /// to the native nodes SwiftUI renders — and its callbacks kept.
   Map<String, dynamic> _sectionMap(CupertinoNativeListSection section) {
     return {
-      ...section.toMap(),
+      ...section.toMap(isDark: _isDark),
       'rows': [for (final row in section.children) _rowMap(row)],
     };
   }
 
   Map<String, dynamic> _rowMap(CupertinoNativeListTile row) {
-    final map = row.toMap()..['tappable'] = widget.onRowTap != null;
+    final map = row.toMap(isDark: _isDark)
+      ..['tappable'] = widget.onRowTap != null;
     if (row.children.isNotEmpty) {
       map['children'] = [for (final child in row.children) _rowMap(child)];
     }
@@ -241,6 +244,20 @@ class _NativeCollectionViewState extends State<NativeCollectionView>
     requestIntrinsicSize();
   }
 
+  /// The wheels in the rows, in this view's coordinates, as the native side
+  /// reports them: a drag that lands on one spins it, any other vertical drag
+  /// scrolls the page.
+  List<Rect> _wheels = const [];
+
+  late final Set<Factory<OneSequenceGestureRecognizer>> _gestures = {
+    // Its own type: see scrollFriendlyGestures for why it matters.
+    Factory<ScrollFriendlyPlatformViewRecognizer>(
+      () => ScrollFriendlyPlatformViewRecognizer(
+        claims: (p) => _wheels.any((r) => r.contains(p)),
+      ),
+    ),
+  };
+
   Future<dynamic> _handleMethodCall(MethodCall call) async {
     switch (call.method) {
       case 'onRowTap':
@@ -294,18 +311,22 @@ class _NativeCollectionViewState extends State<NativeCollectionView>
           _trailingCallbacks[rowId]?[nodeId]?.call(call.arguments['value']);
         }
         break;
-      case 'debugLog':
-        debugPrint('${call.arguments}');
+      case 'onWheels':
+        _wheels = [
+          for (final r in (call.arguments as List).cast<List>())
+            Rect.fromLTWH(
+              (r[0] as num).toDouble(),
+              (r[1] as num).toDouble(),
+              (r[2] as num).toDouble(),
+              (r[3] as num).toDouble(),
+            ),
+        ];
         break;
       case 'onContentSize':
         // Native pushes the measured content height as its layout settles
         // (rows render, fonts load), so the fixed platform-view box grows to
         // fit instead of clipping.
         final h = (call.arguments['height'] as num?)?.toDouble();
-        debugPrint(
-          'EXPAND-DEBUG ${DateTime.now().millisecondsSinceEpoch} onContentSize '
-          'h=$h animated=${call.arguments['animated']} was=$intrinsicHeight',
-        );
         if (h != null && h > 0 && mounted) {
           setState(() {
             intrinsicHeight = h;
@@ -371,7 +392,7 @@ class _NativeCollectionViewState extends State<NativeCollectionView>
         // a field's cursor, the magnifier, a selection) never reached the
         // native field. A hold or a sideways drag is the row's now; a
         // vertical drag still scrolls the page.
-        gestureRecognizers: scrollFriendlyGestures,
+        gestureRecognizers: _gestures,
       ),
     );
 

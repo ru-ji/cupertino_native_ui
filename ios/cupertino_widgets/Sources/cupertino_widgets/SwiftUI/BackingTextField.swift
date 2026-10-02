@@ -26,6 +26,10 @@ struct BackingTextField: UIViewRepresentable {
     /// keyboard was already moving when Flutter learned which field to lift.
     let onFocusChange: (Bool) -> Void
     let onSubmit: () -> Void
+    /// Whether a non-empty selection — and with it the handles — is showing.
+    /// Flutter cedes a vertical drag to the page otherwise, so a handle
+    /// dragged up or down would scroll it instead.
+    var onSelectionActive: (Bool) -> Void = { _ in }
 
     private var c: TextFieldConfig { model.config }
 
@@ -103,8 +107,19 @@ struct BackingTextField: UIViewRepresentable {
         var prefix: IconConfig?
         var suffix: IconConfig?
         var gap: CGFloat?
+        var selectionActive = false
 
         init(_ parent: BackingTextField) { self.parent = parent }
+
+        func textFieldDidChangeSelection(_ field: UITextField) {
+            reportSelection(field.selectedTextRange.map { !$0.isEmpty } ?? false)
+        }
+
+        private func reportSelection(_ active: Bool) {
+            guard active != selectionActive else { return }
+            selectionActive = active
+            parent.onSelectionActive(active)
+        }
 
         @objc func editingChanged(_ field: UITextField) {
             parent.text = field.text ?? ""
@@ -118,7 +133,10 @@ struct BackingTextField: UIViewRepresentable {
             parent.model.focusFrameInWindow = field.convert(field.bounds, to: nil)
             parent.onFocusChange(true)
         }
-        func textFieldDidEndEditing(_ field: UITextField) { parent.onFocusChange(false) }
+        func textFieldDidEndEditing(_ field: UITextField) {
+            reportSelection(false)
+            parent.onFocusChange(false)
+        }
 
         /// The native clear button: refused on a read-only field, reported
         /// like any other edit otherwise.

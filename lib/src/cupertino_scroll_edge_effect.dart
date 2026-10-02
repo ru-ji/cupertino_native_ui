@@ -1,5 +1,5 @@
 import 'package:flutter/cupertino.dart'
-    show CupertinoColors, CupertinoDynamicColor;
+    show CupertinoDynamicColor, CupertinoPageScaffold, CupertinoTheme;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 
@@ -42,11 +42,13 @@ class CupertinoScrollEdgeEffect extends StatelessWidget {
 
   final CupertinoScrollEdgeEffectEdge edge;
 
-  /// `soft` is the progressive blur plus wash; `hard` an opaque background that
-  /// ends with the bar. `automatic` is `soft`.
+  /// `soft` is the progressive blur plus wash; `hard` the page's background
+  /// over a blur, ending in a hard cutoff. `automatic` is `soft`.
   final CupertinoScrollEdgeEffectStyle style;
 
-  /// Background of the `hard` style. Defaults to the system background.
+  /// Colour of the `hard` style. Defaults to the page's background — the
+  /// enclosing [CupertinoPageScaffold]'s, or the theme's — which is what the
+  /// system uses.
   final Color? color;
 
   /// Kept for API stability: the iOS effect is always at full strength.
@@ -61,15 +63,32 @@ class CupertinoScrollEdgeEffect extends StatelessWidget {
   /// The system's blur radius.
   static const double _radius = 1;
 
+  /// The system's `.hard` effect, measured on iOS 26 over a green page: the
+  /// page's colour at 91% over the content blurred by about 4pt.
+  static const double _hardOpacity = 0.91;
+  static const double _hardSigma = 4;
+
   @override
   Widget build(BuildContext context) {
     final background = CupertinoDynamicColor.resolve(
-      color ?? CupertinoColors.systemBackground,
+      color ??
+          context
+              .findAncestorWidgetOfExactType<CupertinoPageScaffold>()
+              ?.backgroundColor ??
+          CupertinoTheme.of(context).scaffoldBackgroundColor,
       context,
     );
-    // `hard` is not a denser fade, it is the absence of one: an opaque
-    // background that stops with the bar.
+    // `hard` is not a denser fade, it is the absence of one: one blur and
+    // one wash that stop at a hard line.
     if (style == CupertinoScrollEdgeEffectStyle.hard) {
+      if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) {
+        return CupertinoNativeEdgeBlur(
+          edge: edge,
+          hard: true,
+          sigma: _hardSigma,
+          tint: background.withValues(alpha: _hardOpacity),
+        );
+      }
       return IgnorePointer(child: ColoredBox(color: background));
     }
     if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) {

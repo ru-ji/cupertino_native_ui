@@ -1,6 +1,7 @@
 import 'dart:ui' show Color, FontWeight;
 
 import 'cupertino_symbols.dart';
+import '../internal/native_color.dart';
 
 /// A native SF Symbol, described for the native side (a button, a bar, a list
 /// row, a menu).
@@ -55,12 +56,12 @@ class CupertinoNativeIcon {
           weight: weight,
         );
 
-  Map<String, dynamic> toMap() {
+  Map<String, dynamic> toMap({bool isDark = false}) {
     return {
       'sfSymbol': sfSymbol,
       'renderingMode': renderingMode?.name,
       'size': size,
-      'color': color?.toARGB32(),
+      'color': nativeArgb(color, isDark: isDark),
       'weight': weight == null ? null : _weightName(weight!),
     };
   }

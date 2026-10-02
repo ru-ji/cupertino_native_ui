@@ -6,6 +6,7 @@ import 'package:flutter/widgets.dart';
 
 import 'internal/native_platform_view_mixin.dart';
 import 'internal/scroll_friendly_recognizer.dart';
+import 'internal/native_color.dart';
 
 /// iOS's segmented control, rendered by SwiftUI. Same shape as Flutter's
 /// [CupertinoSlidingSegmentedControl]: [children] maps each value to its
@@ -111,7 +112,7 @@ class _CupertinoNativeSegmentedControlState<T extends Object>
       'selectedIndex': widget.groupValue == null
           ? -1
           : _keys.indexOf(widget.groupValue as T),
-      'color': widget.thumbColor?.toARGB32(),
+      'color': nativeArgb(widget.thumbColor, isDark: _isDark),
       'isDark': _isDark,
     };
   }

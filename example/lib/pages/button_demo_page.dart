@@ -21,18 +21,7 @@ class _ButtonDemoPageState extends State<ButtonDemoPage> {
     return CupertinoPageScaffold(
       child: CustomScrollView(
         slivers: [
-          CupertinoNativeSliverNavigationBar(
-            largeTitle: 'Button',
-            leading: Navigator.canPop(context)
-                ? CupertinoNativeButton.glass(
-                    borderShape: CupertinoNativeButtonBorderShape.circle,
-                    onPressed: () => Navigator.pop(context),
-                    child: CupertinoSymbolImage.symbol(
-                      CupertinoSymbols.chevronBackward,
-                    ),
-                  )
-                : null,
-          ),
+          CupertinoNativeSliverNavigationBar(largeTitle: 'Button'),
           SliverPadding(
             padding: EdgeInsets.only(
               bottom:

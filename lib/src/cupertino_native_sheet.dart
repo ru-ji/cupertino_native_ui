@@ -8,6 +8,7 @@ import 'cupertino_native_body.dart';
 import 'cupertino_native_scaffold_navigation_bar.dart';
 import 'cupertino_scroll_edge_effect.dart';
 import 'cupertino_widgets_settings.dart';
+import 'internal/native_color.dart';
 
 /// The heights a [CupertinoNativeSheet] can rest at, mirroring
 /// `UISheetPresentationController.Detent`.
@@ -162,7 +163,7 @@ abstract final class CupertinoNativeSheet {
         'showGrabber': showDragHandle,
         'cornerRadius': cornerRadius,
         'scrollEdgeEffect': scrollEdgeEffect.name,
-        'backgroundColor': backgroundColor?.toARGB32(),
+        'backgroundColor': nativeArgb(backgroundColor, isDark: dark),
         'showLoadingIndicator':
             showLoadingIndicator ??
             CupertinoWidgetsSettings.showLoadingIndicator,

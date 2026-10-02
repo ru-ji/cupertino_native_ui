@@ -3,6 +3,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
 import 'models/cupertino_symbols.dart';
+import 'internal/native_color.dart';
+
+import 'package:flutter/material.dart' show Theme;
 
 /// How large the symbol is drawn for its point size, like SwiftUI's
 /// `imageScale`.
@@ -101,14 +104,18 @@ class _CupertinoSymbolImageState extends State<CupertinoSymbolImage> {
     // Rasterize at the device pixel ratio so the glyph is sharp: the PNG
     // carries no scale factor, so [Image.memory] is told the ratio too.
     final scale = MediaQuery.devicePixelRatioOf(context);
+    final color = nativeArgb(
+      widget.color,
+      isDark: Theme.of(context).brightness == Brightness.dark,
+    );
     final key =
-        '${widget.name}|${widget.size}|${widget.color?.toARGB32()}|'
+        '${widget.name}|${widget.size}|$color|'
         '${widget.weight.value}|${widget.scale.name}|$scale';
     _bytes = _cache[key] ??= _channel
         .invokeMethod<Uint8List>('renderSymbol', {
           'name': widget.name,
           'size': widget.size,
-          'color': widget.color?.toARGB32(),
+          'color': color,
           'weight': _weightName(widget.weight),
           'symbolScale': widget.scale.name,
           'scale': scale,

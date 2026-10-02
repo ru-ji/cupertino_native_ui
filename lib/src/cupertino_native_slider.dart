@@ -6,6 +6,7 @@ import 'package:flutter/widgets.dart';
 import 'internal/native_platform_view_mixin.dart';
 import 'models/cupertino_native_icon.dart';
 import 'internal/scroll_friendly_recognizer.dart';
+import 'internal/native_color.dart';
 
 class CupertinoNativeSlider extends StatefulWidget {
   const CupertinoNativeSlider({
@@ -108,12 +109,12 @@ class _CupertinoNativeSliderState extends State<CupertinoNativeSlider>
     'min': widget.min,
     'max': widget.max,
     'divisions': widget.divisions,
-    'activeColor': widget.activeColor?.toARGB32(),
-    'thumbColor': widget.thumbColor?.toARGB32(),
+    'activeColor': nativeArgb(widget.activeColor, isDark: _isDark),
+    'thumbColor': nativeArgb(widget.thumbColor, isDark: _isDark),
     'isEnabled': widget.onChanged != null,
     'isDark': _isDark,
-    'minimumIcon': widget.minimumIcon?.toMap(),
-    'maximumIcon': widget.maximumIcon?.toMap(),
+    'minimumIcon': widget.minimumIcon?.toMap(isDark: _isDark),
+    'maximumIcon': widget.maximumIcon?.toMap(isDark: _isDark),
     'showTicks': widget.showTicks,
     'neutralValue': widget.neutralValue,
   };

@@ -18,12 +18,7 @@ enum NativeLog {
         line: Int = #line
     ) {
         #if DEBUG
-        let text = message()
-        NSLog("[cupertino_widgets] %@  [%@:%d]", text, file, line)
-        // EXPAND-DEBUG: temporary, NSLog does not reach `flutter run` over
-        // wireless debugging.
-        if text.hasPrefix("EXPAND-DEBUG") { forward?(text) }
+        NSLog("[cupertino_widgets] %@  [%@:%d]", message(), file, line)
         #endif
     }
-    static var forward: ((String) -> Void)?
 }

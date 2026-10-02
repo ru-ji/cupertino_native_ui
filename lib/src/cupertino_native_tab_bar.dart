@@ -6,6 +6,7 @@ import 'cupertino_scroll_edge_effect.dart';
 import 'internal/ios_version.dart';
 import 'models/cupertino_native_icon.dart';
 import 'models/cupertino_native_tab.dart';
+import 'internal/native_color.dart';
 
 /// iOS 26 tab-view bottom accessory: a persistent view shown above the tab bar
 /// (like the Music mini-player). Only takes effect inside
@@ -26,11 +27,11 @@ class CupertinoNativeTabBarAccessory {
     this.actionId = 'accessory',
   });
 
-  Map<String, dynamic> toMap() {
+  Map<String, dynamic> toMap({bool isDark = false}) {
     return {
       'title': title,
       'subtitle': subtitle,
-      'icon': icon?.toMap(),
+      'icon': icon?.toMap(isDark: isDark),
       'actionId': actionId,
     };
   }
@@ -107,14 +108,14 @@ class CupertinoNativeTabBar extends StatefulWidget {
 
   /// Serialized form consumed by `CupertinoNativePageScaffold` (which renders its
   /// own SwiftUI tab bar; standalone rendering uses different params).
-  Map<String, dynamic> toMap() {
+  Map<String, dynamic> toMap({bool isDark = false}) {
     return {
-      'tabs': items.map((e) => e.toMap()).toList(),
+      'tabs': items.map((e) => e.toMap(isDark: isDark)).toList(),
       'selection': items[currentIndex.clamp(0, items.length - 1)].id,
-      'accentColor': activeColor?.toARGB32(),
+      'accentColor': nativeArgb(activeColor, isDark: isDark),
       'minimizeBehavior': minimizeBehavior.name,
       'scrollEdgeEffect': scrollEdgeEffect.name,
-      'accessory': accessory?.toMap(),
+      'accessory': accessory?.toMap(isDark: isDark),
     };
   }
 
@@ -155,7 +156,7 @@ class _CupertinoNativeTabBarState extends State<CupertinoNativeTabBar> {
   /// Flutter glyphs). The standalone UITabBar ignores this and falls back
   /// to the raw SF Symbol strings in [_symbols].
   List<Map<String, dynamic>?> get _iconConfigs =>
-      widget.items.map((t) => t.icon?.toMap()).toList();
+      widget.items.map((t) => t.icon?.toMap(isDark: _isDark)).toList();
 
   @override
   void didUpdateWidget(covariant CupertinoNativeTabBar oldWidget) {
@@ -181,8 +182,8 @@ class _CupertinoNativeTabBarState extends State<CupertinoNativeTabBar> {
     _channel = channel;
     channel.setMethodCallHandler(_handleMethodCall);
     _lastIndex = _selectedIndex;
-    _lastTint = widget.activeColor?.toARGB32();
-    _lastBg = widget.backgroundColor?.toARGB32();
+    _lastTint = nativeArgb(widget.activeColor, isDark: _isDark);
+    _lastBg = nativeArgb(widget.backgroundColor, isDark: _isDark);
     _lastScrollEdgeEffect = widget.scrollEdgeEffect.name;
     _lastIsDark = _isDark;
     _lastLabels = _labels;
@@ -212,8 +213,9 @@ class _CupertinoNativeTabBarState extends State<CupertinoNativeTabBar> {
     final idx = _selectedIndex;
     final theme = Theme.of(context);
     final tint =
-        widget.activeColor?.toARGB32() ?? theme.colorScheme.primary.toARGB32();
-    final bg = widget.backgroundColor?.toARGB32();
+        nativeArgb(widget.activeColor, isDark: _isDark) ??
+        nativeArgb(theme.colorScheme.primary, isDark: _isDark)!;
+    final bg = nativeArgb(widget.backgroundColor, isDark: _isDark);
     final labels = _labels;
     final symbols = _symbols;
     final badges = _badges;
@@ -335,9 +337,9 @@ class _CupertinoNativeTabBarState extends State<CupertinoNativeTabBar> {
       'selectedIndex': _selectedIndex,
       'isDark': _isDark,
       'tint':
-          widget.activeColor?.toARGB32() ??
-          theme.colorScheme.primary.toARGB32(),
-      'backgroundColor': widget.backgroundColor?.toARGB32(),
+          nativeArgb(widget.activeColor, isDark: _isDark) ??
+          nativeArgb(theme.colorScheme.primary, isDark: _isDark)!,
+      'backgroundColor': nativeArgb(widget.backgroundColor, isDark: _isDark),
       'split': widget.split,
       'rightCount': widget.rightCount,
       'splitSpacing': widget.splitSpacing,
@@ -361,20 +363,30 @@ class _CupertinoNativeTabBarState extends State<CupertinoNativeTabBar> {
     }
 
     // The standalone bar draws the scroll edge effect itself when one is
-    // requested (iOS 26+).
+    // requested (iOS 26+), with the navigation bar's geometry mirrored: from
+    // the screen edge to 44pt past the bar. `hard` covers the system tab
+    // bar's place instead, whatever this bar's own box.
     if (isIOS26OrLater &&
         widget.scrollEdgeEffect != CupertinoScrollEdgeEffectStyle.automatic) {
-      final bottomInset = MediaQuery.paddingOf(context).bottom;
+      WidgetsBinding.instance.addPostFrameCallback((_) => _measureBelow());
       bar = Stack(
+        key: _barKey,
         clipBehavior: Clip.none,
         children: [
           Positioned(
             left: 0,
             right: 0,
-            // One bar height above the bar, like the top edge.
-            top: -h,
-            // Down to the physical screen edge, home indicator area included.
-            bottom: -bottomInset,
+            top: widget.scrollEdgeEffect == CupertinoScrollEdgeEffectStyle.hard
+                ? h +
+                      _belowBar -
+                      (MediaQuery.viewPaddingOf(context).bottom + _hardBand)
+                : -_effectOverhang,
+            // Down to the physical screen edge — measured, not assumed: a
+            // bar that already reaches it (no SafeArea around it) took the
+            // home-indicator inset again, so the strongest part of the ramp
+            // fell off screen and what showed above the bar was too faint
+            // to see.
+            bottom: -_belowBar,
             child: CupertinoScrollEdgeEffect(
               edge: CupertinoScrollEdgeEffectEdge.bottom,
               style: widget.scrollEdgeEffect,
@@ -386,5 +398,30 @@ class _CupertinoNativeTabBarState extends State<CupertinoNativeTabBar> {
       );
     }
     return bar;
+  }
+
+  /// How far the effect runs past the bar, like the navigation bar's.
+  static const double _effectOverhang = 44;
+
+  /// The system's `.hard` band: the classic tab bar's 49pt over the home
+  /// indicator, measured up from the screen's bottom edge (83pt on an iPhone
+  /// 12 Pro Max).
+  static const double _hardBand = 49;
+
+  final GlobalKey _barKey = GlobalKey();
+
+  /// Distance from the bar's bottom to the screen's.
+  double _belowBar = 0;
+
+  void _measureBelow() {
+    if (!mounted) return;
+    final box = _barKey.currentContext?.findRenderObject();
+    if (box is! RenderBox || !box.hasSize) return;
+    final bottom = box.localToGlobal(Offset(0, box.size.height)).dy;
+    final below = (MediaQuery.sizeOf(context).height - bottom).clamp(
+      0.0,
+      double.infinity,
+    );
+    if ((below - _belowBar).abs() > 0.5) setState(() => _belowBar = below);
   }
 }

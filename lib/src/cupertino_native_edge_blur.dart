@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
 import 'cupertino_scroll_edge_effect.dart' show CupertinoScrollEdgeEffectEdge;
+import 'internal/native_color.dart';
 
 /// A progressive blur drawn by Core Animation, the way iOS 26's own scroll
 /// edge effect draws it — and, with [adaptiveTint], its luminance-tracked wash.
@@ -26,6 +27,7 @@ class CupertinoNativeEdgeBlur extends StatefulWidget {
     this.adaptiveTint = false,
     this.intensity = 1,
     this.radiusScale = 1,
+    this.hard = false,
     this.onBrightnessChanged,
     this.debugPaintRect = false,
   }) : assert(sigma >= 0),
@@ -50,6 +52,10 @@ class CupertinoNativeEdgeBlur extends StatefulWidget {
   /// Calibration factor on the native radius.
   final double radiusScale;
 
+  /// One [sigma] and one [tint] over the whole view, ending in a hard
+  /// cutoff — iOS 26's `.hard` scroll edge effect — instead of a fade.
+  final bool hard;
+
   /// With [adaptiveTint], called when the wash flips: [Brightness.light] over
   /// bright content (so chrome over it should be dark), [Brightness.dark] over
   /// darker content (light chrome) — the flip UIKit applies to its own bar
@@ -70,8 +76,11 @@ class _CupertinoNativeEdgeBlurState extends State<CupertinoNativeEdgeBlur> {
 
   Map<String, Object?> _params(double span, bool isDark) => {
     'edge': widget.edge.name,
-    'sigma': (span * (1 - 0.41) * 0.4 / 3).clamp(0.0, widget.sigma),
-    'tint': widget.tint?.toARGB32(),
+    'sigma': widget.hard
+        ? widget.sigma
+        : (span * (1 - 0.41) * 0.4 / 3).clamp(0.0, widget.sigma),
+    'hard': widget.hard,
+    'tint': nativeArgb(widget.tint, isDark: isDark),
     'adaptive': widget.adaptiveTint,
     'intensity': widget.intensity,
     'radiusScale': widget.radiusScale,

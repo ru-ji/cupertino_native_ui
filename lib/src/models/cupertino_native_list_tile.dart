@@ -90,12 +90,12 @@ class CupertinoNativeListTile {
     this.children = const [],
   });
 
-  Map<String, dynamic> toMap() {
+  Map<String, dynamic> toMap({bool isDark = false}) {
     return {
       'id': id,
       'title': title,
       'subtitle': subtitle,
-      'icon': leading?.toMap(),
+      'icon': leading?.toMap(isDark: isDark),
       'value': additionalInfo,
       'showChevron': showChevron,
       'type': type.name,

@@ -58,10 +58,10 @@ class CupertinoNativeTab {
   /// Resolved SF Symbol name: from [icon], or from legacy [systemImage].
   String? get resolvedSymbolName => icon?.sfSymbol ?? systemImage;
 
-  Map<String, dynamic> toMap() {
+  Map<String, dynamic> toMap({bool isDark = false}) {
     return {
       'title': title,
-      'icon': icon?.toMap(),
+      'icon': icon?.toMap(isDark: isDark),
       'systemImage': systemImage,
       'id': id,
       'role': role?.name,

@@ -50,8 +50,6 @@ class NativeContextMenuView: NSObject, FlutterPlatformView, UIContextMenuInterac
     /// Child snapshot captured once when an interaction begins, reused by the
     /// highlight and dismiss previews.
     private var sessionSnapshot: UIImage?
-    private var blurBackground = false
-    private var backgroundBlurView: UIVisualEffectView?
     private var isDark: Bool?
     /// The child's corner radius, from Dart. UIKit shapes the lift's plate and
     /// shadow from `UIPreviewParameters.visiblePath`, and its default is the
@@ -83,18 +81,12 @@ class NativeContextMenuView: NSObject, FlutterPlatformView, UIContextMenuInterac
         }
     }
 
-    deinit {
-        // Never strand the blur over the app if the view goes away mid-menu.
-        backgroundBlurView?.removeFromSuperview()
-    }
-
     func view() -> UIView { container }
 
     private func apply(_ args: [String: Any]) {
         if let itemMaps = args["items"] as? [[String: Any]] {
             items = itemMaps.compactMap { decodeConfig(MenuItemConfig.self, from: $0) }
         }
-        blurBackground = args["blurBackground"] as? Bool ?? false
         previewCornerRadius = CGFloat(args["previewCornerRadius"] as? Double ?? 0)
         if let dark = args["isDark"] as? Bool {
             isDark = dark
@@ -110,37 +102,6 @@ class NativeContextMenuView: NSObject, FlutterPlatformView, UIContextMenuInterac
     private func applyWindowStyle() {
         guard let isDark else { return }
         NativeHostingView.syncWindowStyle(isDark: isDark)
-    }
-
-    /// Blurs the app behind the menu, in the app's own window, so it covers
-    /// Flutter content and native views alike.
-    private func setBackgroundBlur(_ on: Bool) {
-        guard blurBackground else { return }
-        if on {
-            guard backgroundBlurView == nil, let window = container.window else { return }
-            let effectView = UIVisualEffectView(effect: nil)
-            // The blur must follow the app's forced theme, not the device's —
-            // a dark device otherwise renders a darkened material over a
-            // light-themed app.
-            if let isDark {
-                effectView.overrideUserInterfaceStyle = isDark ? .dark : .light
-            }
-            effectView.frame = window.bounds
-            effectView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
-            effectView.isUserInteractionEnabled = false
-            window.addSubview(effectView)
-            backgroundBlurView = effectView
-            UIView.animate(withDuration: 0.25) {
-                effectView.effect = UIBlurEffect(style: .systemThinMaterial)
-            }
-        } else {
-            guard let effectView = backgroundBlurView else { return }
-            backgroundBlurView = nil
-            UIView.animate(
-                withDuration: 0.2,
-                animations: { effectView.effect = nil },
-                completion: { _ in effectView.removeFromSuperview() })
-        }
     }
 
     private func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
@@ -227,7 +188,6 @@ class NativeContextMenuView: NSObject, FlutterPlatformView, UIContextMenuInterac
         // of a lifted UIView automatically, but it can't touch Flutter's
         // layer — leaving the child duplicated under the lifted snapshot.
         channel.invokeMethod("onOpenChanged", arguments: ["open": true])
-        setBackgroundBlur(true)
     }
 
     func contextMenuInteraction(
@@ -240,7 +200,6 @@ class NativeContextMenuView: NSObject, FlutterPlatformView, UIContextMenuInterac
         // blur) must clear NOW, as the dismissal starts, while the child
         // itself must stay hidden until the preview has finished flying home.
         channel.invokeMethod("onOpenChanged", arguments: ["open": false])
-        setBackgroundBlur(false)
         let restore = { [weak self] in
             self?.channel.invokeMethod("onDismissComplete", arguments: nil)
             self?.sessionSnapshot = nil

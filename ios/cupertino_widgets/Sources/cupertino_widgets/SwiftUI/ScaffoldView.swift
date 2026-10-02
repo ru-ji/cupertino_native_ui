@@ -165,6 +165,10 @@ struct ScaffoldView: View {
             ) { id, value in
                 model.onBodyEvent?(id, value)
             }
+            // The scaffold's `backgroundColor`. The stack paints the system
+            // background over the hosting view's, so it is set on the page
+            // itself, under the bars too.
+            .background(model.config.backgroundColor.map { Color(argb: $0).ignoresSafeArea() })
         } else {
             SearchablePageBody(
                 engine: model.rootEngines[rootRoute],

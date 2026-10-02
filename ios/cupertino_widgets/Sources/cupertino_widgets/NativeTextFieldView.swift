@@ -212,6 +212,9 @@ class NativeTextFieldView: NativeHostingView {
                         + "window=\(_view.window == nil ? "nil" : "set") "
                         + "superview=\(_view.superview == nil ? "nil" : "set") "
                         + "hostWindow=\(hostingController?.view.window == nil ? "nil" : "set")")
+            },
+            onSelectionActive: { [weak self] active in
+                self?.channel.invokeMethod("onSelectionActive", arguments: ["active": active])
             }
         )
     }

@@ -5,6 +5,7 @@ import 'package:flutter/widgets.dart';
 
 import 'internal/native_platform_view_mixin.dart';
 import 'models/cupertino_symbols.dart';
+import 'internal/native_color.dart';
 
 /// Which `.symbolEffect` animates the symbol.
 ///
@@ -198,14 +199,16 @@ class _CupertinoNativeSymbolState extends State<CupertinoNativeSymbol>
     'size': widget.size,
     // The native side maps 0 = w100 ... 8 = w900.
     'weight': (widget.weight.value ~/ 100) - 1,
-    'color': widget.color?.toARGB32(),
+    'color': nativeArgb(widget.color, isDark: _isDark),
     'renderingMode': widget.renderingMode?.name,
     'effect': widget.effect?.name,
     'trigger': widget.trigger,
     'repeating': widget.repeating,
     'replaceOnChange': widget.replaceOnChange,
     'variableValue': widget.variableValue,
-    'paletteColors': [for (final c in widget.paletteColors) c.toARGB32()],
+    'paletteColors': [
+      for (final c in widget.paletteColors) nativeArgb(c, isDark: _isDark)!,
+    ],
     'gradient': widget.gradient,
     'isDark': _isDark,
   };

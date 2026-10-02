@@ -1,5 +1,6 @@
 import 'package:cupertino_widgets/src/internal/scroll_friendly_recognizer.dart';
 import 'package:flutter/gestures.dart';
+import 'package:flutter/painting.dart' show Rect;
 import 'package:flutter_test/flutter_test.dart';
 
 /// The whole point of the recognizer is who wins the arena, so the check is a
@@ -49,5 +50,28 @@ void main() {
     send(const PointerUpEvent(position: Offset(50, 50)));
     await tester.pump();
     expect(won, isEmpty);
+  });
+
+  testWidgets('a vertical drag on a claimed spot stays with the view', (
+    tester,
+  ) async {
+    // A wheel in a row: the touch lands on it, so the drag spins it.
+    view.dispose();
+    view = ScrollFriendlyPlatformViewRecognizer(
+      claims: (p) => const Rect.fromLTWH(0, 0, 100, 100).contains(p),
+    );
+    send(const PointerDownEvent(position: Offset(50, 50)));
+    send(const PointerMoveEvent(position: Offset(50, 50 + kTouchSlop * 3)));
+    await tester.pump();
+    expect(won, isEmpty, reason: 'the wheel took it, not the scrollable');
+  });
+
+  test('the factory carries the recognizer type a UiKitView compares', () {
+    // A UiKitView swaps recognizers only when the factory types differ: a
+    // set typed Factory<OneSequenceGestureRecognizer> is never replaced.
+    expect(
+      scrollFriendlyGestures.single.type,
+      ScrollFriendlyPlatformViewRecognizer,
+    );
   });
 }

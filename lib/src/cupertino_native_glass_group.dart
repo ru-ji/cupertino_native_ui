@@ -10,6 +10,7 @@ import 'internal/native_platform_view_mixin.dart';
 import 'models/cupertino_native_icon.dart';
 import 'models/cupertino_native_menu_item.dart';
 import 'internal/scroll_friendly_recognizer.dart';
+import 'internal/native_color.dart';
 
 /// The shape of one glass in a [CupertinoNativeGlassGroup].
 enum CupertinoGlassGroupShape { circle, capsule, roundedRect }
@@ -294,7 +295,7 @@ class _CupertinoNativeGlassGroupState extends State<CupertinoNativeGlassGroup>
     'spacing': widget.spacing,
     'mergeDistance': widget.mergeDistance,
     'variant': widget.clear ? 'clear' : 'regular',
-    'tint': widget.tint?.toARGB32(),
+    'tint': nativeArgb(widget.tint, isDark: _isDark),
     'interactive': widget.interactive,
     'vertical': widget.vertical,
     'cornerRadius': widget.cornerRadius,

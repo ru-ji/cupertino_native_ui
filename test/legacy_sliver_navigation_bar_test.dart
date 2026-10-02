@@ -239,4 +239,56 @@ void main() {
       LegacyBarMaterialStyle.light,
     );
   });
+
+  testWidgets('a push flies the title into the next back button', (
+    tester,
+  ) async {
+    final navigator = GlobalKey<NavigatorState>();
+    await tester.pumpWidget(_pages(navigator));
+    navigator.currentState!.pushNamed('Quick Notes');
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 150));
+    // Mid-flight: a "Folders" on its way, between the large title's 34pt
+    // and the back button's 17pt.
+    final sizes = tester
+        .widgetList<Text>(find.text('Folders'))
+        .map((text) => text.style?.fontSize)
+        .whereType<double>();
+    expect(sizes.any((size) => size > 17 && size < 34), isTrue);
+    await tester.pumpAndSettle();
+    // The new page's back button took the title over: its only "Folders".
+    expect(find.text('Folders'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+
+    navigator.currentState!.pop();
+    await tester.pumpAndSettle();
+    expect(find.text('Quick Notes'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+}
+
+/// Two pages with the bar, the second pushed over the first.
+Widget _pages(GlobalKey<NavigatorState> navigator) {
+  Widget page(String title) => CustomScrollView(
+    slivers: [
+      LegacySliverNavigationBar(largeTitle: Text(title)),
+      SliverList.builder(
+        itemCount: 20,
+        itemBuilder: (_, i) => SizedBox(height: 60, child: Text('$title $i')),
+      ),
+    ],
+  );
+  return CupertinoApp(
+    navigatorKey: navigator,
+    builder: (context, child) => MediaQuery(
+      data: const MediaQueryData(
+        size: Size(414, 736),
+        padding: EdgeInsets.only(top: 20),
+      ),
+      child: child!,
+    ),
+    home: page('Folders'),
+    onGenerateRoute: (settings) =>
+        CupertinoPageRoute(builder: (_) => page(settings.name!)),
+  );
 }

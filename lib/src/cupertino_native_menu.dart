@@ -11,6 +11,7 @@ import 'internal/scroll_friendly_recognizer.dart';
 import 'models/cupertino_native_button_extra_options.dart';
 import 'models/cupertino_native_menu_item.dart';
 import 'models/cupertino_native_button_style.dart';
+import 'internal/native_color.dart';
 
 class CupertinoNativeMenu extends StatefulWidget {
   final String title;
@@ -108,10 +109,12 @@ class _CupertinoNativeMenuState extends State<CupertinoNativeMenu>
       'borderShape': widget.borderShape.name,
       'labelStyle': widget.labelStyle.name,
       'controlSize': widget.controlSize.name,
-      'color': widget.activeColor?.toARGB32(),
+      'color': nativeArgb(widget.activeColor, isDark: _isDark),
       'fontSize': widget.textStyle?.fontSize,
-      'fontWeight': widget.textStyle?.fontWeight?.value,
-      'textColor': widget.textStyle?.color?.toARGB32(),
+      'fontWeight': widget.textStyle?.fontWeight == null
+          ? null
+          : widget.textStyle!.fontWeight!.value ~/ 100 - 1,
+      'textColor': nativeArgb(widget.textStyle?.color, isDark: _isDark),
       'isDark': _isDark,
       'hasPrimaryAction': widget.onPressed != null,
       'fixedOrder': widget.fixedOrder,

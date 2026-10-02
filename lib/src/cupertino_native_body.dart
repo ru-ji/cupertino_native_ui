@@ -1,5 +1,4 @@
-import 'package:flutter/cupertino.dart'
-    show CupertinoDynamicColor, OverlayVisibilityMode;
+import 'package:flutter/cupertino.dart' show OverlayVisibilityMode;
 import 'package:flutter/services.dart'
     show TextCapitalization, TextInputAction, TextInputType;
 import 'package:flutter/widgets.dart';
@@ -14,6 +13,7 @@ import 'models/cupertino_native_button_style.dart';
 import 'models/cupertino_native_button_extra_options.dart';
 import 'models/cupertino_native_icon.dart';
 import 'models/cupertino_native_list_section.dart';
+import 'internal/native_color.dart';
 
 /// A node of a **native body** — a SwiftUI view tree described from Dart, for
 /// a [CupertinoNativePageScaffold] or a `CupertinoNativeSheet`.
@@ -706,18 +706,13 @@ class CupertinoNativeBody {
   }
 
   static Object? _lower(Object? value, bool isDark) {
-    // A `CupertinoDynamicColor` carries both variants; sending
-    // `toARGB32()` blindly ships the light one, which is how a secondary
-    // label ended up dark grey on a dark page. The tree already knows the
-    // app's brightness, so resolve it here rather than asking every caller
-    // to remember `resolveFrom(context)`.
-    if (value is CupertinoDynamicColor) {
-      return (isDark ? value.darkColor : value.color).toARGB32();
-    }
-    if (value is Color) return value.toARGB32();
+    // Resolved for the app's brightness: see [nativeArgb].
+    if (value is Color) return nativeArgb(value, isDark: isDark);
     if (value is FontWeight) return (value.value ~/ 100) - 1;
-    if (value is CupertinoNativeIcon) return value.toMap();
-    if (value is CupertinoNativeListSection) return value.toMap();
+    if (value is CupertinoNativeIcon) return value.toMap(isDark: isDark);
+    if (value is CupertinoNativeListSection) {
+      return value.toMap(isDark: isDark);
+    }
     if (value is CupertinoNativePickerItem) return value.toMap(0);
     if (value is Enum) return value.name;
     if (value is List) {

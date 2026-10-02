@@ -4,13 +4,14 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
 import 'internal/ios_version.dart';
-import 'internal/legacy_sliver_navigation_bar.dart' show LegacyBarSlot;
+import 'internal/bar_slot.dart';
 import 'internal/native_platform_view_mixin.dart';
 import 'models/cupertino_native_button_style.dart';
 import 'models/cupertino_native_button_extra_options.dart';
 import 'cupertino_symbol_image.dart';
 import 'models/cupertino_native_icon.dart';
 import 'models/cupertino_symbols.dart';
+import 'internal/native_color.dart';
 
 /// iOS's button, rendered by SwiftUI. Shaped like Flutter's [CupertinoButton]:
 /// the label is [child], and the style comes from the constructor —
@@ -227,9 +228,31 @@ class _CupertinoNativeButtonState extends State<CupertinoNativeButton>
 
   Map<String, dynamic> _toMap() {
     final label = _label;
+    // In a bar, the system's bar-button weights unless the label sets its
+    // own (see [BarSlot]).
+    final inBar = BarSlot.isIn(context);
+    final titleWeight = !inBar
+        ? null
+        : isIOS26OrLater
+        ? FontWeight.w500
+        // The iOS 15–18 bar: a plain item is regular, a Done one semibold.
+        : widget.style == CupertinoNativeButtonStyle.glassProminent
+        ? FontWeight.w600
+        : null;
+    final icon = label.icon;
     return {
       'title': label.title,
-      'icon': label.icon?.toMap(),
+      'icon':
+          (inBar && icon != null && icon.weight == null
+                  ? CupertinoNativeIcon.named(
+                      icon.sfSymbol,
+                      renderingMode: icon.renderingMode,
+                      size: icon.size,
+                      color: icon.color,
+                      weight: FontWeight.w500,
+                    )
+                  : icon)
+              ?.toMap(isDark: _isDark),
       'style': widget.style.name,
       'controlSize': widget.sizeStyle.name,
       'borderShape': widget.borderShape.name,
@@ -240,15 +263,27 @@ class _CupertinoNativeButtonState extends State<CupertinoNativeButton>
           : CupertinoNativeButtonLabelStyle.titleAndIcon.name,
       'expand': widget.expand,
       'role': widget.role?.name,
-      'color': widget.color?.toARGB32(),
+      'color': nativeArgb(widget.color, isDark: _isDark),
       'fontSize': label.textStyle?.fontSize,
-      'fontWeight': label.textStyle?.fontWeight?.value,
-      'textColor': label.textStyle?.color?.toARGB32(),
+      'fontWeight': switch (label.textStyle?.fontWeight ?? titleWeight) {
+        // `FontWeight.index`, 0...8, the scale the native side reads.
+        final weight? => weight.value ~/ 100 - 1,
+        null => null,
+      },
+      'textColor': nativeArgb(label.textStyle?.color, isDark: _isDark),
       'isDark': _isDark,
       // Sized natively too, not just boxed: a SwiftUI button is `fixedSize`,
       // so a Flutter SizedBox alone leaves it drawing at its own metrics and
       // spilling out of (or rattling inside) the box.
       // Hugging a glyph, the native button sizes itself and reports it.
+      // A titled glass button in the iOS 26 bar takes the system bar
+      // button's size (see `applyBarItemPadding` on the native side).
+      'barItem':
+          inBar &&
+          isIOS26OrLater &&
+          !label.iconOnly &&
+          (widget.style == CupertinoNativeButtonStyle.glass ||
+              widget.style == CupertinoNativeButtonStyle.glassProminent),
       'width': _hugsGlyph ? widget.width : _width,
       'height': _hugsGlyph ? widget.height : _height,
     };
@@ -292,14 +327,20 @@ class _CupertinoNativeButtonState extends State<CupertinoNativeButton>
   static const double _standardExtent = 44;
 
   /// In the iOS 15–18 bar an icon-only button hugs its glyph, as a bar item.
-  bool get _hugsGlyph => !isIOS26OrLater && LegacyBarSlot.isIn(context);
+  bool get _hugsGlyph => !isIOS26OrLater && BarSlot.isIn(context);
 
   /// An explicit value wins; otherwise an icon-only button is a 44pt square,
-  /// or its measured glyph width in the iOS 15–18 bar.
+  /// or, in the iOS 15–18 bar, its measured glyph width plus 2pt each side:
+  /// a symbol bar item ends 2pt further from the edge than a title one
+  /// (iPhone 8 Plus).
   double? get _width =>
       widget.width ??
       (_isIconOnly && !widget.expand
-          ? (_hugsGlyph ? intrinsicWidth ?? _standardExtent : _standardExtent)
+          ? (_hugsGlyph
+                ? (intrinsicWidth == null
+                      ? _standardExtent
+                      : intrinsicWidth! + 4)
+                : _standardExtent)
           : null);
   double? get _height =>
       widget.height ?? (_isIconOnly && !widget.expand ? _standardExtent : null);

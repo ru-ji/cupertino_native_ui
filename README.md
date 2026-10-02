@@ -13,6 +13,27 @@ Options tied to a newer iOS (marked *iOS 26+* or *iOS 27+* below) are simply
 ignored on older releases. The iOS 27 ones also need the app built with
 Xcode 27; an older Xcode compiles them out.
 
+## Motivation
+
+Flutter draws every pixel itself, and its Cupertino widgets are careful
+copies of iOS — copies of the iOS they were written against. When Apple
+redesigns a control, as Liquid Glass did in iOS 26, the copy keeps the old
+look until someone redraws it, and some things are not drawable at all: the
+glass refracting what is behind it, the system menus, the date picker's
+calendar, the photo picker, the keyboard toolbar, the haptics and the small
+physics of a native switch.
+
+There are packages that wrap one native control or another, but put several
+on a page and it stops feeling like iOS: each comes with its own API, its own
+quirks, and its own way of breaking inside a scroll view or a page
+transition.
+
+`cupertino_widgets` is the whole set, built one way. Every widget is the
+real UIKit or SwiftUI control, named and shaped like the Cupertino widget you
+already know, and tested together in the same pages — lists, bars, sheets,
+glass and fields included. Your app looks like iOS because it *is* iOS, on
+whichever version the user runs.
+
 ## Installation
 
 ```bash
@@ -23,33 +44,9 @@ flutter pub add cupertino_widgets
 import 'package:cupertino_widgets/cupertino_widgets.dart';
 ```
 
-- Flutter 3.41+, Dart 3.10+
-- **iOS 15+ at runtime.** Liquid Glass (the material, the scroll edge effect,
-  `GlassEffectContainer`) is iOS 26+ only and falls back to plain content or
-  a bordered style below it; a handful of other APIs gate the same way at
-  their own version (`NavigationStack` at 16, `symbolEffect`/`sensoryFeedback`
-  at 17, `Tab` at 18) — everything else works the same from 15 up. Below 16
-  there is no path-driven navigation stack, so a pushed page shows only the
-  root.
-- Other platforms, and iOS below 15, get simple Flutter fallbacks, so shared
-  code still builds.
-
-Add this to `ios/Runner/Info.plist`, or the navigation bar title shows a faint
-glow over the scroll edge effect:
-
-```xml
-<key>FLTDisablePartialRepaint</key>
-<true/>
-```
-
-## Don't clip native widgets
-
-Never wrap a native widget in `ClipRRect`, `ClipRect` or `ClipPath` — nor in
-anything that clips, like a `Container` with `clipBehavior` or a `Card`. On
-iOS, Flutter applies that clip to every native view drawn before it on the
-screen, not only to its child: other native widgets get cut or covered,
-most visibly during page transitions. Round a native widget with its own
-`cornerRadius` instead.
+The package adapts to the iOS version it runs on: each widget uses the
+newest native API available and its closest equivalent below. Other
+platforms get simple Flutter fallbacks, so shared code still builds.
 
 ## What's in the package
 
@@ -69,18 +66,18 @@ CupertinoNativeSlider(
 )
 ```
 
-| Parameter | Type | Default | |
-| --- | --- | --- | --- |
-| `value` | `double` | required | Current position. |
-| `onChanged` | `ValueChanged<double>?` | required | Null disables the slider. |
-| `min` / `max` | `double` | `0.0` / `1.0` | |
-| `divisions` | `int?` | — | Snap to N steps. |
-| `activeColor` | `Color?` | — | Filled track. |
-| `thumbColor` | `Color?` | — | Knob. |
-| `onChangeStart` / `onChangeEnd` | `ValueChanged<double>?` | — | Drag begins / ends. |
-| `minimumIcon` / `maximumIcon` | `CupertinoNativeIcon?` | — | Icons at the track's ends, e.g. `speaker.fill` / `speaker.wave.3.fill`. |
-| `showTicks` | `bool` | `false` | A tick at every division. *iOS 26+* |
-| `neutralValue` | `double?` | — | Where the filled track starts, e.g. `0` in `-1...1`. *iOS 26+* |
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `value` | `double` | The thumb's position, between `min` and `max`. |
+| `onChanged` | `ValueChanged<double>?` | Called with the new value while the thumb moves. Null disables the slider. |
+| `min` / `max` | `double` | The range. Default `0.0` / `1.0`. |
+| `divisions` | `int?` | Number of steps the thumb snaps to. Null slides continuously. |
+| `activeColor` | `Color?` | Colour of the filled part of the track. |
+| `thumbColor` | `Color?` | Colour of the knob. |
+| `onChangeStart` / `onChangeEnd` | `ValueChanged<double>?` | Called with the value when a drag begins / ends. |
+| `minimumIcon` / `maximumIcon` | `CupertinoNativeIcon?` | Icons at the track's ends, e.g. `speaker.fill` / `speaker.wave.3.fill`. |
+| `showTicks` | `bool` | A tick at every division. Default `false`. *iOS 26+* |
+| `neutralValue` | `double?` | Where the filled track starts, e.g. `0` in `-1...1`. *iOS 26+* |
 
 ### Switch
 
@@ -95,19 +92,19 @@ CupertinoNativeSwitch(
 )
 ```
 
-| Parameter | Type | Default | |
-| --- | --- | --- | --- |
-| `value` | `bool` | required | |
-| `onChanged` | `ValueChanged<bool>?` | — | |
-| `activeTrackColor` | `Color?` | — | Track when on. |
-| `label` | `String?` | — | Label beside the switch. |
-| `width` / `height` | `double?` | — | |
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `value` | `bool` | Whether the switch is on. |
+| `onChanged` | `ValueChanged<bool>?` | Called with the new state when the switch is tapped or slid. Null disables it. |
+| `activeTrackColor` | `Color?` | Track colour when on. |
+| `label` | `String?` | Text beside the switch. |
+| `width` / `height` | `double?` | Fixed size of the box. Null uses the switch's own. |
 
 ### Checkbox
 
 iOS has no system checkbox, so this one is the selection symbol Reminders and
 Mail use: `circle` off, `checkmark.circle.fill` on. For picking rows of a
-list, prefer the list's own [edit mode](#list--form).
+list, prefer the list's own [edit mode](#list).
 
 ```dart
 CupertinoNativeCheckbox(
@@ -117,14 +114,14 @@ CupertinoNativeCheckbox(
 )
 ```
 
-| Parameter | Type | Default | |
-| --- | --- | --- | --- |
-| `value` | `bool` | required | |
-| `onChanged` | `ValueChanged<bool>?` | — | Null disables it. |
-| `label` | `String?` | — | Label beside the box. |
-| `activeColor` | `Color?` | — | Checked colour. |
-| `textStyle` | `TextStyle?` | — | |
-| `width` / `height` | `double?` | — | |
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `value` | `bool` | Whether it is checked. |
+| `onChanged` | `ValueChanged<bool>?` | Called with the new state when tapped. Null disables it. |
+| `label` | `String?` | Text beside the symbol. |
+| `activeColor` | `Color?` | Colour of the checked symbol. |
+| `textStyle` | `TextStyle?` | Style of the label. |
+| `width` / `height` | `double?` | Fixed size of the box. Null hugs the content. |
 
 ### Stepper, Color Picker, Gauge
 
@@ -160,7 +157,7 @@ CupertinoNativeGauge(
   `minimumValueLabel` / `maximumValueLabel`, `style` (`automatic`,
   `linearCapacity`, `circular`, `circularCapacity`), `color`.
 
-### Sliding Segmented Control
+### Segmented Control
 
 <img src="https://raw.githubusercontent.com/ru-ji/cupertino_widgets/main/doc/images/segmented.jpg" width="320" alt="Segmented control" />
 
@@ -174,13 +171,13 @@ CupertinoNativeSlidingSegmentedControl<int>(
 )
 ```
 
-| Parameter | Type | Default | |
-| --- | --- | --- | --- |
-| `children` | `Map<T, Widget>` | required | Value → `Text` label. |
-| `onValueChanged` | `ValueChanged<T?>` | required | |
-| `groupValue` | `T?` | — | Selected value. |
-| `thumbColor` | `Color?` | — | Selected segment. |
-| `width` / `height` | `double?` | — | |
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `children` | `Map<T, Widget>` | One segment per entry: the key is the value the segment stands for, the `Text` its label. |
+| `onValueChanged` | `ValueChanged<T?>` | Called with the key of the tapped segment. |
+| `groupValue` | `T?` | Key of the selected segment. Null selects none. |
+| `thumbColor` | `Color?` | Colour of the selected segment. |
+| `width` / `height` | `double?` | Fixed size. Null fills the width at the control's own height. |
 
 ### Button
 
@@ -200,16 +197,16 @@ Constructors: `CupertinoNativeButton` (plain), `.filled`, `.tinted`, `.glass`,
 `.glassProminent`, and `.icon(symbol)` — an SF Symbol in a circle, glass by
 default (`style:` to change it).
 
-| Parameter | Type | Default | |
-| --- | --- | --- | --- |
-| `child` | `Widget` | required | A `Text`, `CupertinoSymbolImage`, `Icon`, or a `Row` of an icon and a `Text`. |
-| `onPressed` | `VoidCallback?` | required | |
-| `color` | `Color?` | — | Tint. |
-| `sizeStyle` | `CupertinoNativeControlSize` | `.regular` | `mini`, `small`, `regular`, `large`, `extraLarge`. |
-| `borderShape` | `CupertinoNativeButtonBorderShape` | `.automatic` | `automatic`, `capsule`, `circle`, `roundedRectangle`. |
-| `expand` | `bool` | `false` | Fill the available width. |
-| `role` | `CupertinoNativeButtonRole?` | — | `destructive` (drawn red), `cancel`. |
-| `width` / `height` | `double?` | — | |
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `child` | `Widget` | The label: a `Text`, `CupertinoSymbolImage`, `Icon`, or a `Row` of an icon and a `Text`. |
+| `onPressed` | `VoidCallback?` | Called on tap. Null disables the button. |
+| `color` | `Color?` | Tint colour of the button. |
+| `sizeStyle` | `CupertinoNativeControlSize` | `mini`, `small`, `regular`, `large`, `extraLarge`. Default `regular`. |
+| `borderShape` | `CupertinoNativeButtonBorderShape` | `automatic`, `capsule`, `circle`, `roundedRectangle`. Default `automatic`. |
+| `expand` | `bool` | Fill the available width. Default `false`. |
+| `role` | `CupertinoNativeButtonRole?` | `destructive` (drawn red), `cancel`. |
+| `width` / `height` | `double?` | Fixed size. Null hugs the label. |
 
 ### Popup Menu
 
@@ -226,19 +223,19 @@ CupertinoNativeMenu(
 )
 ```
 
-| Parameter | Type | Default | |
-| --- | --- | --- | --- |
-| `items` | `List<CupertinoNativeMenuItem>` | required | See [Menu items](#menu-items). |
-| `onAction` | `CupertinoNativeMenuActionCallback?` | — | `(actionId, value)`. |
-| `title` | `String` | `'Options'` | Label of the button. |
-| `systemImage` | `String?` | — | SF Symbol of the button. |
-| `style` | `CupertinoNativeButtonStyle` | `.automatic` | |
-| `borderShape` | `CupertinoNativeButtonBorderShape` | `.automatic` | |
-| `labelStyle` | `CupertinoNativeButtonLabelStyle` | `.titleAndIcon` | `titleAndIcon`, `titleOnly`, `iconOnly`. |
-| `controlSize` | `CupertinoNativeControlSize` | `.regular` | |
-| `activeColor` | `Color?` | — | |
-| `onPressed` | `VoidCallback?` | — | Split button: a tap calls this, a long press opens the menu. |
-| `fixedOrder` | `bool` | `false` | Keep `items` in the given order even when the menu opens upward. *iOS 16+* |
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `items` | `List<CupertinoNativeMenuItem>` | The entries of the menu. See [Menu items](#menu-items). |
+| `onAction` | `CupertinoNativeMenuActionCallback?` | Called when an entry is picked, with its `actionId` and a value: the new state for a `CupertinoNativeMenuToggle`, null for an action. |
+| `title` | `String` | Label of the button. Default `'Options'`. |
+| `systemImage` | `String?` | SF Symbol of the button. |
+| `style` | `CupertinoNativeButtonStyle` | Look of the button: `automatic`, `filled`, `tinted`, `plain`, `glass`, `glassProminent`. |
+| `borderShape` | `CupertinoNativeButtonBorderShape` | Shape of the button. |
+| `labelStyle` | `CupertinoNativeButtonLabelStyle` | `titleAndIcon`, `titleOnly`, `iconOnly`. Default `titleAndIcon`. |
+| `controlSize` | `CupertinoNativeControlSize` | Size of the button. Default `regular`. |
+| `activeColor` | `Color?` | Tint of the button. |
+| `onPressed` | `VoidCallback?` | Split button: a tap calls this, a long press opens the menu. |
+| `fixedOrder` | `bool` | Keep `items` in the given order even when the menu opens upward. *iOS 16+* |
 
 ### Context Menu
 
@@ -254,16 +251,15 @@ CupertinoNativeContextMenu(
 )
 ```
 
-| Parameter | Type | Default | |
-| --- | --- | --- | --- |
-| `child` | `Widget` | required | |
-| `actions` | `List<CupertinoNativeMenuItem>` | required | |
-| `onAction` | `CupertinoNativeMenuActionCallback?` | — | |
-| `preview` | `Widget?` | — | Replaces the lifted preview. |
-| `onOpenChanged` | `ValueChanged<bool>?` | — | |
-| `blurBackground` | `bool` | `false` | Blur the app behind the menu. |
-| `childInteractive` | `bool` | `false` | Let `child` receive touches. |
-| `previewCornerRadius` | `double` | `0` | Corner radius of `child`. |
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `child` | `Widget` | The widget that lifts and shows the menu on long press. |
+| `actions` | `List<CupertinoNativeMenuItem>` | The entries of the menu. See [Menu items](#menu-items). |
+| `onAction` | `CupertinoNativeMenuActionCallback?` | Called when an entry is picked, with its `actionId` and a value: the new state for a `CupertinoNativeMenuToggle`, null for an action. |
+| `preview` | `Widget?` | Shown lifted instead of `child`. |
+| `onOpenChanged` | `ValueChanged<bool>?` | Called with `true` when the menu opens, `false` when it closes. |
+| `childInteractive` | `bool` | Let `child` receive taps; the menu then opens on long press only. Default `false`. |
+| `previewCornerRadius` | `double` | Corner radius of the lifted `child`. Default `0`. |
 
 ### Alert Dialog
 
@@ -281,12 +277,12 @@ CupertinoNativeAlertDialog.show(
 )
 ```
 
-| `CupertinoNativeDialogAction` | Type | Default | |
-| --- | --- | --- | --- |
-| `child` | `Text` | required | |
-| `onPressed` | `VoidCallback?` | — | |
-| `isDefaultAction` | `bool` | `false` | Bold, cancel role. |
-| `isDestructiveAction` | `bool` | `false` | Red. |
+| `CupertinoNativeDialogAction` | Type | Description |
+| --- | --- | --- |
+| `child` | `Text` | The button's label. |
+| `onPressed` | `VoidCallback?` | Called on tap; the dialog closes itself. |
+| `isDefaultAction` | `bool` | Bold, with the cancel role. Default `false`. |
+| `isDestructiveAction` | `bool` | Drawn red. Default `false`. |
 
 ### Action Sheet
 
@@ -305,11 +301,11 @@ CupertinoNativeActionSheet.show(
 )
 ```
 
-| Parameter | Type | Default | |
-| --- | --- | --- | --- |
-| `title` / `message` | `String?` | — | |
-| `actions` | `List<CupertinoNativeDialogAction>` | required | |
-| `anchor` | `Rect?` | — | iPad/Mac only, where UIKit makes it a popover. `CupertinoNativeActionSheet.anchorOf(context)` gives the rect of the control that opened it. |
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `title` / `message` | `String?` | Text above the choices. |
+| `actions` | `List<CupertinoNativeDialogAction>` | The choices, top to bottom. The `isDefaultAction` one is the cancel button, set apart at the bottom. |
+| `anchor` | `Rect?` | iPad/Mac only, where UIKit makes it a popover. `CupertinoNativeActionSheet.anchorOf(context)` gives the rect of the control that opened it. |
 
 ### Activity Indicator
 
@@ -321,17 +317,17 @@ const CupertinoNativeActivityIndicator()
 CupertinoNativeLinearActivityIndicator(progress: 0.4)
 ```
 
-| `CupertinoNativeActivityIndicator` | Type | Default | |
-| --- | --- | --- | --- |
-| `color` | `Color?` | — | |
-| `radius` | `double` | `10` | |
-| `animating` | `bool` | `true` | False hides it. |
+| `CupertinoNativeActivityIndicator` | Type | Description |
+| --- | --- | --- |
+| `color` | `Color?` | Colour of the spinner. |
+| `radius` | `double` | Size of the spinner. Default `10`. |
+| `animating` | `bool` | False hides it. Default `true`. |
 
-| `CupertinoNativeLinearActivityIndicator` | Type | Default | |
-| --- | --- | --- | --- |
-| `progress` | `double` | required | 0 to 1. |
-| `height` | `double` | `4.5` | |
-| `color` | `Color?` | — | |
+| `CupertinoNativeLinearActivityIndicator` | Type | Description |
+| --- | --- | --- |
+| `progress` | `double` | How much is done, from 0 to 1. |
+| `height` | `double` | Thickness of the bar. Default `4.5`. |
+| `color` | `Color?` | Colour of the filled part. |
 
 ### Text Field
 
@@ -346,29 +342,30 @@ CupertinoNativeTextField(
 )
 ```
 
-| Parameter | Type | Default | |
-| --- | --- | --- | --- |
-| `controller` / `focusNode` | | — | Standard Flutter controller and focus node. |
-| `placeholder` | `String?` | — | |
-| `style` | `TextStyle?` | — | |
-| `keyboardType` | `TextInputType` | `.text` | |
-| `textInputAction` | `TextInputAction?` | — | |
-| `obscureText` / `autocorrect` / `enableSuggestions` | `bool` | `false` / `true` / `true` | |
-| `textCapitalization` | `TextCapitalization` | `.none` | |
-| `textAlign` | `TextAlign` | `.start` | |
-| `maxLength` | `int?` | — | |
-| `enabled` / `readOnly` / `autofocus` | `bool` | `true` / `false` / `false` | |
-| `clearButtonMode` | `OverlayVisibilityMode` | `.never` | |
-| `prefix` / `suffix` | `CupertinoNativeIcon?` | — | |
-| `iconSpacing` | `double` | `8` | |
-| `cursorColor` / `backgroundColor` | `Color?` | — | |
-| `cornerRadius` | `double?` | — | |
-| `glass` | `CupertinoNativeGlass?` | — | |
-| `glassTint` | `Color?` | — | |
-| `textContentType` | `String?` | — | Autofill hint, e.g. `'password'`. |
-| `toolbarActions` | `List<Widget>` | `[]` | The bar above the keyboard — see below. |
-| `onChanged` / `onSubmitted` / `onEditingComplete` / `onTap` / `onTapOutside` | | — | |
-| `width` / `height` | `double?` | — | |
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `controller` / `focusNode` |  | Standard Flutter controller and focus node. |
+| `placeholder` | `String?` | Grey hint shown while the field is empty. |
+| `style` | `TextStyle?` | Font size, weight and colour of the text. |
+| `keyboardType` | `TextInputType` | Which keyboard opens: text, number, email, URL, phone… Default `text`. |
+| `textInputAction` | `TextInputAction?` | Label of the keyboard's return key: `done`, `next`, `search`, `go`, `send`… It only changes the label; handle the tap in `onSubmitted`. |
+| `obscureText` / `autocorrect` / `enableSuggestions` | `bool` | Hide the text (passwords) / correct spelling / show QuickType suggestions. Default `false` / `true` / `true`. |
+| `textCapitalization` | `TextCapitalization` | Automatic capitals: `none`, `words`, `sentences`, `characters`. Default `none`. |
+| `textAlign` | `TextAlign` | Alignment of the text. Default `start`. |
+| `maxLength` | `int?` | Longer input is cut. |
+| `enabled` / `readOnly` / `autofocus` | `bool` | Disabled greys the field out; read-only can still be selected and copied; autofocus opens the keyboard on first display. Default `true` / `false` / `false`. |
+| `clearButtonMode` | `OverlayVisibilityMode` | When the native ✕ that clears the field shows. Default `never`. |
+| `prefix` / `suffix` | `CupertinoNativeIcon?` | SF Symbols drawn inside the field, before / after the text. |
+| `iconSpacing` | `double` | Gap between `prefix` / `suffix` and the text. Default `8`. |
+| `cursorColor` / `backgroundColor` | `Color?` | Colour of the caret and selection / fill behind the field (transparent when null). |
+| `cornerRadius` | `double?` | Rounds the background and the glass. The glass defaults to `16`. |
+| `glass` | `CupertinoNativeGlass?` | Draws the field on Liquid Glass: `regular`, `clear` or `identity`, always interactive. Null: no glass. *iOS 26+* |
+| `glassTint` | `Color?` | Colour mixed into the glass. |
+| `textContentType` | `String?` | Autofill hint, e.g. `'password'`. |
+| `toolbarActions` | `List<Widget>` | The bar above the keyboard — see below. |
+| `onChanged` / `onSubmitted` / `onEditingComplete` |  | Each edit, with the text / the return key, with the text / the return key. |
+| `onTap` / `onTapOutside` |  | The field takes focus / a tap lands elsewhere (unfocuses by default). |
+| `width` / `height` | `double?` | Fixed size of the field. |
 
 #### Keyboard toolbar
 
@@ -387,72 +384,10 @@ CupertinoNativeTextField(
 ```
 
 The bar takes the height of what you give it: wrap the items in a `Padding`
-for room around them.
-
-**The bar paints nothing, so what you see through it is whatever your page puts
-behind the keyboard** — and UIKit counts the bar as part of the keyboard's frame,
-so `viewInsets.bottom` covers the strip as well. A scaffold that resizes for the
-keyboard therefore ends the page exactly at the top of the bar and leaves nothing
-behind it but its own background colour: a flat, opaque band with the bar's
-content sitting on it. `resizeToAvoidBottomInset: false` and padding the scroll
-content with `MediaQuery.viewInsetsOf(context).bottom` is the fix, and it is the
-same flag on all three scaffolds — `Scaffold`, `CupertinoPageScaffold` and
-`CupertinoNativePageScaffold` — all of which default it to `true`.
-
-A page with no scaffold needs neither: nothing shrinks for the keyboard unless a
-scaffold shrinks it, so the content runs under the bar and the bar shows it.
-
-**Keeping the field itself visible is a separate question**, and the answer is not
-the same one. SwiftUI moves a `TextField` up on its own, but a Flutter app is not
-SwiftUI: its root is a `FlutterViewController`/`FlutterView` — UIKit views, and
-UIKit does no keyboard avoidance at all. The engine only *reports* the inset as
-`MediaQuery.viewInsets`; nothing acts on it. So in Flutter exactly two things lift
-a field clear of the keyboard: a box that shrank (a scaffold resizing, or your own
-padding driven by `viewInsets`), or a scrollable ancestor. A focused field scrolls
-itself into view through `showOnScreen` on every rising metrics tick, and
-`showOnScreen` walks up to a viewport; with no scrollable above it the call
-reaches the root and does nothing. A field pinned to the bottom of a plain
-`Container`, with no scaffold and no scrollable, therefore stays under the
-keyboard no matter what — `scrollPadding` included, since there is nothing to
-scroll. Put it in a `ListView`/`CustomScrollView`, or move its container yourself
-with `Padding(padding: EdgeInsets.only(bottom:
-MediaQuery.viewInsetsOf(context).bottom))` — plain `Padding`, not
-`AnimatedPadding`: the engine already delivers the inset frame by frame along the
-keyboard's own curve, and animating it again only adds lag.
-
-That SwiftUI behaviour is the same mechanism as the scaffold's — the keyboard is
-contributed to the *safe area*, so the layout region gets shorter and the content
-is laid out in a smaller box. It is why this package turns it **off** for the
-controls it hosts: `NativeHostingView.attach` sets `safeAreaRegions = []` by
-default, because avoidance inside a Flutter-sized platform view slides a control's
-content up over its Flutter neighbours. `CupertinoNativePageScaffold` opts back in
-— `keyboardAvoidance: true`, then `.all` or `.container` depending on
-`resizeToAvoidBottomInset`.
-
-A glass capsule can hold its own row:
-
-```dart
-CupertinoNativeTextField(
-  toolbarActions: [
-    Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-      child: CupertinoNativeGlassContainer(
-        shape: CupertinoGlassShape.capsule,
-        interactive: true,
-        height: 40,
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        child: Row(
-          children: [
-            CupertinoNativeButton(onPressed: _bold, child: const Text('B')),
-            const Spacer(),
-            CupertinoNativeButton(onPressed: _done, child: const Text('Done')),
-          ],
-        ),
-      ),
-    ),
-  ],
-)
-```
+for room around them. It paints nothing, so your page shows through it: use
+`resizeToAvoidBottomInset: false` on the scaffold and pad your scroll content
+with `MediaQuery.viewInsetsOf(context).bottom`, or the scaffold's background
+fills the strip behind it.
 
 `onPressed: null` greys a button out, so the chevrons can disable themselves at
 the first and last field. Pass resolved colors —
@@ -477,15 +412,15 @@ CupertinoNativeDatePicker(
 )
 ```
 
-| Parameter | Type | Default | |
-| --- | --- | --- | --- |
-| `onDateTimeChanged` | `ValueChanged<DateTime>` | required | |
-| `initialDateTime` | `DateTime?` | now | |
-| `mode` | `CupertinoDatePickerMode` | `.dateAndTime` | |
-| `style` | `CupertinoNativeDatePickerStyle` | `.compact` | `compact` (a field that pops a calendar), `graphical` (the calendar inline), `wheel`. |
-| `minimumDate` / `maximumDate` | `DateTime?` | — | |
-| `activeColor` | `Color?` | — | |
-| `width` / `height` | `double?` | — | |
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `onDateTimeChanged` | `ValueChanged<DateTime>` | Called with the picked date and time. |
+| `initialDateTime` | `DateTime?` | Date shown first. Default now. |
+| `mode` | `CupertinoDatePickerMode` | What is picked: `date`, `time` or `dateAndTime`. Default `dateAndTime`. |
+| `style` | `CupertinoNativeDatePickerStyle` | `compact` (a field that pops a calendar), `graphical` (the calendar inline), `wheel`. Default `compact`. |
+| `minimumDate` / `maximumDate` | `DateTime?` | Earliest / latest date that can be picked. |
+| `activeColor` | `Color?` | Tint of the selection. |
+| `width` / `height` | `double?` | Fixed size. Null uses the picker's own. |
 
 ### Multi-Date Picker — *iOS 16+*
 
@@ -515,11 +450,18 @@ CupertinoNativeTextEditor(
 )
 ```
 
-`text`, `onChanged` (null makes it read-only), `placeholder`, `fontSize`,
-`height` (`120`), `style`, `cursorColor`, `backgroundColor`, `cornerRadius`,
-`keyboardType`, `textCapitalization`, `textContentType`, `textAlign`,
-`autocorrect`, `maxLength`, `readOnly`, `glass`, `glassTint`, `padding`,
-`prefix`, `placeholderPadding`.
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `text` | `String` | The text shown. Echo `onChanged` back into it. |
+| `onChanged` | `ValueChanged<String>?` | Called on each edit. Null makes the editor read-only. |
+| `placeholder` | `String?` | Grey hint while the editor is empty. |
+| `height` | `double` | The editor scrolls inside this height. Default `120`. |
+| `style` / `fontSize` | `TextStyle?` / `double?` | Font size, weight and colour of the text; `fontSize` is a shorthand. |
+| `padding` | `EdgeInsets?` | Room between the text and the background or glass edge. |
+| `prefix` | `Widget?` | Drawn before the text, on its first line: any widget the package transcribes natively (an icon, a button, a `Row` of them), callbacks included. |
+| `placeholderPadding` | `EdgeInsets?` | Moves the placeholder (top / left) when it does not line up with typed text. |
+| `cursorColor`, `backgroundColor`, `cornerRadius`, `glass`, `glassTint` | | As on the text field. |
+| `keyboardType`, `textCapitalization`, `textContentType`, `textAlign`, `autocorrect`, `maxLength`, `readOnly` | | As on the text field; the keyboard defaults to `multiline`, capitals to `sentences`. |
 
 ### Photos Picker — *iOS 17+*
 
@@ -549,15 +491,15 @@ items load in parallel and report one by one, and a per-run cache makes
 re-picking a photo free. Files live in the app's temporary directory: copy or
 upload what you keep, then call `CupertinoNativePhotosPicker.clearCache()`.
 
-| Parameter | Type | Default | |
-| --- | --- | --- | --- |
-| `onChanged` | `ValueChanged<List<CupertinoNativePickedMedia>>` | required | `id`, `path`, `isVideo`, `width`, `height`, `failed`, `isLoading`. |
-| `style` | `CupertinoNativePhotosPickerStyle` | `.inline` | `inline` (the grid), `compact` (one scrolling row). |
-| `filter` | `CupertinoNativePhotosPickerFilter` | `.all` | `all`, `images`, `videos`. |
-| `maxSelection` | `int?` | — | No limit when null. |
-| `maxDimension` | `double?` | `2048` | Longest side of a delivered JPEG. Null keeps the original file (fastest; HEIC stays HEIC). |
-| `jpegQuality` | `double` | `0.8` | |
-| `showsAlbums` | `bool` | `false` | Keep the picker's top bar with its Photos / Albums switch. Off: the grid alone. |
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `onChanged` | `ValueChanged<List<CupertinoNativePickedMedia>>` | Called with the whole selection, in pick order, each time it changes. Each item has `id`, `path` (null while loading), `isVideo`, `thumbnailPath` (a video's first frame), `width`, `height`, `failed`, `isLoading`. |
+| `style` | `CupertinoNativePhotosPickerStyle` | `inline` (the grid), `compact` (one scrolling row). Default `inline`. |
+| `filter` | `CupertinoNativePhotosPickerFilter` | What can be picked: `all`, `images`, `videos`. Default `all`. |
+| `maxSelection` | `int?` | How many items can be ticked. No limit when null. |
+| `maxDimension` | `double?` | Longest side of a delivered JPEG. Null keeps the original file (fastest; HEIC stays HEIC). Default `2048`. |
+| `jpegQuality` | `double` | Compression of delivered JPEGs, from 0 to 1. Default `0.8`. |
+| `showsAlbums` | `bool` | Keep the picker's top bar with its Photos / Albums switch. Off: the grid alone. Default `false`. |
 
 Below iOS 17 `isSupported` is false and the widget draws nothing — fall back to
 a full-screen picker such as `image_picker`.
@@ -597,16 +539,16 @@ CupertinoNativePicker.palette(
 )
 ```
 
-| Parameter | Type | Default | |
-| --- | --- | --- | --- |
-| `items` | `List<CupertinoNativePickerItem>` | required | `title`, `icon`, or both. |
-| `selectedIndex` | `int` | required | Clamped to the list. |
-| `onChanged` | `ValueChanged<int>?` | — | |
-| `style` | `CupertinoNativePickerStyle` | `.automatic` | `wheel`, `menu`, `segmented`, `palette`, `inline`, `navigationLink`. |
-| `label` / `showLabel` | `String?` / `bool` | — / `false` | |
-| `activeColor` | `Color?` | theme primary | |
-| `sizeStyle` | `CupertinoNativeControlSize?` | — | |
-| `height` | `double?` | — | Required-ish for `.wheel`, which has no height of its own (the `.wheel` constructor defaults it to 216). |
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `items` | `List<CupertinoNativePickerItem>` | The options: each a `title`, an `icon`, or both. |
+| `selectedIndex` | `int` | Index of the selected option, clamped to the list. |
+| `onChanged` | `ValueChanged<int>?` | Called with the index of the picked option. Null disables the picker. |
+| `style` | `CupertinoNativePickerStyle` | `wheel`, `menu`, `segmented`, `palette`, `inline`, `navigationLink`. Default `automatic`. |
+| `label` / `showLabel` | `String?` / `bool` | Text naming the picker, shown only with `showLabel` (default `false`). |
+| `activeColor` | `Color?` | Tint of the selection. Default the theme's primary colour. |
+| `sizeStyle` | `CupertinoNativeControlSize?` | Size of the control. |
+| `height` | `double?` | Needed for `.wheel`, which has no height of its own (the `.wheel` constructor defaults it to 216). |
 
 `navigationLink` only works inside a native `NavigationStack`, i.e. a
 `CupertinoNativePageScaffold` body. For a plain segmented strip prefer
@@ -631,20 +573,20 @@ CupertinoNativeTabBar(
 )
 ```
 
-| Parameter | Type | Default | |
-| --- | --- | --- | --- |
-| `items` | `List<CupertinoNativeTab>` | required | See [Tabs](#tabs). |
-| `currentIndex` | `int` | `0` | |
-| `onTap` | `ValueChanged<int>?` | — | |
-| `activeColor` / `backgroundColor` | `Color?` | — | |
-| `height` | `double?` | — | |
-| `split` / `rightCount` / `splitSpacing` | `bool` / `int` / `double` | `false` / `1` / `8` | Detach the last tabs into their own bar (iOS 26). |
-| `shrinkCentered` | `bool` | `true` | |
-| `scrollEdgeEffect` | `CupertinoScrollEdgeEffectStyle` | `.automatic` | |
-| `minimizeBehavior` | `CupertinoNativeTabBarMinimizeBehavior` | `.automatic` | Inside `CupertinoNativePageScaffold`. |
-| `accessory` | `CupertinoNativeTabBarAccessory?` | — | Inside `CupertinoNativePageScaffold`. |
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `items` | `List<CupertinoNativeTab>` | The tabs, in order. See [Tabs](#tabs). |
+| `currentIndex` | `int` | Index of the selected tab. Default `0`. |
+| `onTap` | `ValueChanged<int>?` | Called with the index of the tapped tab. |
+| `activeColor` / `backgroundColor` | `Color?` | Colour of the selected tab / fill behind the bar. |
+| `height` | `double?` | Fixed height. Null uses the system's. |
+| `split` / `rightCount` / `splitSpacing` | `bool` / `int` / `double` | Detach the last `rightCount` tabs into their own bar, `splitSpacing` apart — the search tab in Music. Default `false` / `1` / `8`. *iOS 26+* |
+| `shrinkCentered` | `bool` | When not split, size the bar to its tabs, centred, instead of the full width. Default `true`. |
+| `scrollEdgeEffect` | `CupertinoScrollEdgeEffectStyle` | Blur where content scrolls under the bar. Default `automatic`. |
+| `minimizeBehavior` | `CupertinoNativeTabBarMinimizeBehavior` | How the bar shrinks on scroll. Inside `CupertinoNativePageScaffold` only. |
+| `accessory` | `CupertinoNativeTabBarAccessory?` | A persistent bar above the tabs, like Now Playing. Inside `CupertinoNativePageScaffold` only. |
 
-### List & Form
+### List
 
 ```dart
 CupertinoNativeList(
@@ -694,19 +636,19 @@ CupertinoNativeListTile(
 onSwipeAction: (rowId, actionId) {},
 ```
 
-| Parameter | Type | Default | |
-| --- | --- | --- | --- |
-| `sections` | `List<CupertinoNativeListSection>` | required | See [List tiles](#list-tiles). |
-| `style` | `CupertinoNativeListStyle` | `.insetGrouped` | `CupertinoNativeForm` has no `style`. |
-| `onRowTap` | `CupertinoNativeListTileCallback?` | — | |
-| `onToggle` | `CupertinoNativeListToggleCallback?` | — | |
-| `scrollable` | `bool` | `false` | |
-| `height` / `cornerRadius` | `double?` | — | |
-| `activeColor` | `Color?` | — | |
-| `editing` | `bool` | `false` | Edit mode: selection circles (and drag handles with `onReorder`). |
-| `selection` / `onSelectionChanged` | `Set<String>` / `ValueChanged<Set<String>>?` | `{}` / — | Ids of the checked rows. |
-| `onSwipeAction` | `CupertinoNativeListSwipeCallback?` | — | `(rowId, actionId)`. |
-| `onReorder` | `CupertinoNativeListReorderCallback?` | — | `(section, oldIndex, newIndex)`, `newIndex` as `List.insert` takes it after the removal. `CupertinoNativeList` only. |
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `sections` | `List<CupertinoNativeListSection>` | The cards of the list, each with its rows. See [List tiles](#list-tiles). |
+| `style` | `CupertinoNativeListStyle` | `insetGrouped` (Settings cards), `grouped`, `plain`, `sidebar`, `automatic`. Default `insetGrouped`; `CupertinoNativeForm` has none. |
+| `onRowTap` | `CupertinoNativeListTileCallback?` | Called with the `id` of the tapped row. Without it, plain rows are not tappable (no pressed highlight). |
+| `onToggle` | `CupertinoNativeListToggleCallback?` | Called with the `id` and the new state of a toggle row. |
+| `scrollable` | `bool` | Scroll inside the list's own height instead of sizing to its rows. Default `false`. |
+| `height` / `cornerRadius` | `double?` | Fixed height / corner radius of the cards (the system's when null). |
+| `activeColor` | `Color?` | Tint of the rows' controls and checkmarks. |
+| `editing` | `bool` | Edit mode: selection circles, and drag handles with `onReorder`. Default `false`. |
+| `selection` / `onSelectionChanged` | `Set<String>` / `ValueChanged<Set<String>>?` | Ids of the rows checked in edit mode, and the call reporting them. Echo it back. |
+| `onSwipeAction` | `CupertinoNativeListSwipeCallback?` | Called with the row's `id` and the `actionId` of the swipe button tapped. |
+| `onReorder` | `CupertinoNativeListReorderCallback?` | Called with the section and the old and new index, the new one as `List.insert` takes it after the removal. `CupertinoNativeList` only. |
 
 ### Group
 
@@ -726,18 +668,18 @@ CupertinoNativeGroup(
 )
 ```
 
-| Parameter | Type | Default | |
-| --- | --- | --- | --- |
-| `child` | `Widget` | required | Transcribed, not mounted — see below. |
-| `padding` | `EdgeInsets` | `EdgeInsets.zero` | |
-| `width` / `height` | `double?` | — | Null hugs the content. |
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `child` | `Widget` | The content, transcribed into native views, not mounted — see below. |
+| `padding` | `EdgeInsets` | Room around the content. Default none. |
+| `width` / `height` | `double?` | Fixed size. Null hugs the content. |
 
 **The child is read, not mounted.** Only what the transcription accepts can go
 in — this package's own controls, `Text`, `Row`, `Column`, `Padding`,
 `SizedBox`, `Spacer` — and `CupertinoNativeFlutterView` for anything else,
 which costs an engine. An unsupported widget asserts with that list. For a
 settings-style form with the grouped card and rows already built, see
-[List & Form](#list--form).
+[List](#list).
 
 ### Liquid Glass
 
@@ -764,20 +706,20 @@ Content goes on the glass three ways, in increasing cost:
 anything that isn't refracted by its own container — that is, almost
 everything.
 
-| Parameter | Type | Default | |
-| --- | --- | --- | --- |
-| `shape` | `CupertinoGlassShape` | `.roundedRect` | `capsule`, `circle`, `roundedRect`. |
-| `cornerRadius` | `double` | `26` | |
-| `variant` | `CupertinoGlassVariant` | `.regular` | `regular`, `clear`. |
-| `tint` | `Color?` | — | |
-| `interactive` | `bool` | `false` | |
-| `onPressed` | `VoidCallback?` | — | |
-| `child` | `Widget?` | — | Flutter drawn over the glass, sizing it. No engine. |
-| `icon` | `CupertinoNativeIcon?` | — | |
-| `route` | `String?` | — | Flutter content *inside* the glass, in its own engine, registered like a scaffold body. Prefer `child`. |
-| `padding` | `EdgeInsetsGeometry` | `.zero` | |
-| `animateChanges` | `bool` | `false` | |
-| `width` / `height` | `double?` | — | |
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `shape` | `CupertinoGlassShape` | `capsule`, `circle`, `roundedRect`. Default `roundedRect`. |
+| `cornerRadius` | `double` | Corner radius of `roundedRect`. Default `26`. |
+| `variant` | `CupertinoGlassVariant` | `regular`, or the more transparent `clear`. Default `regular`. |
+| `tint` | `Color?` | Colour mixed into the glass. |
+| `interactive` | `bool` | Shimmer and stretch under the finger. Default `false`. |
+| `onPressed` | `VoidCallback?` | Makes the glass a button. |
+| `child` | `Widget?` | Flutter drawn over the glass, sizing it. No engine. |
+| `icon` | `CupertinoNativeIcon?` | An SF Symbol drawn by SwiftUI inside the material. |
+| `route` | `String?` | Flutter content *inside* the glass, in its own engine, registered like a scaffold body. Prefer `child`. |
+| `padding` | `EdgeInsetsGeometry` | Room between the glass edge and `child`. Default none. |
+| `animateChanges` | `bool` | Let SwiftUI animate tint and variant changes. Default `false`. |
+| `width` / `height` | `double?` | Fixed size. Null hugs `child`. |
 
 Glasses that should merge into one piece go in a `CupertinoNativeGlassGroup`:
 
@@ -792,15 +734,15 @@ CupertinoNativeGlassGroup(
 )
 ```
 
-| Parameter | Type | Default | |
-| --- | --- | --- | --- |
-| `items` | `List<CupertinoNativeGlassGroupItem>` | required | `actionId`, `icon`, `title`, `shape`, `width`, `height`, `enabled`, `glassVisible`, `unionId`, `transition`. |
-| `onAction` | `ValueChanged<String>?` | — | |
-| `spacing` | `double` | `8` | Gap, and the distance at which glasses merge. |
-| `vertical` | `bool` | `false` | |
-| `tint` / `clear` / `interactive` | | — | |
-| `cornerRadius` | `double` | `16` | |
-| `transition` | `CupertinoGlassTransition` | `.matchedGeometry` | How a glass arrives and leaves. |
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `items` | `List<CupertinoNativeGlassGroupItem>` | The glasses, in order. Each has an `actionId` (what a tap reports, and the identity transitions morph along), an `icon` and / or `title`, a `shape` and size, `enabled`, `glassVisible`, `unionId`, `transition` and `menuItems`. |
+| `onAction` | `ValueChanged<String>?` | Called with the `actionId` of the tapped glass or menu entry. |
+| `spacing` | `double` | Gap between the glasses, and the distance at which they merge. Default `8`. |
+| `vertical` | `bool` | Stack the glasses vertically. Default `false`. |
+| `tint` / `clear` / `interactive` |  | As on the glass container, for every glass of the group. |
+| `cornerRadius` | `double` | Corner radius of `roundedRect` glasses. Default `16`. |
+| `transition` | `CupertinoGlassTransition` | How a glass arrives and leaves. Default `matchedGeometry`. |
 
 #### Transitions
 
@@ -944,7 +886,7 @@ content blurs in. `CupertinoGlassTransition.intensity` is that — and because
 nothing is inserted or removed, it is not a transition at all, so a glass on
 `intensity` does not merge or match geometry with its neighbours.
 
-The example app's **Glass transitions** page plays all three, and each glass is
+The example app's **Liquid Glass** page plays all three, and each glass is
 tappable there — the change is driven by the glass as much as by the button
 under it.
 
@@ -1004,17 +946,19 @@ CustomScrollView(
 )
 ```
 
-| Parameter | Type | Default | |
-| --- | --- | --- | --- |
-| `largeTitle` | `String` | required | |
-| `subtitle` | `String?` | — | |
-| `leading` | `Widget?` | — | |
-| `trailing` | `List<Widget>` | `[]` | |
-| `centerTitle` | `bool` | `true` | |
-| `expandedTitle` / `collapseTitle` | `bool` | `true` | |
-| `bottom` / `bottomHeight` | `Widget?` / `double` | — / `44` | Widget under the large title. |
-| `scrollEdgeEffect` | `CupertinoScrollEdgeEffectStyle` | `.soft` | |
-| `tintColor` | `Color?` | — | |
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `largeTitle` | `String` | Shown large, then inline once the page scrolls. |
+| `subtitle` | `String?` | A second line under the title. |
+| `leading` | `Widget?` | At the leading edge. Left null on a page that can pop, the bar adds the back button. |
+| `automaticallyImplyLeading` | `bool` | Whether that back button is added: a glass chevron on iOS 26, the chevron and the previous page's title below. Default `true`. |
+| `trailing` | `List<Widget>` | Buttons at the trailing edge. In the bar a button takes the system's bar weights: medium title and symbol on iOS 26. |
+| `centerTitle` | `bool` | Centre the inline title. Default `true`. |
+| `expandedTitle` | `bool` | Whether the large title row exists; false makes the bar inline only. Default `true`. |
+| `collapseTitle` | `bool` | Whether the large title collapses into the bar on scroll; false keeps it large. Default `true`. *iOS 26+* |
+| `bottom` / `bottomHeight` | `Widget?` / `double` | A widget under the large title, and its height. Default height `44`. |
+| `scrollEdgeEffect` | `CupertinoScrollEdgeEffectStyle` | Blur where content scrolls under the bar. Default `soft`. |
+| `tintColor` | `Color?` | Colour the edge effect blends into, usually the page background. |
 
 `.search` adds `searchPlaceholder`, `searchStyle`, `searchPrefixIcon`,
 `searchSuffixIcon`, `searchGlass`, `searchFieldHeight`, `bottomMode`,
@@ -1023,6 +967,14 @@ CustomScrollView(
 `CupertinoNativeNavigationBar` is the version for pages that do not scroll:
 `title`, `subtitle`, `centerTitle`, `leading`, `trailing`, `scrollEdgeEffect`,
 `tintColor`.
+
+Add this to `ios/Runner/Info.plist`, or the title shows a faint glow over the
+scroll edge effect:
+
+```xml
+<key>FLTDisablePartialRepaint</key>
+<true/>
+```
 
 ### Page Scaffold
 
@@ -1075,23 +1027,23 @@ is an object in the host's heap; the body isolate has no way to reach it.
 Generating the name automatically would not change that — the name is not the
 obstacle, the builder is.
 
-| Parameter | Type | Default | |
-| --- | --- | --- | --- |
-| `body` | `String?` | — | Root route when there is no `tabBar`. |
-| `navigationBar` | `CupertinoNativeScaffoldNavigationBar?` | — | |
-| `tabBar` | `CupertinoNativeTabBar?` | — | Each tab `id` is its route. |
-| `controller` | `CupertinoNativePageScaffoldController?` | — | |
-| `onToolbarAction` | `CupertinoNativeToolbarActionCallback?` | — | |
-| `onTabChanged` | `ValueChanged<String>?` | — | |
-| `onRouteChanged` | `CupertinoNativeRouteChangedCallback?` | — | |
-| `onSearchChanged` / `onSearchSubmitted` | `CupertinoNativeSearchCallback?` | — | |
-| `onSearchActiveChanged` | `CupertinoNativeSearchActiveCallback?` | — | |
-| `scrollEdgeEffect` | `CupertinoScrollEdgeEffectStyle` | `.automatic` | |
-| `backgroundColor` / `activeColor` | `Color?` | — | |
-| `showLoadingIndicator` | `bool?` | — | Falls back to `CupertinoWidgetsSettings.showLoadingIndicator` (`false`), a global switch for every engine-booting surface at once. |
-| `resizeToAvoidBottomInset` | `bool` | `true` | |
-| `nativeBody` | `CupertinoNativeBody?` | — | A body rendered as SwiftUI directly. Replaces `body` / the tabs' routes. |
-| `onBodyEvent` | `void Function(String id, Object? value)?` | — | A `nativeBody` control changed. |
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `body` | `String?` | Route of the root page when there is no `tabBar`. |
+| `navigationBar` | `CupertinoNativeScaffoldNavigationBar?` | Title, toolbar items and search of the root page. |
+| `tabBar` | `CupertinoNativeTabBar?` | Tabs; each tab `id` is its route. |
+| `controller` | `CupertinoNativePageScaffoldController?` | Push and pop from code. |
+| `onToolbarAction` | `CupertinoNativeToolbarActionCallback?` | Called with the route and the `actionId` of a tapped toolbar item. |
+| `onTabChanged` | `ValueChanged<String>?` | Called with the `id` of the selected tab. |
+| `onRouteChanged` | `CupertinoNativeRouteChangedCallback?` | Called with the native stack, root first, after each push or pop. |
+| `onSearchChanged` / `onSearchSubmitted` | `CupertinoNativeSearchCallback?` | Called with the route and the query as it is typed / when the search key is pressed. |
+| `onSearchActiveChanged` | `CupertinoNativeSearchActiveCallback?` | Called when the search field gains or loses focus. |
+| `scrollEdgeEffect` | `CupertinoScrollEdgeEffectStyle` | Blur where content scrolls under the bars. Default `automatic`. |
+| `backgroundColor` / `activeColor` | `Color?` | Page background / tint of the bars and controls. |
+| `showLoadingIndicator` | `bool?` | Spinner while a body boots. Falls back to `CupertinoWidgetsSettings.showLoadingIndicator` (`false`). |
+| `resizeToAvoidBottomInset` | `bool` | Shrink the body for the keyboard. Default `true`. |
+| `nativeBody` | `CupertinoNativeBody?` | A body rendered as SwiftUI directly, no engine. Replaces `body` / the tabs' routes. |
+| `onBodyEvent` | `void Function(String id, Object? value)?` | Called when a `nativeBody` control changes, with its node `id` and the new value. |
 
 #### Talking to a body — the isolate boundary
 
@@ -1185,14 +1137,14 @@ arbitrary Flutter and controls that render as SwiftUI directly. Keep the route
 body when the page is mostly your own Flutter UI; use `nativeBody` when the
 page is mostly system controls.
 
-| Node | |
+| Node | Parameters |
 | --- | --- |
 | `.column` / `.row` / `.scroll` | `children`, `spacing`, `alignment`, `padding`, `expand` |
 | `.spacer` | `extent` — flexible when null |
 | `.divider` | |
 | `.text` | `value`, `style`, `fontSize`, `fontWeight`, `color`, `align` |
 | `.button` | `id`, `title`, `icon`, `style`, `sizeStyle`, `borderShape`, `color`, `expand` |
-| `.field` | `id`, `value`, `placeholder`, `obscureText`, `enabled` |
+| `.textField` | `id`, `value`, `placeholder`, `obscureText`, `enabled`, `glass`, `cornerRadius`, `prefix`, `suffix` |
 | `.toggle` | `id`, `value`, `label`, `color` |
 | `.slider` | `id`, `value`, `min`, `max`, `step`, `color`, `enabled` |
 | `.picker` | `id`, `items`, `selectedIndex`, `style`, `label`, `showLabel`, `color` |
@@ -1209,14 +1161,14 @@ Navigate with `CupertinoNativePageScaffold.push(...)`, `.pushNamed(route)` and
 
 `CupertinoNativeScaffoldNavigationBar`:
 
-| Parameter | Type | Default | |
-| --- | --- | --- | --- |
-| `title` | `String` | required | |
-| `subtitle` | `String?` | — | |
-| `titleDisplayMode` | `CupertinoNativeToolbarTitleDisplayMode` | `.automatic` | `automatic`, `inline`, `inlineLarge`, `large`. |
-| `leading` / `trailing` | `List<CupertinoNativeToolbarContent>` | `[]` | See [Toolbar items](#toolbar-items). |
-| `bottom` | `List<CupertinoNativeToolbarContent>` | `[]` | The bottom toolbar. Up to 5 entries. |
-| `search` | `CupertinoNativeSearchField?` | — | |
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `title` | `String` | Page title. |
+| `subtitle` | `String?` | A second line under the title. |
+| `titleDisplayMode` | `CupertinoNativeToolbarTitleDisplayMode` | `automatic`, `inline`, `inlineLarge`, `large`. Default `automatic`. |
+| `leading` / `trailing` | `List<CupertinoNativeToolbarContent>` | Toolbar items at each end of the bar. See [Toolbar items](#toolbar-items). |
+| `bottom` | `List<CupertinoNativeToolbarContent>` | The bottom toolbar, up to 5 entries. |
+| `search` | `CupertinoNativeSearchField?` | Makes the page `.searchable` with this field. |
 
 #### Bottom toolbar
 
@@ -1266,11 +1218,11 @@ CupertinoNativeScaffoldNavigationBar(
 
 `CupertinoNativeSearchField` is the page's `.searchable` field.
 
-| Parameter | Type | Default | |
-| --- | --- | --- | --- |
-| `placeholder` | `String?` | — | |
-| `placement` | `CupertinoNativeSearchPlacement` | `.automatic` | `automatic`, `toolbar`, `navigationBarDrawer`, `navigationBarDrawerAlways`. |
-| `toolbarBehavior` | `CupertinoNativeSearchToolbarBehavior` | `.automatic` | `minimize` collapses the field to a magnifying-glass button as the page scrolls. |
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `placeholder` | `String?` | Grey hint in the empty field. |
+| `placement` | `CupertinoNativeSearchPlacement` | `automatic`, `toolbar`, `navigationBarDrawer`, `navigationBarDrawerAlways`. Default `automatic`. |
+| `toolbarBehavior` | `CupertinoNativeSearchToolbarBehavior` | `minimize` collapses the field to a magnifying-glass button as the page scrolls. Default `automatic`. |
 
 `placement: .toolbar` is the iOS 26 bottom-docked search: on iPhone the field
 sits at the **bottom** of the screen in its own glass capsule rather than in a
@@ -1500,23 +1452,23 @@ await CupertinoNativeSheet.show(
 );
 ```
 
-| Parameter | Type | Default | |
-| --- | --- | --- | --- |
-| `route` | `String?` | — | Body route registered in `maybeRun`. Give this or `nativeBody`. |
-| `nativeBody` / `onBodyEvent` | `CupertinoNativeBody?` / `void Function(String, Object?)?` | — | SwiftUI content with no engine; see below. |
-| `navigationBar` | `CupertinoNativeScaffoldNavigationBar?` | — | |
-| `bottom` | `CupertinoNativeSheetSegmentedControl?` | — | |
-| `detents` | `List<CupertinoNativeSheetDetent>` | `[large]` | `medium`, `large`. |
-| `showDragHandle` | `bool` | `false` | |
-| `detentHeights` | `List<double>` | `[]` | Extra stops at fixed heights, in points. *iOS 16+* |
-| `undimmedUpTo` | `CupertinoNativeSheetDetent?` | — | Content behind stays undimmed and usable up to this detent (the Maps sheet). |
-| `dismissible` | `bool` | `true` | `false` blocks swipe-to-dismiss. |
-| `cornerRadius` | `double?` | — | |
-| `scrollEdgeEffect` | `CupertinoScrollEdgeEffectStyle` | `.soft` | |
-| `backgroundColor` | `Color?` | — | |
-| `onToolbarAction` | `void Function(String)?` | — | |
-| `onBottomChanged` | `ValueChanged<int>?` | — | |
-| `onSearchChanged` / `onSearchSubmitted` | `ValueChanged<String>?` | — | |
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `route` | `String?` | Body route registered in `maybeRun`. Give this or `nativeBody`. |
+| `nativeBody` / `onBodyEvent` | `CupertinoNativeBody?` / `void Function(String, Object?)?` | SwiftUI content with no engine, and the call reporting its changes; see below. |
+| `navigationBar` | `CupertinoNativeScaffoldNavigationBar?` | Title and buttons pinned at the top of the sheet. |
+| `bottom` | `CupertinoNativeSheetSegmentedControl?` | A segmented control pinned under the bar. |
+| `detents` | `List<CupertinoNativeSheetDetent>` | Heights the sheet rests at: `medium` (half), `large`. Default `[large]`. |
+| `showDragHandle` | `bool` | Show the grabber. Default `false`. |
+| `detentHeights` | `List<double>` | Extra stops at fixed heights, in points. *iOS 16+* |
+| `undimmedUpTo` | `CupertinoNativeSheetDetent?` | Content behind stays undimmed and usable up to this detent (the Maps sheet). |
+| `dismissible` | `bool` | `false` blocks swipe-to-dismiss. Default `true`. |
+| `cornerRadius` | `double?` | Corner radius of the sheet. The system's when null. |
+| `scrollEdgeEffect` | `CupertinoScrollEdgeEffectStyle` | Blur where content scrolls under the bar. Default `soft`. |
+| `backgroundColor` | `Color?` | Background of the sheet. |
+| `onToolbarAction` | `void Function(String)?` | Called with the `actionId` of a tapped bar button. |
+| `onBottomChanged` | `ValueChanged<int>?` | Called with the index of the selected segment. |
+| `onSearchChanged` / `onSearchSubmitted` | `ValueChanged<String>?` | Called with the query as it is typed / when the search key is pressed. |
 
 Close it with `CupertinoNativeSheet.dismiss()`.
 
@@ -1551,12 +1503,12 @@ CupertinoNativePopover.show(
 )
 ```
 
-| Parameter | Type | Default | |
-| --- | --- | --- | --- |
-| `route` | `String` | required | Body route registered in `maybeRun`. |
-| `anchor` | `Rect` | required | Global rect of the control — see `anchorOf`. |
-| `preferredSize` | `Size?` | — | Without one UIKit sizes the card to the content, which for a Flutter body is the screen. |
-| `navigationBar` | `CupertinoNativeScaffoldNavigationBar?` | — | |
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `route` | `String` | Body route registered in `maybeRun`. |
+| `anchor` | `Rect` | Global rect of the control it points at — see `anchorOf`. |
+| `preferredSize` | `Size?` | Size of the card. Without one UIKit sizes it to the content, which for a Flutter body is the screen. |
+| `navigationBar` | `CupertinoNativeScaffoldNavigationBar?` | Title and buttons pinned at the top. |
 
 Dismiss it with `CupertinoNativeSheet.dismiss()` — same presentation
 underneath.
@@ -1578,12 +1530,12 @@ Stack(
 )
 ```
 
-| Parameter | Type | Default | |
-| --- | --- | --- | --- |
-| `edge` | `CupertinoScrollEdgeEffectEdge` | `.top` | `top`, `bottom`. |
-| `style` | `CupertinoScrollEdgeEffectStyle` | `.soft` | `soft`, `hard`, `automatic`. |
-| `color` | `Color?` | — | Background of the `hard` style. |
-| `onBrightnessChanged` | `ValueChanged<Brightness>?` | — | Brightness of the content behind the effect, to adapt text over it. |
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `edge` | `CupertinoScrollEdgeEffectEdge` | Which edge: `top` or `bottom`. Default `top`. |
+| `style` | `CupertinoScrollEdgeEffectStyle` | `soft` blurs, `hard` paints `color`, `automatic` lets the system choose. Default `soft`. |
+| `color` | `Color?` | Background of the `hard` style. |
+| `onBrightnessChanged` | `ValueChanged<Brightness>?` | Brightness of the content behind the effect, to adapt text over it. |
 
 ### Symbol Image
 
@@ -1593,12 +1545,12 @@ An SF Symbol as a regular Flutter image.
 CupertinoSymbolImage.symbol(CupertinoSymbols.star, size: 20, color: CupertinoColors.systemYellow)
 ```
 
-| Parameter | Type | Default | |
-| --- | --- | --- | --- |
-| `name` | `String` | required | SF Symbol name (or `.symbol(CupertinoSymbols)`). |
-| `size` | `double` | `17` | |
-| `color` | `Color?` | — | |
-| `weight` | `FontWeight` | `.normal` | |
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `name` | `String` | SF Symbol name, or `.symbol(CupertinoSymbols)`. |
+| `size` | `double` | Point size. Default `17`. |
+| `color` | `Color?` | Colour of the symbol. The label colour when null. |
+| `weight` | `FontWeight` | Stroke weight. Default `normal`. |
 
 ### Animated Symbol
 
@@ -1620,18 +1572,18 @@ CupertinoNativeSymbol('wifi',
     effect: CupertinoNativeSymbolEffect.variableColor, repeating: true)
 ```
 
-| Parameter | Type | Default | |
-| --- | --- | --- | --- |
-| `name` | `String` | required | Or `.symbol(CupertinoSymbols)`. |
-| `size` / `color` / `weight` | | `17` / — / `.normal` | |
-| `renderingMode` | `CupertinoNativeSymbolRenderingMode?` | — | `monochrome`, `hierarchical`, `palette`, `multicolor`. |
-| `effect` | `CupertinoNativeSymbolEffect?` | — | `bounce`, `pulse`, `variableColor`, `wiggle`, `rotate`, `breathe`. |
-| `trigger` | `int` | `0` | Bump to fire a discrete effect. |
-| `repeating` | `bool` | `false` | Run the effect continuously. `bounce` is discrete only. |
-| `replaceOnChange` | `bool` | `false` | Morph between symbols when `name` changes, instead of cutting. |
-| `variableValue` | `double?` | — | `0...1`: how many layers of a variable symbol (`wifi`, `speaker.wave.3`) are lit. *iOS 16+* |
-| `paletteColors` | `List<Color>` | `[]` | 2–3 layer colours for the `palette` rendering mode. |
-| `gradient` | `bool` | `false` | Gradient fill of the symbol's colour. *iOS 26+* |
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `name` | `String` | SF Symbol name, or `.symbol(CupertinoSymbols)`. |
+| `size` / `color` / `weight` |  | As on `CupertinoSymbolImage`. Default `17` / label colour / `normal`. |
+| `renderingMode` | `CupertinoNativeSymbolRenderingMode?` | `monochrome`, `hierarchical`, `palette`, `multicolor`. |
+| `effect` | `CupertinoNativeSymbolEffect?` | `bounce`, `pulse`, `variableColor`, `wiggle`, `rotate`, `breathe`. |
+| `trigger` | `int` | Change it to fire a discrete effect once. Default `0`. |
+| `repeating` | `bool` | Run the effect continuously. `bounce` is discrete only. Default `false`. |
+| `replaceOnChange` | `bool` | Morph between symbols when `name` changes, instead of cutting. Default `false`. |
+| `variableValue` | `double?` | `0...1`: how many layers of a variable symbol (`wifi`, `speaker.wave.3`) are lit. *iOS 16+* |
+| `paletteColors` | `List<Color>` | 2–3 layer colours for the `palette` rendering mode. |
+| `gradient` | `bool` | Gradient fill of the symbol's colour. Default `false`. *iOS 26+* |
 
 ## Models
 
@@ -1648,36 +1600,50 @@ CupertinoNativeSymbol('wifi',
 
 ### Menu items
 
-| Type | Fields |
+| Type | Description |
 | --- | --- |
-| `CupertinoNativeMenuAction` | `title`, `actionId`, `subtitle`, `systemImage`, `isDestructive`, `isDisabled` |
-| `CupertinoNativeMenuToggle` | `title`, `actionId`, `value`, `systemImage` |
-| `CupertinoNativeSubmenu` | `title`, `items`, `systemImage` |
-| `CupertinoNativeMenuSection` | `title`, `items` |
-| `CupertinoNativeMenuControlGroup` | `items` — a row of up to 3 compact icon buttons (`ControlGroup`), e.g. Copy / Paste / Share at the top of the menu |
+| `CupertinoNativeMenuAction` | A tappable entry. `actionId` is what `onAction` reports. `title`, `subtitle`, `systemImage` (SF Symbol name); `isDestructive` draws it red, `isDisabled` greys it out. |
+| `CupertinoNativeMenuToggle` | An entry with a checkmark: `value` is its current state, and a tap reports its `actionId` with the new state. |
+| `CupertinoNativeSubmenu` | Opens a nested menu of `items`, under its `title` and `systemImage`. |
+| `CupertinoNativeMenuSection` | Groups `items` between separators, under an optional `title`. |
+| `CupertinoNativeMenuControlGroup` | A row of up to 3 compact icon buttons (`ControlGroup`), e.g. Copy / Paste / Share at the top of the menu. |
 
 ### List tiles
 
-| Type | Fields |
+`CupertinoNativeListSection` is one card: `header` and `footer` text above and
+below it, and its rows as `children`.
+
+| `CupertinoNativeListTile` | Description |
 | --- | --- |
-| `CupertinoNativeListSection` | `header`, `footer`, `children` |
-| `CupertinoNativeListTile` | `id`, `title`, `subtitle`, `leading`, `additionalInfo`, `showChevron`, `type` (`label`, `toggle`, `button`), `toggleValue`, `enabled`, `selected`, `trailing`, `badge`, `swipeActions`, `children` (nested rows: an expandable row that reveals them underneath) |
+| `id` | Names the row in every callback — `onRowTap`, `onToggle`, `onSwipeAction`, `selection`. Unique in the list. |
+| `title` / `subtitle` | The row's text, on one or two lines. |
+| `leading` | Icon before the title. |
+| `additionalInfo` | Grey text at the trailing edge, like the network name beside Wi-Fi. |
+| `showChevron` | The trailing › that says the row opens another page. Visual only: the tap still arrives in `onRowTap`. |
+| `type` | `label` (default), `toggle` (a switch, reported by `onToggle`), `button` (a tinted title, an action). |
+| `toggleValue` | State of a `toggle` row. |
+| `enabled` | False greys the row out and ignores taps. |
+| `selected` | Shows a checkmark, as in a selection list. You keep which rows are selected. |
+| `trailing` | A control at the trailing edge — switch, slider, text field, stepper… — transcribed into the native row with its callbacks. |
+| `badge` | A count or short text in a capsule at the trailing edge. |
+| `swipeActions` | Buttons revealed by swiping the row left, reported by `onSwipeAction`. |
+| `children` | Rows revealed under this one when it is tapped: an expandable row. |
 
 ### Toolbar items
 
-| Type | Fields |
+| Type | Description |
 | --- | --- |
-| `CupertinoNativeToolbarItem` | `actionId`, `title`, `systemImage` (SF Symbol name) or `symbol` (`CupertinoSymbols`) or `icon`, `sharedBackgroundVisibility`, `glass`, `visibilityPriority`, `pinned` |
-| `CupertinoNativeToolbarItemGroup` | `items`, `sharedBackgroundVisibility`, `visibilityPriority`, `pinned` |
-| `CupertinoNativeToolbarSpacer` | `flexible` — a `ToolbarSpacer`: breaks the toolbar's shared glass capsule in two. |
+| `CupertinoNativeToolbarItem` | A bar button. `actionId` is what `onToolbarAction` reports. Its content is a `title`, or an SF Symbol as `systemImage` (name), `symbol` (`CupertinoSymbols`) or `icon`. `sharedBackgroundVisibility` gives it its own glass instead of the capsule shared with its neighbours, and `glass` styles it there. `visibilityPriority` and `pinned`: see above. |
+| `CupertinoNativeToolbarItemGroup` | Several `items` in one capsule, with the same `sharedBackgroundVisibility`, `visibilityPriority` and `pinned`. |
+| `CupertinoNativeToolbarSpacer` | A `ToolbarSpacer`: breaks the shared capsule in two. `flexible` pushes what follows to the far edge. |
 
 ### Tabs
 
-| Type | Fields |
+| Type | Description |
 | --- | --- |
-| `CupertinoNativeTab` | `id`, `title`, `icon`, `role` (`.search`, `.prominent` *iOS 27+*), `search`, `badge` |
-| `CupertinoNativeSearchField` | `placeholder`, `placement`, `toolbarBehavior` |
-| `CupertinoNativeTabBarAccessory` | `title`, `subtitle`, `icon`, `actionId` |
+| `CupertinoNativeTab` | `id` names the tab (what `onTabChanged` reports, and the body route in a scaffold); `title` and `icon`; `badge`, text in a red capsule. `role: .search` sets the tab apart and turns it into a search field (`search` is that field); `.prominent` *iOS 27+*. |
+| `CupertinoNativeSearchField` | See [Search](#search). |
+| `CupertinoNativeTabBarAccessory` | The bar above the tabs, like Now Playing: `title`, `subtitle`, `icon`, and the `actionId` a tap reports. |
 
 ## Example app
 

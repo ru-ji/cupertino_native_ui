@@ -22,18 +22,7 @@ class _SliderDemoPageState extends State<SliderDemoPage> {
     return CupertinoPageScaffold(
       child: CustomScrollView(
         slivers: [
-          CupertinoNativeSliverNavigationBar(
-            largeTitle: 'Slider',
-            leading: Navigator.canPop(context)
-                ? CupertinoNativeButton.glass(
-                    borderShape: CupertinoNativeButtonBorderShape.circle,
-                    onPressed: () => Navigator.pop(context),
-                    child: CupertinoSymbolImage.symbol(
-                      CupertinoSymbols.chevronBackward,
-                    ),
-                  )
-                : null,
-          ),
+          CupertinoNativeSliverNavigationBar(largeTitle: 'Slider'),
           SliverPadding(
             padding: EdgeInsets.only(
               bottom:

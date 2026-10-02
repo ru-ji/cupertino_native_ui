@@ -42,10 +42,6 @@ mixin NativePlatformViewStateMixin<T extends StatefulWidget> on State<T> {
     final height = (size?['height'] as num?)?.toDouble();
     if (width == null || height == null || width <= 0 || height <= 0) return;
     if (width == intrinsicWidth && height == intrinsicHeight) return;
-    debugPrint(
-      'EXPAND-DEBUG ${DateTime.now().millisecondsSinceEpoch} intrinsicSize '
-      'h=$height was=$intrinsicHeight ($runtimeType)',
-    );
     if (!mounted) return;
     setState(() {
       intrinsicWidth = width;

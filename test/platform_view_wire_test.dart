@@ -87,6 +87,21 @@ void main() {
       expect(params['title'], 'Save');
     }, variant: iOS);
 
+    testWidgets('button sends its title weight as the 0...8 index', (
+      tester,
+    ) async {
+      // The native side reads `Font.Weight(weightIndex:)`: 700 fell through
+      // to regular.
+      final params = await paramsOf(
+        tester,
+        const CupertinoNativeButton(
+          onPressed: null,
+          child: Text('Edit', style: TextStyle(fontWeight: FontWeight.w700)),
+        ),
+      );
+      expect(params['fontWeight'], 6);
+    }, variant: iOS);
+
     testWidgets('switch sends it as "color"', (tester) async {
       final params = await paramsOf(
         tester,

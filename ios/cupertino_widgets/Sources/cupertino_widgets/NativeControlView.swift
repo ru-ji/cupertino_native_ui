@@ -86,6 +86,8 @@ struct ControlConfig: Codable {
     let placeholderLeading: Double?
     /// Room between the editor and its background / glass edge.
     let padding: EdgeInsetsDTO?
+    /// The editor's height, for a native body: there no Flutter box sizes it.
+    let height: Double?
     /// A lowered Flutter widget drawn before the text, on its first line.
     /// One node at most; an array because a struct cannot hold itself (a
     /// body node can hold a control config).
@@ -157,6 +159,9 @@ class NativeControlView: NativeHostingView {
                 },
                 onEvent: { [weak self] id, value in
                     self?.channel?.invokeMethod("onEvent", arguments: ["id": id, "value": value])
+                },
+                onScrollState: { [weak self] state in
+                    self?.channel?.invokeMethod("onScrollState", arguments: state)
                 }))
         guard config.hug == true else {
             attach(content)
@@ -207,7 +212,9 @@ struct AdaptiveControlView: View {
     var onFocus: (Bool) -> Void = { _ in }
     /// An event from a lowered node (the text editor's `prefix`).
     var onEvent: (String, Any?) -> Void = { _, _ in }
-    @FocusState private var editorFocused: Bool
+    /// Where the text editor's own scrolling stands — Flutter decides from it
+    /// whether a drag on the editor scrolls the text or the page.
+    var onScrollState: ([String: Bool]) -> Void = { _ in }
     /// The prefix's measured width, added to the placeholder's leading inset.
     @State private var prefixWidth: CGFloat = 0
 
@@ -326,8 +333,9 @@ struct AdaptiveControlView: View {
         }
         .onPreferenceChange(PrefixWidthKey.self) { prefixWidth = $0 }
         // TextEditor has no placeholder of its own: draw it over the editor
-        // while empty, where typed text starts — the text view's inset, past
-        // the prefix. Inside the glass, so the glass does not shift it.
+        // while empty, where typed text starts — the text view's inset plus
+        // the padding, past the prefix. Inside the glass, so the glass does
+        // not shift it.
         .overlay(alignment: .topLeading) {
             if model.text.isEmpty, let placeholder = config.placeholder {
                 Text(placeholder)
@@ -338,13 +346,14 @@ struct AdaptiveControlView: View {
                     .allowsHitTesting(false)
             }
         }
-        .padding(.top, CGFloat(config.padding?.top ?? 0))
+        // Sideways the padding is around the text view, so the prefix moves
+        // with it; above and below it is inside, see `TextViewScrollProbe`.
         .padding(.leading, CGFloat(config.padding?.left ?? 0))
         .padding(.trailing, CGFloat(config.padding?.right ?? 0))
-        .padding(.bottom, CGFloat(config.padding?.bottom ?? 0))
         .background(config.backgroundColor.map { Color(argb: $0) })
         .clipShape(RoundedRectangle(cornerRadius: config.cornerRadius ?? 0, style: .continuous))
         .modifier(EditorGlass(config: config))
+        .frame(height: config.height.map { CGFloat($0) })
     }
 
     private var editorFont: Font {
@@ -380,15 +389,22 @@ struct AdaptiveControlView: View {
         .disableAutocorrection(config.autocorrect == false)
         .textContentType(config.textContentType.map { UITextContentType(rawValue: $0) })
         .hiddenEditorBackground()
-        .focused($editorFocused)
-        .onChange(of: editorFocused) { onFocus($0) }
+        .background(
+            TextViewScrollProbe(
+                onScrollState: onScrollState, onFocus: onFocus,
+                textInsets: UIEdgeInsets(
+                    top: CGFloat(config.padding?.top ?? 0), left: 0,
+                    bottom: CGFloat(config.padding?.bottom ?? 0), right: 0)))
     }
 
     /// Where typed text starts: the UITextView's own inset, 8 top and 5
-    /// leading. Overridable from Dart (`placeholderPadding`) where a font or
-    /// an iOS version moves it.
+    /// leading, overridable from Dart (`placeholderPadding`) where a font or
+    /// an iOS version moves it — plus the padding above the text.
     private var placeholderInsets: (top: CGFloat, leading: CGFloat) {
-        (CGFloat(config.placeholderTop ?? 8), CGFloat(config.placeholderLeading ?? 5))
+        (
+            CGFloat((config.placeholderTop ?? 8) + (config.padding?.top ?? 0)),
+            CGFloat(config.placeholderLeading ?? 5)
+        )
     }
 
     private struct PrefixWidthKey: PreferenceKey {
@@ -455,6 +471,163 @@ extension View {
             self.scrollContentBackground(.hidden)
         } else {
             self
+        }
+    }
+}
+
+/// Finds the `UITextView` under a SwiftUI `TextEditor` and reports where its
+/// own scrolling stands, each time that changes: whether the text overflows
+/// (`scrolls`), whether it rests at the top or the bottom (`atTop`,
+/// `atBottom`), and whether it is still moving — dragged, decelerating or
+/// bouncing (`moving`).
+///
+/// Flutter hands a drag on the editor to the text or to the page from this,
+/// the way UIKit does with a text view nested in a scroll view: the text
+/// keeps every drag while it is in between, or still moving; at rest at an
+/// edge, a drag past that edge scrolls the page instead.
+@available(iOS 15.0, *)
+private struct TextViewScrollProbe: UIViewRepresentable {
+    let onScrollState: ([String: Bool]) -> Void
+    /// The text view's focus, straight from UIKit's begin / end editing
+    /// notifications — posted as it takes the responder, before the keyboard
+    /// starts to rise. Not `@FocusState` + `.onChange`: that waited for the
+    /// next view update, and on a first focus the keyboard had already risen
+    /// when Flutter learned which field to lift.
+    let onFocus: (Bool) -> Void
+    /// Added to the text view's own `textContainerInset`: room inside the
+    /// scrolling text, which scrolls through it up to the editor's edge.
+    /// SwiftUI has no inset for a `TextEditor`'s text.
+    let textInsets: UIEdgeInsets
+
+    func makeUIView(context: Context) -> Probe {
+        let probe = Probe(onScrollState: onScrollState, onFocus: onFocus)
+        probe.textInsets = textInsets
+        return probe
+    }
+    func updateUIView(_ probe: Probe, context: Context) {
+        probe.onScrollState = onScrollState
+        probe.onFocus = onFocus
+        probe.textInsets = textInsets
+    }
+
+    final class Probe: UIView {
+        var onScrollState: ([String: Bool]) -> Void
+        var onFocus: (Bool) -> Void
+        private var observations: [NSKeyValueObservation] = []
+        private var focusObservers: [NSObjectProtocol] = []
+        private weak var textView: UITextView?
+        private var reported: [String: Bool]?
+        /// Polls while the text moves: the end of a deceleration or a bounce
+        /// changes no observable property of its own.
+        private var link: CADisplayLink?
+        var textInsets: UIEdgeInsets = .zero {
+            didSet { if textInsets != oldValue { applyInsets() } }
+        }
+        /// The text view's own inset, as found.
+        private var baseInset: UIEdgeInsets?
+
+        init(
+            onScrollState: @escaping ([String: Bool]) -> Void,
+            onFocus: @escaping (Bool) -> Void
+        ) {
+            self.onScrollState = onScrollState
+            self.onFocus = onFocus
+            super.init(frame: .zero)
+            isUserInteractionEnabled = false
+        }
+        required init?(coder: NSCoder) { fatalError() }
+
+        override func didMoveToWindow() {
+            super.didMoveToWindow()
+            if window == nil {
+                link?.invalidate()
+                link = nil
+                return
+            }
+            guard observations.isEmpty else { return }
+            // After this pass: the text view is laid out next to the probe.
+            DispatchQueue.main.async { [weak self] in self?.observe() }
+        }
+
+        private func observe() {
+            var ancestor = superview
+            var found: UITextView?
+            while let view = ancestor, found == nil {
+                found = Self.textView(in: view, depth: 0)
+                ancestor = view.superview
+            }
+            guard let found else { return }
+            textView = found
+            baseInset = found.textContainerInset
+            applyInsets()
+            let center = NotificationCenter.default
+            focusObservers = [
+                center.addObserver(
+                    forName: UITextView.textDidBeginEditingNotification, object: found,
+                    queue: nil
+                ) { [weak self] _ in self?.onFocus(true) },
+                center.addObserver(
+                    forName: UITextView.textDidEndEditingNotification, object: found,
+                    queue: nil
+                ) { [weak self] _ in self?.onFocus(false) },
+            ]
+            let changed: (UITextView) -> Void = { [weak self] _ in
+                DispatchQueue.main.async { self?.check() }
+            }
+            observations = [
+                found.observe(\.contentOffset, options: [.new]) { view, _ in changed(view) },
+                found.observe(\.contentSize, options: [.initial, .new]) { view, _ in changed(view) },
+                found.observe(\.bounds, options: [.new]) { view, _ in changed(view) },
+            ]
+        }
+
+        private func check() {
+            guard let view = textView else { return }
+            let inset = view.adjustedContentInset
+            let top = -inset.top
+            let bottom = max(top, view.contentSize.height - view.bounds.height + inset.bottom)
+            let y = view.contentOffset.y
+            let bouncing = y < top - 0.5 || y > bottom + 0.5
+            let moving = view.isDragging || view.isDecelerating || bouncing
+            let state = [
+                "scrolls": view.contentSize.height > view.bounds.height + 1,
+                "atTop": y <= top + 0.5,
+                "atBottom": y >= bottom - 0.5,
+                "moving": moving,
+            ]
+            if moving, link == nil {
+                let link = CADisplayLink(target: self, selector: #selector(tick))
+                link.add(to: .main, forMode: .common)
+                self.link = link
+            } else if !moving {
+                link?.invalidate()
+                link = nil
+            }
+            guard state != reported else { return }
+            reported = state
+            onScrollState(state)
+        }
+
+        @objc private func tick() { check() }
+
+        private func applyInsets() {
+            guard let view = textView, let base = baseInset else { return }
+            view.textContainerInset = UIEdgeInsets(
+                top: base.top + textInsets.top, left: base.left + textInsets.left,
+                bottom: base.bottom + textInsets.bottom, right: base.right + textInsets.right)
+        }
+
+        deinit {
+            focusObservers.forEach(NotificationCenter.default.removeObserver)
+        }
+
+        private static func textView(in view: UIView, depth: Int) -> UITextView? {
+            if let textView = view as? UITextView { return textView }
+            guard depth < 12 else { return nil }
+            for subview in view.subviews {
+                if let found = textView(in: subview, depth: depth + 1) { return found }
+            }
+            return nil
         }
     }
 }

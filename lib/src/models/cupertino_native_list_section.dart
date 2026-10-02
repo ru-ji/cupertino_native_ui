@@ -42,11 +42,11 @@ class CupertinoNativeListSection {
     this.minHeight,
   });
 
-  Map<String, dynamic> toMap() {
+  Map<String, dynamic> toMap({bool isDark = false}) {
     return {
       'header': header,
       'footer': footer,
-      'rows': children.map((r) => r.toMap()).toList(),
+      'rows': children.map((r) => r.toMap(isDark: isDark)).toList(),
       if (cardInset != null) 'cardInset': cardInset,
       if (rowPadding != null)
         'rowPadding': {

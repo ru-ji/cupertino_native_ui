@@ -11,6 +11,7 @@ import '../cupertino_native_body.dart';
 import 'keyboard_avoidance.dart';
 import 'native_platform_view_mixin.dart';
 import 'scroll_friendly_recognizer.dart';
+import 'native_color.dart';
 
 /// A control that stands for a [NativeControl] — what lets the lowering put
 /// it straight into a SwiftUI surface (a list row, a native body).
@@ -34,7 +35,6 @@ class NativeControl extends StatefulWidget {
     this.hug = false,
     this.height,
     this.fallbackHeight = 44,
-    this.gestures,
     this.prefix,
     this.onEvent,
   });
@@ -52,7 +52,6 @@ class NativeControl extends StatefulWidget {
 
   /// Height until the native measurement lands.
   final double fallbackHeight;
-  final Set<Factory<OneSequenceGestureRecognizer>>? gestures;
 
   /// A lowered widget the control draws before its content (the text
   /// editor's `prefix`); its nodes report through [onEvent].
@@ -66,6 +65,19 @@ class NativeControl extends StatefulWidget {
 class _NativeControlState extends State<NativeControl>
     with NativePlatformViewStateMixin, WidgetsBindingObserver {
   String? _sent;
+
+  /// Where the native content's own scrolling stands (the text editor's,
+  /// reported over `onScrollState`). While it does not scroll, the control
+  /// is scroll-friendly like any other; once it does, drags are shared with
+  /// the page by [NestedScrollPlatformViewRecognizer].
+  NestedScrollState _scroll = const NestedScrollState();
+
+  late final Set<Factory<OneSequenceGestureRecognizer>> _nestedGestures = {
+    // Its own type: see scrollFriendlyGestures for why it matters.
+    Factory<NestedScrollPlatformViewRecognizer>(
+      () => NestedScrollPlatformViewRecognizer(state: () => _scroll),
+    ),
+  };
 
   /// The native text editor holds the keyboard (reported over `onFocus`).
   bool _focused = false;
@@ -107,7 +119,10 @@ class _NativeControlState extends State<NativeControl>
   bool get _isDark => Theme.of(context).brightness == Brightness.dark;
 
   Map<String, Object?> _map() => {
-    ...widget.props,
+    // Colours travel as `Color` and are resolved for the app's brightness
+    // here, like the body encoder does.
+    for (final MapEntry(:key, :value) in widget.props.entries)
+      key: value is Color ? nativeArgb(value, isDark: _isDark) : value,
     'kind': widget.kind,
     'hug': widget.hug,
     'enabled': widget.enabled,
@@ -159,6 +174,13 @@ class _NativeControlState extends State<NativeControl>
               } else if (call.method == 'onEvent') {
                 final args = call.arguments as Map;
                 widget.onEvent?.call(args['id'] as String, args['value']);
+              } else if (call.method == 'onScrollState') {
+                final next = NestedScrollState.fromMap(call.arguments);
+                // Read by the recognizer as the finger lands; a rebuild is
+                // only needed to swap recognizers when overflow changes.
+                final swap = next.scrolls != _scroll.scrolls;
+                _scroll = next;
+                if (swap && mounted) setState(() {});
               } else if (call.method == 'onFocus') {
                 _focused = call.arguments == true;
                 // Keyboard already up (focus moved from another field): no
@@ -174,7 +196,9 @@ class _NativeControlState extends State<NativeControl>
           requestIntrinsicSize();
         },
         hitTestBehavior: PlatformViewHitTestBehavior.opaque,
-        gestureRecognizers: widget.gestures ?? scrollFriendlyGestures,
+        gestureRecognizers: _scroll.scrolls
+            ? _nestedGestures
+            : scrollFriendlyGestures,
       ),
     );
     final height = widget.height ?? intrinsicHeight ?? widget.fallbackHeight;

@@ -203,18 +203,7 @@ class _TextFieldDemoPageState extends State<TextFieldDemoPage> {
           resizeToAvoidBottomInset: false,
           child: CustomScrollView(
             slivers: [
-              CupertinoNativeSliverNavigationBar(
-                largeTitle: 'Text Field',
-                leading: Navigator.canPop(context)
-                    ? CupertinoNativeButton.glass(
-                        borderShape: CupertinoNativeButtonBorderShape.circle,
-                        onPressed: () => Navigator.pop(context),
-                        child: CupertinoSymbolImage.symbol(
-                          CupertinoSymbols.chevronBackward,
-                        ),
-                      )
-                    : null,
-              ),
+              CupertinoNativeSliverNavigationBar(largeTitle: 'Text Field'),
               SliverPadding(
                 padding: EdgeInsets.only(
                   bottom:
@@ -386,15 +375,19 @@ class _TextFieldDemoPageState extends State<TextFieldDemoPage> {
                     ),
                     // Multi-line native TextEditor: it scrolls inside its
                     // own height, controlled by echoing onChanged back.
-                    // No card padding: the TextEditor keeps its own inset.
+                    // No card padding: the editor's own, so the text scrolls
+                    // up to the card's edges.
                     _Card(
                       padding: EdgeInsets.zero,
                       child: CupertinoNativeTextEditor(
                         text: _notes,
                         placeholder: 'Notes…',
                         height: 140,
-                        maxLength: 280,
-
+                        maxLength: 1000,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
                         cursorColor: CupertinoColors.systemOrange,
                         onChanged: (v) => setState(() => _notes = v),
                       ),
@@ -402,7 +395,7 @@ class _TextFieldDemoPageState extends State<TextFieldDemoPage> {
                     Padding(
                       padding: const EdgeInsets.fromLTRB(32, 6, 32, 0),
                       child: Text(
-                        '${_notes.length} / 280',
+                        '${_notes.length} / 1000',
                         style: TextStyle(
                           fontSize: 13,
                           color: CupertinoColors.secondaryLabel.resolveFrom(

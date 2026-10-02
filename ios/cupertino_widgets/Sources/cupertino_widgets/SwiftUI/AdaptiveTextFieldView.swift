@@ -68,6 +68,7 @@ struct AdaptiveTextFieldView: View {
     let onSubmitted: (String) -> Void
     let onEditingComplete: () -> Void
     let onFocusChange: (Bool) -> Void
+    var onSelectionActive: (Bool) -> Void = { _ in }
 
     private var c: TextFieldConfig { model.config }
 
@@ -94,7 +95,8 @@ struct AdaptiveTextFieldView: View {
             onSubmit: {
                 onEditingComplete()
                 onSubmitted(model.text)
-            }
+            },
+            onSelectionActive: onSelectionActive
         )
         .frame(maxWidth: .infinity, alignment: verticalAlignment)
     }

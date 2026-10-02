@@ -37,7 +37,7 @@ class CupertinoNativeMultiDatePicker extends StatelessWidget
       'dates': [for (final d in dates) d.millisecondsSinceEpoch.toDouble()],
       'minimumDate': minimumDate?.millisecondsSinceEpoch.toDouble(),
       'maximumDate': maximumDate?.millisecondsSinceEpoch.toDouble(),
-      'tint': activeColor?.toARGB32(),
+      'tint': activeColor,
     },
     enabled: onChanged != null,
     onChanged: (v) => onChanged?.call({

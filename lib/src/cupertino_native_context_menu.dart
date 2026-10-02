@@ -39,6 +39,10 @@ class CupertinoNativeContextMenu extends StatefulWidget {
     this.onAction,
     this.onOpenChanged,
     this.childInteractive = false,
+    @Deprecated(
+      'The system already blurs the app behind a context menu; this put a '
+      'second blur on top of it.',
+    )
     this.blurBackground = false,
     this.previewCornerRadius = 0,
   });
@@ -61,8 +65,9 @@ class CupertinoNativeContextMenu extends StatefulWidget {
   /// dismissal starts, not when its animation ends.
   final ValueChanged<bool>? onOpenChanged;
 
-  /// Blurs the whole app behind the menu while it is open, natively over the
-  /// app window.
+  /// Ignored. The system blurs the app behind the menu itself (about 10pt,
+  /// dimmed, the page slightly scaled down); this used to add a second blur
+  /// over it.
   final bool blurBackground;
 
   /// Corner radius of [child], so the lifted preview keeps its shape. 0 for a
@@ -178,7 +183,6 @@ class _CupertinoNativeContextMenuState extends State<CupertinoNativeContextMenu>
     return {
       'previewCornerRadius': widget.previewCornerRadius,
       'items': widget.actions.map((e) => e.toMap()).toList(),
-      'blurBackground': widget.blurBackground,
       'isDark': _isDark,
     };
   }
@@ -187,7 +191,6 @@ class _CupertinoNativeContextMenuState extends State<CupertinoNativeContextMenu>
   void didUpdateWidget(covariant CupertinoNativeContextMenu oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.actions != widget.actions ||
-        oldWidget.blurBackground != widget.blurBackground ||
         oldWidget.previewCornerRadius != widget.previewCornerRadius) {
       updateNativeView(
         'updateContextMenu',

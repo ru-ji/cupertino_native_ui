@@ -104,7 +104,9 @@ CupertinoNativeBody? lowerWidgetNode(
         controlSize: widget.controlSize,
         color: widget.activeColor,
         fontSize: widget.textStyle?.fontSize,
-        fontWeight: widget.textStyle?.fontWeight?.value,
+        fontWeight: widget.textStyle?.fontWeight == null
+            ? null
+            : widget.textStyle!.fontWeight!.value ~/ 100 - 1,
         textColor: widget.textStyle?.color,
       );
 

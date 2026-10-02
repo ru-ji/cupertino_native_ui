@@ -107,7 +107,7 @@ class NativeSliderView: NativeHostingView {
             self.isDark = isDark
         }
         if let value = args["value"] as? NSNumber {
-            viewModel.value = value.doubleValue
+            viewModel.setFromDart(value.doubleValue)
         }
         if let min = args["min"] as? NSNumber {
             viewModel.min = min.doubleValue

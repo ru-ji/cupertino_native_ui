@@ -42,10 +42,11 @@ class CupertinoNativeActionSheet {
   /// Presents the sheet and awaits the choice, calling that action's
   /// `onPressed`. Dismissing without choosing calls nothing.
   ///
-  /// [anchor] is only read on iPad and Mac, where UIKit presents an action
-  /// sheet as a popover: pass the global rect of the control that opened it
-  /// (see [anchorOf]) so the popover points at it. Without one the popover is
-  /// centred and arrowless.
+  /// [anchor] is the global rect of the control that opened it (see
+  /// [anchorOf]), which the sheet grows out of: a popover on iPad and Mac,
+  /// and on iOS 26 a bubble on iPhone too, dismissed by tapping outside — the
+  /// cancel action is not shown. Without one, an iPhone shows the sheet at the
+  /// bottom of the screen and an iPad a centred, arrowless popover.
   static Future<void> show({
     required BuildContext context,
     String? title,
