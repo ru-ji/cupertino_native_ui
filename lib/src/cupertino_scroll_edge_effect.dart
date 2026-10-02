@@ -65,13 +65,9 @@ class CupertinoScrollEdgeEffect extends StatelessWidget {
   /// iOS only.
   final ValueChanged<Brightness>? onBrightnessChanged;
 
-  /// The system's blur radius.
-  static const double _radius = 1;
-
-  /// The system's `.hard` effect, measured on iOS 26 over a green page: the
-  /// page's colour at 91% over the content blurred by about 4pt.
+  /// The `.hard` wash: the page's colour at 91%, measured on iOS 26 over a
+  /// green page. Without a blur under it.
   static const double _hardOpacity = 0.91;
-  static const double _hardSigma = 4;
 
   /// The page's background: the nearest scaffold's, Cupertino or Material,
   /// else its theme's.
@@ -102,25 +98,20 @@ class CupertinoScrollEdgeEffect extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final background = _pageBackground(context);
-    // `hard` is not a denser fade, it is the absence of one: one blur and
-    // one wash that stop at a hard line.
+    // `hard` is not a denser fade, it is the absence of one: one flat wash
+    // that stops at a hard line.
     if (style == CupertinoScrollEdgeEffectStyle.hard) {
-      if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) {
-        return CupertinoNativeEdgeBlur(
-          edge: edge,
-          hard: true,
-          sigma: _hardSigma,
-          tint: background.withValues(alpha: _hardOpacity),
-        );
-      }
-      return IgnorePointer(child: ColoredBox(color: background));
+      return IgnorePointer(
+        child: ColoredBox(color: background.withValues(alpha: _hardOpacity)),
+      );
     }
     if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) {
-      // No intensity: always on. The bright wash is the page's background,
-      // as the system's (grey on a grouped page); the dark one stays black.
+      // No intensity: always on. No blur either: the wash alone. The bright
+      // wash is the page's background, as the system's (grey on a grouped
+      // page); the dark one stays black.
       return CupertinoNativeEdgeBlur(
         edge: edge,
-        sigma: _radius,
+        sigma: 0,
         adaptiveTint: true,
         tint: background,
         onBrightnessChanged: onBrightnessChanged,

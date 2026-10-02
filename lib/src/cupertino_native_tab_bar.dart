@@ -399,10 +399,10 @@ class _CupertinoNativeTabBarState extends State<CupertinoNativeTabBar> {
     return bar;
   }
 
-  /// Where the effect stops, `.soft` and `.hard` alike: the system tab bar's
-  /// place, the classic 49pt over the home indicator, measured up from the
-  /// screen's bottom edge (83pt on an iPhone 12 Pro Max).
-  static const double _effectBand = 49;
+  /// Where the effect stops, `.soft` and `.hard` alike, measured up from the
+  /// screen's bottom edge: 59pt over the home indicator — the system tab
+  /// bar's 49pt plus 10 (93pt on an iPhone 12 Pro Max).
+  static const double _effectBand = 59;
 
   final GlobalKey _barKey = GlobalKey();
 

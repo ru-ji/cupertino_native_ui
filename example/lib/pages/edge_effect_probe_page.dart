@@ -31,21 +31,21 @@ class EdgeEffectProbePage extends StatelessWidget {
                     header: 'Compare',
                     footer:
                         'Scroll each one slowly with a bright band under the '
-                        'bar, then a dark one. The native screen thins its '
-                        'tint over the bright band and keeps the blur; the '
-                        'Flutter one holds a single tint throughout. Same '
-                        'content in both.',
+                        'bar, then a dark one: both wash the content in the '
+                        'page\'s colour and turn to a dark wash over dark '
+                        'content. The Flutter one has no blur. Same content '
+                        'in both.',
                     children: [
                       CupertinoNativeListTile(
                         id: 'native',
                         title: 'Native (SwiftUI ScrollView)',
-                        subtitle: 'The system effect, adaptive',
+                        subtitle: 'The system effect',
                         showChevron: true,
                       ),
                       CupertinoNativeListTile(
                         id: 'flutter',
                         title: 'Flutter page',
-                        subtitle: 'The recreation, fixed tint',
+                        subtitle: 'The recreation',
                         showChevron: true,
                       ),
                     ],
@@ -97,7 +97,9 @@ class _FlutterProbe extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final top = MediaQuery.paddingOf(context).top + 44;
+    // Under the bar's place: on iOS 26 it is 54pt, the 44pt title row and the
+    // space under it, where a native page's content starts too.
+    final top = MediaQuery.paddingOf(context).top + 54;
     return CupertinoPageScaffold(
       child: Stack(
         children: [
