@@ -6,6 +6,12 @@ version: 0.1.0
 homepage: https://github.com/ru-ji/cupertino_native_ui
 repository: https://github.com/ru-ji/cupertino_native_ui
 issue_tracker: https://github.com/ru-ji/cupertino_native_ui/issues
+topics:
+  - liquid-glass
+  - glass
+  - cupertino
+  - ios
+  - native-widgets
 
 environment:
   sdk: ^3.13.2
