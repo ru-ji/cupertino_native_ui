@@ -111,11 +111,27 @@ enum EdgeBlurProfile {
     /// Near-white content or not (the white wash's decision).
     static let brightLow = 0.75
     static let brightHigh = 0.85
-    /// Among the rest: mid content like the warm gradient, or dark content —
-    /// grey, the busy band, vivid, black.
-    // ponytail: guessed from the bands' luma (warm ~0.65, grey 0.5); tune.
-    static let deepLow = 0.55
-    static let deepHigh = 0.62
+    /// Among the rest: mid content — the warm gradient, busy, vivid, grey,
+    /// cool (~0.42 average luma), all ~27% black on iOS 26 (measured
+    /// 2026-10-03) — or dark content below it, the navy band and black.
+    // ponytail: the dark side was never seen on device (black hides the
+    // wash); the line sits under the darkest mid band measured.
+    static let deepLow = 0.28
+    static let deepHigh = 0.34
+
+    /// A dark app: black alone, at three strengths — bright content (white,
+    /// the warm gradient), mid content (grey, blue, lavender, vivid, navy),
+    /// near-black content. iOS 26, measured frame by frame (2026-10-03).
+    static let darkModeBright = 0.31
+    static let darkModeMid = 0.60
+    static let darkModeDeep = 0.85
+    /// A dark app's boundaries, on the bands' average luma: bright from the
+    /// warm gradient (~0.67) up, the busy band (~0.59) still mid; deep only
+    /// below the navy band (~0.2).
+    static let darkModeBrightLow = 0.60
+    static let darkModeBrightHigh = 0.64
+    static let darkModeDeepLow = 0.08
+    static let darkModeDeepHigh = 0.14
 
     static func smootherstep(_ d: Double) -> Double {
         let x = min(max(d, 0), 1)
@@ -148,18 +164,24 @@ enum EdgeBlurProfile {
     }
 }
 
-/// The system's luminance adjustment settles on three levels, not two.
+/// The system's luminance adjustment settles on three levels, not two: for
+/// bright, mid and dark content. A light app shows its bright wash over
+/// bright content and black over the rest; a dark app only black, stronger
+/// as the content darkens.
 @available(iOS 15.0, *)
 enum WashLevel {
     case light, mid, deep
 
-    var lightOpacity: Float { self == .light ? 1 : 0 }
+    func lightOpacity(dark: Bool) -> Float { self == .light && !dark ? 1 : 0 }
 
-    var darkOpacity: Float {
-        switch self {
-        case .light: return 0
-        case .mid: return Float(EdgeBlurProfile.midDark)
-        case .deep: return Float(EdgeBlurProfile.deepDark)
+    func darkOpacity(dark: Bool) -> Float {
+        switch (self, dark) {
+        case (.light, false): return 0
+        case (.mid, false): return Float(EdgeBlurProfile.midDark)
+        case (.deep, false): return Float(EdgeBlurProfile.deepDark)
+        case (.light, true): return Float(EdgeBlurProfile.darkModeBright)
+        case (.mid, true): return Float(EdgeBlurProfile.darkModeMid)
+        case (.deep, true): return Float(EdgeBlurProfile.darkModeDeep)
         }
     }
 }
@@ -176,6 +198,8 @@ final class EdgeBlurView: UIView {
     private var config = EdgeBlurConfig(nil)
     private var luma: LumaTracker?
     private var darkLuma: LumaTracker?
+    /// The app brightness the trackers' boundaries were set for.
+    private var trackersDark: Bool?
     /// Latest decisions from the two trackers; nil until they measure.
     private var bright: Bool?
     private var deep: Bool?
@@ -211,34 +235,40 @@ final class EdgeBlurView: UIView {
         CATransaction.setDisableActions(true)
         washLayer.opacity = Float(config.intensity)
         CATransaction.commit()
-        if config.adaptive {
-            if luma == nil {
-                luma = LumaTracker(
-                    host: self, low: EdgeBlurProfile.brightLow, high: EdgeBlurProfile.brightHigh
-                ) { [weak self] bright in
-                    self?.bright = bright
-                    self?.updateLevel()
-                }
-            }
-            if darkLuma == nil {
-                darkLuma = LumaTracker(
-                    host: self, low: EdgeBlurProfile.deepLow, high: EdgeBlurProfile.deepHigh
-                ) { [weak self] aboveDeep in
-                    self?.deep = !aboveDeep
-                    self?.updateLevel()
-                }
-            }
-        } else {
+        // A dark app draws its lines elsewhere: new trackers, measuring from
+        // scratch.
+        if !config.adaptive || trackersDark != config.isDark {
             luma?.remove()
             luma = nil
             darkLuma?.remove()
             darkLuma = nil
             bright = nil
             deep = nil
+            trackersDark = nil
+        }
+        if config.adaptive && luma == nil {
+            let dark = config.isDark
+            trackersDark = dark
+            luma = LumaTracker(
+                host: self,
+                low: dark ? EdgeBlurProfile.darkModeBrightLow : EdgeBlurProfile.brightLow,
+                high: dark ? EdgeBlurProfile.darkModeBrightHigh : EdgeBlurProfile.brightHigh
+            ) { [weak self] bright in
+                self?.bright = bright
+                self?.updateLevel()
+            }
+            darkLuma = LumaTracker(
+                host: self,
+                low: dark ? EdgeBlurProfile.darkModeDeepLow : EdgeBlurProfile.deepLow,
+                high: dark ? EdgeBlurProfile.darkModeDeepHigh : EdgeBlurProfile.deepHigh
+            ) { [weak self] aboveDeep in
+                self?.deep = !aboveDeep
+                self?.updateLevel()
+            }
         }
         // Until the first measurement the wash is the app's own: white on a
         // light theme, dark on a dark one — what the system shows on arrival.
-        if bright == nil { level = config.isDark ? .deep : .light }
+        if bright == nil { level = config.isDark ? .deep : .light } else { updateLevel() }
         layer.borderWidth = config.debugPaintRect ? 1 : 0
         layer.borderColor = UIColor.red.cgColor
         renderedKey = nil
@@ -290,8 +320,8 @@ final class EdgeBlurView: UIView {
                 width: width, height: height, bottom: config.bottom)
             lightWash.isHidden = false
             darkWash.isHidden = false
-            lightWash.opacity = level.lightOpacity
-            darkWash.opacity = level.darkOpacity
+            lightWash.opacity = level.lightOpacity(dark: config.isDark)
+            darkWash.opacity = level.darkOpacity(dark: config.isDark)
         } else if let argb = config.tint {
             let color = UIColor(argb: argb)
             var red: CGFloat = 0, green: CGFloat = 0, blue: CGFloat = 0, alpha: CGFloat = 0
@@ -309,9 +339,11 @@ final class EdgeBlurView: UIView {
         let next: WashLevel = bright ? .light : (deep == true ? .deep : .mid)
         guard next != level else { return }
         level = next
-        onLightChange?(next == .light)
-        Self.spring(lightWash, to: next.lightOpacity)
-        Self.spring(darkWash, to: next.darkOpacity)
+        // A dark app keeps its light chrome even over white: its wash stays
+        // black (white title; iOS 26, dark mode).
+        onLightChange?(next == .light && !config.isDark)
+        Self.spring(lightWash, to: next.lightOpacity(dark: config.isDark))
+        Self.spring(darkWash, to: next.darkOpacity(dark: config.isDark))
     }
 
     /// The system's transition: a critically damped spring, response ≈ 0.5s.

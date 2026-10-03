@@ -1,5 +1,5 @@
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart' show Scaffold;
+import 'package:flutter/material.dart' show Scaffold, Theme;
 import 'package:cupertino_widgets/cupertino_widgets.dart';
 
 /// The App Store, built the way an iOS app builds one: the native navigation
@@ -34,72 +34,80 @@ class _BarsDemoPageState extends State<BarsDemoPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: CupertinoColors.systemBackground.resolveFrom(context),
-      body: Stack(
-        children: [
-          DefaultTextStyle(
-            style: CupertinoTheme.of(context).textTheme.textStyle,
-            // One page per tab: its own scroll position and its own bar.
-            child: CustomScrollView(
-              key: ValueKey(_tab),
-              slivers: [
-                _navigationBar(),
-                ...switch (_tab) {
-                  _Tab.today => _todaySlivers(),
-                  _Tab.games => _storeSlivers(_games, 'Games'),
-                  _Tab.apps => _storeSlivers(_apps, 'Apps'),
-                  _Tab.search => _searchSlivers(),
-                },
-                // Room for the tab bar floating over the end of the page.
-                SliverToBoxAdapter(
-                  child: SizedBox(
-                    height: MediaQuery.paddingOf(context).bottom + 96,
+    // The App Store's white page, as the page's default background rather
+    // than a colour of its own, so the scroll edge effect keeps adapting.
+    return Theme(
+      data: Theme.of(context).copyWith(
+        scaffoldBackgroundColor: CupertinoColors.systemBackground.resolveFrom(
+          context,
+        ),
+      ),
+      child: Scaffold(
+        body: Stack(
+          children: [
+            DefaultTextStyle(
+              style: CupertinoTheme.of(context).textTheme.textStyle,
+              // One page per tab: its own scroll position and its own bar.
+              child: CustomScrollView(
+                key: ValueKey(_tab),
+                slivers: [
+                  _navigationBar(),
+                  ...switch (_tab) {
+                    _Tab.today => _todaySlivers(),
+                    _Tab.games => _storeSlivers(_games, 'Games'),
+                    _Tab.apps => _storeSlivers(_apps, 'Apps'),
+                    _Tab.search => _searchSlivers(),
+                  },
+                  // Room for the tab bar floating over the end of the page.
+                  SliverToBoxAdapter(
+                    child: SizedBox(
+                      height: MediaQuery.paddingOf(context).bottom + 96,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          Align(
-            alignment: Alignment.bottomCenter,
-            child: CupertinoNativeTabBar(
-              currentIndex: _tab.index,
-              scrollEdgeEffect: CupertinoScrollEdgeEffectStyle.soft,
-              // The search tab splits off into its own glass, as in the App
-              // Store.
-              split: true,
-              rightCount: 1,
-              items: const [
-                CupertinoNativeTab(
-                  id: 'today',
-                  title: 'Today',
-                  icon: CupertinoNativeIcon.named('doc.text.image'),
-                ),
-                CupertinoNativeTab(
-                  id: 'games',
-                  title: 'Games',
-                  icon: CupertinoNativeIcon.named('gamecontroller.fill'),
-                ),
-                CupertinoNativeTab(
-                  id: 'apps',
-                  title: 'Apps',
-                  icon: CupertinoNativeIcon.named('square.stack.3d.up.fill'),
-                  badge: '3',
-                ),
-                CupertinoNativeTab(
-                  id: 'search',
-                  title: '',
-                  icon: CupertinoNativeIcon.named('magnifyingglass'),
-                  role: CupertinoNativeTabRole.search,
-                ),
-              ],
-              onTap: (i) => setState(() {
-                _tab = _Tab.values[i];
-                _query = '';
-              }),
+            Align(
+              alignment: Alignment.bottomCenter,
+              child: CupertinoNativeTabBar(
+                currentIndex: _tab.index,
+                scrollEdgeEffect: CupertinoScrollEdgeEffectStyle.soft,
+                // The search tab splits off into its own glass, as in the App
+                // Store.
+                split: true,
+                rightCount: 1,
+                items: const [
+                  CupertinoNativeTab(
+                    id: 'today',
+                    title: 'Today',
+                    icon: CupertinoNativeIcon.named('doc.text.image'),
+                  ),
+                  CupertinoNativeTab(
+                    id: 'games',
+                    title: 'Games',
+                    icon: CupertinoNativeIcon.named('gamecontroller.fill'),
+                  ),
+                  CupertinoNativeTab(
+                    id: 'apps',
+                    title: 'Apps',
+                    icon: CupertinoNativeIcon.named('square.stack.3d.up.fill'),
+                    badge: '3',
+                  ),
+                  CupertinoNativeTab(
+                    id: 'search',
+                    title: '',
+                    icon: CupertinoNativeIcon.named('magnifyingglass'),
+                    role: CupertinoNativeTabRole.search,
+                  ),
+                ],
+                onTap: (i) => setState(() {
+                  _tab = _Tab.values[i];
+                  _query = '';
+                }),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

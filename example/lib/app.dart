@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart' show CupertinoColors;
 import 'package:flutter/material.dart';
 
 import 'pages/home_page.dart';
@@ -22,15 +23,21 @@ class MyApp extends StatelessWidget {
       builder: (context, mode, _) => MaterialApp(
         title: 'Cupertino Widgets',
         debugShowCheckedModeBanner: false,
+        // Pages default to the system background a CupertinoPageScaffold
+        // starts from: the one colour on which the scroll edge effect adapts
+        // to its content, as the system's does on a page without a
+        // `.background`.
         theme: ThemeData(
           colorSchemeSeed: const Color(0xFF007AFF),
           useMaterial3: true,
           brightness: Brightness.light,
+          scaffoldBackgroundColor: CupertinoColors.systemBackground.color,
         ),
         darkTheme: ThemeData(
           colorSchemeSeed: const Color(0xFF007AFF),
           useMaterial3: true,
           brightness: Brightness.dark,
+          scaffoldBackgroundColor: CupertinoColors.systemBackground.darkColor,
         ),
         themeMode: mode,
         // Every page is a CupertinoPageScaffold, which is not a Material —

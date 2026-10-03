@@ -8,6 +8,9 @@ import 'internal/native_platform_view_mixin.dart';
 import 'models/cupertino_native_icon.dart';
 import 'internal/scroll_friendly_recognizer.dart';
 import 'internal/native_color.dart';
+import 'internal/bar_slot.dart';
+import 'internal/glass_leaves.dart';
+import 'internal/ios_version.dart';
 
 /// The shape of a [CupertinoNativeGlassContainer].
 enum CupertinoGlassShape { capsule, circle, roundedRect }
@@ -45,9 +48,11 @@ enum CupertinoNativeGlass {
 ///
 /// Content goes on the glass three ways, in increasing cost:
 ///
-/// * **[child]** — an ordinary Flutter widget, drawn by your own engine over
-///   the glass and sizing it. No route, no isolate, nothing to register. This
-///   is what you want.
+/// * **[child]** — an ordinary Flutter widget, laid out by your own engine
+///   and sizing the glass. Its texts and SF Symbols are drawn by SwiftUI
+///   inside the material, so they adapt to the backdrop; the rest is Flutter
+///   over it. No route, no isolate, nothing to register. This is what you
+///   want.
 /// * **[icon]** — a native SF Symbol, drawn by SwiftUI inside the material.
 /// * **[route]** — Flutter content hosted *inside* the glass as a SwiftUI
 ///   view that `glassEffect` wraps, in its own engine. Only for when the
@@ -90,13 +95,21 @@ class CupertinoNativeGlassContainer extends StatefulWidget {
          'not both.',
        );
 
-  /// An ordinary Flutter widget drawn over the glass, by the engine you are
-  /// already in. It sizes the container (plus [padding]) and needs no route,
-  /// no registration and no second isolate.
+  /// An ordinary Flutter widget, laid out by the engine you are already in.
+  /// It sizes the container (plus [padding]) and needs no route, no
+  /// registration and no second isolate.
   ///
-  /// It is *over* the material rather than inside it, which is invisible for
-  /// anything that isn't refracted by its own container — that is, almost
-  /// everything. Reach for [route] only when it is not.
+  /// Its plain [Text]s and still symbols (`CupertinoSymbolImage`,
+  /// `CupertinoNativeSymbol` without an effect) are drawn by SwiftUI *inside*
+  /// the glass, in the frames Flutter laid them out in, so their colour adapts
+  /// to what is behind the glass as a native label's does. That holds through
+  /// [Row], [Column], [Wrap], [Padding], [Align], [Center], [SizedBox],
+  /// [Expanded] and [Flexible]. Anything else — and any Text inside it — is
+  /// Flutter, *over* the material.
+  ///
+  /// A Text keeps an explicit `style.color`; without one it takes the
+  /// adaptive native foreground. A Text in a font of the app's own, or with a
+  /// decoration or shadows, stays Flutter.
   final Widget? child;
 
   /// Flutter content hosted *inside* the glass, as a SwiftUI view that
@@ -187,7 +200,24 @@ class _CupertinoNativeGlassContainerState
       'animated': widget.animateChanges,
       'expand': !_hugsContent,
       'isDark': _isDark,
+      'leaves': _leaves.current,
     };
+  }
+
+  /// The [CupertinoNativeGlassContainer.child]'s texts and symbols, drawn by
+  /// SwiftUI inside the glass. See [GlassLeaves].
+  late final _leaves = GlassLeaves((_) {
+    if (mounted) _sendConfig();
+  });
+
+  void _sendConfig() {
+    final config = _toMap();
+    if (mapEquals(_sentConfig, config)) return;
+    _sentConfig = config;
+    // The intrinsic-size round trip is only for a container that hugs its own
+    // content; asking for it on every update would put a retry loop behind
+    // every config change.
+    updateNativeView('updateGlass', config, refreshIntrinsicSize: _hugsContent);
   }
 
   /// Follows the app's own theme brightness, not the device's — a light app
@@ -199,10 +229,7 @@ class _CupertinoNativeGlassContainerState
     super.didChangeDependencies();
     // The theme is the one config source that no property diff can see: the
     // widget's own fields did not move, the inherited brightness did.
-    final config = _toMap();
-    if (mapEquals(_sentConfig, config)) return;
-    _sentConfig = config;
-    updateNativeView('updateGlass', config, refreshIntrinsicSize: _hugsContent);
+    _sendConfig();
   }
 
   /// [padding] resolved to concrete insets, for the native side.
@@ -229,16 +256,13 @@ class _CupertinoNativeGlassContainerState
   /// rebuilds this widget every frame and none of those frames reach here.
   Map<String, dynamic>? _sentConfig;
 
+  /// What the platform view was created with: its first build's config.
+  Map<String, dynamic>? _createdWith;
+
   @override
   void didUpdateWidget(covariant CupertinoNativeGlassContainer oldWidget) {
     super.didUpdateWidget(oldWidget);
-    final config = _toMap();
-    if (mapEquals(_sentConfig, config)) return;
-    _sentConfig = config;
-    // The intrinsic-size round trip is only for a container that hugs its own
-    // content; asking for it on every update would put a retry loop behind
-    // every config change.
-    updateNativeView('updateGlass', config, refreshIntrinsicSize: _hugsContent);
+    _sendConfig();
   }
 
   Future<void> _onPlatformViewCreated(int id) async {
@@ -250,7 +274,10 @@ class _CupertinoNativeGlassContainerState
     // Only native content gives the hosted view something to measure; with
     // nothing, SwiftUI answers zero — retried round trips for an answer this
     // widget would discard.
-    _sentConfig = _toMap();
+    _sentConfig = _createdWith;
+    // The leaves are measured after the first frame, so usually after the
+    // view was created without them.
+    _sendConfig();
     if (_hugsContent) requestIntrinsicSize();
   }
 
@@ -266,6 +293,9 @@ class _CupertinoNativeGlassContainerState
   /// there is nothing at all to measure.
   static const double _defaultExtent = 44;
 
+  /// A bar button's height on iOS 26, shared glass or not.
+  static const double _barHeight = 44;
+
   @override
   Widget build(BuildContext context) {
     final Widget content;
@@ -279,7 +309,7 @@ class _CupertinoNativeGlassContainerState
           viewType:
               'com.example.cupertino_widgets/cupertino_native_liquid_glass',
           layoutDirection: TextDirection.ltr,
-          creationParams: _toMap(),
+          creationParams: _createdWith ??= _toMap(),
           creationParamsCodec: const StandardMessageCodec(),
           hitTestBehavior: wantsTouches
               ? PlatformViewHitTestBehavior.opaque
@@ -322,18 +352,32 @@ class _CupertinoNativeGlassContainerState
     // A Flutter child rides over the glass and gives it its size: the stack
     // is as big as the padded child, and the glass fills it.
     if (widget.child != null) {
-      final stacked = Stack(
-        children: [
-          Positioned.fill(child: content),
-          Padding(padding: widget.padding, child: widget.child),
-        ],
+      // Buttons sharing a glass in the iOS 26 bar: the system's capsule is
+      // 44pt high, whatever is in it — the height of a bar button. Only the
+      // horizontal padding is kept.
+      final inBar = isIOS26OrLater && BarSlot.isIn(context);
+      final resolved = widget.padding.resolve(Directionality.of(context));
+      final padding = inBar
+          ? EdgeInsets.only(left: resolved.left, right: resolved.right)
+          : widget.padding;
+      final height = widget.height ?? (inBar ? _barHeight : null);
+      final stacked = _leaves.host(
+        Stack(
+          // Centred in the bar's 44pt; elsewhere the child sizes the stack.
+          alignment: inBar ? Alignment.center : AlignmentDirectional.topStart,
+          children: [
+            Positioned.fill(child: content),
+            Padding(
+              padding: padding,
+              child: defaultTargetPlatform == TargetPlatform.iOS
+                  ? _leaves.split(widget.child!, isDark: _isDark)
+                  : widget.child,
+            ),
+          ],
+        ),
       );
-      if (widget.width != null || widget.height != null) {
-        return SizedBox(
-          width: widget.width,
-          height: widget.height,
-          child: stacked,
-        );
+      if (widget.width != null || height != null) {
+        return SizedBox(width: widget.width, height: height, child: stacked);
       }
       return stacked;
     }

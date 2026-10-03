@@ -1,10 +1,24 @@
 ## Unreleased
 
+* `CupertinoNativeGlassContainer.child`: its `Text`s and still SF Symbols are
+  drawn by SwiftUI inside the glass, in the frames Flutter laid them out in —
+  through `Row`, `Column`, `Wrap`, `Padding`, `Align`, `SizedBox` and
+  `Flexible` — so they adapt to the backdrop like native labels. Other
+  widgets stay Flutter, over the glass.
 * The scroll edge effect takes the page background, as SwiftUI's does: the
   nearest `CupertinoPageScaffold`'s or `Scaffold`'s colour, else the theme's —
   `.soft`'s bright wash and `.hard` alike. `tintColor` on the navigation bars
   and `color` on `CupertinoScrollEdgeEffect` are deprecated and ignored: the
-  effect cannot be tinted on its own.
+  effect cannot be tinted on its own. On `CupertinoColors.systemBackground`
+  — what a `CupertinoPageScaffold` starts from — the wash follows the
+  content; on any other colour, the page's or the theme's, it is fixed in
+  it, as SwiftUI's is once a page has a `.background`. It is the page
+  showing under the
+  effect that counts: a tab bar laid over tabs that each have their own
+  scaffold takes the visible tab's, as the system's does. In a dark app the
+  wash is black alone, at the system's three strengths — 31% over bright
+  content, 60% over mid, 85% over near-black — and the bar's chrome stays
+  light: it no longer turned the page's black into an 85% wash over white.
 * iOS 15–18: between two pages with `CupertinoNativeSliverNavigationBar`, the
   system's bar transition — the page's title, large or inline, flies into the
   next page's back button, whose label it becomes; bar items fade. Swipe-back

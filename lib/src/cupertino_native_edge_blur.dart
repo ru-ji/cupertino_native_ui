@@ -69,6 +69,12 @@ class _CupertinoNativeEdgeBlurState extends State<CupertinoNativeEdgeBlur> {
   MethodChannel? _channel;
   Map<String, Object?>? _sent;
 
+  /// What the view was created with — its first build's — and the latest.
+  /// The tint can change before the view exists (the page under the effect
+  /// is found after the first frame).
+  Map<String, Object?>? _createdWith;
+  Map<String, Object?>? _latest;
+
   Map<String, Object?> _params(double span, bool isDark) => {
     'edge': widget.edge.name,
     'sigma': (span * (1 - 0.41) * 0.4 / 3).clamp(0.0, widget.sigma),
@@ -99,14 +105,14 @@ class _CupertinoNativeEdgeBlurState extends State<CupertinoNativeEdgeBlur> {
     return IgnorePointer(
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final params = _params(constraints.maxHeight, isDark);
+          final params = _latest = _params(constraints.maxHeight, isDark);
           // Creation params are read once; later changes go over the channel.
           _push(params);
           return UiKitView(
             viewType:
                 'com.example.cupertino_widgets/cupertino_native_edge_blur',
             layoutDirection: TextDirection.ltr,
-            creationParams: params,
+            creationParams: _createdWith ??= params,
             creationParamsCodec: const StandardMessageCodec(),
             // Never takes a touch: everything under it stays operable.
             hitTestBehavior: PlatformViewHitTestBehavior.transparent,
@@ -119,7 +125,8 @@ class _CupertinoNativeEdgeBlurState extends State<CupertinoNativeEdgeBlur> {
                     light ? Brightness.light : Brightness.dark,
                   );
                 });
-              _sent = params;
+              _sent = _createdWith;
+              _push(_latest!);
             },
           );
         },

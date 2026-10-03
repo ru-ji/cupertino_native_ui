@@ -1,6 +1,7 @@
 import 'package:cupertino_widgets/cupertino_widgets.dart';
+import 'package:cupertino_widgets/src/internal/bar_slot.dart';
 import 'package:flutter/cupertino.dart'
-    show CupertinoPageScaffold, OverlayVisibilityMode;
+    show CupertinoColors, CupertinoPageScaffold, OverlayVisibilityMode;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -101,6 +102,39 @@ void main() {
         ),
       );
       expect(params['fontWeight'], 6);
+    }, variant: iOS);
+
+    testWidgets('a button sharing a glass in the bar takes the bar weight', (
+      tester,
+    ) async {
+      // Two buttons in one glass capsule in the bar: still bar buttons, so
+      // their symbols take the system's medium weight.
+      await paramsOf(
+        tester,
+        BarSlot(
+          child: CupertinoNativeGlassContainer(
+            shape: CupertinoGlassShape.capsule,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CupertinoNativeButton(
+                  onPressed: () {},
+                  child: CupertinoSymbolImage.symbol(CupertinoSymbols.plus),
+                ),
+                CupertinoNativeButton(
+                  onPressed: () {},
+                  child: CupertinoSymbolImage.symbol(CupertinoSymbols.ellipsis),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+      final buttons = created.where((p) => p.containsKey('labelStyle'));
+      expect(buttons, hasLength(2));
+      for (final button in buttons) {
+        expect((button['icon'] as Map)['weight'], 'medium');
+      }
     }, variant: iOS);
 
     testWidgets('switch sends it as "color"', (tester) async {
@@ -440,13 +474,99 @@ void main() {
         child: CupertinoScrollEdgeEffect(),
       ),
     );
-    expect(params['adaptive'], true);
+    // A background the page chose fixes the wash to it, as SwiftUI's.
+    expect(params['adaptive'], false);
     expect(params['edge'], 'top');
     expect(params['intensity'], 1.0);
-    expect(params['sigma'], lessThanOrEqualTo(1.0));
-    // The bright wash is the page's background, as the system's.
-    expect(params['tint'], green.toARGB32());
+    expect(params['sigma'], 0.0);
+    expect(params['tint'], green.withValues(alpha: 0.85).toARGB32());
   }, variant: iOS);
+
+  // Only the system background a CupertinoPageScaffold starts from lets the
+  // wash adapt; any other colour fixes it, wherever it comes from.
+  testWidgets(
+    'scroll edge effect follows the content on the system background',
+    (tester) async {
+      final params = await paramsOf(
+        tester,
+        const CupertinoPageScaffold(
+          backgroundColor: CupertinoColors.systemBackground,
+          child: CupertinoScrollEdgeEffect(),
+        ),
+      );
+      expect(params['adaptive'], true);
+    },
+    variant: iOS,
+  );
+
+  testWidgets('scroll edge effect is fixed on a theme colour of the app', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: ThemeData(scaffoldBackgroundColor: green),
+        home: const CupertinoPageScaffold(child: CupertinoScrollEdgeEffect()),
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(created.first['adaptive'], false);
+    expect(created.first['tint'], green.withValues(alpha: 0.85).toARGB32());
+  }, variant: iOS);
+
+  // A tab bar laid over its tabs is in none of their scaffolds: the effect
+  // finds the visible tab's under it, as the system's comes from that tab's
+  // own scroll view.
+  testWidgets('scroll edge effect takes the page showing under it', (
+    tester,
+  ) async {
+    const red = Color(0xFFFF0000);
+    Future<Color> washOver(int tab) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Stack(
+            children: [
+              IndexedStack(
+                index: tab,
+                children: const [
+                  CupertinoPageScaffold(
+                    backgroundColor: red,
+                    child: SizedBox.expand(),
+                  ),
+                  CupertinoPageScaffold(
+                    backgroundColor: green,
+                    child: SizedBox.expand(),
+                  ),
+                ],
+              ),
+              const Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                height: 80,
+                child: CupertinoScrollEdgeEffect(
+                  edge: CupertinoScrollEdgeEffectEdge.bottom,
+                  style: CupertinoScrollEdgeEffectStyle.hard,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+      // Found after a frame, drawn on the next.
+      await tester.pump();
+      return tester
+          .widget<ColoredBox>(
+            find.descendant(
+              of: find.byType(CupertinoScrollEdgeEffect),
+              matching: find.byType(ColoredBox),
+            ),
+          )
+          .color;
+    }
+
+    expect(await washOver(1), green.withValues(alpha: 0.91));
+    expect(await washOver(0), red.withValues(alpha: 0.91));
+  });
 
   // The group is one platform view for several glasses — the only arrangement
   // in which they can merge. If the items stop travelling as one payload,

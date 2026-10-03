@@ -62,7 +62,6 @@ class _PickersDemoPageState extends State<PickersDemoPage> {
   @override
   Widget build(BuildContext context) {
     return CupertinoPageScaffold(
-      backgroundColor: CupertinoColors.systemGroupedBackground,
       child: CustomScrollView(
         slivers: [
           CupertinoNativeSliverNavigationBar(largeTitle: 'Pickers'),

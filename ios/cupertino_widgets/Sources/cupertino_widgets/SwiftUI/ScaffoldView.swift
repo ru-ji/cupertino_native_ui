@@ -146,6 +146,7 @@ struct ScaffoldView: View {
                         scrollEdgeEffect: model.config.scrollEdgeEffect,
                         showLoadingIndicator: model.config.showLoadingIndicator ?? false
                     )
+                    .applyPageBackground(model.config.backgroundColor)
                     .applyNavigationBar(pushed.navigationBar) { onToolbarAction(pushed.route, $0) }
                 }
         }
@@ -165,10 +166,7 @@ struct ScaffoldView: View {
             ) { id, value in
                 model.onBodyEvent?(id, value)
             }
-            // The scaffold's `backgroundColor`. The stack paints the system
-            // background over the hosting view's, so it is set on the page
-            // itself, under the bars too.
-            .background(model.config.backgroundColor.map { Color(argb: $0).ignoresSafeArea() })
+            .applyPageBackground(model.config.backgroundColor)
         } else {
             SearchablePageBody(
                 engine: model.rootEngines[rootRoute],
@@ -176,7 +174,18 @@ struct ScaffoldView: View {
                 showLoadingIndicator: model.config.showLoadingIndicator ?? false,
                 onActiveChange: { model.onSearchActiveChanged?(rootRoute, $0) }
             )
+            .applyPageBackground(model.config.backgroundColor)
         }
+    }
+}
+
+@available(iOS 15.0, *)
+extension View {
+    /// The scaffold's `backgroundColor`, on the page itself and under the
+    /// bars too: the navigation stack paints the system background over the
+    /// hosting view's, whatever the body — native or a Flutter engine.
+    func applyPageBackground(_ argb: Int?) -> some View {
+        background(argb.map { Color(argb: $0).ignoresSafeArea() })
     }
 }
 

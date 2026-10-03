@@ -308,6 +308,13 @@ struct AdaptiveLiquidGlassView: View {
         base
             .padding(insets)
             .applyGlassExpand(expand)
+            // Inside what the glass wraps, so the texts and symbols take its
+            // vibrancy, as a native label on glass does.
+            .overlay(alignment: .topLeading) {
+                if let leaves = config.leaves, !leaves.isEmpty {
+                    GlassLeavesView(leaves: leaves)
+                }
+            }
     }
 
     private var insets: EdgeInsets {
@@ -337,6 +344,65 @@ struct AdaptiveLiquidGlassView: View {
             return AnyShape(Circle())
         default:
             return AnyShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+        }
+    }
+}
+
+/// The Flutter child's texts and symbols, each in the frame Flutter laid it
+/// out in. Flutter still reads them for accessibility.
+@available(iOS 15.0, *)
+struct GlassLeavesView: View {
+    let leaves: [GlassLeaf]
+
+    var body: some View {
+        ZStack(alignment: .topLeading) {
+            ForEach(leaves.indices, id: \.self) { i in
+                let leaf = leaves[i]
+                leafView(leaf)
+                    .frame(
+                        width: CGFloat(leaf.width), height: CGFloat(leaf.height),
+                        alignment: alignment(leaf))
+                    .offset(x: CGFloat(leaf.x), y: CGFloat(leaf.y))
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
+    }
+
+    @ViewBuilder
+    private func leafView(_ leaf: GlassLeaf) -> some View {
+        if let symbol = leaf.symbol {
+            IconView(
+                icon: IconConfig(
+                    sfSymbol: symbol, renderingMode: leaf.renderingMode,
+                    size: leaf.symbolSize, color: leaf.color, weight: leaf.symbolWeight)
+            )
+            .imageScale(
+                leaf.symbolScale == "small" ? .small : leaf.symbolScale == "large" ? .large : .medium)
+        } else {
+            let text = Text(leaf.text ?? "")
+                .font(
+                    .system(
+                        size: CGFloat(leaf.fontSize ?? 17),
+                        weight: Font.Weight(weightIndex: leaf.fontWeight ?? 3)))
+            (leaf.italic == true ? text.italic() : text)
+                .foregroundColor(leaf.color.map { Color(argb: $0) })
+                .multilineTextAlignment(
+                    leaf.align == "center" ? .center : leaf.align == "trailing" ? .trailing : .leading)
+                .lineLimit(leaf.singleLine == true ? 1 : leaf.maxLines)
+                // Flutter's line, kept whole: SwiftUI may measure it a hair
+                // wider and would otherwise truncate it.
+                .fixedSize(horizontal: leaf.singleLine == true, vertical: true)
+        }
+    }
+
+    private func alignment(_ leaf: GlassLeaf) -> Alignment {
+        switch leaf.align {
+        case "center": return .center
+        case "trailing": return .trailing
+        case nil: return .center  // a symbol
+        default: return .leading
         }
     }
 }

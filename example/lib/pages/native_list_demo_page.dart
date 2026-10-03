@@ -67,7 +67,6 @@ class _NativeListDemoPageState extends State<NativeListDemoPage> {
   @override
   Widget build(BuildContext context) {
     return CupertinoPageScaffold(
-      backgroundColor: CupertinoColors.systemGroupedBackground,
       child: CustomScrollView(
         slivers: [
           CupertinoNativeSliverNavigationBar(

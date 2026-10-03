@@ -35,4 +35,35 @@ struct GlassConfig: Codable, Equatable {
     /// hosted view's appearance so a light app on a dark-mode phone does not
     /// draw dark glass. See `NativeHostingView.isDark`.
     let isDark: Bool?
+    /// The Flutter child's texts and still symbols, laid out by Flutter and
+    /// drawn here, inside the glass. See `GlassLeavesView`.
+    let leaves: [GlassLeaf]?
+}
+
+/// A text or a symbol from the container's Flutter child, with the frame
+/// Flutter laid it out in, relative to the platform view.
+struct GlassLeaf: Codable, Equatable {
+    let x: Double
+    let y: Double
+    let width: Double
+    let height: Double
+    /// Explicit colour (ARGB). Nil keeps the adaptive foreground.
+    let color: Int?
+
+    let text: String?
+    /// Already scaled by Flutter's text scaler.
+    let fontSize: Double?
+    /// Dart `FontWeight` index, 0 = w100 ... 8 = w900.
+    let fontWeight: Int?
+    let italic: Bool?
+    let align: String?  // "leading" | "center" | "trailing"
+    /// Flutter set it on one unbroken line.
+    let singleLine: Bool?
+    let maxLines: Int?
+
+    let symbol: String?
+    let symbolSize: Double?
+    let symbolWeight: String?  // IconConfig.weight
+    let symbolScale: String?  // "small" | "medium" | "large"
+    let renderingMode: String?
 }

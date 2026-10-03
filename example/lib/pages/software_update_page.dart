@@ -199,7 +199,6 @@ class _SoftwareUpdatePageState extends State<SoftwareUpdatePage> {
   @override
   Widget build(BuildContext context) {
     return CupertinoPageScaffold(
-      backgroundColor: CupertinoColors.systemGroupedBackground,
       child: CustomScrollView(
         slivers: [
           CupertinoNativeSliverNavigationBar(
