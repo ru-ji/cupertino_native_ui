@@ -72,7 +72,9 @@ class _CupertinoNativeCheckboxState extends State<CupertinoNativeCheckbox>
   void didUpdateWidget(covariant CupertinoNativeCheckbox oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.value != widget.value ||
-        oldWidget.onChanged != widget.onChanged ||
+        // Only whether there is one reaches native (`enabled`); the
+        // closure itself is a new object on every parent rebuild.
+        (oldWidget.onChanged == null) != (widget.onChanged == null) ||
         oldWidget.label != widget.label ||
         oldWidget.activeColor != widget.activeColor ||
         oldWidget.textStyle != widget.textStyle) {

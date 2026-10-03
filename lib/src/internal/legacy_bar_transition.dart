@@ -12,6 +12,11 @@ import '../cupertino_symbol_image.dart';
 /// A [Hero] shared by the two bars carries the flying parts; each bar keeps
 /// a [LegacyBarFlight] the flight reads its parts from.
 class LegacyBarFlight {
+  /// Keeps the bar's subtree alive when the [Hero] swaps it in and out of
+  /// its placeholder at either end of a flight. Without it the whole bar is
+  /// rebuilt twice per transition, and its symbols and native views blink.
+  /// Flutter's own nav bar keys its hero child for the same reason.
+  final barKey = GlobalKey();
   final largeTitleKey = GlobalKey();
   final middleKey = GlobalKey();
   final backChevronKey = GlobalKey();
@@ -39,11 +44,6 @@ class LegacyBarFlight {
   void dispose() => inheritedBackTitle.dispose();
 }
 
-/// The system's back button label: the previous page's title, or "Back" when
-/// that is too long (Flutter's `CupertinoNavigationBarBackButton` rule).
-String? legacyBackLabel(String? title) =>
-    title == null || title.length <= 12 ? title : 'Back';
-
 /// Wraps the bar's content in the [Hero] the transition flies.
 Widget legacyBarHero({
   required BuildContext context,
@@ -61,7 +61,7 @@ Widget legacyBarHero({
     // The bars stay in their pages during the flight; only the parts that
     // fly hide (see [LegacyBarFlyingPart]).
     placeholderBuilder: (context, size, child) => _InFlight(child: child),
-    child: _FlightSource(flight: flight, child: child),
+    child: _FlightSource(key: flight.barKey, flight: flight, child: child),
   );
 }
 
@@ -180,7 +180,7 @@ class _HoldRect extends RectTween {
 }
 
 class _FlightSource extends StatelessWidget {
-  const _FlightSource({required this.flight, required this.child});
+  const _FlightSource({super.key, required this.flight, required this.child});
 
   final LegacyBarFlight flight;
   final Widget child;
@@ -293,7 +293,7 @@ class _BarFlightShuttle extends StatelessWidget {
           if (chevron != null && (label == null || label.width == 0)) {
             label = Rect.fromLTWH(chevron.right + 6, chevron.top, 0, 21);
           }
-          final backText = top.backLabel ?? legacyBackLabel(bottom.title);
+          final backText = top.backLabel ?? bottom.title;
 
           return Stack(
             clipBehavior: Clip.none,

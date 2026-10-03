@@ -750,6 +750,12 @@ along.
 | 1 → 1        | give the item a **new `actionId`**             | `.matchedGeometry` |
 | 1 → 2, 2 → 1 | replace the items with differently shaped ones | `.matchedGeometry` |
 
+<p>
+<img src="https://raw.githubusercontent.com/ru-ji/cupertino_native_ui/main/doc/images/arrive.gif" width="260" alt="0 to 1: a glass materializes" />
+<img src="https://raw.githubusercontent.com/ru-ji/cupertino_native_ui/main/doc/images/swap.gif" width="260" alt="1 to 1: a new actionId morphs the glass" />
+<img src="https://raw.githubusercontent.com/ru-ji/cupertino_native_ui/main/doc/images/reshape.gif" width="260" alt="1 to 2: two glasses split from one" />
+</p>
+
 `.matchedGeometry` gives the departing glass and the arriving one a single
 shape that travels between them: it is what makes a merge a merge, and what
 lets a "Select" capsule become an X circle in one piece. `.materialize` matches

@@ -236,13 +236,14 @@ class _NativeCollectionViewState extends State<NativeCollectionView>
       'cupertino_native_ui/list_$id',
       onMethodCall: _handleMethodCall,
     );
-    // The creation params were built on the first frame; push the live config
-    // once so nothing that changed mid-creation is lost.
-    final map = _toMap();
-    _lastConfigJson = jsonEncode(map);
-    updateNativeView('updateList', map);
-    // Give the native view a layout pass so it can measure content height.
-    requestIntrinsicSize();
+    // The view was built from the creation params: push only what changed
+    // while it was being created. Resending the same config rebuilt every
+    // row a second time, on the main thread, in the middle of the push.
+    _lastConfigJson = jsonEncode(_creationParams);
+    _pushConfig();
+    // No `requestIntrinsicSize()`: its answer forced a full layout of the
+    // list, and the native view already reports its size after its first
+    // layout pass, then its real height through `onContentSize`.
   }
 
   /// The wheels in the rows, in this view's coordinates, as the native side

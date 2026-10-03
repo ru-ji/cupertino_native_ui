@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart' show Theme;
 import 'package:flutter/rendering.dart';
@@ -188,8 +190,11 @@ class _CupertinoNativeGlassContainerState
 
   void _sendConfig() {
     final config = _toMap();
-    if (mapEquals(_sentConfig, config)) return;
-    _sentConfig = config;
+    // Compared as JSON: the icon travels as a nested map, a new one on every
+    // build, so a shallow compare never matched and every rebuild was sent.
+    final json = _encode(config);
+    if (json == _sentConfig) return;
+    _sentConfig = json;
     // The intrinsic-size round trip is only for a container that hugs its own
     // content; asking for it on every update would put a retry loop behind
     // every config change.
@@ -233,7 +238,12 @@ class _CupertinoNativeGlassContainerState
   /// What the native side was last told, so a rebuild that changes nothing it
   /// can see costs nothing. A `TweenAnimationBuilder` driving width/height
   /// rebuilds this widget every frame and none of those frames reach here.
-  Map<String, dynamic>? _sentConfig;
+  String? _sentConfig;
+
+  /// A user's `cornerRadius: double.infinity` is not JSON; as a string it
+  /// still compares.
+  static String _encode(Object? config) =>
+      jsonEncode(config, toEncodable: (o) => o.toString());
 
   /// What the platform view was created with: its first build's config.
   Map<String, dynamic>? _createdWith;
@@ -253,7 +263,7 @@ class _CupertinoNativeGlassContainerState
     // Only native content gives the hosted view something to measure; with
     // nothing, SwiftUI answers zero: retried round trips for an answer this
     // widget would discard.
-    _sentConfig = _createdWith;
+    _sentConfig = _encode(_createdWith);
     // The leaves are measured after the first frame, so usually after the
     // view was created without them.
     _sendConfig();

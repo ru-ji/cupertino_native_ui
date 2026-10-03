@@ -208,7 +208,10 @@ class NativeListView: NativeHostingView {
                 onHeight: { [weak self] h, animated in
                     // The probe's number is the list's real height: keep it for
                     // `getIntrinsicSize`, and push it so the Flutter box grows to
-                    // fit. See `systemListHeight`.
+                    // fit. See `systemListHeight`. The probe repeats itself (the
+                    // same height several times per layout); each repeat cost a
+                    // Flutter rebuild and a walk of the whole view tree.
+                    guard self?.systemListHeight != h else { return }
                     self?.systemListHeight = h
                     self?.channel?.invokeMethod(
                         "onContentSize", arguments: ["height": Double(h), "animated": animated])

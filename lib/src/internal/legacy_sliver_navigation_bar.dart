@@ -1,7 +1,7 @@
 import 'dart:ui' as ui;
 
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/foundation.dart' show defaultTargetPlatform;
+import 'package:flutter/foundation.dart' show defaultTargetPlatform, mapEquals;
 import 'package:flutter/services.dart';
 
 import '../cupertino_native_button.dart'
@@ -171,13 +171,19 @@ class _NativeBarMaterialState extends State<_NativeBarMaterial> {
     'isDark': isDark,
   };
 
+  /// What the native side was last told. The bar rebuilds on every scroll
+  /// frame; only a change in what the material shows is worth a message.
+  Map<String, Object?>? _sent;
+
   @override
   void didUpdateWidget(covariant _NativeBarMaterial old) {
     super.didUpdateWidget(old);
-    _channel?.invokeMethod<void>(
-      'update',
-      _params(CupertinoTheme.brightnessOf(context) == Brightness.dark),
+    final params = _params(
+      CupertinoTheme.brightnessOf(context) == Brightness.dark,
     );
+    if (_channel == null || mapEquals(params, _sent)) return;
+    _sent = params;
+    _channel!.invokeMethod<void>('update', params);
   }
 
   @override
@@ -635,10 +641,13 @@ class _LegacyBarDelegate extends SliverPersistentHeaderDelegate {
         child: ValueListenableBuilder<String?>(
           valueListenable: flight.inheritedBackTitle,
           builder: (context, inherited, _) {
-            final label = legacyBackLabel(named ?? inherited);
+            // ponytail: the full title however long, no "Back" fallback; a
+            // width check against the inline title if long ones collide.
+            final label = named ?? inherited;
             flight.backLabel = label;
             return _BackButton(
               title: label,
+              style: flight.backStyle,
               chevronKey: flight.backChevronKey,
               labelKey: flight.backLabelKey,
             );
@@ -703,9 +712,18 @@ class _LegacyBarDelegate extends SliverPersistentHeaderDelegate {
 /// The system back button from the iOS 18 kit: the native `chevron.backward`
 /// in a 17×22 box, 6pt, then the previous title.
 class _BackButton extends StatelessWidget {
-  const _BackButton({this.title, this.chevronKey, this.labelKey});
+  const _BackButton({
+    this.title,
+    required this.style,
+    this.chevronKey,
+    this.labelKey,
+  });
 
   final String? title;
+
+  /// A full style, not merged into the page's: the label must be the text
+  /// the transition lands on, whatever the app's default text style.
+  final TextStyle style;
   final Key? chevronKey;
   final Key? labelKey;
 
@@ -722,16 +740,7 @@ class _BackButton extends StatelessWidget {
           spacing: 6,
           children: [
             LegacyBackChevron(key: chevronKey, color: color),
-            if (title != null)
-              Text(
-                title!,
-                key: labelKey,
-                style: TextStyle(
-                  fontSize: 17,
-                  letterSpacing: -0.43,
-                  color: color,
-                ),
-              ),
+            if (title != null) Text(title!, key: labelKey, style: style),
           ],
         ),
       ),

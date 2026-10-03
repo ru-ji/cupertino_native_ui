@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:ui' as ui;
 
 import 'package:flutter/foundation.dart';
@@ -135,14 +136,21 @@ class _CupertinoNativeContextMenuState extends State<CupertinoNativeContextMenu>
   void didChangeDependencies() {
     super.didChangeDependencies();
     // Re-push config if the app toggled light/dark at runtime.
-    if (_lastIsDark != null && _lastIsDark != _isDark) {
-      updateNativeView(
-        'updateContextMenu',
-        _toMap(),
-        refreshIntrinsicSize: false,
-      );
-    }
+    if (_lastIsDark != null && _lastIsDark != _isDark) _pushMenu();
     _lastIsDark = _isDark;
+  }
+
+  /// The menu last sent. Compared as JSON: [CupertinoNativeContextMenu.actions]
+  /// is usually a list literal, a new one on every parent rebuild, and each
+  /// update re-creates the native menu.
+  String? _sent;
+
+  void _pushMenu() {
+    final map = _toMap();
+    final sent = jsonEncode(map);
+    if (sent == _sent) return;
+    _sent = sent;
+    updateNativeView('updateContextMenu', map, refreshIntrinsicSize: false);
   }
 
   void _scheduleChildRestore() {
@@ -169,6 +177,14 @@ class _CupertinoNativeContextMenuState extends State<CupertinoNativeContextMenu>
     super.dispose();
   }
 
+  /// The creation params, also what [_pushMenu] compares the first update
+  /// against.
+  Map<String, dynamic> _creationParams() {
+    final map = _toMap();
+    _sent ??= jsonEncode(map);
+    return map;
+  }
+
   Map<String, dynamic> _toMap() {
     return {
       'previewCornerRadius': widget.previewCornerRadius,
@@ -180,14 +196,7 @@ class _CupertinoNativeContextMenuState extends State<CupertinoNativeContextMenu>
   @override
   void didUpdateWidget(covariant CupertinoNativeContextMenu oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.actions != widget.actions ||
-        oldWidget.previewCornerRadius != widget.previewCornerRadius) {
-      updateNativeView(
-        'updateContextMenu',
-        _toMap(),
-        refreshIntrinsicSize: false,
-      );
-    }
+    _pushMenu();
     if (widget.child != oldWidget.child) {
       _captureAfterFrame(_childKey, 'setChildImage');
     }
@@ -338,7 +347,7 @@ class _CupertinoNativeContextMenuState extends State<CupertinoNativeContextMenu>
               child: UiKitView(
                 viewType: 'com.example.cupertino_native_ui/cupertino_native_context_menu',
                 layoutDirection: TextDirection.ltr,
-                creationParams: _toMap(),
+                creationParams: _creationParams(),
                 creationParamsCodec: const StandardMessageCodec(),
                 // The long-press must reach the native interaction immediately;
                 // inside scrollables Flutter's gesture arena would otherwise

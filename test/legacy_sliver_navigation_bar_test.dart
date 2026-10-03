@@ -1,6 +1,6 @@
 import 'package:cupertino_native_ui/src/internal/legacy_sliver_navigation_bar.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/rendering.dart' show RenderSliver;
+import 'package:flutter/rendering.dart' show RenderParagraph, RenderSliver;
 import 'package:flutter_test/flutter_test.dart';
 
 /// A page under the bar: [LegacySliverNavigationBar] over a long list, on a
@@ -265,10 +265,52 @@ void main() {
     expect(find.text('Quick Notes'), findsNothing);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('a push keeps the bars alive instead of rebuilding them', (
+    tester,
+  ) async {
+    final navigator = GlobalKey<NavigatorState>();
+    await tester.pumpWidget(_pages(navigator));
+    // Rebuilt bars drop their symbols and native views for a frame: a blink.
+    final bar = tester.element(find.byType(LegacyBarHairline));
+    navigator.currentState!.pushNamed('Quick Notes');
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 150));
+    expect(bar.mounted, isTrue);
+    await tester.pumpAndSettle();
+    expect(bar.mounted, isTrue);
+  });
+
+  testWidgets('a long previous title still names the back button', (
+    tester,
+  ) async {
+    final navigator = GlobalKey<NavigatorState>();
+    await tester.pumpWidget(_pages(navigator, home: 'Cupertino Widgets'));
+    navigator.currentState!.pushNamed('Button');
+    await tester.pumpAndSettle();
+    expect(find.text('Cupertino Widgets'), findsOneWidget);
+    expect(find.text('Back'), findsNothing);
+  });
+  testWidgets('the back label is the text the flight lands on, whatever the '
+      "app's text style", (tester) async {
+    final navigator = GlobalKey<NavigatorState>();
+    // Material 3's body text: a 1.43 line height the flight does not have.
+    await tester.pumpWidget(
+      _pages(navigator, appTextStyle: const TextStyle(height: 1.43)),
+    );
+    navigator.currentState!.pushNamed('Quick Notes');
+    await tester.pumpAndSettle();
+    final label = tester.renderObject<RenderParagraph>(find.text('Folders'));
+    expect(label.text.style?.height, isNull);
+  });
 }
 
 /// Two pages with the bar, the second pushed over the first.
-Widget _pages(GlobalKey<NavigatorState> navigator) {
+Widget _pages(
+  GlobalKey<NavigatorState> navigator, {
+  String home = 'Folders',
+  TextStyle appTextStyle = const TextStyle(),
+}) {
   Widget page(String title) => CustomScrollView(
     slivers: [
       LegacySliverNavigationBar(largeTitle: Text(title)),
@@ -285,9 +327,9 @@ Widget _pages(GlobalKey<NavigatorState> navigator) {
         size: Size(414, 736),
         padding: EdgeInsets.only(top: 20),
       ),
-      child: child!,
+      child: DefaultTextStyle.merge(style: appTextStyle, child: child!),
     ),
-    home: page('Folders'),
+    home: page(home),
     onGenerateRoute: (settings) =>
         CupertinoPageRoute(builder: (_) => page(settings.name!)),
   );
