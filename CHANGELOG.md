@@ -51,7 +51,8 @@
   decides light or dark from what it sees itself, so the navigation bars
   cut their wash out under every item holding a native view — the
   package's glass or one of the app's own — and that glass sees the content
-  under the bar, as the system's bar items do.
+  under the bar, as the system's bar items do. The tab bar is cut out of its
+  wash the same way (a split bar keeps the measured appearance).
 * iOS 15–18: between two pages with `CupertinoNativeSliverNavigationBar`, the
   system's bar transition — the page's title, large or inline, flies into the
   next page's back button, whose label it becomes; bar items fade. Swipe-back

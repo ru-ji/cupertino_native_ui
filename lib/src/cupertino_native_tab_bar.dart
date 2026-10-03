@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'cupertino_scroll_edge_effect.dart';
+import 'internal/bar_holes.dart';
 import 'internal/ios_version.dart';
 import 'models/cupertino_native_icon.dart';
 import 'models/cupertino_native_tab.dart';
@@ -139,15 +140,21 @@ class _CupertinoNativeTabBarState extends State<CupertinoNativeTabBar> {
   int? _lastRightCount;
   double? _lastSplitSpacing;
 
-  /// The content under the bar, measured under its scroll edge effect's
-  /// wash: the bar takes its appearance from it, as the system's does. Null
-  /// until measured (or without an effect).
+  /// The bar cut out of its scroll edge effect's wash, so its glass sees the
+  /// content under it and turns light or dark with it by itself, as the
+  /// navigation bars' items do (see [BarHoles]).
+  final BarHoles _holes = BarHoles();
+
+  /// Split bars are not cut out (one box holds two pills and the gap between
+  /// them): they take the content under them, measured under the wash, as an
+  /// imposed appearance instead. Null until measured.
   Brightness? _behind;
 
-  // Until then the APP's brightness (its Material theme), so the native bar
+  // Otherwise the APP's brightness (its Material theme), so the native bar
   // matches the app rather than the device. Re-synced on theme change.
   bool get _isDark =>
-      (_behind ?? Theme.of(context).brightness) == Brightness.dark;
+      ((widget.split ? _behind : null) ?? Theme.of(context).brightness) ==
+      Brightness.dark;
 
   void _onBehind(Brightness behind) {
     if (!mounted || behind == _behind) return;
@@ -186,6 +193,7 @@ class _CupertinoNativeTabBarState extends State<CupertinoNativeTabBar> {
 
   @override
   void dispose() {
+    _holes.dispose();
     _channel?.setMethodCallHandler(null);
     super.dispose();
   }
@@ -385,36 +393,39 @@ class _CupertinoNativeTabBarState extends State<CupertinoNativeTabBar> {
     if (isIOS26OrLater &&
         widget.scrollEdgeEffect != CupertinoScrollEdgeEffectStyle.automatic) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _measureBelow());
-      bar = Stack(
-        key: _barKey,
-        clipBehavior: Clip.none,
-        children: [
-          Positioned(
-            left: 0,
-            right: 0,
-            top:
-                h +
-                _belowBar -
-                (MediaQuery.viewPaddingOf(context).bottom +
-                    (widget.scrollEdgeEffect ==
-                            CupertinoScrollEdgeEffectStyle.hard
-                        ? _effectBand
-                        : _softBand)),
-            // Down to the physical screen edge — measured, not assumed: a
-            // bar that already reaches it (no SafeArea around it) took the
-            // home-indicator inset again, so the strongest part of the ramp
-            // fell off screen and what showed above the bar was too faint
-            // to see.
-            bottom: -_belowBar,
-            child: CupertinoScrollEdgeEffect(
-              edge: CupertinoScrollEdgeEffectEdge.bottom,
-              style: widget.scrollEdgeEffect,
-              onBrightnessChanged: _onBehind,
+      bar = BarHolesScope(
+        holes: _holes,
+        child: Stack(
+          key: _barKey,
+          clipBehavior: Clip.none,
+          children: [
+            Positioned(
+              left: 0,
+              right: 0,
+              top:
+                  h +
+                  _belowBar -
+                  (MediaQuery.viewPaddingOf(context).bottom +
+                      (widget.scrollEdgeEffect ==
+                              CupertinoScrollEdgeEffectStyle.hard
+                          ? _effectBand
+                          : _softBand)),
+              // Down to the physical screen edge — measured, not assumed: a
+              // bar that already reaches it (no SafeArea around it) took the
+              // home-indicator inset again, so the strongest part of the ramp
+              // fell off screen and what showed above the bar was too faint
+              // to see.
+              bottom: -_belowBar,
+              child: CupertinoScrollEdgeEffect(
+                edge: CupertinoScrollEdgeEffectEdge.bottom,
+                style: widget.scrollEdgeEffect,
+                onBrightnessChanged: widget.split ? _onBehind : null,
+              ),
             ),
-          ),
-          // Painted after the effect: the bar sits on it.
-          bar,
-        ],
+            // Painted after the effect: the bar sits on it, cut out of its wash.
+            if (widget.split) bar else BarHole(child: bar),
+          ],
+        ),
       );
     }
     return bar;

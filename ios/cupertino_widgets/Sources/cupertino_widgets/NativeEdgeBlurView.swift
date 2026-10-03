@@ -207,10 +207,15 @@ final class EdgeBlurView: UIView {
     private let blur = BackdropBlurView()
     /// Holds the washes, so `intensity` fades them as one.
     private let washLayer = CALayer()
-    /// Wash layers: images, not gradients, and siblings, never masks.
+    /// Wash layers: a flat colour shaped by a mask image (the dithered
+    /// profile, not a gradient), siblings. The image depends only on the
+    /// size and the edge: a theme or page-colour change just recolours them.
     private let fixedWash = CALayer()
     private let lightWash = CALayer()
     private let darkWash = CALayer()
+    private let fixedMask = CALayer()
+    private let lightMask = CALayer()
+    private let darkMask = CALayer()
     /// The wash with the bar's native items cut out (see `applyHoles`).
     private let holeMask = CAShapeLayer()
     private var config = EdgeBlurConfig(nil)
@@ -234,8 +239,9 @@ final class EdgeBlurView: UIView {
         backgroundColor = .clear
         addSubview(blur)
         layer.addSublayer(washLayer)
-        for wash in [fixedWash, lightWash, darkWash] {
-            wash.contentsGravity = .resize
+        for (wash, mask) in [(fixedWash, fixedMask), (lightWash, lightMask), (darkWash, darkMask)] {
+            mask.contentsGravity = .resize
+            wash.mask = mask
             wash.isHidden = true
             washLayer.addSublayer(wash)
         }
@@ -301,7 +307,10 @@ final class EdgeBlurView: UIView {
         CATransaction.setDisableActions(true)
         blur.frame = bounds
         washLayer.frame = bounds
-        for wash in [fixedWash, lightWash, darkWash] { wash.frame = washLayer.bounds }
+        for wash in [fixedWash, lightWash, darkWash] {
+            wash.frame = washLayer.bounds
+            wash.mask?.frame = wash.bounds
+        }
         applyHoles()
         let insets = window?.safeAreaInsets ?? .zero
         for tracker in [luma, darkLuma] {
@@ -332,17 +341,26 @@ final class EdgeBlurView: UIView {
         washLayer.mask = holeMask
     }
 
-    /// The wash images, re-rendered only when what they draw changes, and off
-    /// the main thread once the view is up: a theme change re-renders every
-    /// bar's full-resolution dithered washes at once, and doing it inline
-    /// stalled the frame. Which layers show, and at what level, is set here
-    /// every time — that part is cheap.
+    /// Colours the washes and shows the level's — cheap, every time — and
+    /// re-renders the profile image only when the size or the edge changes:
+    /// inline the first time, so the effect never shows up empty, off the
+    /// main thread after.
     private func renderWashes() {
         let scale = traitCollection.displayScale > 0 ? traitCollection.displayScale : UIScreen.main.scale
         let width = Int((bounds.width * scale).rounded())
         let height = Int((bounds.height * scale).rounded())
         guard width > 0, height > 0 else { return }
         let adaptive = config.adaptive
+        // The bright (or fixed) wash's colour; white unless a tint is given.
+        var red: CGFloat = 1, green: CGFloat = 1, blue: CGFloat = 1, alpha: CGFloat = 1
+        if let argb = config.tint {
+            UIColor(argb: argb).getRed(&red, green: &green, blue: &blue, alpha: &alpha)
+        }
+        lightWash.backgroundColor =
+            UIColor(red: red, green: green, blue: blue, alpha: CGFloat(EdgeBlurProfile.lightPeak)).cgColor
+        // Full black: the layer's opacity carries the level.
+        darkWash.backgroundColor = UIColor.black.cgColor
+        fixedWash.backgroundColor = UIColor(red: red, green: green, blue: blue, alpha: alpha).cgColor
         fixedWash.isHidden = adaptive || config.tint == nil
         lightWash.isHidden = !adaptive
         darkWash.isHidden = !adaptive
@@ -350,57 +368,27 @@ final class EdgeBlurView: UIView {
             lightWash.opacity = level.lightOpacity(dark: config.isDark)
             darkWash.opacity = level.darkOpacity(dark: config.isDark)
         }
-        let key = "\(width)x\(height) b\(config.bottom) a\(adaptive) t\(config.tint.map(String.init) ?? "-")"
+        let key = "\(width)x\(height) b\(config.bottom)"
         guard key != renderedKey else { return }
         let first = renderedKey == nil
         renderedKey = key
-        // The bright (or fixed) wash's colour; white unless a tint is given.
-        var red: CGFloat = 1, green: CGFloat = 1, blue: CGFloat = 1, alpha: CGFloat = 1
-        if let argb = config.tint {
-            UIColor(argb: argb).getRed(&red, green: &green, blue: &blue, alpha: &alpha)
-        }
-        let rgb = (Double(red), Double(green), Double(blue))
         let bottom = config.bottom
-        let fixedPeak = Double(alpha)
-        let render = { () -> (CGImage?, CGImage?) in
-            if adaptive {
-                return (
-                    Self.washImage(
-                        red: rgb.0, green: rgb.1, blue: rgb.2, peak: EdgeBlurProfile.lightPeak,
-                        width: width, height: height, bottom: bottom),
-                    // Full peak: the layer's opacity carries the level.
-                    Self.washImage(
-                        red: 0, green: 0, blue: 0, peak: 1,
-                        width: width, height: height, bottom: bottom))
-            }
-            return (
-                Self.washImage(
-                    red: rgb.0, green: rgb.1, blue: rgb.2, peak: fixedPeak,
-                    width: width, height: height, bottom: bottom), nil)
-        }
-        let show = { [weak self] (images: (CGImage?, CGImage?)) in
+        let show = { [weak self] (image: CGImage?) in
             guard let self, self.renderedKey == key else { return }
             CATransaction.begin()
             CATransaction.setDisableActions(true)
-            for wash in [self.fixedWash, self.lightWash, self.darkWash] { wash.contentsScale = scale }
-            if adaptive {
-                self.lightWash.contents = images.0
-                self.darkWash.contents = images.1
-                self.fixedWash.contents = nil
-            } else {
-                self.fixedWash.contents = images.0
-                self.lightWash.contents = nil
-                self.darkWash.contents = nil
+            for mask in [self.fixedMask, self.lightMask, self.darkMask] {
+                mask.contentsScale = scale
+                mask.contents = image
             }
             CATransaction.commit()
         }
-        // The first one inline, so the effect never shows up empty.
         if first {
-            show(render())
+            show(Self.profileImage(width: width, height: height, bottom: bottom))
         } else {
             DispatchQueue.global(qos: .userInitiated).async {
-                let images = render()
-                DispatchQueue.main.async { show(images) }
+                let image = Self.profileImage(width: width, height: height, bottom: bottom)
+                DispatchQueue.main.async { show(image) }
             }
         }
     }
@@ -432,33 +420,31 @@ final class EdgeBlurView: UIView {
         layer.add(animation, forKey: "lumaWash")
     }
 
-    /// The wash as premultiplied pixels at the layer's own resolution: alpha
+    /// The washes' shape, as a mask at the layer's own resolution: alpha
     /// follows the tint curve per row, with ±0.5 code of dither per pixel —
-    /// a ramp this slow quantises into visible bands otherwise.
-    // ponytail: full-resolution RGBA per wash (~3MB each on a 3x bar); a
-    // narrower image would stretch the dither into streaks.
-    private static func washImage(
-        red: Double, green: Double, blue: Double, peak: Double,
-        width: Int, height: Int, bottom: Bool
-    ) -> CGImage? {
+    /// a ramp this slow quantises into visible bands otherwise. Shared by all
+    /// three washes; their colours are their own.
+    // ponytail: full-resolution RGBA (~3MB on a 3x bar); a narrower image
+    // would stretch the dither into streaks.
+    private static func profileImage(width: Int, height: Int, bottom: Bool) -> CGImage? {
         var pixels = [UInt8](repeating: 0, count: width * height * 4)
         for row in 0..<height {
             let fromTop = (Double(row) + 0.5) / Double(height)
             let alpha =
-                peak
-                * EdgeBlurProfile.tint(
+                EdgeBlurProfile.tint(
                     bottom ? 1 - fromTop : fromTop,
                     hold: bottom ? EdgeBlurProfile.bottomTintHold : EdgeBlurProfile.tintHold)
                 * 255
             if alpha <= 0 { continue }
             let base = row * width * 4
             for x in 0..<width {
-                let a = (min(max(alpha + EdgeBlurProfile.hash(x, row) - 0.5, 0), 255)).rounded()
+                // Premultiplied white: every channel carries the alpha.
+                let a = UInt8(min(max(alpha + EdgeBlurProfile.hash(x, row) - 0.5, 0), 255).rounded())
                 let i = base + x * 4
-                pixels[i] = UInt8((red * a).rounded())
-                pixels[i + 1] = UInt8((green * a).rounded())
-                pixels[i + 2] = UInt8((blue * a).rounded())
-                pixels[i + 3] = UInt8(a)
+                pixels[i] = a
+                pixels[i + 1] = a
+                pixels[i + 2] = a
+                pixels[i + 3] = a
             }
         }
         return pixels.withUnsafeMutableBytes { raw -> CGImage? in
