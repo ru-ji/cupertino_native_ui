@@ -87,6 +87,7 @@ class _ContextMenuDemoPageState extends State<ContextMenuDemoPage> {
   @override
   Widget build(BuildContext context) {
     return CupertinoPageScaffold(
+      backgroundColor: CupertinoColors.systemGroupedBackground,
       child: CustomScrollView(
         slivers: [
           CupertinoNativeSliverNavigationBar(largeTitle: 'Context Menu'),

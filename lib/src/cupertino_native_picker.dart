@@ -6,7 +6,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
 import 'internal/native_platform_view_mixin.dart';
-import 'internal/scroll_friendly_recognizer.dart';
 import 'models/cupertino_native_button_style.dart';
 import 'models/cupertino_native_icon.dart';
 import 'internal/native_color.dart';
@@ -253,7 +252,7 @@ class _CupertinoNativePickerState extends State<CupertinoNativePicker>
         hitTestBehavior: PlatformViewHitTestBehavior.opaque,
         gestureRecognizers: widget.style == CupertinoNativePickerStyle.wheel
             ? {Factory<EagerGestureRecognizer>(EagerGestureRecognizer.new)}
-            : scrollFriendlyGestures,
+            : scrollFriendlyGestures(),
       ),
     );
 

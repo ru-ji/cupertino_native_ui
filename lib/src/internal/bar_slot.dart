@@ -14,12 +14,26 @@ import 'package:flutter/widgets.dart';
 /// The weights were measured on Settings and Notes, iOS 26 and iOS 18,
 /// against SF Symbols and SF Pro rendered at each weight. A label that sets
 /// its own weight keeps it.
+///
+/// It also carries the brightness of the content under the bar, measured
+/// under the scroll edge effect's wash: a bar button takes its appearance
+/// from it, as the system's bar items take theirs from the content under
+/// their edge effect — not from the wash right behind them.
 class BarSlot extends InheritedWidget {
-  const BarSlot({super.key, required super.child});
+  const BarSlot({super.key, this.brightness, required super.child});
+
+  /// The content under the bar; null until measured, and then the app's
+  /// theme stands in.
+  final Brightness? brightness;
 
   static bool isIn(BuildContext context) =>
       context.dependOnInheritedWidgetOfExactType<BarSlot>() != null;
 
+  /// [brightness] of the enclosing slot, or null outside one.
+  static Brightness? brightnessOf(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<BarSlot>()?.brightness;
+
   @override
-  bool updateShouldNotify(BarSlot oldWidget) => false;
+  bool updateShouldNotify(BarSlot oldWidget) =>
+      brightness != oldWidget.brightness;
 }

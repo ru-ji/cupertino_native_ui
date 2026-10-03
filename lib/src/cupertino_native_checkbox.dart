@@ -4,7 +4,6 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 
 import 'internal/native_platform_view_mixin.dart';
-import 'internal/scroll_friendly_recognizer.dart';
 import 'internal/native_color.dart';
 
 /// A checkbox rendered by SwiftUI.
@@ -124,7 +123,7 @@ class _CupertinoNativeCheckboxState extends State<CupertinoNativeCheckbox>
           // The whole box (including its 44pt touch target) takes taps, and
           // press-and-release belongs to the control, not to a scroll.
           hitTestBehavior: PlatformViewHitTestBehavior.opaque,
-          gestureRecognizers: scrollFriendlyGestures,
+          gestureRecognizers: scrollFriendlyGestures(),
         ),
       );
 

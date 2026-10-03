@@ -478,12 +478,63 @@ void main() {
     expect(params['adaptive'], false);
     expect(params['edge'], 'top');
     expect(params['intensity'], 1.0);
-    expect(params['sigma'], 0.0);
-    expect(params['tint'], green.withValues(alpha: 0.85).toARGB32());
+    // The system PocketBlur's radius.
+    expect(params['sigma'], 1.0);
+    expect(params['tint'], green.withValues(alpha: 0.84).toARGB32());
   }, variant: iOS);
 
-  // Only the system background a CupertinoPageScaffold starts from lets the
-  // wash adapt; any other colour fixes it, wherever it comes from.
+  // The system's bar items follow the content under its edge effect even
+  // when the wash is fixed: the effect keeps measuring for them.
+  testWidgets('scroll edge effect measures the content under a fixed wash', (
+    tester,
+  ) async {
+    final params = await paramsOf(
+      tester,
+      CupertinoPageScaffold(
+        backgroundColor: green,
+        child: CupertinoScrollEdgeEffect(onBrightnessChanged: (_) {}),
+      ),
+    );
+    expect(params['adaptive'], false);
+    expect(params['tracksLuma'], true);
+  }, variant: iOS);
+
+  testWidgets('a bar button takes the brightness of the content under it', (
+    tester,
+  ) async {
+    // A light app over dark content: the bar's glass goes dark, as the
+    // system's does.
+    final params = await paramsOf(
+      tester,
+      BarSlot(
+        brightness: Brightness.dark,
+        child: CupertinoNativeButton.icon(
+          CupertinoSymbols.chevronBackward,
+          onPressed: () {},
+        ),
+      ),
+    );
+    // Its own appearance only: the window keeps the app's.
+    expect(params['appearanceDark'], true);
+    expect(params['isDark'], false);
+  }, variant: iOS);
+
+  testWidgets('scroll edge effect does not blur the bottom edge', (
+    tester,
+  ) async {
+    // The tab bar's edge is the wash alone, as the system's.
+    final params = await paramsOf(
+      tester,
+      const CupertinoScrollEdgeEffect(
+        edge: CupertinoScrollEdgeEffectEdge.bottom,
+      ),
+    );
+    expect(params['sigma'], 0.0);
+  }, variant: iOS);
+
+  // Only the system backgrounds — a CupertinoPageScaffold's, and the one a
+  // grouped list lays under its cards — let the wash adapt; any other colour
+  // fixes it, wherever it comes from.
   testWidgets(
     'scroll edge effect follows the content on the system background',
     (tester) async {
@@ -491,6 +542,21 @@ void main() {
         tester,
         const CupertinoPageScaffold(
           backgroundColor: CupertinoColors.systemBackground,
+          child: CupertinoScrollEdgeEffect(),
+        ),
+      );
+      expect(params['adaptive'], true);
+    },
+    variant: iOS,
+  );
+
+  testWidgets(
+    'scroll edge effect follows the content on the grouped background',
+    (tester) async {
+      final params = await paramsOf(
+        tester,
+        const CupertinoPageScaffold(
+          backgroundColor: CupertinoColors.systemGroupedBackground,
           child: CupertinoScrollEdgeEffect(),
         ),
       );
@@ -510,7 +576,7 @@ void main() {
     );
     await tester.pump(const Duration(milliseconds: 100));
     expect(created.first['adaptive'], false);
-    expect(created.first['tint'], green.withValues(alpha: 0.85).toARGB32());
+    expect(created.first['tint'], green.withValues(alpha: 0.84).toARGB32());
   }, variant: iOS);
 
   // A tab bar laid over its tabs is in none of their scaffolds: the effect

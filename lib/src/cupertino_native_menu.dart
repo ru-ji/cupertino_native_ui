@@ -152,7 +152,10 @@ class _CupertinoNativeMenuState extends State<CupertinoNativeMenu>
           onPlatformViewCreated: _onPlatformViewCreated,
           // The system menu takes over the touch; without a recognizer claiming
           // it, Flutter never sees it end and every later touch stays blocked.
-          gestureRecognizers: scrollFriendlyGestures,
+          gestureRecognizers: scrollFriendlyGestures(
+            // A pull-down menu opens as soon as the button has the touch.
+            claimAfter: ScrollFriendlyPlatformViewRecognizer.holdTimeout,
+          ),
         ),
       );
 

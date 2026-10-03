@@ -262,6 +262,7 @@ class _SheetDemoPageState extends State<SheetDemoPage> {
   Widget build(BuildContext context) {
     final top = MediaQuery.paddingOf(context).top + 44;
     return CupertinoPageScaffold(
+      backgroundColor: CupertinoColors.systemGroupedBackground,
       child: Stack(
         children: [
           ListView(

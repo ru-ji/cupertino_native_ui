@@ -195,7 +195,10 @@ class _CupertinoNativeButtonState extends State<CupertinoNativeButton>
 
   // Follows the app's own theme brightness, not the device's — a light app
   // forced on a dark-mode phone should still get a light control.
-  bool get _isDark => Theme.of(context).brightness == Brightness.dark;
+  /// In a bar, the content under it; elsewhere the app's theme.
+  bool get _isDark =>
+      (BarSlot.brightnessOf(context) ?? Theme.of(context).brightness) ==
+      Brightness.dark;
 
   @override
   void didChangeDependencies() {
@@ -271,7 +274,12 @@ class _CupertinoNativeButtonState extends State<CupertinoNativeButton>
         null => null,
       },
       'textColor': nativeArgb(label.textStyle?.color, isDark: _isDark),
-      'isDark': _isDark,
+      // The app's, for the window; a bar's content only for this view.
+      'isDark': Theme.of(context).brightness == Brightness.dark,
+      'appearanceDark': switch (BarSlot.brightnessOf(context)) {
+        null => null,
+        final b => b == Brightness.dark,
+      },
       // Sized natively too, not just boxed: a SwiftUI button is `fixedSize`,
       // so a Flutter SizedBox alone leaves it drawing at its own metrics and
       // spilling out of (or rattling inside) the box.

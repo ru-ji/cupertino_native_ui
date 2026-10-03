@@ -5,7 +5,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
 import 'internal/native_platform_view_mixin.dart';
-import 'internal/scroll_friendly_recognizer.dart';
 import 'internal/native_color.dart';
 
 /// iOS's segmented control, rendered by SwiftUI. Same shape as Flutter's
@@ -148,7 +147,7 @@ class _CupertinoNativeSegmentedControlState<T extends Object>
           // Claim drags immediately so press-and-slide across segments reaches
           // the native control instead of being taken by Flutter's gesture arena.
           hitTestBehavior: PlatformViewHitTestBehavior.opaque,
-          gestureRecognizers: scrollFriendlyGestures,
+          gestureRecognizers: scrollFriendlyGestures(),
         ),
       );
 

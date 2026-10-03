@@ -67,6 +67,7 @@ class NativeButtonView: NativeHostingView {
     /// because it was, underneath, a brand-new button.
     private func setupSwiftUI(with config: ButtonConfig, update: Bool = false) {
         isDark = config.isDark
+        appearanceDark = config.appearanceDark
         let buttonView = AdaptiveButtonView(config: config) { [weak self] in
             self?.channel?.invokeMethod("onPressed", arguments: nil)
         }

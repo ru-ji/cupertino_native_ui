@@ -5,7 +5,6 @@ import 'package:flutter/widgets.dart';
 
 import 'internal/native_platform_view_mixin.dart';
 import 'models/cupertino_native_icon.dart';
-import 'internal/scroll_friendly_recognizer.dart';
 import 'internal/native_color.dart';
 
 class CupertinoNativeSlider extends StatefulWidget {
@@ -98,7 +97,7 @@ class _CupertinoNativeSliderState extends State<CupertinoNativeSlider>
           creationParamsCodec: const StandardMessageCodec(),
           onPlatformViewCreated: _onPlatformViewCreated,
           hitTestBehavior: PlatformViewHitTestBehavior.opaque,
-          gestureRecognizers: scrollFriendlyGestures,
+          gestureRecognizers: scrollFriendlyGestures(),
         ),
       ),
     );

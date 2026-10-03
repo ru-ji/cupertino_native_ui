@@ -255,6 +255,9 @@ class NativeListView: NativeHostingView {
             return
         }
         switch call.method {
+        case "cancelTouches":
+            cancelTouches()
+            result(nil)
         case "getIntrinsicSize":
             result(intrinsicSize())
         // The route is leaving; drop the responder now so the keyboard rides

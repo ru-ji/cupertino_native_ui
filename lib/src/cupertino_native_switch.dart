@@ -4,7 +4,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 
 import 'internal/native_platform_view_mixin.dart';
-import 'internal/scroll_friendly_recognizer.dart';
 import 'internal/native_color.dart';
 
 class CupertinoNativeSwitch extends StatefulWidget {
@@ -106,7 +105,7 @@ class _CupertinoNativeSwitchState extends State<CupertinoNativeSwitch>
           // Claim drags immediately so press-and-slide reaches the native
           // switch instead of being taken by Flutter's gesture arena.
           hitTestBehavior: PlatformViewHitTestBehavior.opaque,
-          gestureRecognizers: scrollFriendlyGestures,
+          gestureRecognizers: scrollFriendlyGestures(),
         ),
       );
 

@@ -42,9 +42,27 @@ class NativeHostingView: NSObject, FlutterPlatformView {
         }
     }
 
+    /// This view's own appearance when it differs from the app's — a bar
+    /// button following the content under the bar. Never reaches the window:
+    /// that would flip the whole app, and Flutter's theme with it. Changes
+    /// cross-fade, as the system's bar items do.
+    var appearanceDark: Bool? {
+        didSet {
+            guard appearanceDark != oldValue else { return }
+            guard oldValue != nil, hostingController != nil else {
+                applyInterfaceStyle()
+                return
+            }
+            UIView.transition(
+                with: _view, duration: 0.35,
+                options: [.transitionCrossDissolve, .allowUserInteraction]
+            ) { self.applyInterfaceStyle() }
+        }
+    }
+
     private func applyInterfaceStyle() {
         let style: UIUserInterfaceStyle
-        switch isDark {
+        switch appearanceDark ?? isDark {
         case true: style = .dark
         case false: style = .light
         default: style = .unspecified
@@ -72,6 +90,12 @@ class NativeHostingView: NSObject, FlutterPlatformView {
 
     func view() -> UIView {
         return _view
+    }
+
+    /// Dart's `cancelTouches`: the Flutter page took a touch this view already
+    /// had. See `TouchCancelRecognizer`.
+    func cancelTouches() {
+        _view.touchCanceller.cancelTouches()
     }
 
     /// Creates (or replaces) the hosting controller with `content`, laid out by `configureConstraints`
@@ -278,6 +302,9 @@ final class HostingContainerView: UIView {
     /// it paints past its box (see `PlatformViewSnapshot`).
     let clipView = UIView()
 
+    /// Takes a touch back from the content when the Flutter page scrolls.
+    let touchCanceller = TouchCancelRecognizer()
+
     override init(frame: CGRect) {
         super.init(frame: frame)
         for view in [clipView, contentView] {
@@ -286,6 +313,7 @@ final class HostingContainerView: UIView {
         }
         clipView.addSubview(contentView)
         addSubview(clipView)
+        addGestureRecognizer(touchCanceller)
     }
 
     required init?(coder: NSCoder) { fatalError("init(coder:) is not supported") }

@@ -40,6 +40,7 @@ class _LiquidGlassDemoPageState extends State<LiquidGlassDemoPage> {
   @override
   Widget build(BuildContext context) {
     return CupertinoPageScaffold(
+      backgroundColor: CupertinoColors.systemGroupedBackground,
       child: CustomScrollView(
         slivers: [
           CupertinoNativeSliverNavigationBar(largeTitle: 'Liquid Glass'),

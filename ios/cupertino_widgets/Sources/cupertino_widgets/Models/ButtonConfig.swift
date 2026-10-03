@@ -21,6 +21,9 @@ struct ButtonConfig: Codable {
     /// hosted view's appearance so a light app on a dark-mode phone does not
     /// draw dark controls. See `NativeHostingView.isDark`.
     let isDark: Bool?
+    /// The content under the bar, for a bar button: its own appearance,
+    /// which never reaches the window. See `NativeHostingView.appearanceDark`.
+    let appearanceDark: Bool?
     /// Explicit point size from Dart. Sizes the SwiftUI control itself, not
     /// just the Flutter box around it.
     let width: Double?

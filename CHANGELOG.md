@@ -1,5 +1,19 @@
 ## Unreleased
 
+* A finger resting on a native view — a list row, a switch, a slider — no
+  longer stops the page from scrolling, however long it rests: as in a
+  `UIScrollView`, the view gets the touch after 150ms (the row highlights,
+  the switch presses) but the scroll can still take it back, and the view
+  lets go natively (`touchesCancelled`, no tap). It used to keep the touch
+  for good after 150ms. A context menu keeps it once its long press
+  completes, a pull-down menu once it opens.
+* A swipe back that starts on a native view goes back, as over Flutter
+  content: in the route's back-swipe strip a drag is no longer the view's (a
+  slightly diagonal swipe used to lose to it); taps still reach it.
+* `CupertinoNativePageScaffold`: a prewarmed body, or one parked by an
+  earlier visit, takes the app's current brightness when the scaffold
+  attaches it — it kept the one it booted with, so a light page showed a
+  body in dark-mode colours.
 * `CupertinoNativeGlassContainer.child`: its `Text`s and still SF Symbols are
   drawn by SwiftUI inside the glass, in the frames Flutter laid them out in —
   through `Row`, `Column`, `Wrap`, `Padding`, `Align`, `SizedBox` and
@@ -10,8 +24,10 @@
   `.soft`'s bright wash and `.hard` alike. `tintColor` on the navigation bars
   and `color` on `CupertinoScrollEdgeEffect` are deprecated and ignored: the
   effect cannot be tinted on its own. On `CupertinoColors.systemBackground`
-  — what a `CupertinoPageScaffold` starts from — the wash follows the
-  content; on any other colour, the page's or the theme's, it is fixed in
+  — what a `CupertinoPageScaffold` starts from — and on
+  `systemGroupedBackground` — the page a `CupertinoNativeList` belongs on,
+  its cards being white in light mode — the wash follows the content; on any
+  other colour, the page's or the theme's, it is fixed in
   it, as SwiftUI's is once a page has a `.background`. It is the page
   showing under the
   effect that counts: a tab bar laid over tabs that each have their own
@@ -19,6 +35,19 @@
   wash is black alone, at the system's three strengths — 31% over bright
   content, 60% over mid, 85% over near-black — and the bar's chrome stays
   light: it no longer turned the page's black into an 85% wash over white.
+  `.soft` blurs again at the top edge, lightly, with the system
+  PocketBlur's radius (σ ≈ 1.5–1.85pt on screen) — the tab bar's bottom
+  edge keeps the wash alone, as the system's — and its wash now fades
+  over the system's own band (133pt up on a 12 Pro Max, barely held at the
+  bottom) instead of a steep ramp stopped at the bar's top; a `CupertinoNativeEdgeBlur` with no blur no longer keeps a
+  backdrop layer capturing every frame.
+* iOS 26: the navigation bars' buttons and the tab bar take their light or
+  dark appearance from the content under the bar, measured under the scroll
+  edge effect's wash, as the system's bar items do — the glass no longer
+  goes by the wash right behind it, which hid the content (a dark wash
+  never let it turn light). The measurement now runs on a page of its own
+  colour too, whose wash stays fixed. They cross-fade into it, and only
+  they change: the app's window keeps the app's brightness.
 * iOS 15–18: between two pages with `CupertinoNativeSliverNavigationBar`, the
   system's bar transition — the page's title, large or inline, flies into the
   next page's back button, whose label it becomes; bar items fade. Swipe-back

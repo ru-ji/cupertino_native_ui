@@ -107,6 +107,9 @@ class NativeCheckboxView: NativeHostingView {
             return
         }
         switch call.method {
+        case "cancelTouches":
+            cancelTouches()
+            result(nil)
         case "getIntrinsicSize":
             result(intrinsicSize())
         case "updateCheckbox":

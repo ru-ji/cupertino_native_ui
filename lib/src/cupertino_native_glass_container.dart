@@ -6,7 +6,6 @@ import 'package:flutter/widgets.dart';
 
 import 'internal/native_platform_view_mixin.dart';
 import 'models/cupertino_native_icon.dart';
-import 'internal/scroll_friendly_recognizer.dart';
 import 'internal/native_color.dart';
 import 'internal/bar_slot.dart';
 import 'internal/glass_leaves.dart';
@@ -199,7 +198,12 @@ class _CupertinoNativeGlassContainerState
       'route': widget.route,
       'animated': widget.animateChanges,
       'expand': !_hugsContent,
-      'isDark': _isDark,
+      // The app's, for the window; a bar's content only for this view.
+      'isDark': Theme.of(context).brightness == Brightness.dark,
+      'appearanceDark': switch (BarSlot.brightnessOf(context)) {
+        null => null,
+        final b => b == Brightness.dark,
+      },
       'leaves': _leaves.current,
     };
   }
@@ -222,7 +226,10 @@ class _CupertinoNativeGlassContainerState
 
   /// Follows the app's own theme brightness, not the device's — a light app
   /// forced on a dark-mode phone should still get light glass.
-  bool get _isDark => Theme.of(context).brightness == Brightness.dark;
+  /// In a bar, the content under it (see [BarSlot]); elsewhere the app's.
+  bool get _isDark =>
+      (BarSlot.brightnessOf(context) ?? Theme.of(context).brightness) ==
+      Brightness.dark;
 
   @override
   void didChangeDependencies() {
@@ -314,7 +321,9 @@ class _CupertinoNativeGlassContainerState
           hitTestBehavior: wantsTouches
               ? PlatformViewHitTestBehavior.opaque
               : PlatformViewHitTestBehavior.transparent,
-          gestureRecognizers: wantsTouches ? scrollFriendlyGestures : const {},
+          gestureRecognizers: wantsTouches
+              ? scrollFriendlyGestures()
+              : const {},
           onPlatformViewCreated: _onPlatformViewCreated,
         ),
       );

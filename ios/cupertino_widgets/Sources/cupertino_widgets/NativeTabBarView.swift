@@ -103,6 +103,12 @@ class NativeTabBarView: NSObject, FlutterPlatformView, UITabBarDelegate {
 
     func view() -> UIView { container }
 
+    /// The view and everything in it: the bar's glass lives a few levels down.
+    private static func markNeedsLayout(_ view: UIView) {
+        view.setNeedsLayout()
+        for subview in view.subviews { markNeedsLayout(subview) }
+    }
+
     // MARK: - Bar construction
 
     private func buildItems(_ range: Range<Int>) -> [UITabBarItem] {
@@ -325,7 +331,27 @@ class NativeTabBarView: NSObject, FlutterPlatformView, UITabBarDelegate {
             if let args = call.arguments as? [String: Any],
                 let isDark = (args["isDark"] as? NSNumber)?.boolValue
             {
-                container.overrideUserInterfaceStyle = isDark ? .dark : .light
+                let style: UIUserInterfaceStyle = isDark ? .dark : .light
+                // Only on a real change: it is the one moment the bar is
+                // re-laid out, never per frame.
+                guard container.overrideUserInterfaceStyle != style else {
+                    result(nil)
+                    return
+                }
+                // Cross-faded, as the system bar follows the content under it.
+                UIView.transition(
+                    with: container, duration: 0.35,
+                    options: [.transitionCrossDissolve, .allowUserInteraction]
+                ) {
+                    self.container.overrideUserInterfaceStyle = style
+                    // The iOS 26 bar redraws its glass for a new appearance
+                    // only when it lays out. Without this the change stayed
+                    // unseen until a tap re-laid it out — and every later one
+                    // with it. Inside the transition, so the fade ends on the
+                    // redrawn bar.
+                    Self.markNeedsLayout(self.container)
+                    self.container.layoutIfNeeded()
+                }
                 result(nil)
             } else {
                 result(FlutterError(code: "INVALID_ARGS", message: "Missing isDark", details: nil))

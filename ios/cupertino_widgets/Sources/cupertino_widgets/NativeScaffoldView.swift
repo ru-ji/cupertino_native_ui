@@ -407,6 +407,10 @@ class NativeScaffoldView: NativeHostingView {
         bodyChannel.setMethodCallHandler { [weak self] call, result in
             self?.handle(call, result: result)
         }
+        // A pooled engine booted — and pulled its brightness — before this
+        // scaffold existed (prewarm, or a previous visit parked it), and no
+        // scaffold was alive to forward the toggles since: push the app's.
+        bodyChannel.invokeMethod("setBrightness", arguments: ["isDark": currentIsDark])
         bodyChannels[key] = bodyChannel
         return engine
     }

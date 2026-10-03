@@ -530,10 +530,15 @@ class _CupertinoSliverAppBarState
       widget.leading,
       widget.automaticallyImplyLeading,
     );
-    final leading = implied == null ? null : BarSlot(child: implied);
+    // The bar's buttons follow the content under the bar, as the system's
+    // do — not the wash right behind them.
+    final leading = implied == null
+        ? null
+        : BarSlot(brightness: _effectBehind, child: implied);
     final trailing = widget.trailing.isEmpty
         ? null
         : BarSlot(
+            brightness: _effectBehind,
             child: Row(
               mainAxisSize: MainAxisSize.min,
               // Between two glass buttons, measured on iOS 26 Notes.
@@ -1346,8 +1351,13 @@ class CupertinoNativeNavigationBar extends StatelessWidget {
       leading,
       automaticallyImplyLeading,
     );
-    final leadingWidget = implied == null ? null : BarSlot(child: implied);
+    // The bar's buttons follow the content under the bar, as the system's
+    // do — not the wash right behind them.
+    final leadingWidget = implied == null
+        ? null
+        : BarSlot(brightness: behind, child: implied);
     final trailingRow = BarSlot(
+      brightness: behind,
       child: Row(
         mainAxisSize: MainAxisSize.min,
         // Between two glass buttons, measured on iOS 26 Notes.

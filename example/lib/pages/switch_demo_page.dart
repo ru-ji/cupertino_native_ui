@@ -21,6 +21,7 @@ class _SwitchDemoPageState extends State<SwitchDemoPage> {
   @override
   Widget build(BuildContext context) {
     return CupertinoPageScaffold(
+      backgroundColor: CupertinoColors.systemGroupedBackground,
       child: CustomScrollView(
         slivers: [
           CupertinoNativeSliverNavigationBar(largeTitle: 'Switch'),

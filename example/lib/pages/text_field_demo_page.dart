@@ -200,6 +200,7 @@ class _TextFieldDemoPageState extends State<TextFieldDemoPage> {
     return Stack(
       children: [
         CupertinoPageScaffold(
+          backgroundColor: CupertinoColors.systemGroupedBackground,
           resizeToAvoidBottomInset: false,
           child: CustomScrollView(
             slivers: [

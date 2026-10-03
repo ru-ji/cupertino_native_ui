@@ -2,11 +2,13 @@ import 'dart:async';
 import 'dart:ui' as ui;
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart' show OneSequenceGestureRecognizer;
 import 'package:flutter/scheduler.dart' show SchedulerBinding;
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
 import 'native_view_capture.dart';
+import 'scroll_friendly_recognizer.dart';
 
 /// Shared `MethodChannel` and intrinsic-size plumbing for widgets hosting a
 /// native `UiKitView`.
@@ -14,6 +16,30 @@ mixin NativePlatformViewStateMixin<T extends StatefulWidget> on State<T> {
   MethodChannel? channel;
   double? intrinsicWidth;
   double? intrinsicHeight;
+
+  /// The set to hand a `UiKitView` for a control that does not drag
+  /// vertically: see [ScrollFriendlyPlatformViewRecognizer].
+  ///
+  /// Typed with the recognizer's own class, not `OneSequenceGestureRecognizer`:
+  /// a `UiKitView` only swaps recognizers when the factories' *types* differ,
+  /// so two sets both typed `Factory<OneSequenceGestureRecognizer>` read as
+  /// equal and the second is never installed.
+  Set<Factory<OneSequenceGestureRecognizer>> scrollFriendlyGestures({
+    bool Function(Offset localPosition)? claims,
+    Duration? claimAfter,
+  }) => {
+    Factory<ScrollFriendlyPlatformViewRecognizer>(
+      () => ScrollFriendlyPlatformViewRecognizer(
+        claims: claims,
+        claimAfter: claimAfter,
+        onLost: cancelNativeTouches,
+      ),
+    ),
+  };
+
+  /// The page took a touch the native view already had: it lets go natively
+  /// (`TouchCancelRecognizer`).
+  void cancelNativeTouches() => channel?.invokeMethod<void>('cancelTouches');
 
   /// Creates the method channel for this platform view instance and wires up
   /// [onMethodCall] to handle callbacks invoked from the native side.

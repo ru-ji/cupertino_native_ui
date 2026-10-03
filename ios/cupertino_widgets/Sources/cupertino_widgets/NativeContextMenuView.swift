@@ -55,6 +55,8 @@ class NativeContextMenuView: NSObject, FlutterPlatformView, UIContextMenuInterac
     /// shadow from `UIPreviewParameters.visiblePath`, and its default is the
     /// preview's full rectangle — square corners around a rounded child.
     private var previewCornerRadius: CGFloat = 0
+    /// Takes the touch back, lift included, when the Flutter page scrolls.
+    private let touchCanceller = TouchCancelRecognizer()
 
     init(
         frame: CGRect,
@@ -72,6 +74,7 @@ class NativeContextMenuView: NSObject, FlutterPlatformView, UIContextMenuInterac
         // shows as a plate around the child.
         container.isOpaque = false
         container.addInteraction(UIContextMenuInteraction(delegate: self))
+        container.addGestureRecognizer(touchCanceller)
 
         if let dict = args as? [String: Any] {
             apply(dict)
@@ -116,6 +119,9 @@ class NativeContextMenuView: NSObject, FlutterPlatformView, UIContextMenuInterac
             result(nil)
         case "setChildImage":
             childImage = decodeImage(call.arguments)
+            result(nil)
+        case "cancelTouches":
+            touchCanceller.cancelTouches()
             result(nil)
         default:
             result(FlutterMethodNotImplemented)

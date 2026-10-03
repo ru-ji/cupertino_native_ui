@@ -198,7 +198,7 @@ class _NativeControlState extends State<NativeControl>
         hitTestBehavior: PlatformViewHitTestBehavior.opaque,
         gestureRecognizers: _scroll.scrolls
             ? _nestedGestures
-            : scrollFriendlyGestures,
+            : scrollFriendlyGestures(),
       ),
     );
     final height = widget.height ?? intrinsicHeight ?? widget.fallbackHeight;

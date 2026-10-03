@@ -1,35 +1,73 @@
 import 'dart:async';
+import 'dart:math' show max;
 
-import 'package:flutter/foundation.dart' show Factory;
+import 'package:flutter/foundation.dart' show VoidCallback;
 import 'package:flutter/gestures.dart';
 
 /// A platform-view gesture recognizer that lets a vertical drag reach the
 /// scrollable underneath.
 ///
 /// Unlike [EagerGestureRecognizer], it waits the way UIKit does inside a scroll
-/// view: a touch that stays put or moves sideways belongs to the control, one
-/// that runs vertically past the slop belongs to the page.
+/// view: a touch that moves sideways belongs to the control, one that runs
+/// vertically past the slop belongs to the page — even after the finger rested
+/// (see [onLost]).
 ///
 /// Not for a control that needs vertical drags of its own — a wheel picker
 /// keeps [EagerGestureRecognizer]. A view that holds one among other rows (a
 /// list with a wheel in a row) names where it is with [claims].
 class ScrollFriendlyPlatformViewRecognizer
     extends OneSequenceGestureRecognizer {
-  ScrollFriendlyPlatformViewRecognizer({this.claims, super.debugOwner});
+  ScrollFriendlyPlatformViewRecognizer({
+    this.claims,
+    this.claimAfter,
+    this.onLost,
+    super.debugOwner,
+  });
 
   /// Whether a touch landing here, in the view's own coordinates, is the
   /// view's whatever way it then moves — on a wheel, a vertical drag spins it.
   final bool Function(Offset localPosition)? claims;
 
-  /// A finger that has not moved by now is not scrolling. 150ms is UIKit's
-  /// own `delaysContentTouches` window, so a switch or a context menu answers
-  /// a held finger as fast as it does in a native scroll view; 300ms made the
-  /// switch's press feedback and the context menu's lift visibly late.
-  static const Duration _holdTimeout = Duration(milliseconds: 150);
+  /// How long a still finger takes to become the view's for good, for a view
+  /// whose hold opens something — a pull-down menu, a context menu. Null: a
+  /// held finger stays the page's to scroll however long it rests, as in a
+  /// `UIScrollView` and in a Flutter list.
+  final Duration? claimAfter;
+
+  /// The native view already had the touch ([holdTimeout]) and the page took
+  /// it: the view must let go natively — its `cancelTouches`.
+  final VoidCallback? onLost;
+
+  /// When a still finger reaches the native view, without the arena deciding:
+  /// UIKit's own `delaysContentTouches` window, so a row highlights and a
+  /// switch presses as fast as in a native scroll view.
+  static const Duration holdTimeout = Duration(milliseconds: 150);
+
+  /// The width of the strip a `CupertinoPageRoute`'s back swipe starts in —
+  /// Flutter's `_kBackGestureWidth`, widened to the safe area like Flutter's.
+  static const double _backGestureWidth = 20;
 
   Offset? _start;
-  bool _resolved = false;
   Timer? _hold;
+  Timer? _claim;
+
+  /// Decided, by this recognizer or by the arena.
+  bool _resolved = false;
+
+  /// Decided for the view.
+  bool _accepted = false;
+
+  /// The native view has the touch already, the arena still open.
+  bool _released = false;
+
+  /// Ran vertically: the page's, if the page wants it.
+  bool _yielded = false;
+
+  bool _down = false;
+
+  /// The touch landed in the back-swipe strip: a drag there is not the
+  /// view's, as no Flutter widget under it would claim it — a tap still is.
+  bool _onBackEdge = false;
 
   @override
   String get debugDescription => 'scroll-friendly platform view';
@@ -38,36 +76,56 @@ class ScrollFriendlyPlatformViewRecognizer
   void addAllowedPointer(PointerDownEvent event) {
     startTrackingPointer(event.pointer, event.transform);
     _start = event.position;
-    _resolved = false;
+    _resolved = _accepted = _released = _yielded = false;
+    _down = true;
     if (claims?.call(event.localPosition) ?? false) {
       _finish(GestureDisposition.accepted);
       return;
     }
-    _hold = Timer(_holdTimeout, () => _finish(GestureDisposition.accepted));
+    _onBackEdge = _inBackStrip(event);
+    final pointer = event.pointer;
+    _hold = Timer(holdTimeout, () => _release(pointer));
+    if (claimAfter case final after?) {
+      _claim = Timer(after, () => _finish(GestureDisposition.accepted));
+    }
     // Otherwise deliberately NOT resolved here. Everything this class exists for
     // happens in the frames between the touch landing and the finger moving.
   }
 
+  /// Hands the touch to the native view the way the arena's win would — the
+  /// team captain is the `UiKitView`'s own recognizer, whose accept releases
+  /// it on the native side — but leaves the arena open, so a scroll can still
+  /// take it back.
+  void _release(int pointer) {
+    if (_resolved || _yielded) return;
+    _released = true;
+    team?.captain?.acceptGesture(pointer);
+  }
+
   @override
   void handleEvent(PointerEvent event) {
+    if (event is PointerUpEvent || event is PointerCancelEvent) _down = false;
     _decide(event);
     // Decided or not, a lifted finger is no longer tracked.
     stopTrackingIfPointerNoLongerDown(event);
   }
 
   void _decide(PointerEvent event) {
-    if (_resolved) return;
+    if (_resolved || _yielded) return;
     final start = _start;
     if (start == null) return;
 
     if (event is PointerMoveEvent) {
       final delta = event.position - start;
-      // A vertical run past the slop is a scroll: reject, so the Scrollable
-      // takes it.
+      // A vertical run past the slop is a scroll: left to the Scrollable, not
+      // given up — on a page that does not scroll, the view keeps it.
       if (delta.dy.abs() > kTouchSlop && delta.dy.abs() > delta.dx.abs()) {
-        _finish(GestureDisposition.rejected);
+        _yielded = true;
+        _stopTimers();
         return;
       }
+      // From the edge, sideways is the back swipe's: left to the arena.
+      if (_onBackEdge) return;
       // Anything else that has travelled — a sideways drag on a slider or a
       // segmented control — belongs to the control.
       if (delta.distance > kTouchSlop) _finish(GestureDisposition.accepted);
@@ -83,44 +141,53 @@ class ScrollFriendlyPlatformViewRecognizer
   /// press-and-hold on a button with no scrollable in the way.
   @override
   void didStopTrackingLastPointer(int pointer) {
-    if (!_resolved) _finish(GestureDisposition.accepted);
+    if (!_resolved && !_yielded) _finish(GestureDisposition.accepted);
+  }
+
+  // ponytail: left edge only — an RTL app's strip is on the right; pass the
+  // text direction in if one ships.
+  static bool _inBackStrip(PointerDownEvent event) {
+    final view = GestureBinding.instance.platformDispatcher.view(
+      id: event.viewId,
+    );
+    final inset = view == null
+        ? 0.0
+        : view.padding.left / view.devicePixelRatio;
+    return event.position.dx < max(inset, _backGestureWidth);
   }
 
   void _finish(GestureDisposition disposition) {
     if (_resolved) return;
     _resolved = true;
-    _hold?.cancel();
-    _hold = null;
+    // Before resolving: a team that wins rejects its members, this one too.
+    _accepted = disposition == GestureDisposition.accepted;
+    _stopTimers();
     resolve(disposition);
   }
 
+  void _stopTimers() {
+    _hold?.cancel();
+    _claim?.cancel();
+    _hold = _claim = null;
+  }
+
+  /// Called when the page (or the back swipe) won, and also when this view's
+  /// own team won — the team rejects every member but its captain.
   @override
   void rejectGesture(int pointer) {
+    final lost = _down && _released && !_accepted;
     _resolved = true;
-    _hold?.cancel();
-    _hold = null;
+    _stopTimers();
     stopTrackingPointer(pointer);
+    if (lost) onLost?.call();
   }
 
   @override
   void dispose() {
-    _hold?.cancel();
+    _stopTimers();
     super.dispose();
   }
 }
-
-/// The set to hand a `UiKitView` for a control that does not drag vertically.
-///
-/// Typed with the recognizer's own class, not `OneSequenceGestureRecognizer`:
-/// a `UiKitView` only swaps recognizers when the factories' *types* differ,
-/// so two sets both typed `Factory<OneSequenceGestureRecognizer>` read as
-/// equal and the second is never installed.
-Set<Factory<OneSequenceGestureRecognizer>> get scrollFriendlyGestures =>
-    <Factory<OneSequenceGestureRecognizer>>{
-      Factory<ScrollFriendlyPlatformViewRecognizer>(
-        ScrollFriendlyPlatformViewRecognizer.new,
-      ),
-    };
 
 /// Where a native view's own scrolling stands, as the native side reports it
 /// (the text editor's `onScrollState`).

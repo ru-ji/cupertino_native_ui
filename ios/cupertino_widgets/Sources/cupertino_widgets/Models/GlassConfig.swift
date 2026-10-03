@@ -35,6 +35,9 @@ struct GlassConfig: Codable, Equatable {
     /// hosted view's appearance so a light app on a dark-mode phone does not
     /// draw dark glass. See `NativeHostingView.isDark`.
     let isDark: Bool?
+    /// The content under the bar, for a glass in a bar: its own appearance,
+    /// which never reaches the window. See `NativeHostingView.appearanceDark`.
+    let appearanceDark: Bool?
     /// The Flutter child's texts and still symbols, laid out by Flutter and
     /// drawn here, inside the glass. See `GlassLeavesView`.
     let leaves: [GlassLeaf]?

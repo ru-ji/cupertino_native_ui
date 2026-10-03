@@ -184,6 +184,9 @@ class NativeControlView: NativeHostingView {
         switch call.method {
         case "snapshot":
             result(PlatformViewSnapshot.capture(view()))
+        case "cancelTouches":
+            cancelTouches()
+            result(nil)
         case "getIntrinsicSize":
             result(intrinsicSize())
         case "update":

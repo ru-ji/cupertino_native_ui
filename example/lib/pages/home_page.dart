@@ -34,6 +34,9 @@ class HomePage extends StatelessWidget {
       // A plain Flutter scaffold under the package's own bar: it owns the page
       // background and the safe areas, the bar rides above it as a sliver.
       child: Scaffold(
+        backgroundColor: CupertinoColors.systemGroupedBackground.resolveFrom(
+          context,
+        ),
         body: CustomScrollView(
           slivers: [
             // The package's own iOS 26 app bar heads the catalog itself; the

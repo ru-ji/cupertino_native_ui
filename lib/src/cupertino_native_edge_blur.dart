@@ -51,10 +51,12 @@ class CupertinoNativeEdgeBlur extends StatefulWidget {
   /// Calibration factor on the native radius.
   final double radiusScale;
 
-  /// With [adaptiveTint], called when the wash flips: [Brightness.light] over
-  /// bright content (so chrome over it should be dark), [Brightness.dark] over
-  /// darker content (light chrome) — the flip UIKit applies to its own bar
-  /// items. Before the first measurement the app theme stands in.
+  /// Called when the content under the effect turns bright or dark:
+  /// [Brightness.light] over bright content (so chrome over it should be
+  /// light glass with dark labels), [Brightness.dark] over darker content —
+  /// the flip UIKit applies to its own bar items. Measured under the wash, so
+  /// it works with a fixed [tint] too. Before the first measurement the app
+  /// theme stands in.
   final ValueChanged<Brightness>? onBrightnessChanged;
 
   /// Outlines the native view in red: geometry and z-order check.
@@ -80,6 +82,7 @@ class _CupertinoNativeEdgeBlurState extends State<CupertinoNativeEdgeBlur> {
     'sigma': (span * (1 - 0.41) * 0.4 / 3).clamp(0.0, widget.sigma),
     'tint': nativeArgb(widget.tint, isDark: isDark),
     'adaptive': widget.adaptiveTint,
+    'tracksLuma': widget.onBrightnessChanged != null,
     'intensity': widget.intensity,
     'radiusScale': widget.radiusScale,
     // The wash before the first luma measurement follows the app theme.

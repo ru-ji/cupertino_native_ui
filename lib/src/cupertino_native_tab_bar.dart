@@ -139,9 +139,22 @@ class _CupertinoNativeTabBarState extends State<CupertinoNativeTabBar> {
   int? _lastRightCount;
   double? _lastSplitSpacing;
 
-  // The APP's brightness (its Material theme), so the native bar matches the
-  // app rather than the device. Re-synced dynamically on theme change.
-  bool get _isDark => Theme.of(context).brightness == Brightness.dark;
+  /// The content under the bar, measured under its scroll edge effect's
+  /// wash: the bar takes its appearance from it, as the system's does. Null
+  /// until measured (or without an effect).
+  Brightness? _behind;
+
+  // Until then the APP's brightness (its Material theme), so the native bar
+  // matches the app rather than the device. Re-synced on theme change.
+  bool get _isDark =>
+      (_behind ?? Theme.of(context).brightness) == Brightness.dark;
+
+  void _onBehind(Brightness behind) {
+    if (!mounted || behind == _behind) return;
+    _behind = behind;
+    _syncBrightness();
+    _syncPropsToNative();
+  }
 
   int get _selectedIndex {
     return widget.currentIndex.clamp(0, widget.items.length - 1);
@@ -279,8 +292,11 @@ class _CupertinoNativeTabBarState extends State<CupertinoNativeTabBar> {
     if (channel == null) return;
     final isDark = _isDark;
     if (_lastIsDark != isDark) {
-      await channel.invokeMethod('setBrightness', {'isDark': isDark});
+      // Recorded before the await: a second flip arriving meanwhile was
+      // compared with the stale value and dropped — the bar then missed
+      // every other change.
       _lastIsDark = isDark;
+      await channel.invokeMethod('setBrightness', {'isDark': isDark});
     }
   }
 
@@ -379,7 +395,11 @@ class _CupertinoNativeTabBarState extends State<CupertinoNativeTabBar> {
             top:
                 h +
                 _belowBar -
-                (MediaQuery.viewPaddingOf(context).bottom + _effectBand),
+                (MediaQuery.viewPaddingOf(context).bottom +
+                    (widget.scrollEdgeEffect ==
+                            CupertinoScrollEdgeEffectStyle.hard
+                        ? _effectBand
+                        : _softBand)),
             // Down to the physical screen edge — measured, not assumed: a
             // bar that already reaches it (no SafeArea around it) took the
             // home-indicator inset again, so the strongest part of the ramp
@@ -389,6 +409,7 @@ class _CupertinoNativeTabBarState extends State<CupertinoNativeTabBar> {
             child: CupertinoScrollEdgeEffect(
               edge: CupertinoScrollEdgeEffectEdge.bottom,
               style: widget.scrollEdgeEffect,
+              onBrightnessChanged: _onBehind,
             ),
           ),
           // Painted after the effect: the bar sits on it.
@@ -399,10 +420,15 @@ class _CupertinoNativeTabBarState extends State<CupertinoNativeTabBar> {
     return bar;
   }
 
-  /// Where the effect stops, `.soft` and `.hard` alike, measured up from the
-  /// screen's bottom edge: 59pt over the home indicator — the system tab
-  /// bar's 49pt plus 10 (93pt on an iPhone 12 Pro Max).
+  /// Where `.hard` stops, measured up from the screen's bottom edge: 59pt
+  /// over the home indicator — the system tab bar's 49pt plus 10 (93pt on an
+  /// iPhone 12 Pro Max).
   static const double _effectBand = 59;
+
+  /// Where `.soft`'s wash fades out: fitted to the system's on iOS 26 (its
+  /// smootherstep reaches 0 at 133pt up on an iPhone 12 Pro Max, 2026-10-03),
+  /// past the top of the bar.
+  static const double _softBand = 99;
 
   final GlobalKey _barKey = GlobalKey();
 

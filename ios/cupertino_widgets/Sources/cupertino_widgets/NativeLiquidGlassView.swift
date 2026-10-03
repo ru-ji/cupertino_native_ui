@@ -78,6 +78,7 @@ class NativeLiquidGlassView: NativeHostingView {
         // Appearance is owned by the hosting controller: the model-update path
         // below returns early, so the pin must happen before the branch.
         isDark = config.isDark
+        appearanceDark = config.appearanceDark
         let expanded = config.expand == true
         // Filling the box: nothing to measure.
         measuresIntrinsicSize = !expanded
@@ -177,6 +178,9 @@ class NativeLiquidGlassView: NativeHostingView {
             return
         }
         switch call.method {
+        case "cancelTouches":
+            cancelTouches()
+            result(nil)
         case "getIntrinsicSize":
             result(intrinsicSize())
         case "updateGlass":

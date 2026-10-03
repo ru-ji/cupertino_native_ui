@@ -15,6 +15,7 @@ class EdgeEffectProbePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return CupertinoPageScaffold(
+      backgroundColor: CupertinoColors.systemGroupedBackground,
       child: CustomScrollView(
         slivers: [
           CupertinoNativeSliverNavigationBar(largeTitle: 'Scroll Edge Effect'),
@@ -48,12 +49,6 @@ class EdgeEffectProbePage extends StatelessWidget {
                         subtitle: 'The recreation',
                         showChevron: true,
                       ),
-                      CupertinoNativeListTile(
-                        id: 'glass',
-                        title: 'Glass over bands',
-                        subtitle: 'Liquid Glass over scrolling colours',
-                        showChevron: true,
-                      ),
                     ],
                   ),
                 ],
@@ -68,7 +63,6 @@ class EdgeEffectProbePage extends StatelessWidget {
   static void _open(BuildContext context, String id) {
     final page = switch (id) {
       'native' => const _NativeProbe(),
-      'glass' => const _GlassProbe(),
       _ => const _FlutterProbe(),
     };
     Navigator.of(context)
@@ -118,145 +112,6 @@ class _FlutterProbe extends StatelessWidget {
             child: const EdgeEffectProbeBody(),
           ),
           CupertinoNativeNavigationBar(title: 'Flutter page'),
-        ],
-      ),
-    );
-  }
-}
-
-/// Liquid Glass buttons and containers held still over the bands: scrolling
-/// slides bright, dark and coloured content behind them, to see whether the
-/// glass adapts to what is under it, as the system's does.
-class _GlassProbe extends StatelessWidget {
-  const _GlassProbe();
-
-  @override
-  Widget build(BuildContext context) {
-    final top = MediaQuery.paddingOf(context).top;
-    return CupertinoPageScaffold(
-      child: Stack(
-        children: [
-          SingleChildScrollView(
-            padding: EdgeInsets.only(top: top + 60),
-            child: const EdgeEffectProbeBody(),
-          ),
-          // Buttons, as a bar would hold them.
-          Positioned(
-            top: top + 8,
-            left: 16,
-            right: 16,
-            child: Row(
-              children: [
-                CupertinoNativeButton.icon(
-                  CupertinoSymbols.chevronBackward,
-                  onPressed: () => Navigator.pop(context),
-                ),
-                const Spacer(),
-                CupertinoNativeButton.glass(
-                  onPressed: () {},
-                  child: const Text('Edit'),
-                ),
-                const SizedBox(width: 12),
-                CupertinoNativeButton.glassProminent(
-                  onPressed: () {},
-                  child: const Text('Done'),
-                ),
-              ],
-            ),
-          ),
-          // Containers in the middle of the screen.
-          Align(
-            alignment: Alignment.center,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              spacing: 16,
-              children: [
-                CupertinoNativeGlassContainer(
-                  shape: CupertinoGlassShape.capsule,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 12,
-                  ),
-                  // Symbol and text drawn by SwiftUI inside the glass, laid
-                  // out by this Row.
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    spacing: 8,
-                    children: [
-                      CupertinoSymbolImage('sparkles', weight: FontWeight.w600),
-                      Text(
-                        'Glass container',
-                        style: TextStyle(
-                          fontSize: 17,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const CupertinoNativeGlassContainer(
-                  shape: CupertinoGlassShape.circle,
-                  icon: CupertinoNativeIcon.named('heart.fill', size: 24),
-                  width: 64,
-                  height: 64,
-                ),
-                // Small, like a control: only small glass flips between light
-                // and dark with what is behind it.
-                const CupertinoNativeGlassContainer(width: 120, height: 44),
-              ],
-            ),
-          ),
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: MediaQuery.paddingOf(context).bottom + 16,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              spacing: 12,
-              children: [
-                // The same three symbols as a Flutter Row in a glass
-                // container's child: laid out by Flutter, drawn by SwiftUI
-                // inside the glass. To hold against the native group below.
-                CupertinoNativeGlassContainer(
-                  shape: CupertinoGlassShape.capsule,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      for (final symbol in const [
-                        CupertinoSymbols.plus,
-                        CupertinoSymbols.squareAndArrowUp,
-                        CupertinoSymbols.ellipsis,
-                      ])
-                        SizedBox.square(
-                          dimension: 44,
-                          child: Center(
-                            child: CupertinoSymbolImage.symbol(symbol),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-                // Three buttons sharing one glass, as a toolbar's: one native
-                // group, the symbols drawn inside the glass.
-                CupertinoNativeGlassGroup(
-                  spacing: 0,
-                  onAction: (_) {},
-                  items: [
-                    for (final symbol in const [
-                      CupertinoSymbols.plus,
-                      CupertinoSymbols.squareAndArrowUp,
-                      CupertinoSymbols.ellipsis,
-                    ])
-                      CupertinoNativeGlassGroupItem(
-                        actionId: symbol.name,
-                        icon: CupertinoNativeIcon.symbol(symbol),
-                        unionId: 'toolbar',
-                      ),
-                  ],
-                ),
-              ],
-            ),
-          ),
         ],
       ),
     );

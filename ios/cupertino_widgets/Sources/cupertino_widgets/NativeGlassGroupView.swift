@@ -93,6 +93,9 @@ class NativeGlassGroupView: NativeHostingView {
             return
         }
         switch call.method {
+        case "cancelTouches":
+            cancelTouches()
+            result(nil)
         case "getIntrinsicSize":
             result(intrinsicSize())
         case "setConfig":
@@ -489,6 +492,9 @@ final class NativeLegacyGlassGroupView: NativeHostingView {
         switch call.method {
         case "snapshot":
             result(PlatformViewSnapshot.capture(view()))
+        case "cancelTouches":
+            cancelTouches()
+            result(nil)
         case "getIntrinsicSize":
             result(intrinsicSize())
         case "setConfig":

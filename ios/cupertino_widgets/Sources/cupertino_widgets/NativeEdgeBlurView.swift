@@ -74,6 +74,10 @@ struct EdgeBlurConfig {
     var tint: Int?
     /// The system's luma-tracked light/dark wash.
     var adaptive: Bool
+    /// Measure the content's luma even under a fixed wash, for the chrome
+    /// over the effect — the system's bar items follow the content under its
+    /// wash whatever the wash does.
+    var tracksLuma: Bool
     /// Calibration factor on `inputRadius`.
     var radiusScale: CGFloat
     /// The app theme: what the wash shows before the first luma measurement.
@@ -88,6 +92,7 @@ struct EdgeBlurConfig {
         bottom = (map["edge"] as? String) == "bottom"
         tint = map["tint"] as? Int
         adaptive = map["adaptive"] as? Bool ?? false
+        tracksLuma = map["tracksLuma"] as? Bool ?? false
         radiusScale = CGFloat(map["radiusScale"] as? Double ?? 1)
         isDark = map["isDark"] as? Bool ?? false
         intensity = CGFloat(min(max(map["intensity"] as? Double ?? 1, 0), 1))
@@ -100,9 +105,13 @@ struct EdgeBlurConfig {
 enum EdgeBlurProfile {
     static let blurHold = 0.41
     static let tintHold = 0.35
+    /// The bottom edge's wash barely holds: fitted to the system's tab bar
+    /// edge on iOS 26 (hold 9.7% of a 133pt band, 2026-10-03). The top's
+    /// 0.35 fits its own (32.8% of 137pt).
+    static let bottomTintHold = 0.097
 
     /// Peak of the white wash over near-white content.
-    static let lightPeak = 0.85
+    static let lightPeak = 0.84
     /// The dark wash's two levels, for mid and for dark content.
     // ponytail: deepDark derived from one measurement; tune by eye.
     static let midDark = 0.27
@@ -143,8 +152,8 @@ enum EdgeBlurProfile {
         1 - smootherstep((t - blurHold) / (1 - blurHold))
     }
 
-    static func tint(_ t: Double) -> Double {
-        1 - smootherstep((t - tintHold) / (1 - tintHold))
+    static func tint(_ t: Double, hold: Double = tintHold) -> Double {
+        1 - smootherstep((t - hold) / (1 - hold))
     }
 
     /// Fraction of the peak radius at profile `p`, on a geometric ramp
@@ -203,8 +212,8 @@ final class EdgeBlurView: UIView {
     /// Latest decisions from the two trackers; nil until they measure.
     private var bright: Bool?
     private var deep: Bool?
-    /// Told when the wash flips, so Flutter chrome over it can flip with it
-    /// (dark text on the white wash, white text on the dark one).
+    /// Told when the content under the effect turns bright or dark, so the
+    /// chrome over it can follow, as the system's bar items do.
     var onLightChange: ((Bool) -> Void)?
     private var level = WashLevel.light
     /// Pixel size and settings the wash images were rendered for.
@@ -237,7 +246,8 @@ final class EdgeBlurView: UIView {
         CATransaction.commit()
         // A dark app draws its lines elsewhere: new trackers, measuring from
         // scratch.
-        if !config.adaptive || trackersDark != config.isDark {
+        let tracks = config.adaptive || config.tracksLuma
+        if !tracks || trackersDark != config.isDark {
             luma?.remove()
             luma = nil
             darkLuma?.remove()
@@ -246,7 +256,7 @@ final class EdgeBlurView: UIView {
             deep = nil
             trackersDark = nil
         }
-        if config.adaptive && luma == nil {
+        if tracks && luma == nil {
             let dark = config.isDark
             trackersDark = dark
             luma = LumaTracker(
@@ -271,7 +281,8 @@ final class EdgeBlurView: UIView {
         if bright == nil { level = config.isDark ? .deep : .light } else { updateLevel() }
         layer.borderWidth = config.debugPaintRect ? 1 : 0
         layer.borderColor = UIColor.red.cgColor
-        renderedKey = nil
+        // The wash images re-render only if what they draw changed (see
+        // `renderWashes`); the levels are re-applied either way.
         setNeedsLayout()
     }
 
@@ -292,44 +303,76 @@ final class EdgeBlurView: UIView {
         CATransaction.commit()
     }
 
+    /// The wash images, re-rendered only when what they draw changes, and off
+    /// the main thread once the view is up: a theme change re-renders every
+    /// bar's full-resolution dithered washes at once, and doing it inline
+    /// stalled the frame. Which layers show, and at what level, is set here
+    /// every time — that part is cheap.
     private func renderWashes() {
         let scale = traitCollection.displayScale > 0 ? traitCollection.displayScale : UIScreen.main.scale
         let width = Int((bounds.width * scale).rounded())
         let height = Int((bounds.height * scale).rounded())
-        let key = "\(width)x\(height) b\(config.bottom) a\(config.adaptive) t\(config.tint.map(String.init) ?? "-")"
-        guard width > 0, height > 0, key != renderedKey else { return }
-        renderedKey = key
-        for wash in [fixedWash, lightWash, darkWash] {
-            wash.contentsScale = scale
-            wash.contents = nil
-            wash.isHidden = true
-        }
-        if config.adaptive {
-            // The bright wash is white unless a tint is given.
-            var red: CGFloat = 1, green: CGFloat = 1, blue: CGFloat = 1, alpha: CGFloat = 1
-            if let argb = config.tint {
-                UIColor(argb: argb).getRed(&red, green: &green, blue: &blue, alpha: &alpha)
-            }
-            lightWash.contents = Self.washImage(
-                red: Double(red), green: Double(green), blue: Double(blue),
-                peak: EdgeBlurProfile.lightPeak,
-                width: width, height: height, bottom: config.bottom)
-            // Full peak: the layer's opacity carries the level (0.27 or 0.47).
-            darkWash.contents = Self.washImage(
-                red: 0, green: 0, blue: 0, peak: 1,
-                width: width, height: height, bottom: config.bottom)
-            lightWash.isHidden = false
-            darkWash.isHidden = false
+        guard width > 0, height > 0 else { return }
+        let adaptive = config.adaptive
+        fixedWash.isHidden = adaptive || config.tint == nil
+        lightWash.isHidden = !adaptive
+        darkWash.isHidden = !adaptive
+        if adaptive {
             lightWash.opacity = level.lightOpacity(dark: config.isDark)
             darkWash.opacity = level.darkOpacity(dark: config.isDark)
-        } else if let argb = config.tint {
-            let color = UIColor(argb: argb)
-            var red: CGFloat = 0, green: CGFloat = 0, blue: CGFloat = 0, alpha: CGFloat = 0
-            color.getRed(&red, green: &green, blue: &blue, alpha: &alpha)
-            fixedWash.contents = Self.washImage(
-                red: Double(red), green: Double(green), blue: Double(blue), peak: Double(alpha),
-                width: width, height: height, bottom: config.bottom)
-            fixedWash.isHidden = false
+        }
+        let key = "\(width)x\(height) b\(config.bottom) a\(adaptive) t\(config.tint.map(String.init) ?? "-")"
+        guard key != renderedKey else { return }
+        let first = renderedKey == nil
+        renderedKey = key
+        // The bright (or fixed) wash's colour; white unless a tint is given.
+        var red: CGFloat = 1, green: CGFloat = 1, blue: CGFloat = 1, alpha: CGFloat = 1
+        if let argb = config.tint {
+            UIColor(argb: argb).getRed(&red, green: &green, blue: &blue, alpha: &alpha)
+        }
+        let rgb = (Double(red), Double(green), Double(blue))
+        let bottom = config.bottom
+        let fixedPeak = Double(alpha)
+        let render = { () -> (CGImage?, CGImage?) in
+            if adaptive {
+                return (
+                    Self.washImage(
+                        red: rgb.0, green: rgb.1, blue: rgb.2, peak: EdgeBlurProfile.lightPeak,
+                        width: width, height: height, bottom: bottom),
+                    // Full peak: the layer's opacity carries the level.
+                    Self.washImage(
+                        red: 0, green: 0, blue: 0, peak: 1,
+                        width: width, height: height, bottom: bottom))
+            }
+            return (
+                Self.washImage(
+                    red: rgb.0, green: rgb.1, blue: rgb.2, peak: fixedPeak,
+                    width: width, height: height, bottom: bottom), nil)
+        }
+        let show = { [weak self] (images: (CGImage?, CGImage?)) in
+            guard let self, self.renderedKey == key else { return }
+            CATransaction.begin()
+            CATransaction.setDisableActions(true)
+            for wash in [self.fixedWash, self.lightWash, self.darkWash] { wash.contentsScale = scale }
+            if adaptive {
+                self.lightWash.contents = images.0
+                self.darkWash.contents = images.1
+                self.fixedWash.contents = nil
+            } else {
+                self.fixedWash.contents = images.0
+                self.lightWash.contents = nil
+                self.darkWash.contents = nil
+            }
+            CATransaction.commit()
+        }
+        // The first one inline, so the effect never shows up empty.
+        if first {
+            show(render())
+        } else {
+            DispatchQueue.global(qos: .userInitiated).async {
+                let images = render()
+                DispatchQueue.main.async { show(images) }
+            }
         }
     }
 
@@ -339,9 +382,9 @@ final class EdgeBlurView: UIView {
         let next: WashLevel = bright ? .light : (deep == true ? .deep : .mid)
         guard next != level else { return }
         level = next
-        // A dark app keeps its light chrome even over white: its wash stays
-        // black (white title; iOS 26, dark mode).
-        onLightChange?(next == .light && !config.isDark)
+        // The content's own brightness, whatever the wash: the system's bar
+        // items follow it (a light glass over white even in a dark app).
+        onLightChange?(next == .light)
         Self.spring(lightWash, to: next.lightOpacity(dark: config.isDark))
         Self.spring(darkWash, to: next.darkOpacity(dark: config.isDark))
     }
@@ -372,7 +415,12 @@ final class EdgeBlurView: UIView {
         var pixels = [UInt8](repeating: 0, count: width * height * 4)
         for row in 0..<height {
             let fromTop = (Double(row) + 0.5) / Double(height)
-            let alpha = peak * EdgeBlurProfile.tint(bottom ? 1 - fromTop : fromTop) * 255
+            let alpha =
+                peak
+                * EdgeBlurProfile.tint(
+                    bottom ? 1 - fromTop : fromTop,
+                    hold: bottom ? EdgeBlurProfile.bottomTintHold : EdgeBlurProfile.tintHold)
+                * 255
             if alpha <= 0 { continue }
             let base = row * width * 4
             for x in 0..<width {
@@ -520,7 +568,10 @@ final class BackdropBlurView: UIView {
     func configure(sigma: CGFloat, bottom: Bool) {
         self.sigma = sigma
         self.bottom = bottom
-        guard let filter else { return }
+        // No blur: no backdrop. A hidden backdrop layer is not captured, so
+        // the wash alone costs no offscreen pass every frame.
+        isHidden = sigma <= 0
+        guard sigma > 0, let filter else { return }
         let scale = window?.screen.scale
             ?? (traitCollection.displayScale > 0 ? traitCollection.displayScale : UIScreen.main.scale)
         filter.setValue(max(sigma, 0), forKey: "inputRadius")

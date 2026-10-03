@@ -10,7 +10,6 @@ import '../callbacks.dart';
 import '../models/cupertino_native_list_tile.dart';
 import '../models/cupertino_native_list_section.dart';
 import 'native_platform_view_mixin.dart';
-import 'scroll_friendly_recognizer.dart';
 import 'keyboard_avoidance.dart';
 import 'widget_lowering.dart';
 import 'native_color.dart';
@@ -249,14 +248,8 @@ class _NativeCollectionViewState extends State<NativeCollectionView>
   /// scrolls the page.
   List<Rect> _wheels = const [];
 
-  late final Set<Factory<OneSequenceGestureRecognizer>> _gestures = {
-    // Its own type: see scrollFriendlyGestures for why it matters.
-    Factory<ScrollFriendlyPlatformViewRecognizer>(
-      () => ScrollFriendlyPlatformViewRecognizer(
-        claims: (p) => _wheels.any((r) => r.contains(p)),
-      ),
-    ),
-  };
+  late final Set<Factory<OneSequenceGestureRecognizer>> _gestures =
+      scrollFriendlyGestures(claims: (p) => _wheels.any((r) => r.contains(p)));
 
   Future<dynamic> _handleMethodCall(MethodCall call) async {
     switch (call.method) {

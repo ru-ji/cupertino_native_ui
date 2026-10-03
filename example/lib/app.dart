@@ -40,6 +40,10 @@ class MyApp extends StatelessWidget {
           scaffoldBackgroundColor: CupertinoColors.systemBackground.darkColor,
         ),
         themeMode: mode,
+        // No cross-fade: native views take the theme's brightness, which a
+        // lerping theme flips at its midpoint — so they snapped mid-fade
+        // while the Flutter background was still grey.
+        themeAnimationDuration: Duration.zero,
         // Every page is a CupertinoPageScaffold, which is not a Material —
         // so a bare `Text` fell back to Flutter's debug style, the yellow
         // underline. One transparent Material at the root gives every page a
