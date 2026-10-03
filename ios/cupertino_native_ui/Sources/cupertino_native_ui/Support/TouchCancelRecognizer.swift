@@ -4,9 +4,9 @@ import UIKit.UIGestureRecognizerSubclass
 /// Takes a touch back from a platform view's content, the way a
 /// `UIScrollView` takes it back from its content when its pan begins.
 ///
-/// A still finger reaches the native content after UIKit's 150ms
-/// `delaysContentTouches` window (that is what highlights a row) while
-/// Flutter's arena is still open. If the Flutter page then scrolls, Dart sends
+/// A still finger reaches the native content after Flutter's 100ms press
+/// deadline, `kPressTimeout` (that is what highlights a row), while Flutter's
+/// arena is still open. If the Flutter page then scrolls, Dart sends
 /// `cancelTouches` (see `ScrollFriendlyPlatformViewRecognizer.onLost`) and this
 /// recognizer recognizes: UIKit sends the content `touchesCancelled`, so the
 /// row lets go of its highlight and no tap fires, and every recognizer in the

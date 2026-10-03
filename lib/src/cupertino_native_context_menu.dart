@@ -94,16 +94,35 @@ class _CupertinoNativeContextMenuState extends State<CupertinoNativeContextMenu>
   bool _pressHidden = false;
   Timer? _pressTimer;
 
+  /// A finger is on the child. `onPressBegan` crosses the channel, so it can
+  /// land after the lift: hiding then would leave nothing to restore it.
+  bool _pointerDown = false;
+
   void _pressBegan() {
     _pressTimer?.cancel();
-    // Not at once: a tap begins a press too, and must not flicker.
-    _pressTimer = Timer(const Duration(milliseconds: 90), () {
-      if (mounted && !_pressHidden) setState(() => _pressHidden = true);
-    });
+    // At once: the highlight is the press's only feedback, and a tap that
+    // ends before any menu restores the child on its lift (`_pressEnded`).
+    if (mounted && _pointerDown && !_pressHidden) {
+      setState(() => _pressHidden = true);
+    }
   }
 
-  void _pressEnded() {
+  /// The page took the touch back to scroll: UIKit drops its highlight, so
+  /// the child shows again now, not when the finger lifts.
+  @override
+  void cancelNativeTouches() {
+    super.cancelNativeTouches();
+    _restoreChild();
+  }
+
+  void _pressEnded({required bool lifted}) {
+    _pointerDown = false;
     _pressTimer?.cancel();
+    // A lifted finger with no menu up was a tap or a hold let go early.
+    if (lifted && !_menuOpen) {
+      if (mounted && _pressHidden) setState(() => _pressHidden = false);
+      return;
+    }
     // UIKit cancels the touch as it lifts the menu, and `onOpenChanged` lands
     // a beat later: restore only if no menu came.
     _pressTimer = Timer(const Duration(milliseconds: 250), () {
@@ -318,8 +337,9 @@ class _CupertinoNativeContextMenuState extends State<CupertinoNativeContextMenu>
     if (defaultTargetPlatform != TargetPlatform.iOS) return widget.child;
 
     return Listener(
-      onPointerUp: (_) => _pressEnded(),
-      onPointerCancel: (_) => _pressEnded(),
+      onPointerDown: (_) => _pointerDown = true,
+      onPointerUp: (_) => _pressEnded(lifted: true),
+      onPointerCancel: (_) => _pressEnded(lifted: false),
       child: Stack(
         fit: StackFit.passthrough,
         // No clip: the preview overflows, and a composited clip would also cut

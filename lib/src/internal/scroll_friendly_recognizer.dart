@@ -39,9 +39,9 @@ class ScrollFriendlyPlatformViewRecognizer
   final VoidCallback? onLost;
 
   /// When a still finger reaches the native view, without the arena deciding:
-  /// UIKit's own `delaysContentTouches` window, so a row highlights and a
-  /// switch presses as fast as in a native scroll view.
-  static const Duration holdTimeout = Duration(milliseconds: 150);
+  /// Flutter's own press deadline (a `TapGestureRecognizer`'s `onTapDown`), so
+  /// a native control presses as fast as a Flutter button on the same page.
+  static const Duration holdTimeout = kPressTimeout;
 
   /// The width of the strip a `CupertinoPageRoute`'s back swipe starts in:
   /// Flutter's `_kBackGestureWidth`, widened to the safe area like Flutter's.
@@ -238,7 +238,7 @@ class NestedScrollPlatformViewRecognizer extends OneSequenceGestureRecognizer {
   /// Read when the finger lands.
   final NestedScrollState Function() state;
 
-  static const Duration _holdTimeout = Duration(milliseconds: 150);
+  static const Duration _holdTimeout = kPressTimeout;
 
   Offset? _start;
   NestedScrollState _landed = const NestedScrollState();
