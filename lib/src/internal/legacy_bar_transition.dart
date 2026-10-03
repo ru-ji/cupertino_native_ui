@@ -1,3 +1,5 @@
+import 'dart:ui' show lerpDouble;
+
 import 'package:flutter/cupertino.dart';
 
 import '../cupertino_symbol_image.dart';
@@ -295,6 +297,19 @@ class _BarFlightShuttle extends StatelessWidget {
           }
           final backText = top.backLabel ?? bottom.title;
 
+          // Each copy keeps its own style and is scaled between the two
+          // sizes. A style lerp swapped the font family (display to text)
+          // and stepped the weight halfway through, a visible jump; the
+          // weight now changes through the cross-fade, as UIKit's does.
+          final flies = from != null && label != null;
+          final anchor = flies
+              ? Offset.lerp(from.bottomLeft, label.bottomLeft, c)!
+              : null;
+          final fromSize = fromStyle.fontSize ?? 17;
+          final toSize = top.backStyle.fontSize ?? 17;
+          final size = lerpDouble(fromSize, toSize, c)!;
+          final color = Color.lerp(fromStyle.color, top.backStyle.color, c);
+
           return Stack(
             clipBehavior: Clip.none,
             children: [
@@ -303,24 +318,20 @@ class _BarFlightShuttle extends StatelessWidget {
               if (from != null && bottom.title != null)
                 _text(
                   bottom.title!,
-                  anchor: label == null
-                      ? from.bottomLeft
-                      : Offset.lerp(from.bottomLeft, label.bottomLeft, c)!,
-                  style: label == null
-                      ? fromStyle
-                      : TextStyle.lerp(fromStyle, top.backStyle, c)!,
+                  anchor: anchor ?? from.bottomLeft,
+                  style: flies ? fromStyle.copyWith(color: color) : fromStyle,
+                  scale: flies ? size / fromSize : 1,
                   opacity: 1 - (t / 0.6).clamp(0.0, 1.0),
                 ),
               // The back label, along the same path, fading in from 40%.
               if (label != null && backText != null)
                 _text(
                   backText,
-                  anchor: from == null
-                      ? label.bottomLeft
-                      : Offset.lerp(from.bottomLeft, label.bottomLeft, c)!,
-                  style: from == null
-                      ? top.backStyle
-                      : TextStyle.lerp(fromStyle, top.backStyle, c)!,
+                  anchor: anchor ?? label.bottomLeft,
+                  style: flies
+                      ? top.backStyle.copyWith(color: color)
+                      : top.backStyle,
+                  scale: flies ? size / toSize : 1,
                   opacity: ((t - 0.4) / 0.6).clamp(0.0, 1.0),
                 ),
               // The new chevron, fading in where it stands.
@@ -339,12 +350,14 @@ class _BarFlightShuttle extends StatelessWidget {
     );
   }
 
-  /// [text] with its bottom-left corner at [anchor]: the two ends of a
-  /// flight are lined up on their baselines rather than their tops.
+  /// [text] with its bottom-left corner at [anchor], drawn at [scale] from
+  /// that corner: the two ends of a flight are lined up on their baselines
+  /// rather than their tops, and a scale keeps them there.
   static Widget _text(
     String text, {
     required Offset anchor,
     required TextStyle style,
+    required double scale,
     required double opacity,
   }) {
     return Positioned(
@@ -352,14 +365,18 @@ class _BarFlightShuttle extends StatelessWidget {
       top: anchor.dy,
       child: FractionalTranslation(
         translation: const Offset(0, -1),
-        child: Opacity(
-          opacity: opacity,
-          child: Text(
-            text,
-            style: style,
-            maxLines: 1,
-            softWrap: false,
-            overflow: TextOverflow.visible,
+        child: Transform.scale(
+          scale: scale,
+          alignment: Alignment.bottomLeft,
+          child: Opacity(
+            opacity: opacity,
+            child: Text(
+              text,
+              style: style,
+              maxLines: 1,
+              softWrap: false,
+              overflow: TextOverflow.visible,
+            ),
           ),
         ),
       ),

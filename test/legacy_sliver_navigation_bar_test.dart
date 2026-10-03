@@ -248,13 +248,28 @@ void main() {
     navigator.currentState!.pushNamed('Quick Notes');
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 150));
-    // Mid-flight: a "Folders" on its way, between the large title's 34pt
-    // and the back button's 17pt.
+    // Mid-flight: the flying copies keep their own styles, the large
+    // title's 34pt and the back button's 17pt (an in-between style swapped
+    // fonts halfway, a visible jump), and are drawn scaled between the two.
+    final flying = find.descendant(
+      of: find.byType(Transform),
+      matching: find.text('Folders'),
+    );
+    expect(flying, findsNWidgets(2));
     final sizes = tester
-        .widgetList<Text>(find.text('Folders'))
+        .widgetList<Text>(flying)
         .map((text) => text.style?.fontSize)
-        .whereType<double>();
-    expect(sizes.any((size) => size > 17 && size < 34), isTrue);
+        .toSet();
+    expect(sizes, {34.0, 17.0});
+    // The size each copy is drawn at, scale included (the test font's line
+    // is one em tall): both the same, somewhere between the two ends.
+    final drawnSizes = [
+      for (final copy in flying.evaluate())
+        tester.getRect(find.byWidget(copy.widget)).height /
+            ((copy.widget as Text).style!.height ?? 1),
+    ];
+    expect(drawnSizes.first, closeTo(drawnSizes.last, 0.01));
+    expect(drawnSizes.first, inExclusiveRange(17, 34));
     await tester.pumpAndSettle();
     // The new page's back button took the title over: its only "Folders".
     expect(find.text('Folders'), findsOneWidget);

@@ -82,6 +82,29 @@ void main() {
     expect(sent, isEmpty);
   }, variant: iOS);
 
+  testWidgets('a list still sends a real change: Edit turns edit mode on', (
+    tester,
+  ) async {
+    var editing = false;
+    final rebuild = await pumpRebuildable(
+      tester,
+      () => CupertinoNativeList(
+        editing: editing,
+        reorderable: editing,
+        sections: [
+          CupertinoNativeListSection(
+            children: [CupertinoNativeListTile(id: 'a', title: 'A')],
+          ),
+        ],
+      ),
+    );
+    expect(sent, isEmpty);
+    editing = true;
+    rebuild();
+    await tester.pump();
+    expect(sent, ['updateList']);
+  }, variant: iOS);
+
   testWidgets('a glass container with an icon ignores an idle rebuild', (
     tester,
   ) async {
