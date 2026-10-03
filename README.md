@@ -180,6 +180,10 @@ CupertinoNativeButton.filled(
 
 // Round icon button (glass circle): the bar button of iOS 26
 CupertinoNativeButton.icon(CupertinoSymbols.heartFill, onPressed: () {})
+
+// Your own icons: any icon font, or an image asset
+CupertinoNativeButton.glass(onPressed: () {}, child: const Icon(CupertinoIcons.heart))
+CupertinoNativeButton.glass(onPressed: () {}, child: const ImageIcon(AssetImage('assets/logo.png')))
 ```
 
 Constructors: `CupertinoNativeButton` (plain), `.filled`, `.tinted`, `.glass`,
@@ -188,7 +192,7 @@ default (`style:` to change it).
 
 | Parameter          | Type                               | Description                                                                              |
 | ------------------ | ---------------------------------- | ---------------------------------------------------------------------------------------- |
-| `child`            | `Widget`                           | The label: a `Text`, `CupertinoSymbolImage`, `Icon`, or a `Row` of an icon and a `Text`. |
+| `child`            | `Widget`                           | The label: a `Text`, `CupertinoSymbolImage`, `Icon`, `ImageIcon` of an asset, or a `Row` of an icon and a `Text`. |
 | `onPressed`        | `VoidCallback?`                    | Called on tap. Null disables the button.                                                 |
 | `color`            | `Color?`                           | Tint colour of the button.                                                               |
 | `sizeStyle`        | `CupertinoNativeControlSize`       | `mini`, `small`, `regular`, `large`, `extraLarge`. Default `regular`.                    |
@@ -262,6 +266,30 @@ CupertinoNativeAlertDialog.show(
   actions: [
     CupertinoNativeDialogAction(isDefaultAction: true, onPressed: () {}, child: const Text('Cancel')),
     CupertinoNativeDialogAction(isDestructiveAction: true, onPressed: () {}, child: const Text('Delete')),
+  ],
+)
+```
+
+`textFields` puts UIKit's own fields in the alert, one or several (a name, or
+a username and a password). Pass `CupertinoNativeTextField`s: they are read,
+not mounted. The `controller` gives the starting text and holds what was typed
+by the time an action's `onPressed` runs; `placeholder`, `obscureText`,
+`keyboardType`, `textCapitalization`, `autocorrect` and `textContentType` are
+used too. The alert draws its fields in its own style, so styling is ignored.
+
+```dart
+final user = TextEditingController();
+final password = TextEditingController();
+CupertinoNativeAlertDialog.show(
+  context: context,
+  title: 'Sign In',
+  textFields: [
+    CupertinoNativeTextField(controller: user, placeholder: 'Username', textContentType: 'username'),
+    CupertinoNativeTextField(controller: password, placeholder: 'Password', obscureText: true),
+  ],
+  actions: [
+    const CupertinoNativeDialogAction(child: Text('Cancel')),
+    CupertinoNativeDialogAction(onPressed: () => signIn(user.text, password.text), child: const Text('Sign In')),
   ],
 )
 ```
@@ -344,7 +372,7 @@ CupertinoNativeTextField(
 | `maxLength`                                         | `int?`                  | Longer input is cut.                                                                                                                                         |
 | `enabled` / `readOnly` / `autofocus`                | `bool`                  | Disabled greys the field out; read-only can still be selected and copied; autofocus opens the keyboard on first display. Default `true` / `false` / `false`. |
 | `clearButtonMode`                                   | `OverlayVisibilityMode` | When the native ✕ that clears the field shows. Default `never`.                                                                                              |
-| `prefix` / `suffix`                                 | `CupertinoNativeIcon?`  | SF Symbols drawn inside the field, before / after the text.                                                                                                  |
+| `prefix` / `suffix`                                 | `CupertinoNativeIcon?`  | Icons drawn inside the field, before / after the text.                                                                                                       |
 | `iconSpacing`                                       | `double`                | Gap between `prefix` / `suffix` and the text. Default `8`.                                                                                                   |
 | `cursorColor` / `backgroundColor`                   | `Color?`                | Colour of the caret and selection / fill behind the field (transparent when null).                                                                           |
 | `cornerRadius`                                      | `double?`               | Rounds the background and the glass. The glass defaults to `16`.                                                                                             |
@@ -680,7 +708,7 @@ Content goes on the glass two ways:
 | `interactive`      | `bool`                  | Shimmer and stretch under the finger. Default `false`.                              |
 | `onPressed`        | `VoidCallback?`         | Makes the glass a button.                                                           |
 | `child`            | `Widget?`               | Flutter content sizing the glass; its texts and symbols drawn by SwiftUI inside it. |
-| `icon`             | `CupertinoNativeIcon?`  | An SF Symbol drawn by SwiftUI inside the material.                                  |
+| `icon`             | `CupertinoNativeIcon?`  | An icon drawn by SwiftUI inside the material.                                       |
 | `padding`          | `EdgeInsetsGeometry`    | Room between the glass edge and `child`. Default none.                              |
 | `animateChanges`   | `bool`                  | Let SwiftUI animate tint and variant changes. Default `false`.                      |
 | `width` / `height` | `double?`               | Fixed size. Null hugs `child`.                                                      |
@@ -1564,12 +1592,16 @@ CupertinoNativeSymbol('wifi',
 
 ### Icons
 
-`CupertinoNativeIcon` is the SF Symbol every native control takes. To show a symbol in the Flutter tree, use `CupertinoSymbolImage`.
+`CupertinoNativeIcon` is the icon every native control takes: an SF Symbol, or one of your own. To show a symbol in the Flutter tree, use `CupertinoSymbolImage`.
 
 | Constructor                                                       |                          |
 | ----------------------------------------------------------------- | ------------------------ |
 | `.symbol(CupertinoSymbols, {size, weight, color, renderingMode})` | SF Symbol from the enum. |
 | `.named(String, {size, weight, color, renderingMode})`            | Any SF Symbol name.      |
+| `.iconData(IconData, {size, color})`                              | A glyph of an icon font: `CupertinoIcons`, `Icons`, or your own. |
+| `.asset(String, {package, size, color})`                          | A transparent PNG asset from your `pubspec.yaml`, with its `2.0x` / `3.0x` variants. |
+
+Your own icons are drawn as templates, in the control's tint or in `color`, like a symbol. They are read from the app's bundle on the native side, so nothing is sent but their names.
 
 `renderingMode`: `monochrome`, `hierarchical`, `palette`, `multicolor`.
 

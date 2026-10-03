@@ -8,10 +8,18 @@
 library;
 
 import 'package:flutter/cupertino.dart' show OverlayVisibilityMode;
+import 'package:flutter/services.dart' show TextInputType;
 import 'package:flutter/widgets.dart' show TextAlignVertical;
 
 /// `UITextField.ViewMode` case names. Flutter and UIKit spell the two
 /// editing-dependent states differently, so map rather than use `.name`.
+/// A [TextInputType] as the native side names it: `TextInputType` is not an
+/// enum, its JSON name is like `TextInputType.emailAddress`.
+String keyboardTypeName(TextInputType type) {
+  final name = type.toJson()['name'];
+  return name is String ? name.split('.').last : 'text';
+}
+
 String clearButtonModeName(OverlayVisibilityMode mode) => switch (mode) {
   OverlayVisibilityMode.never => 'never',
   OverlayVisibilityMode.editing => 'whileEditing',

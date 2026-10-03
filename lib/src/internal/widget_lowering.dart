@@ -381,12 +381,14 @@ CupertinoNativeBody lowerGlassContainer(
   if (onPressed != null) callbacks[id] = (_) => onPressed();
 
   final children = <CupertinoNativeBody>[];
+  // ponytail: a native body draws SF Symbols only; a custom icon is dropped
+  // here until body nodes take one.
   final icon = widget.icon;
-  if (icon != null) {
+  if (icon?.sfSymbol case final name?) {
     children.add(
       CupertinoNativeBody.symbol(
-        icon.sfSymbol,
-        size: icon.size ?? 17,
+        name,
+        size: icon!.size ?? 17,
         color: icon.color,
       ),
     );

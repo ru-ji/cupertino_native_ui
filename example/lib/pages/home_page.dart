@@ -10,6 +10,7 @@ import 'context_menu_demo_page.dart';
 import 'edge_effect_probe_page.dart';
 import 'hard_edge_demo_page.dart';
 import 'liquid_glass_demo_page.dart';
+import 'modals_demo_page.dart';
 import 'native_list_demo_page.dart';
 import 'native_scaffold_demo_page.dart';
 import 'native_searchable_demo_page.dart';
@@ -162,6 +163,12 @@ class HomePage extends StatelessWidget {
                           'square.stack.3d.up',
                           CupertinoColors.systemBlue,
                         ),
+                        _row(
+                          'modals',
+                          'Flutter Modals',
+                          'rectangle.stack',
+                          CupertinoColors.systemIndigo,
+                        ),
                       ],
                     ),
                   ],
@@ -204,6 +211,7 @@ class HomePage extends StatelessWidget {
       'list' => const NativeListDemoPage(),
       'liquidGlass' => const LiquidGlassDemoPage(),
       'edgeEffect' => const EdgeEffectProbePage(),
+      'modals' => const ModalsDemoPage(),
       _ => const SliderDemoPage(),
     };
     Navigator.of(context)

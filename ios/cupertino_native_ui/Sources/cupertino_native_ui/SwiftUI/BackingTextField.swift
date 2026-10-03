@@ -163,7 +163,7 @@ struct BackingTextField: UIViewRepresentable {
         }
     }
 
-    /// An SF Symbol for `leftView` / `rightView`, `gap` off the text: UIKit
+    /// An icon for `leftView` / `rightView`, `gap` off the text: UIKit
     /// lays the side view flush against it.
     private static func sideView(_ icon: IconConfig, gap: CGFloat, onTrailing gapOnTrailing: Bool)
         -> UIView
@@ -187,7 +187,8 @@ struct BackingTextField: UIViewRepresentable {
         default: break
         }
         let image = UIImageView(
-            image: UIImage(systemName: icon.sfSymbol ?? "questionmark", withConfiguration: config))
+            image: icon.sfSymbol.map { UIImage(systemName: $0, withConfiguration: config) }
+                ?? icon.customImage(pointSize: CGFloat(icon.size ?? 17)))
         image.tintColor = color
         image.contentMode = .center
 

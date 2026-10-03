@@ -1,4 +1,5 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart' show Icons;
 import 'package:cupertino_native_ui/cupertino_native_ui.dart';
 
 /// [CupertinoNativeButton]: styles, icon and label + icon buttons, sizes and
@@ -107,6 +108,51 @@ class _ButtonDemoPageState extends State<ButtonDemoPage> {
                           withLabel: true,
                         ))
                           _buttonRow(id, name, make()),
+                      ],
+                    ),
+                    CupertinoNativeListSection(
+                      header: 'Custom Icons',
+                      footer:
+                          'An Icon (any icon font) or an ImageIcon of an asset, '
+                          'drawn natively and tinted like a symbol.',
+                      children: [
+                        _buttonRow(
+                          'cupertinoIcon',
+                          'CupertinoIcons',
+                          CupertinoNativeButton.glass(
+                            borderShape:
+                                CupertinoNativeButtonBorderShape.circle,
+                            onPressed: () => _did('CupertinoIcons'),
+                            child: Icon(CupertinoIcons.heart_fill),
+                          ),
+                        ),
+                        _buttonRow(
+                          'materialIcon',
+                          'Material Icons',
+                          CupertinoNativeButton.tinted(
+                            onPressed: () => _did('Material Icons'),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              spacing: 6,
+                              children: [
+                                Icon(Icons.rocket_launch),
+                                Text('Launch'),
+                              ],
+                            ),
+                          ),
+                        ),
+                        _buttonRow(
+                          'assetIcon',
+                          'Asset',
+                          CupertinoNativeButton.glassProminent(
+                            borderShape:
+                                CupertinoNativeButtonBorderShape.circle,
+                            onPressed: () => _did('Asset'),
+                            child: ImageIcon(
+                              AssetImage('assets/icons/star.png'),
+                            ),
+                          ),
+                        ),
                       ],
                     ),
                     CupertinoNativeListSection(

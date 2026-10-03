@@ -19,7 +19,8 @@ import 'internal/native_color.dart';
 ///
 /// The native control draws the label itself, so [child] is read rather than
 /// built: a [Text] (title and style), a [CupertinoSymbolImage] (SF Symbol), an
-/// [Icon] (Flutter glyph), or a [Row] of one icon and one [Text].
+/// [Icon] (icon font glyph), an [ImageIcon] of an [AssetImage], or a [Row] of
+/// one icon and one [Text].
 class CupertinoNativeButton extends StatefulWidget {
   const CupertinoNativeButton({
     super.key,
@@ -106,8 +107,8 @@ class CupertinoNativeButton extends StatefulWidget {
        width = null,
        height = null;
 
-  /// A [Text], [CupertinoSymbolImage], [Icon], or a [Row] of an icon and a
-  /// [Text].
+  /// A [Text], [CupertinoSymbolImage], [Icon], [ImageIcon] of an
+  /// [AssetImage], or a [Row] of an icon and a [Text].
   final Widget child;
   final VoidCallback? onPressed;
   final CupertinoNativeButtonStyle style;
@@ -163,6 +164,19 @@ class ButtonLabel {
             color: color,
             weight: weight == FontWeight.normal ? null : weight,
           );
+        case Icon(icon: final data?, :final size, :final color):
+          icon = CupertinoNativeIcon.iconData(data, size: size, color: color);
+        case ImageIcon(
+          image: final AssetImage image,
+          :final size,
+          :final color,
+        ):
+          icon = CupertinoNativeIcon.asset(
+            image.assetName,
+            package: image.package,
+            size: size,
+            color: color,
+          );
         case Row(:final children) || Wrap(:final children):
           children.forEach(read);
         case Padding(:final child?) || Center(:final child?):
@@ -170,9 +184,9 @@ class ButtonLabel {
         default:
           assert(
             false,
-            'CupertinoNativeButton.child must be a Text, CupertinoSymbolImage '
-            'or a Row of them, not ${w.runtimeType}: the native control '
-            'draws its own label.',
+            'CupertinoNativeButton.child must be a Text, CupertinoSymbolImage, '
+            'Icon, ImageIcon of an AssetImage, or a Row of them, not '
+            '${w.runtimeType}: the native control draws its own label.',
           );
       }
     }
@@ -245,17 +259,9 @@ class _CupertinoNativeButtonState extends State<CupertinoNativeButton>
     final icon = label.icon;
     return {
       'title': label.title,
-      'icon':
-          (inBar && icon != null && icon.weight == null
-                  ? CupertinoNativeIcon.named(
-                      icon.sfSymbol,
-                      renderingMode: icon.renderingMode,
-                      size: icon.size,
-                      color: icon.color,
-                      weight: FontWeight.w500,
-                    )
-                  : icon)
-              ?.toMap(isDark: _isDark),
+      'icon': (inBar ? icon?.withDefaultWeight(FontWeight.w500) : icon)?.toMap(
+        isDark: _isDark,
+      ),
       'style': widget.style.name,
       'controlSize': widget.sizeStyle.name,
       'borderShape': widget.borderShape.name,

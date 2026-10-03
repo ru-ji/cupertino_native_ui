@@ -13,6 +13,7 @@ class AlertManager {
         title: String,
         message: String?,
         actions: [[String: Any]],
+        textFields: [[String: Any]] = [],
         isDark: Bool,
         style: UIAlertController.Style = .alert,
         sourceRect: CGRect? = nil,
@@ -35,6 +36,26 @@ class AlertManager {
         // system appearance: same convention as every other native surface.
         alertController.overrideUserInterfaceStyle = isDark ? .dark : .light
 
+        // UIKit's own fields, in the alert. An alert only: an action sheet
+        // takes none.
+        if style == .alert {
+            for field in textFields {
+                alertController.addTextField { textField in
+                    textField.text = field["text"] as? String
+                    textField.placeholder = field["placeholder"] as? String
+                    textField.isSecureTextEntry = field["obscureText"] as? Bool ?? false
+                    textField.keyboardType = BackingTextField.keyboardType(
+                        field["keyboardType"] as? String)
+                    textField.autocapitalizationType = BackingTextField.capitalization(
+                        field["textCapitalization"] as? String)
+                    textField.autocorrectionType =
+                        field["autocorrect"] as? Bool == false ? .no : .default
+                    textField.textContentType = (field["textContentType"] as? String)
+                        .map { UITextContentType(rawValue: $0) }
+                }
+            }
+        }
+
         for (index, actionData) in actions.enumerated() {
             let title = actionData["title"] as? String ?? ""
             let isDestructive = actionData["isDestructive"] as? Bool ?? false
@@ -47,8 +68,14 @@ class AlertManager {
                 style = .cancel
             }
 
-            let action = UIAlertAction(title: title, style: style) { _ in
-                result(index)
+            let action = UIAlertAction(title: title, style: style) {
+                [weak alertController] _ in
+                // With fields, what was typed too, for their controllers.
+                if let fields = alertController?.textFields, !fields.isEmpty {
+                    result(["index": index, "texts": fields.map { $0.text ?? "" }])
+                } else {
+                    result(index)
+                }
             }
             alertController.addAction(action)
         }

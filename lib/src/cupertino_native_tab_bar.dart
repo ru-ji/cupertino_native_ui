@@ -135,6 +135,7 @@ class _CupertinoNativeTabBarState extends State<CupertinoNativeTabBar> {
   bool? _lastIsDark;
   List<String>? _lastLabels;
   List<String>? _lastSymbols;
+  List<CupertinoNativeIcon?>? _lastIcons;
   List<String>? _lastBadges;
   bool? _lastSplit;
   int? _lastRightCount;
@@ -162,11 +163,13 @@ class _CupertinoNativeTabBarState extends State<CupertinoNativeTabBar> {
   List<String> get _symbols =>
       widget.items.map((t) => t.resolvedSymbolName ?? '').toList();
 
-  /// Full icon configs for SwiftUI rendering (supports both SF Symbols and
-  /// Flutter glyphs). The standalone UITabBar ignores this and falls back
-  /// to the raw SF Symbol strings in [_symbols].
+  List<CupertinoNativeIcon?> get _icons =>
+      widget.items.map((t) => t.icon).toList();
+
+  /// Full icon configs: a custom icon (an icon font glyph or an asset) where
+  /// [_symbols] has no SF Symbol.
   List<Map<String, dynamic>?> get _iconConfigs =>
-      widget.items.map((t) => t.icon?.toMap(isDark: _isDark)).toList();
+      _icons.map((icon) => icon?.toMap(isDark: _isDark)).toList();
 
   @override
   void didUpdateWidget(covariant CupertinoNativeTabBar oldWidget) {
@@ -199,6 +202,7 @@ class _CupertinoNativeTabBarState extends State<CupertinoNativeTabBar> {
     _lastIsDark = _isDark;
     _lastLabels = _labels;
     _lastSymbols = _symbols;
+    _lastIcons = _icons;
     _lastBadges = _badges;
     _lastSplit = widget.split;
     _lastRightCount = widget.rightCount;
@@ -270,15 +274,18 @@ class _CupertinoNativeTabBarState extends State<CupertinoNativeTabBar> {
 
     if (!listEquals(_lastLabels, labels) ||
         !listEquals(_lastSymbols, symbols) ||
+        !listEquals(_lastIcons, _icons) ||
         !listEquals(_lastBadges, badges)) {
       await channel.invokeMethod('setItems', {
         'labels': labels,
         'sfSymbols': symbols,
+        'icons': _iconConfigs,
         'badges': badges,
         'selectedIndex': idx,
       });
       _lastLabels = labels;
       _lastSymbols = symbols;
+      _lastIcons = _icons;
       _lastBadges = badges;
       _requestIntrinsicSize();
     }

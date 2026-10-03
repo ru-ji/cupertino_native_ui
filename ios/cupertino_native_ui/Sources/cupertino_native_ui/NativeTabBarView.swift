@@ -45,6 +45,8 @@ class NativeTabBarView: NSObject, FlutterPlatformView, UITabBarDelegate {
     private var scrollEdgeEffectVal = "automatic"
     private var currentLabels: [String] = []
     private var currentSymbols: [String] = []
+    /// Each tab's icon config: a custom icon where `currentSymbols` is empty.
+    private var currentIcons: [IconConfig?] = []
     private var currentBadges: [String] = []
 
     init(
@@ -70,6 +72,7 @@ class NativeTabBarView: NSObject, FlutterPlatformView, UITabBarDelegate {
         if let dict = args as? [String: Any] {
             labels = (dict["labels"] as? [String]) ?? []
             symbols = (dict["sfSymbols"] as? [String]) ?? []
+            currentIcons = Self.icons(dict["icons"])
             badges = (dict["badges"] as? [String]) ?? []
             if let v = dict["selectedIndex"] as? NSNumber { selectedIndex = v.intValue }
             if let v = dict["isDark"] as? NSNumber { isDark = v.boolValue }
@@ -164,12 +167,18 @@ class NativeTabBarView: NSObject, FlutterPlatformView, UITabBarDelegate {
 
     // MARK: - Bar construction
 
+    private static func icons(_ value: Any?) -> [IconConfig?] {
+        ((value as? [Any]) ?? []).map { ($0 as? [String: Any]).flatMap { decodeConfig(IconConfig.self, from: $0) } }
+    }
+
     private func buildItems(_ range: Range<Int>) -> [UITabBarItem] {
         var items: [UITabBarItem] = []
         for i in range {
             var image: UIImage? = nil
             if i < currentSymbols.count, !currentSymbols[i].isEmpty {
                 image = UIImage(systemName: currentSymbols[i])
+            } else if i < currentIcons.count {
+                image = currentIcons[i]?.customImage(pointSize: IconConfig.tabPointSize)
             }
             let title: String? =
                 (i < currentLabels.count && !currentLabels[i].isEmpty) ? currentLabels[i] : nil
@@ -327,6 +336,7 @@ class NativeTabBarView: NSObject, FlutterPlatformView, UITabBarDelegate {
             if let args = call.arguments as? [String: Any] {
                 currentLabels = (args["labels"] as? [String]) ?? []
                 currentSymbols = (args["sfSymbols"] as? [String]) ?? []
+                currentIcons = Self.icons(args["icons"])
                 currentBadges = (args["badges"] as? [String]) ?? []
                 let selectedIndex = (args["selectedIndex"] as? NSNumber)?.intValue ?? 0
                 rebuildBars(selectedIndex: selectedIndex)

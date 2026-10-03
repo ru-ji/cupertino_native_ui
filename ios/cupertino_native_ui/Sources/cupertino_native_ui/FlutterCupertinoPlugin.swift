@@ -217,7 +217,8 @@ public class FlutterCupertinoPlugin: NSObject, FlutterPlugin {
                 anchor = CGRect(x: x, y: y, width: w, height: h)
             }
             AlertManager.shared.show(
-                title: title, message: message, actions: actions, isDark: isDark,
+                title: title, message: message, actions: actions,
+                textFields: args["textFields"] as? [[String: Any]] ?? [], isDark: isDark,
                 style: call.method == "showActionSheet" ? .actionSheet : .alert,
                 sourceRect: anchor, result: result)
         } else {

@@ -3,7 +3,8 @@
 
 import 'package:cupertino_native_ui/cupertino_native_ui.dart';
 import 'package:cupertino_native_ui/src/internal/widget_lowering.dart';
-import 'package:flutter/cupertino.dart' show CupertinoApp, CupertinoThemeData;
+import 'package:flutter/cupertino.dart'
+    show CupertinoApp, CupertinoIcons, CupertinoThemeData;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -203,6 +204,52 @@ void main() {
       );
       await CupertinoNativePhotosPicker.clearCache();
       expect(calls, ['clearPhotoCache']);
+    }, variant: iOS);
+  });
+
+  group('alert', () {
+    testWidgets('text fields go native; what was typed fills the controller', (
+      tester,
+    ) async {
+      Map? args;
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        const MethodChannel('com.example.cupertino_native_ui/alert'),
+        (call) async {
+          args = call.arguments as Map;
+          return {
+            'index': 1,
+            'texts': ['New name'],
+          };
+        },
+      );
+      await tester.pumpWidget(const MaterialApp(home: SizedBox()));
+      final name = TextEditingController(text: 'Old name');
+      String? saved;
+      await CupertinoNativeAlertDialog.show(
+        context: tester.element(find.byType(SizedBox)),
+        title: 'Rename',
+        textFields: [
+          CupertinoNativeTextField(
+            controller: name,
+            placeholder: 'Name',
+            keyboardType: TextInputType.emailAddress,
+            textContentType: 'username',
+          ),
+        ],
+        actions: [
+          const CupertinoNativeDialogAction(child: Text('Cancel')),
+          CupertinoNativeDialogAction(
+            child: const Text('Save'),
+            onPressed: () => saved = name.text,
+          ),
+        ],
+      );
+      final field = (args!['textFields'] as List).single as Map;
+      expect(field['text'], 'Old name');
+      expect(field['placeholder'], 'Name');
+      expect(field['keyboardType'], 'emailAddress');
+      expect(field['textContentType'], 'username');
+      expect(saved, 'New name');
     }, variant: iOS);
   });
 
@@ -758,6 +805,36 @@ void main() {
       expect(params['style'], 'glass');
       expect(params['borderShape'], 'circle');
       expect((params['icon'] as Map)['sfSymbol'], CupertinoSymbols.plus.value);
+    }, variant: iOS);
+
+    testWidgets('an Icon is a native icon font glyph', (tester) async {
+      final glyph = await paramsOf(
+        tester,
+        CupertinoNativeButton.glass(
+          onPressed: () {},
+          child: const Icon(CupertinoIcons.heart, size: 20),
+        ),
+      );
+      final icon = glyph['icon'] as Map;
+      expect(icon['sfSymbol'], isNull);
+      expect(icon['glyph'], CupertinoIcons.heart.codePoint);
+      expect(icon['fontFamily'], CupertinoIcons.heart.fontFamily);
+      expect(icon['fontPackage'], CupertinoIcons.heart.fontPackage);
+      expect(icon['size'], 20);
+    }, variant: iOS);
+
+    testWidgets('an asset ImageIcon is a native icon from the bundle', (
+      tester,
+    ) async {
+      final asset = await paramsOf(
+        tester,
+        CupertinoNativeButton.glass(
+          onPressed: () {},
+          child: const ImageIcon(AssetImage('logo.png', package: 'brand')),
+        ),
+      );
+      expect((asset['icon'] as Map)['asset'], 'packages/brand/logo.png');
+      expect(asset['labelStyle'], 'iconOnly');
     }, variant: iOS);
 
     testWidgets('button role is sent', (tester) async {

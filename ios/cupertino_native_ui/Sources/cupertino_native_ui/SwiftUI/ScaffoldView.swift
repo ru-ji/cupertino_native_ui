@@ -37,10 +37,7 @@ struct ScaffoldView: View {
                 ForEach(tabBar.tabs) { tab in
                     navStack(key: tab.id, rootRoute: tab.id, search: tab.search)
                         .tabItem {
-                            Label(
-                                tab.title,
-                                systemImage: tab.resolvedSymbolName
-                                    ?? (tab.role == "search" ? "magnifyingglass" : "circle"))
+                            tabLabel(tab, fallback: tab.role == "search" ? "magnifyingglass" : "circle")
                         }
                         .tag(tab.id)
                         .badge(tab.badge.map { Text($0) })
@@ -55,27 +52,42 @@ struct ScaffoldView: View {
         TabView(selection: $model.selection) {
             ForEach(tabBar.tabs) { tab in
                 if tab.role == "prominent", let prominent = Self.prominentRole {
-                    Tab(
-                        tab.title, systemImage: tab.resolvedSymbolName ?? "circle",
-                        value: tab.id, role: prominent
-                    ) {
+                    Tab(value: tab.id, role: prominent) {
                         navStack(key: tab.id, rootRoute: tab.id, search: tab.search)
+                    } label: {
+                        tabLabel(tab, fallback: "circle")
                     }
                     .badge(tab.badge.map { Text($0) })
                 } else if tab.role == "search" {
-                    Tab(
-                        tab.title, systemImage: tab.resolvedSymbolName ?? "magnifyingglass",
-                        value: tab.id, role: .search
-                    ) {
+                    Tab(value: tab.id, role: .search) {
                         navStack(key: tab.id, rootRoute: tab.id, search: tab.search)
+                    } label: {
+                        tabLabel(tab, fallback: "magnifyingglass")
                     }
                     .badge(tab.badge.map { Text($0) })
                 } else {
-                    Tab(tab.title, systemImage: tab.resolvedSymbolName ?? "circle", value: tab.id) {
+                    Tab(value: tab.id) {
                         navStack(key: tab.id, rootRoute: tab.id, search: tab.search)
+                    } label: {
+                        tabLabel(tab, fallback: "circle")
                     }
                     .badge(tab.badge.map { Text($0) })
                 }
+            }
+        }
+    }
+
+    /// A tab's title over its SF Symbol, its custom icon, or `fallback`.
+    private func tabLabel(_ tab: TabItemConfig, fallback: String) -> some View {
+        Label {
+            Text(tab.title)
+        } icon: {
+            if let name = tab.resolvedSymbolName {
+                Image(systemName: name)
+            } else if let image = tab.icon?.customImage(pointSize: IconConfig.tabPointSize) {
+                Image(uiImage: image).renderingMode(.template)
+            } else {
+                Image(systemName: fallback)
             }
         }
     }

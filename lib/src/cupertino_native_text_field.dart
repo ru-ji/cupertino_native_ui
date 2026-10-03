@@ -551,7 +551,7 @@ class _CupertinoNativeTextFieldState extends State<CupertinoNativeTextField>
     return {
       'text': widget.controller?.text ?? '',
       'placeholder': widget.placeholder,
-      'keyboardType': _keyboardTypeName(widget.keyboardType),
+      'keyboardType': keyboardTypeName(widget.keyboardType),
       'textInputAction': widget.textInputAction?.name,
       'obscureText': widget.obscureText,
       'autocorrect': widget.autocorrect,
@@ -584,13 +584,6 @@ class _CupertinoNativeTextFieldState extends State<CupertinoNativeTextField>
       'verticalAlignment': verticalAlignmentName(widget.verticalAlignment),
       'keyboardToolbar': _toolbar.nodes,
     };
-  }
-
-  static String _keyboardTypeName(TextInputType type) {
-    // TextInputType isn't an enum; its JSON name is like "TextInputType.email".
-    final name = type.toJson()['name'];
-    if (name is String) return name.split('.').last;
-    return 'text';
   }
 
   Future<void> _onPlatformViewCreated(int id) async {
