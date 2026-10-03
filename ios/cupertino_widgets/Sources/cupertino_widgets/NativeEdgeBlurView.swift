@@ -85,6 +85,9 @@ struct EdgeBlurConfig {
     /// 0…1: scales the blur radius and the washes together.
     var intensity: CGFloat
     var debugPaintRect: Bool
+    /// A bar's native items, in this view's points: the wash is cut out under
+    /// each as a capsule, so their glass sees the content and not the wash.
+    var holes: [CGRect]
 
     init(_ arguments: Any?) {
         let map = arguments as? [String: Any] ?? [:]
@@ -97,6 +100,10 @@ struct EdgeBlurConfig {
         isDark = map["isDark"] as? Bool ?? false
         intensity = CGFloat(min(max(map["intensity"] as? Double ?? 1, 0), 1))
         debugPaintRect = map["debug"] as? Bool ?? false
+        let runs = (map["holes"] as? [NSNumber])?.map { CGFloat($0.doubleValue) } ?? []
+        holes = stride(from: 0, to: runs.count - 3, by: 4).map {
+            CGRect(x: runs[$0], y: runs[$0 + 1], width: runs[$0 + 2], height: runs[$0 + 3])
+        }
     }
 }
 
@@ -204,6 +211,8 @@ final class EdgeBlurView: UIView {
     private let fixedWash = CALayer()
     private let lightWash = CALayer()
     private let darkWash = CALayer()
+    /// The wash with the bar's native items cut out (see `applyHoles`).
+    private let holeMask = CAShapeLayer()
     private var config = EdgeBlurConfig(nil)
     private var luma: LumaTracker?
     private var darkLuma: LumaTracker?
@@ -293,6 +302,7 @@ final class EdgeBlurView: UIView {
         blur.frame = bounds
         washLayer.frame = bounds
         for wash in [fixedWash, lightWash, darkWash] { wash.frame = washLayer.bounds }
+        applyHoles()
         let insets = window?.safeAreaInsets ?? .zero
         for tracker in [luma, darkLuma] {
             tracker?.layout(
@@ -301,6 +311,25 @@ final class EdgeBlurView: UIView {
         }
         renderWashes()
         CATransaction.commit()
+    }
+
+    /// Cuts the wash out under the bar's native items. A mask on the wash
+    /// layer only — never on this view, which the engine clips.
+    private func applyHoles() {
+        guard !config.holes.isEmpty else {
+            washLayer.mask = nil
+            return
+        }
+        let path = UIBezierPath(rect: washLayer.bounds)
+        for hole in config.holes {
+            path.append(
+                UIBezierPath(
+                    roundedRect: hole, cornerRadius: min(hole.width, hole.height) / 2))
+        }
+        holeMask.frame = washLayer.bounds
+        holeMask.fillRule = .evenOdd
+        holeMask.path = path.cgPath
+        washLayer.mask = holeMask
     }
 
     /// The wash images, re-rendered only when what they draw changes, and off

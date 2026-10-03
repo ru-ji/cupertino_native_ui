@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
 import 'cupertino_scroll_edge_effect.dart' show CupertinoScrollEdgeEffectEdge;
+import 'internal/bar_holes.dart';
 import 'internal/native_color.dart';
 
 /// A progressive blur drawn by Core Animation, the way iOS 26's own scroll
@@ -77,6 +78,35 @@ class _CupertinoNativeEdgeBlurState extends State<CupertinoNativeEdgeBlur> {
   Map<String, Object?>? _createdWith;
   Map<String, Object?>? _latest;
 
+  /// A bar's native items, cut out of the wash so their glass sees the
+  /// content under the bar (see [BarHoles]). Null outside a bar.
+  BarHoles? _holes;
+
+  RenderBox? _box() =>
+      mounted ? context.findRenderObject() as RenderBox? : null;
+
+  void _onHoles() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final holes = BarHolesScope.maybeOf(context);
+    if (holes == _holes) return;
+    _holes?.removeListener(_onHoles);
+    _holes = holes
+      ?..origin = _box
+      ..addListener(_onHoles);
+  }
+
+  @override
+  void dispose() {
+    _holes?.removeListener(_onHoles);
+    if (_holes?.origin == _box) _holes?.origin = null;
+    super.dispose();
+  }
+
   Map<String, Object?> _params(double span, bool isDark) => {
     'edge': widget.edge.name,
     'sigma': (span * (1 - 0.41) * 0.4 / 3).clamp(0.0, widget.sigma),
@@ -88,6 +118,8 @@ class _CupertinoNativeEdgeBlurState extends State<CupertinoNativeEdgeBlur> {
     // The wash before the first luma measurement follows the app theme.
     'isDark': isDark,
     'debug': widget.debugPaintRect,
+    // Replaced only when they change, so the identity check in [_push] holds.
+    'holes': _holes?.rects ?? const <double>[],
   };
 
   void _push(Map<String, Object?> params) {

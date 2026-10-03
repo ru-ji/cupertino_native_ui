@@ -11,6 +11,7 @@ import 'cupertino_native_glass_container.dart';
 import 'cupertino_native_text_field.dart';
 import 'cupertino_scroll_edge_effect.dart';
 import 'cupertino_symbol_image.dart';
+import 'internal/bar_holes.dart';
 import 'internal/bar_slot.dart';
 import 'internal/ios_version.dart';
 import 'internal/legacy_sliver_navigation_bar.dart';
@@ -273,6 +274,9 @@ class _CupertinoSliverAppBarState
   /// title follows it. Null until the first measurement.
   Brightness? _effectBehind;
 
+  /// The bar's native items, cut out of the edge effect's wash.
+  final BarHoles _barHoles = BarHoles();
+
   /// Focus of the built-in search field — driven by the morph (focused on
   /// open, unfocused on close).
   final FocusNode _searchFocusNode = FocusNode(
@@ -314,6 +318,7 @@ class _CupertinoSliverAppBarState
     _titleT.dispose();
     _subtitleT.dispose();
     _titleCollapse.dispose();
+    _barHoles.dispose();
     super.dispose();
   }
 
@@ -532,9 +537,14 @@ class _CupertinoSliverAppBarState
     );
     // The bar's buttons follow the content under the bar, as the system's
     // do — not the wash right behind them.
+    // Each item that holds a native view is cut out of the wash (BarHole),
+    // so its glass sees the content under the bar.
     final leading = implied == null
         ? null
-        : BarSlot(brightness: _effectBehind, child: implied);
+        : BarSlot(
+            brightness: _effectBehind,
+            child: BarHole(child: implied),
+          );
     final trailing = widget.trailing.isEmpty
         ? null
         : BarSlot(
@@ -543,7 +553,9 @@ class _CupertinoSliverAppBarState
               mainAxisSize: MainAxisSize.min,
               // Between two glass buttons, measured on iOS 26 Notes.
               spacing: 12,
-              children: widget.trailing,
+              children: [
+                for (final item in widget.trailing) BarHole(child: item),
+              ],
             ),
           );
     final closeButton = !widget._searchable
@@ -597,76 +609,80 @@ class _CupertinoSliverAppBarState
     // The inline title follows the edge effect's wash: white over its dark
     // levels, like the system's bar items, on the wash's own ~0.5s.
     final secondaryLabel = CupertinoColors.secondaryLabel.resolveFrom(context);
-    return TweenAnimationBuilder<double>(
-      tween: Tween(end: _effectBehind == Brightness.dark ? 1.0 : 0.0),
-      duration: const Duration(milliseconds: 500),
-      curve: Curves.easeOutCubic,
-      builder: (context, washT, _) => AnimatedBuilder(
-        animation: Listenable.merge([_searchT, _titleT]),
-        builder: (context, _) => SliverPersistentHeader(
-          pinned: true,
-          delegate: _IOS26SliverAppBarDelegate(
-            largeTitle: widget.largeTitle,
-            subtitle: widget.subtitle,
-            centerTitle: widget.centerTitle,
-            expandedTitle: widget.expandedTitle,
-            collapseTitle: widget.collapseTitle,
-            leading: leading,
-            trailing: trailing,
-            searchField: bottomSlot,
-            searchable: widget._searchable,
-            fieldHeight: widget.bottomHeight,
-            bottomMode: widget.bottomMode,
-            closeButton: closeButton,
-            hardEdge:
-                widget.scrollEdgeEffect == CupertinoScrollEdgeEffectStyle.hard,
-            edgeEffect: RepaintBoundary(
-              child: CupertinoScrollEdgeEffect(
-                edge: CupertinoScrollEdgeEffectEdge.top,
-                style: widget.scrollEdgeEffect,
-                intensity: _titleT.value,
-                onBrightnessChanged: (behind) {
-                  if (mounted && behind != _effectBehind) {
-                    setState(() => _effectBehind = behind);
-                  }
-                },
+    return BarHolesScope(
+      holes: _barHoles,
+      child: TweenAnimationBuilder<double>(
+        tween: Tween(end: _effectBehind == Brightness.dark ? 1.0 : 0.0),
+        duration: const Duration(milliseconds: 500),
+        curve: Curves.easeOutCubic,
+        builder: (context, washT, _) => AnimatedBuilder(
+          animation: Listenable.merge([_searchT, _titleT]),
+          builder: (context, _) => SliverPersistentHeader(
+            pinned: true,
+            delegate: _IOS26SliverAppBarDelegate(
+              largeTitle: widget.largeTitle,
+              subtitle: widget.subtitle,
+              centerTitle: widget.centerTitle,
+              expandedTitle: widget.expandedTitle,
+              collapseTitle: widget.collapseTitle,
+              leading: leading,
+              trailing: trailing,
+              searchField: bottomSlot,
+              searchable: widget._searchable,
+              fieldHeight: widget.bottomHeight,
+              bottomMode: widget.bottomMode,
+              closeButton: closeButton,
+              hardEdge:
+                  widget.scrollEdgeEffect ==
+                  CupertinoScrollEdgeEffectStyle.hard,
+              edgeEffect: RepaintBoundary(
+                child: CupertinoScrollEdgeEffect(
+                  edge: CupertinoScrollEdgeEffectEdge.top,
+                  style: widget.scrollEdgeEffect,
+                  intensity: _titleT.value,
+                  onBrightnessChanged: (behind) {
+                    if (mounted && behind != _effectBehind) {
+                      setState(() => _effectBehind = behind);
+                    }
+                  },
+                ),
               ),
-            ),
-            searchRowVisibility: _searchRowVisibility,
-            searchT: _searchT.value,
-            titleT: widget.collapseTitle ? _titleT.value : 0.0,
-            subtitleT: widget.collapseTitle ? _subtitleT.value : 0.0,
-            searchActive: _searchActive,
-            morphing: _controller.isAnimating,
-            onSearchOpen: () => _setSearchActive(true),
-            topPadding: MediaQuery.paddingOf(context).top,
-            // Native Flutter Cupertino nav bar text styles.
-            inlineTitleStyle: theme.textTheme.navTitleTextStyle.copyWith(
-              decoration: TextDecoration.none,
-              color: Color.lerp(
-                theme.textTheme.navTitleTextStyle.color,
-                CupertinoColors.white,
+              searchRowVisibility: _searchRowVisibility,
+              searchT: _searchT.value,
+              titleT: widget.collapseTitle ? _titleT.value : 0.0,
+              subtitleT: widget.collapseTitle ? _subtitleT.value : 0.0,
+              searchActive: _searchActive,
+              morphing: _controller.isAnimating,
+              onSearchOpen: () => _setSearchActive(true),
+              topPadding: MediaQuery.paddingOf(context).top,
+              // Native Flutter Cupertino nav bar text styles.
+              inlineTitleStyle: theme.textTheme.navTitleTextStyle.copyWith(
+                decoration: TextDecoration.none,
+                color: Color.lerp(
+                  theme.textTheme.navTitleTextStyle.color,
+                  CupertinoColors.white,
+                  washT,
+                ),
+              ),
+              largeTitleStyle: theme.textTheme.navLargeTitleTextStyle.copyWith(
+                decoration: TextDecoration.none,
+              ),
+              // 11pt medium under the large title, measured against the
+              // system's. No letter spacing: the tab label style's -0.24 drew
+              // it ~4pt narrower than the system's, and thinner-looking.
+              subtitleStyle: theme.textTheme.tabLabelTextStyle.copyWith(
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
+                letterSpacing: 0,
+                decoration: TextDecoration.none,
+                color: secondaryLabel,
+              ),
+              inlineSubtitleColor: Color.lerp(
+                secondaryLabel,
+                const Color(0x99FFFFFF),
                 washT,
-              ),
+              )!,
             ),
-            largeTitleStyle: theme.textTheme.navLargeTitleTextStyle.copyWith(
-              decoration: TextDecoration.none,
-            ),
-            // 11pt medium under the large title, measured against the
-            // system's. No letter spacing: the tab label style's -0.24 drew
-            // it ~4pt narrower than the system's, and thinner-looking.
-            subtitleStyle: theme.textTheme.tabLabelTextStyle.copyWith(
-              fontSize: 11,
-              fontWeight: FontWeight.w500,
-              letterSpacing: 0,
-              decoration: TextDecoration.none,
-              color: secondaryLabel,
-            ),
-            inlineSubtitleColor: Color.lerp(
-              secondaryLabel,
-              const Color(0x99FFFFFF),
-              washT,
-            )!,
           ),
         ),
       ),
@@ -1353,16 +1369,21 @@ class CupertinoNativeNavigationBar extends StatelessWidget {
     );
     // The bar's buttons follow the content under the bar, as the system's
     // do — not the wash right behind them.
+    // Each item that holds a native view is cut out of the wash (BarHole),
+    // so its glass sees the content under the bar.
     final leadingWidget = implied == null
         ? null
-        : BarSlot(brightness: behind, child: implied);
+        : BarSlot(
+            brightness: behind,
+            child: BarHole(child: implied),
+          );
     final trailingRow = BarSlot(
       brightness: behind,
       child: Row(
         mainAxisSize: MainAxisSize.min,
         // Between two glass buttons, measured on iOS 26 Notes.
         spacing: 12,
-        children: trailing,
+        children: [for (final item in trailing) BarHole(child: item)],
       ),
     );
 
@@ -1472,11 +1493,22 @@ class _EffectBrightness extends StatefulWidget {
 class _EffectBrightnessState extends State<_EffectBrightness> {
   Brightness? _behind;
 
+  /// The bar's native items, cut out of the edge effect's wash.
+  final BarHoles _holes = BarHoles();
+
   void _report(Brightness behind) {
     if (mounted && behind != _behind) setState(() => _behind = behind);
   }
 
   @override
-  Widget build(BuildContext context) =>
-      widget.builder(context, _behind, _report);
+  void dispose() {
+    _holes.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => BarHolesScope(
+    holes: _holes,
+    child: widget.builder(context, _behind, _report),
+  );
 }
