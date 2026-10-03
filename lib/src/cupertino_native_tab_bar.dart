@@ -140,28 +140,18 @@ class _CupertinoNativeTabBarState extends State<CupertinoNativeTabBar> {
   int? _lastRightCount;
   double? _lastSplitSpacing;
 
-  /// The bar cut out of its scroll edge effect's wash, so its glass sees the
-  /// content under it and turns light or dark with it by itself, as the
-  /// navigation bars' items do (see [BarHoles]).
+  /// The bar's glass pills cut out of its scroll edge effect's wash, so
+  /// their glass sees the content under them and turns light or dark with it
+  /// by itself, as the navigation bars' items do (see [BarHoles]).
   final BarHoles _holes = BarHoles();
 
-  /// Split bars are not cut out (one box holds two pills and the gap between
-  /// them): they take the content under them, measured under the wash, as an
-  /// imposed appearance instead. Null until measured.
-  Brightness? _behind;
+  /// The pills, measured natively in the bar's own points: its frame holds
+  /// more than the pill. Empty until reported.
+  List<Rect> _platters = const [];
 
-  // Otherwise the APP's brightness (its Material theme), so the native bar
-  // matches the app rather than the device. Re-synced on theme change.
-  bool get _isDark =>
-      ((widget.split ? _behind : null) ?? Theme.of(context).brightness) ==
-      Brightness.dark;
-
-  void _onBehind(Brightness behind) {
-    if (!mounted || behind == _behind) return;
-    _behind = behind;
-    _syncBrightness();
-    _syncPropsToNative();
-  }
+  // The APP's brightness (its Material theme), so the native bar matches the
+  // app rather than the device. Re-synced on theme change.
+  bool get _isDark => Theme.of(context).brightness == Brightness.dark;
 
   int get _selectedIndex {
     return widget.currentIndex.clamp(0, widget.items.length - 1);
@@ -217,6 +207,20 @@ class _CupertinoNativeTabBarState extends State<CupertinoNativeTabBar> {
   }
 
   Future<dynamic> _handleMethodCall(MethodCall call) async {
+    if (call.method == 'platters') {
+      final runs = [
+        for (final v in call.arguments as List? ?? const [])
+          (v as num).toDouble(),
+      ];
+      final platters = [
+        for (var i = 0; i + 3 < runs.length; i += 4)
+          Rect.fromLTWH(runs[i], runs[i + 1], runs[i + 2], runs[i + 3]),
+      ];
+      if (mounted && !listEquals(platters, _platters)) {
+        setState(() => _platters = platters);
+      }
+      return;
+    }
     if (call.method == 'valueChanged') {
       final args = call.arguments as Map?;
       final idx = (args?['index'] as num?)?.toInt();
@@ -419,11 +423,14 @@ class _CupertinoNativeTabBarState extends State<CupertinoNativeTabBar> {
               child: CupertinoScrollEdgeEffect(
                 edge: CupertinoScrollEdgeEffectEdge.bottom,
                 style: widget.scrollEdgeEffect,
-                onBrightnessChanged: widget.split ? _onBehind : null,
               ),
             ),
             // Painted after the effect: the bar sits on it, cut out of its wash.
-            if (widget.split) bar else BarHole(child: bar),
+            // `.hard` does not adapt: nothing to cut out of its band.
+            if (widget.scrollEdgeEffect == CupertinoScrollEdgeEffectStyle.hard)
+              bar
+            else
+              BarHole(rects: _platters, child: bar),
           ],
         ),
       );
@@ -431,10 +438,10 @@ class _CupertinoNativeTabBarState extends State<CupertinoNativeTabBar> {
     return bar;
   }
 
-  /// Where `.hard` stops, measured up from the screen's bottom edge: 59pt
-  /// over the home indicator — the system tab bar's 49pt plus 10 (93pt on an
-  /// iPhone 12 Pro Max).
-  static const double _effectBand = 59;
+  /// Where `.hard` stops, measured up from the screen's bottom edge: the
+  /// system tab bar's 49pt over the home indicator (83pt on an iPhone 12 Pro
+  /// Max, matched against the native `.hard` on 2026-10-03).
+  static const double _effectBand = 49;
 
   /// Where `.soft`'s wash fades out: fitted to the system's on iOS 26 (its
   /// smootherstep reaches 0 at 133pt up on an iPhone 12 Pro Max, 2026-10-03),

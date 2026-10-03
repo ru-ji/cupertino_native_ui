@@ -74,8 +74,14 @@ class CupertinoScrollEdgeEffect extends StatefulWidget {
 
 class _CupertinoScrollEdgeEffectState extends State<CupertinoScrollEdgeEffect> {
   /// The `.hard` wash: the page's colour at 91%, measured on iOS 26 over a
-  /// green page. Without a blur under it.
+  /// green page.
   static const double _hardOpacity = 0.91;
+
+  /// The `.hard` blur's `inputRadius`, even over the band: the system's
+  /// measures σ ≈ 5–6pt on screen (2026-10-03), and a Core Animation radius
+  /// of 1 shows as σ ≈ 1.5–1.85pt.
+  // ponytail: derived, not measured on ours; calibrate from a capture.
+  static const double _hardBlur = 3;
 
   /// The peak of the system's bright wash, which a page with a background of
   /// its own keeps as a fixed wash.
@@ -257,11 +263,19 @@ class _CupertinoScrollEdgeEffectState extends State<CupertinoScrollEdgeEffect> {
     final edge = widget.edge;
     final onBrightnessChanged = widget.onBrightnessChanged;
     // `hard` is not a denser fade, it is the absence of one: one flat wash
-    // that stops at a hard line.
+    // over one even blur, stopping at a hard line. The native view blurs
+    // Flutter content and native views alike, with the same filter.
     if (style == CupertinoScrollEdgeEffectStyle.hard) {
-      return IgnorePointer(
-        child: ColoredBox(color: background.withValues(alpha: _hardOpacity)),
-      );
+      final wash = background.withValues(alpha: _hardOpacity);
+      if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) {
+        return CupertinoNativeEdgeBlur(
+          edge: edge,
+          hard: true,
+          sigma: _hardBlur,
+          tint: wash,
+        );
+      }
+      return IgnorePointer(child: ColoredBox(color: wash));
     }
     if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) {
       // No intensity: always on. A light blur under the top wash — none at

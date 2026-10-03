@@ -35,7 +35,7 @@ class NativeTabBarFactory: NSObject, FlutterPlatformViewFactory {
 @available(iOS 15.0, *)
 class NativeTabBarView: NSObject, FlutterPlatformView, UITabBarDelegate {
     private let channel: FlutterMethodChannel
-    private let container: UIView
+    private let container: TabBarContainerView
     private var tabBar: UITabBar?
     private var tabBarLeft: UITabBar?
     private var tabBarRight: UITabBar?
@@ -55,7 +55,7 @@ class NativeTabBarView: NSObject, FlutterPlatformView, UITabBarDelegate {
     ) {
         channel = FlutterMethodChannel(
             name: "cupertino_widgets/tabbar_\(viewId)", binaryMessenger: messenger)
-        container = UIView(frame: frame)
+        container = TabBarContainerView(frame: frame)
 
         var labels: [String] = []
         var symbols: [String] = []
@@ -99,9 +99,62 @@ class NativeTabBarView: NSObject, FlutterPlatformView, UITabBarDelegate {
         channel.setMethodCallHandler { [weak self] call, result in
             self?.handle(call, result: result)
         }
+        container.onLayout = { [weak self] in self?.reportPlatters() }
     }
 
     func view() -> UIView { container }
+
+    /// The glass pills the bars draw, in the view's points, as last reported.
+    private var sentPlatters: [CGRect] = []
+
+    /// Tells Dart where each bar's glass pill is — the bar's frame holds more
+    /// than the pill (the full width, the space under it) — so the scroll edge
+    /// effect cuts its wash out under the pill alone. After the bars' own
+    /// layout, which follows the container's in the same pass.
+    private func reportPlatters() {
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            let rects = [self.tabBar, self.tabBarLeft, self.tabBarRight]
+                .compactMap { $0 }
+                .compactMap { self.platterRect(in: $0) }
+            guard rects != self.sentPlatters else { return }
+            self.sentPlatters = rects
+            self.channel.invokeMethod(
+                "platters",
+                arguments: rects.flatMap {
+                    [Double($0.minX), Double($0.minY), Double($0.width), Double($0.height)]
+                })
+        }
+    }
+
+    /// The bar's glass pill: its platter view, or else its buttons with the
+    /// platter's padding around them.
+    private func platterRect(in bar: UITabBar) -> CGRect? {
+        if let platter = Self.firstSubview(of: bar, named: "Platter") {
+            return platter.convert(platter.bounds, to: container)
+        }
+        let buttons = Self.subviews(of: bar, named: "TabBarButton")
+        guard let first = buttons.first else { return nil }
+        let union = buttons.dropFirst().reduce(first.convert(first.bounds, to: container)) {
+            $0.union($1.convert($1.bounds, to: container))
+        }
+        return union.insetBy(dx: -4, dy: -4)
+    }
+
+    private static func firstSubview(of view: UIView, named part: String) -> UIView? {
+        for subview in view.subviews {
+            if NSStringFromClass(type(of: subview)).contains(part) { return subview }
+            if let found = firstSubview(of: subview, named: part) { return found }
+        }
+        return nil
+    }
+
+    private static func subviews(of view: UIView, named part: String) -> [UIView] {
+        view.subviews.flatMap { subview -> [UIView] in
+            NSStringFromClass(type(of: subview)).contains(part)
+                ? [subview] : subviews(of: subview, named: part)
+        }
+    }
 
     /// The view and everything in it: the bar's glass lives a few levels down.
     private static func markNeedsLayout(_ view: UIView) {
@@ -385,5 +438,17 @@ class NativeTabBarView: NSObject, FlutterPlatformView, UITabBarDelegate {
             channel.invokeMethod("valueChanged", arguments: ["index": leftItems.count + idx])
             return
         }
+    }
+}
+
+/// The tab bar's root view: reports its layout, so the bars' pills can be
+/// re-measured whenever they may have moved.
+@available(iOS 15.0, *)
+final class TabBarContainerView: UIView {
+    var onLayout: (() -> Void)?
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        onLayout?()
     }
 }

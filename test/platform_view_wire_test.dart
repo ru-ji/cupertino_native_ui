@@ -517,6 +517,28 @@ void main() {
     expect(params['isDark'], false);
   }, variant: iOS);
 
+  // `.hard` is native too, so its blur reaches native views as it does
+  // Flutter content: one even blur under the page colour at 91%.
+  testWidgets('scroll edge effect hard is an even blur under a flat wash', (
+    tester,
+  ) async {
+    final params = await paramsOf(
+      tester,
+      const CupertinoPageScaffold(
+        backgroundColor: green,
+        child: CupertinoScrollEdgeEffect(
+          edge: CupertinoScrollEdgeEffectEdge.bottom,
+          style: CupertinoScrollEdgeEffectStyle.hard,
+        ),
+      ),
+    );
+    expect(params['hard'], true);
+    expect(params['sigma'], 3.0);
+    expect(params['adaptive'], false);
+    expect(params['tint'], green.withValues(alpha: 0.91).toARGB32());
+    expect(params['holes'], isEmpty);
+  }, variant: iOS);
+
   testWidgets('scroll edge effect does not blur the bottom edge', (
     tester,
   ) async {

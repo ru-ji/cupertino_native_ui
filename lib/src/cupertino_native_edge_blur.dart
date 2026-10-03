@@ -29,6 +29,7 @@ class CupertinoNativeEdgeBlur extends StatefulWidget {
     this.intensity = 1,
     this.radiusScale = 1,
     this.onBrightnessChanged,
+    this.hard = false,
     this.debugPaintRect = false,
   }) : assert(sigma >= 0),
        assert(intensity >= 0 && intensity <= 1);
@@ -59,6 +60,11 @@ class CupertinoNativeEdgeBlur extends StatefulWidget {
   /// it works with a fixed [tint] too. Before the first measurement the app
   /// theme stands in.
   final ValueChanged<Brightness>? onBrightnessChanged;
+
+  /// One even blur at [sigma] over the whole view, under a flat [tint] that
+  /// ends in a hard line — the `.hard` scroll edge effect. No ramp, no
+  /// adaptation, nothing cut out of it.
+  final bool hard;
 
   /// Outlines the native view in red: geometry and z-order check.
   final bool debugPaintRect;
@@ -109,7 +115,9 @@ class _CupertinoNativeEdgeBlurState extends State<CupertinoNativeEdgeBlur> {
 
   Map<String, Object?> _params(double span, bool isDark) => {
     'edge': widget.edge.name,
-    'sigma': (span * (1 - 0.41) * 0.4 / 3).clamp(0.0, widget.sigma),
+    'sigma': widget.hard
+        ? widget.sigma
+        : (span * (1 - 0.41) * 0.4 / 3).clamp(0.0, widget.sigma),
     'tint': nativeArgb(widget.tint, isDark: isDark),
     'adaptive': widget.adaptiveTint,
     'tracksLuma': widget.onBrightnessChanged != null,
@@ -119,7 +127,8 @@ class _CupertinoNativeEdgeBlurState extends State<CupertinoNativeEdgeBlur> {
     'isDark': isDark,
     'debug': widget.debugPaintRect,
     // Replaced only when they change, so the identity check in [_push] holds.
-    'holes': _holes?.rects ?? const <double>[],
+    'holes': widget.hard ? const <double>[] : _holes?.rects ?? const <double>[],
+    'hard': widget.hard,
   };
 
   void _push(Map<String, Object?> params) {

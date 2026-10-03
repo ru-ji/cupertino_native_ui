@@ -35,13 +35,10 @@ class BarHoles extends ChangeNotifier {
         if (!item.attached || !item.hasSize || !_holdsNativeView(item)) {
           continue;
         }
-        final topLeft = item.localToGlobal(Offset.zero) - at;
-        next.addAll([
-          topLeft.dx,
-          topLeft.dy,
-          item.size.width,
-          item.size.height,
-        ]);
+        for (final rect in item.rects ?? [Offset.zero & item.size]) {
+          final topLeft = item.localToGlobal(rect.topLeft) - at;
+          next.addAll([topLeft.dx, topLeft.dy, rect.width, rect.height]);
+        }
       }
       if (listEquals(next, rects)) return;
       rects = next;
@@ -81,15 +78,22 @@ class BarHolesScope extends InheritedWidget {
 
 /// One bar item: reports where it sits whenever it paints or goes away.
 class BarHole extends SingleChildRenderObjectWidget {
-  const BarHole({super.key, required super.child});
+  const BarHole({super.key, this.rects, required super.child});
+
+  /// The glass inside the item, in its own coordinates, when it is not the
+  /// whole item — a tab bar's pills inside the bar's wider frame. Empty cuts
+  /// nothing. Null: the item's box.
+  final List<Rect>? rects;
 
   @override
   RenderObject createRenderObject(BuildContext context) =>
-      RenderBarHole(BarHolesScope.maybeOf(context));
+      RenderBarHole(BarHolesScope.maybeOf(context))..rects = rects;
 
   @override
   void updateRenderObject(BuildContext context, RenderBarHole renderObject) {
-    renderObject.holes = BarHolesScope.maybeOf(context);
+    renderObject
+      ..holes = BarHolesScope.maybeOf(context)
+      ..rects = rects;
   }
 }
 
@@ -98,6 +102,16 @@ class RenderBarHole extends RenderProxyBox {
   RenderBarHole(this._holes);
 
   BarHoles? _holes;
+
+  /// See [BarHole.rects].
+  List<Rect>? get rects => _rects;
+  List<Rect>? _rects;
+  set rects(List<Rect>? value) {
+    if (listEquals(value, _rects)) return;
+    _rects = value;
+    _holes?._dirty();
+  }
+
   set holes(BarHoles? value) {
     if (value == _holes) return;
     _holes?._items.remove(this);

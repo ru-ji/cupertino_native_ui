@@ -41,6 +41,20 @@ void main() {
                   ),
                 ),
               ),
+              // A wide native item whose glass is only part of it — a tab
+              // bar's pill inside its frame: the pill is cut, not the frame.
+              const Positioned(
+                left: 0,
+                top: 60,
+                child: BarHole(
+                  rects: [Rect.fromLTWH(40, 4, 200, 50)],
+                  child: SizedBox(
+                    width: 300,
+                    height: 80,
+                    child: UiKitView(viewType: 'tabbar'),
+                  ),
+                ),
+              ),
               // Flutter-drawn: keeps the wash behind it.
               const Positioned(
                 left: 100,
@@ -53,6 +67,6 @@ void main() {
       ),
     );
     await tester.pump();
-    expect(holes.rects, [10.0, 5.0, 44.0, 44.0]);
+    expect(holes.rects, [10.0, 5.0, 44.0, 44.0, 40.0, 44.0, 200.0, 50.0]);
   }, variant: TargetPlatformVariant.only(TargetPlatform.iOS));
 }

@@ -85,6 +85,9 @@ struct EdgeBlurConfig {
     /// 0…1: scales the blur radius and the washes together.
     var intensity: CGFloat
     var debugPaintRect: Bool
+    /// The `.hard` style: one even blur over the whole view under a flat
+    /// tint, ending in a hard line — no ramp, no adaptation, no holes.
+    var hard: Bool
     /// A bar's native items, in this view's points: the wash is cut out under
     /// each as a capsule, so their glass sees the content and not the wash.
     var holes: [CGRect]
@@ -100,6 +103,7 @@ struct EdgeBlurConfig {
         isDark = map["isDark"] as? Bool ?? false
         intensity = CGFloat(min(max(map["intensity"] as? Double ?? 1, 0), 1))
         debugPaintRect = map["debug"] as? Bool ?? false
+        hard = map["hard"] as? Bool ?? false
         let runs = (map["holes"] as? [NSNumber])?.map { CGFloat($0.doubleValue) } ?? []
         holes = stride(from: 0, to: runs.count - 3, by: 4).map {
             CGRect(x: runs[$0], y: runs[$0 + 1], width: runs[$0 + 2], height: runs[$0 + 3])
@@ -254,7 +258,8 @@ final class EdgeBlurView: UIView {
     func apply(_ newConfig: EdgeBlurConfig) {
         config = newConfig
         blur.configure(
-            sigma: config.sigma * config.radiusScale * config.intensity, bottom: config.bottom)
+            sigma: config.sigma * config.radiusScale * config.intensity, bottom: config.bottom,
+            uniform: config.hard)
         CATransaction.begin()
         CATransaction.setDisableActions(true)
         washLayer.opacity = Float(config.intensity)
@@ -362,6 +367,8 @@ final class EdgeBlurView: UIView {
         darkWash.backgroundColor = UIColor.black.cgColor
         fixedWash.backgroundColor = UIColor(red: red, green: green, blue: blue, alpha: alpha).cgColor
         fixedWash.isHidden = adaptive || config.tint == nil
+        // `.hard`'s tint is flat to its edge: the profile does not shape it.
+        fixedWash.mask = config.hard ? nil : fixedMask
         lightWash.isHidden = !adaptive
         darkWash.isHidden = !adaptive
         if adaptive {
@@ -558,6 +565,7 @@ final class BackdropBlurView: UIView {
     /// Kept so the mask can be rebuilt once the real screen scale is known.
     private var sigma: CGFloat = 0
     private var bottom = false
+    private var uniform = false
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -580,9 +588,12 @@ final class BackdropBlurView: UIView {
         return type.perform(factory, with: "variableBlur")?.takeUnretainedValue() as? NSObject
     }
 
-    func configure(sigma: CGFloat, bottom: Bool) {
+    /// `uniform` blurs the whole layer at `sigma`, for `.hard`; otherwise the
+    /// radius ramps down from the edge.
+    func configure(sigma: CGFloat, bottom: Bool, uniform: Bool = false) {
         self.sigma = sigma
         self.bottom = bottom
+        self.uniform = uniform
         // No blur: no backdrop. A hidden backdrop layer is not captured, so
         // the wash alone costs no offscreen pass every frame.
         isHidden = sigma <= 0
@@ -591,7 +602,7 @@ final class BackdropBlurView: UIView {
             ?? (traitCollection.displayScale > 0 ? traitCollection.displayScale : UIScreen.main.scale)
         filter.setValue(max(sigma, 0), forKey: "inputRadius")
         filter.setValue(
-            Self.maskImage(sigmaPx: Double(sigma * scale), bottom: bottom),
+            Self.maskImage(sigmaPx: Double(sigma * scale), bottom: bottom, uniform: uniform),
             forKey: "inputMaskImage")
         // Renormalizes the kernel at the layer's bounds instead of averaging
         // in transparent black — no dark rim at the hugged edge.
@@ -619,18 +630,19 @@ final class BackdropBlurView: UIView {
     override func didMoveToWindow() {
         super.didMoveToWindow()
         // The mask's ramp depends on the pixel scale; rebuild it with the real one.
-        configure(sigma: sigma, bottom: bottom)
+        configure(sigma: sigma, bottom: bottom, uniform: uniform)
     }
 
     /// 1 × 1024, alpha = fraction of `inputRadius` at that row, on the
     /// blur curve and geometric ramp. Row 0 is the top of the layer.
-    private static func maskImage(sigmaPx: Double, bottom: Bool) -> CGImage? {
+    private static func maskImage(sigmaPx: Double, bottom: Bool, uniform: Bool) -> CGImage? {
         let height = 1024
         var pixels = [UInt8](repeating: 0, count: height * 4)
         for row in 0..<height {
             let fromTop = (Double(row) + 0.5) / Double(height)
             let t = bottom ? 1 - fromTop : fromTop
-            let fraction = EdgeBlurProfile.radiusFraction(EdgeBlurProfile.blur(t), sigmaPx: sigmaPx)
+            let fraction =
+                uniform ? 1 : EdgeBlurProfile.radiusFraction(EdgeBlurProfile.blur(t), sigmaPx: sigmaPx)
             let value = UInt8((min(max(fraction, 0), 1) * 255).rounded())
             // Premultiplied white: alpha and colour carry the same value.
             for channel in 0..<4 { pixels[row * 4 + channel] = value }
