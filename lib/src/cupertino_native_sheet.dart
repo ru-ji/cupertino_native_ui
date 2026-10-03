@@ -106,8 +106,6 @@ abstract final class CupertinoNativeSheet {
     CupertinoNativeBody? nativeBody,
     void Function(String id, Object? value)? onBodyEvent,
     CupertinoNativeScaffoldNavigationBar? navigationBar,
-    @Deprecated('Use navigationBar')
-    CupertinoNativeScaffoldNavigationBar? appBar,
     CupertinoNativeSheetSegmentedControl? bottom,
     List<CupertinoNativeSheetDetent> detents = const [
       CupertinoNativeSheetDetent.large,
@@ -123,8 +121,6 @@ abstract final class CupertinoNativeSheet {
     bool? showLoadingIndicator,
     bool? isDark,
     void Function(String actionId)? onToolbarAction,
-    @Deprecated('Use onToolbarAction')
-    void Function(String actionId)? onBarAction,
     ValueChanged<int>? onBottomChanged,
     ValueChanged<String>? onSearchChanged,
     ValueChanged<String>? onSearchSubmitted,
@@ -137,8 +133,7 @@ abstract final class CupertinoNativeSheet {
     );
     if (defaultTargetPlatform != TargetPlatform.iOS) return;
 
-    // ignore: deprecated_member_use_from_same_package
-    _onToolbarAction = onToolbarAction ?? onBarAction;
+    _onToolbarAction = onToolbarAction;
     _onBodyEvent = onBodyEvent;
     _onBottomChanged = onBottomChanged;
     _onSearchChanged = onSearchChanged;
@@ -153,7 +148,7 @@ abstract final class CupertinoNativeSheet {
       await _channel.invokeMethod<void>('showSheet', {
         'route': route,
         'nativeBody': nativeBody?.toMap(isDark: dark),
-        'navigationBar': (navigationBar ?? appBar)?.toMap(),
+        'navigationBar': navigationBar?.toMap(),
         'bottomSegments': bottom?.segments,
         'bottomSelectedIndex': bottom?.selectedIndex,
         'detents': detents.map((d) => d.name).toList(),

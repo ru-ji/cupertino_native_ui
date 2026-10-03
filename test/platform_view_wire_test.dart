@@ -8,14 +8,12 @@ import 'package:flutter_test/flutter_test.dart';
 
 /// Pins the **wire format** every `CupertinoNative*` widget sends to Swift.
 ///
-/// The Dart-facing parameter names were unified in 0.1.0 (`color` / `tint` /
-/// `accentColor` / `primaryColor` all became `activeColor`, `selection` became
-/// `value`, the five `glass*` parameters became `glass` + `glassTint`) while the
-/// method-channel keys deliberately did **not** change — the Swift side still
-/// reads the old spellings.
+/// The Dart parameter names and the method-channel keys differ in places
+/// (`activeColor` travels as `color` or `tint`, `value` as `selection`, `glass`
+/// + `glassTint` as the native glass keys).
 ///
-/// That combination is invisible to the compiler and to every other test: a
-/// wrong key here still analyzes, still passes unit tests, and simply produces
+/// That is invisible to the compiler and to every other test: a wrong key
+/// here still analyzes, still passes unit tests, and simply produces
 /// a widget that ignores the property on a real device. These tests decode the
 /// actual `creationParams` handed to `UiKitView` and assert the keys.
 ///

@@ -650,37 +650,6 @@ onSwipeAction: (rowId, actionId) {},
 | `onSwipeAction` | `CupertinoNativeListSwipeCallback?` | Called with the row's `id` and the `actionId` of the swipe button tapped. |
 | `onReorder` | `CupertinoNativeListReorderCallback?` | Called with the section and the old and new index, the new one as `List.insert` takes it after the removal. `CupertinoNativeList` only. |
 
-### Group
-
-Renders its children as **one** native view instead of Flutter's usual stack
-of alternating Flutter/platform-view layers — the way a hand-written SwiftUI
-form reads.
-
-```dart
-CupertinoNativeGroup(
-  child: Row(
-    children: [
-      const Text('Notifications'),
-      const Spacer(),
-      CupertinoNativeSwitch(value: on, onChanged: (v) => setState(() {})),
-    ],
-  ),
-)
-```
-
-| Parameter | Type | Description |
-| --- | --- | --- |
-| `child` | `Widget` | The content, transcribed into native views, not mounted — see below. |
-| `padding` | `EdgeInsets` | Room around the content. Default none. |
-| `width` / `height` | `double?` | Fixed size. Null hugs the content. |
-
-**The child is read, not mounted.** Only what the transcription accepts can go
-in — this package's own controls, `Text`, `Row`, `Column`, `Padding`,
-`SizedBox`, `Spacer` — and `CupertinoNativeFlutterView` for anything else,
-which costs an engine. An unsupported widget asserts with that list. For a
-settings-style form with the grouped card and rows already built, see
-[List](#list).
-
 ### Liquid Glass
 
 <img src="https://raw.githubusercontent.com/ru-ji/cupertino_widgets/main/doc/images/glass.jpg" width="320" alt="Liquid Glass" />
@@ -693,18 +662,16 @@ CupertinoNativeGlassContainer(
 )
 ```
 
-Content goes on the glass three ways, in increasing cost:
+Content goes on the glass two ways:
 
-* **`child`** — an ordinary Flutter widget, drawn by the engine you are
-  already in, over the glass and sizing it. No route, no registration, no
-  second isolate. This is the one you want.
+* **`child`** — an ordinary Flutter widget, laid out by the engine you are
+  already in and sizing the glass. Its plain `Text`s and still SF Symbols
+  (`CupertinoSymbolImage`, `CupertinoNativeSymbol` without an effect) are
+  drawn by SwiftUI *inside* the material, in the frames Flutter laid them out
+  in, so they adapt to what is behind the glass as native labels do — through
+  `Row`, `Column`, `Wrap`, `Padding`, `Align`, `Center`, `SizedBox`,
+  `Expanded` and `Flexible`. Anything else stays Flutter, over the glass.
 * **`icon`** — a native SF Symbol drawn by SwiftUI inside the material.
-* **`route`** — Flutter content hosted *inside* the glass in its own engine.
-  Only when the material has to treat the content as part of its own shape.
-
-`child` sits *over* the material rather than inside it, which is invisible for
-anything that isn't refracted by its own container — that is, almost
-everything.
 
 | Parameter | Type | Description |
 | --- | --- | --- |
@@ -714,9 +681,8 @@ everything.
 | `tint` | `Color?` | Colour mixed into the glass. |
 | `interactive` | `bool` | Shimmer and stretch under the finger. Default `false`. |
 | `onPressed` | `VoidCallback?` | Makes the glass a button. |
-| `child` | `Widget?` | Flutter drawn over the glass, sizing it. No engine. |
+| `child` | `Widget?` | Flutter content sizing the glass; its texts and symbols drawn by SwiftUI inside it. |
 | `icon` | `CupertinoNativeIcon?` | An SF Symbol drawn by SwiftUI inside the material. |
-| `route` | `String?` | Flutter content *inside* the glass, in its own engine, registered like a scaffold body. Prefer `child`. |
 | `padding` | `EdgeInsetsGeometry` | Room between the glass edge and `child`. Default none. |
 | `animateChanges` | `bool` | Let SwiftUI animate tint and variant changes. Default `false`. |
 | `width` / `height` | `double?` | Fixed size. Null hugs `child`. |
@@ -840,8 +806,8 @@ CupertinoNativeGlassGroup(
 Two glasses are drawn as one shape for either of two reasons, and they are
 separate questions: a `unionId` **states** it, and the container's spacing
 **infers** it — SwiftUI merges effects nearer to each other than the container's
-spacing, whatever their ids say. `spacing` used to answer both; `mergeDistance`
-sets the radius on its own:
+spacing, whatever their ids say. `spacing` sets the gap, `mergeDistance` the
+radius on its own:
 
 ```dart
 CupertinoNativeGlassGroup(
@@ -1274,8 +1240,8 @@ reports it produces are recognised as echoes and not forwarded to
 
 ### Embedding Flutter in SwiftUI
 
-Native surfaces (a scaffold body, a keyboard toolbar, a glass container's
-`route:`) host Flutter in a **separate engine**, and an engine is an isolate:
+Native surfaces (a scaffold body, a keyboard toolbar) host Flutter in a
+**separate engine**, and an engine is an isolate:
 a widget built in the host's heap is unreachable from it. That is why there is
 no `child:` there — only *names* cross. The pattern is **declare once, use
 anywhere**:
@@ -1292,7 +1258,6 @@ void main() {
 // The same object feeds every surface that hosts Flutter inside SwiftUI.
 CupertinoNativePageScaffold(body: editorBar.name);
 CupertinoNativeTextField(toolbarActions: [editorBar.island, CupertinoNativeButton(...)]);
-CupertinoNativeGlassContainer(route: editorBar.name);
 ```
 
 Three ways to put content in a native view, in increasing cost:

@@ -23,7 +23,6 @@ struct TabAccessoryConfig: Codable, Hashable {
 @available(iOS 15.0, *)
 struct TabItemConfig: Codable, Identifiable {
     let title: String
-    let systemImage: String?
     let icon: IconConfig?
     let id: String
     let role: String?
@@ -31,10 +30,6 @@ struct TabItemConfig: Codable, Identifiable {
     /// `.badge` on the tab: a count or short text; nil for none.
     let badge: String?
 
-    /// Resolved SF Symbol name: from [icon] if it's an SF Symbol, or from
-    /// legacy [systemImage].
-    var resolvedSymbolName: String? {
-        if let sf = icon?.sfSymbol { return sf }
-        return systemImage
-    }
+    /// The SF Symbol name of `icon`.
+    var resolvedSymbolName: String? { icon?.sfSymbol }
 }

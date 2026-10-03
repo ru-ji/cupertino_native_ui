@@ -226,11 +226,10 @@ class CupertinoNativeGlassGroup extends StatefulWidget {
   /// How close two glasses have to be before the container blends them,
   /// overriding [spacing].
   ///
-  /// These are two different questions and [spacing] used to answer both: the
-  /// gap is how far apart the items are laid out, the radius is how near they
+  /// The gap is how far apart the items are laid out, the radius how near they
   /// must be before the container merges them by proximity anyway. With one
-  /// number for both, the radius can never be set below the gap — so a union
-  /// cannot be tested on its own.
+  /// number for both, the radius could never be set below the gap — and a
+  /// union could not be tested on its own.
   ///
   /// Set it below the gap to make [CupertinoNativeGlassGroupItem.unionId] the
   /// only thing that unites two glasses. `null` — the default — inherits

@@ -21,10 +21,6 @@ struct GlassConfig: Codable, Equatable {
     /// content.
     let width: Double?
     let height: Double?
-    /// A scaffold-style body route. When set, the container hosts a Flutter
-    /// engine on that route as a SwiftUI view and applies `glassEffect` to
-    /// *it* — the content is inside the glass rather than stacked over it.
-    let route: String?
     /// Animate config changes on the SwiftUI side instead of snapping: Dart
     /// sends the target once and CoreAnimation interpolates, so a tint or a
     /// shape change costs one message rather than one per frame.

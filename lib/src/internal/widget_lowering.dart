@@ -368,8 +368,8 @@ List<CupertinoNativeBody> lowerWidgetChildren(
 }
 
 /// A liquid glass container, transcribed to a native `glass` node: its
-/// [CupertinoNativeGlassContainer.icon] becomes a symbol, its `route` a
-/// Flutter island, and its `child` is lowered in place — so a container
+/// [CupertinoNativeGlassContainer.icon] becomes a symbol and its `child` is
+/// lowered in place — so a container
 /// inside a container works at any depth. A `onPressed` makes the glass
 /// itself a button, reporting `(id, null)`.
 CupertinoNativeBody lowerGlassContainer(
@@ -390,9 +390,6 @@ CupertinoNativeBody lowerGlassContainer(
         color: icon.color,
       ),
     );
-  }
-  if (widget.route != null) {
-    children.add(CupertinoNativeBody.flutter(widget.route!));
   }
   if (widget.child != null) {
     final lowered = lowerWidgetNode(

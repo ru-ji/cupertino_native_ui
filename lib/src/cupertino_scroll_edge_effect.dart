@@ -27,6 +27,15 @@ enum CupertinoScrollEdgeEffectEdge { top, bottom }
 /// Flutter content. The app must set `FLTDisablePartialRepaint` in its
 /// `Info.plist`. Other platforms draw nothing for `soft`.
 ///
+/// It has no colour of its own: both styles take the background of the page
+/// showing under the effect — its [CupertinoPageScaffold]'s or [Scaffold]'s,
+/// else the theme's — as the system's do. A bar laid over pages that each
+/// have their own scaffold, a tab bar over its tabs, takes the visible one's.
+/// On [CupertinoColors.systemBackground] or
+/// [CupertinoColors.systemGroupedBackground] the `soft` wash follows the
+/// content; on any other colour it is fixed in that colour, as SwiftUI's is
+/// once a page has a `.background`.
+///
 /// Place it in a `Stack` behind a bar, sized to the region that should melt
 /// into the edge:
 ///
@@ -42,37 +51,14 @@ class CupertinoScrollEdgeEffect extends StatefulWidget {
     super.key,
     this.edge = CupertinoScrollEdgeEffectEdge.top,
     this.style = CupertinoScrollEdgeEffectStyle.soft,
-    @Deprecated(
-      'The effect takes the page background, as the system\'s does; it '
-      'cannot be tinted on its own.',
-    )
-    this.color,
-    this.intensity = 1,
     this.onBrightnessChanged,
-  }) : assert(intensity >= 0 && intensity <= 1);
+  });
 
   final CupertinoScrollEdgeEffectEdge edge;
 
   /// `soft` is the progressive blur plus wash; `hard` the page's background
   /// over a blur, ending in a hard cutoff. `automatic` is `soft`.
   final CupertinoScrollEdgeEffectStyle style;
-
-  /// Ignored. Both styles take the page's background — the [CupertinoPageScaffold]'s
-  /// or [Scaffold]'s of the page showing under the effect, else the theme's —
-  /// as the system's do, and offer no tint of their own. On the system
-  /// background a [CupertinoPageScaffold] starts from
-  /// ([CupertinoColors.systemBackground]) the `soft` wash follows the
-  /// content; on any other colour — the page's or the theme's — it is fixed
-  /// in that colour, as SwiftUI's is once a page has a `.background`.
-  ///
-  /// The page under the effect, not only the one around it: a bar laid over
-  /// pages that each have their own scaffold — a tab bar over its tabs —
-  /// takes the visible one's, as the system's effect, drawn by the visible
-  /// page's own scroll view, does.
-  final Color? color;
-
-  /// Kept for API stability: the iOS effect is always at full strength.
-  final double intensity;
 
   /// Called when the content behind the effect turns bright or dark — so
   /// chrome drawn over the effect can follow, as the system's bar items do:

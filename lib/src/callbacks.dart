@@ -42,9 +42,6 @@ typedef CupertinoNativeToolbarActionCallback = void Function(
   String actionId,
 );
 
-@Deprecated('Renamed CupertinoNativeToolbarActionCallback, after SwiftUI')
-typedef CupertinoNativeBarActionCallback = CupertinoNativeToolbarActionCallback;
-
 /// Reports the current native navigation stack, root route first. Used by
 /// `CupertinoNativePageScaffold.onRouteChanged`.
 typedef CupertinoNativeRouteChangedCallback = void Function(

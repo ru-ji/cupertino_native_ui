@@ -39,11 +39,6 @@ class CupertinoNativeContextMenu extends StatefulWidget {
     this.onAction,
     this.onOpenChanged,
     this.childInteractive = false,
-    @Deprecated(
-      'The system already blurs the app behind a context menu; this put a '
-      'second blur on top of it.',
-    )
-    this.blurBackground = false,
     this.previewCornerRadius = 0,
   });
 
@@ -64,11 +59,6 @@ class CupertinoNativeContextMenu extends StatefulWidget {
   /// Flutter side while the menu is up. Fires `false` the instant the
   /// dismissal starts, not when its animation ends.
   final ValueChanged<bool>? onOpenChanged;
-
-  /// Ignored. The system blurs the app behind the menu itself (about 10pt,
-  /// dimmed, the page slightly scaled down); this used to add a second blur
-  /// over it.
-  final bool blurBackground;
 
   /// Corner radius of [child], so the lifted preview keeps its shape. 0 for a
   /// square child.

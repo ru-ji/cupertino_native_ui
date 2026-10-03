@@ -1,7 +1,3 @@
-// The deprecated [CupertinoNativeTab.systemImage] has to keep working until
-// it is removed, so this file necessarily reads it.
-// ignore_for_file: deprecated_member_use_from_same_package
-
 import '../cupertino_native_scaffold_navigation_bar.dart';
 import 'cupertino_native_icon.dart';
 
@@ -16,18 +12,9 @@ enum CupertinoNativeTabRole {
 class CupertinoNativeTab {
   final String title;
 
-  /// Optional native icon for this tab. When provided, the icon is rendered
-  /// via [CupertinoNativeIcon] (SF Symbol or Flutter glyph). When null,
-  /// falls back to [systemImage] for backward compatibility.
+  /// The tab's icon: an SF Symbol, [CupertinoNativeIcon.symbol] or
+  /// [CupertinoNativeIcon.named].
   final CupertinoNativeIcon? icon;
-
-  /// Raw SF Symbol name string — kept for backward compatibility. Prefer
-  /// using [icon] with [CupertinoNativeIcon.symbol] or [CupertinoNativeIcon.named]
-  /// for consistency with bar items.
-  @Deprecated(
-    'Use icon: CupertinoNativeIcon.symbol(...) or .named(...) instead',
-  )
-  final String? systemImage;
 
   final String id;
   final CupertinoNativeTabRole? role;
@@ -46,23 +33,18 @@ class CupertinoNativeTab {
     required this.title,
     required this.id,
     this.icon,
-    @Deprecated(
-      'Use icon: CupertinoNativeIcon.symbol(...) or .named(...) instead',
-    )
-    this.systemImage,
     this.role,
     this.search,
     this.badge,
   });
 
-  /// Resolved SF Symbol name: from [icon], or from legacy [systemImage].
-  String? get resolvedSymbolName => icon?.sfSymbol ?? systemImage;
+  /// The SF Symbol name of [icon].
+  String? get resolvedSymbolName => icon?.sfSymbol;
 
   Map<String, dynamic> toMap({bool isDark = false}) {
     return {
       'title': title,
       'icon': icon?.toMap(isDark: isDark),
-      'systemImage': systemImage,
       'id': id,
       'role': role?.name,
       'search': search?.toMap(),
@@ -76,12 +58,11 @@ class CupertinoNativeTab {
     return other is CupertinoNativeTab &&
         other.title == title &&
         other.icon == icon &&
-        other.systemImage == systemImage &&
         other.id == id &&
         other.role == role &&
         other.badge == badge;
   }
 
   @override
-  int get hashCode => Object.hash(title, icon, systemImage, id, role, badge);
+  int get hashCode => Object.hash(title, icon, id, role, badge);
 }

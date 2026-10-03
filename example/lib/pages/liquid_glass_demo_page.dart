@@ -68,11 +68,9 @@ class _LiquidGlassDemoPageState extends State<LiquidGlassDemoPage> {
                           child: const _Backdrop(),
                         ),
                       ),
-                      // Glass card — its content is hosted INSIDE the glass by
-                      // `route`: SwiftUI applies `glassEffect` to the hosted Flutter
-                      // view, so the text is drawn above the material rather than
-                      // refracted through it. It is a live engine — state and
-                      // animations work in there as anywhere else.
+                      // Glass card — a Flutter child: laid out by Flutter, its
+                      // texts drawn by SwiftUI inside the glass, so they adapt
+                      // to what is behind it.
                       Center(
                         child: CupertinoNativeGlassContainer(
                           shape: CupertinoGlassShape.roundedRect,
@@ -85,7 +83,31 @@ class _LiquidGlassDemoPageState extends State<LiquidGlassDemoPage> {
                           animateChanges: true,
                           width: 260,
                           height: 116,
-                          route: 'glassCard',
+                          child: Padding(
+                            padding: const EdgeInsets.all(20),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Text(
+                                  'Liquid Glass',
+                                  style: TextStyle(
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Native refraction · Flutter layout',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: CupertinoColors.secondaryLabel
+                                        .resolveFrom(context),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
                       ),
                       // Glass capsule pinned to the bottom, like a mini player.
@@ -102,8 +124,16 @@ class _LiquidGlassDemoPageState extends State<LiquidGlassDemoPage> {
                           // one message, then CoreAnimation. Try the tint segments.
                           animateChanges: true,
                           height: 52,
-
-                          route: 'glassNowPlaying',
+                          child: const Align(
+                            alignment: Alignment.centerLeft,
+                            child: Padding(
+                              padding: EdgeInsets.symmetric(horizontal: 20),
+                              child: Text(
+                                'Now Playing — Deep Focus',
+                                style: TextStyle(fontSize: 17),
+                              ),
+                            ),
+                          ),
                         ),
                       ),
                       // A pressable glass circle — onPressed makes the container a

@@ -38,14 +38,10 @@ abstract final class CupertinoNativePopover {
     required Rect anchor,
     Size? preferredSize,
     CupertinoNativeScaffoldNavigationBar? navigationBar,
-    @Deprecated('Use navigationBar')
-    CupertinoNativeScaffoldNavigationBar? appBar,
     Color? backgroundColor,
     bool? showLoadingIndicator,
     bool? isDark,
     void Function(String actionId)? onToolbarAction,
-    @Deprecated('Use onToolbarAction')
-    void Function(String actionId)? onBarAction,
     ValueChanged<String>? onSearchChanged,
     ValueChanged<String>? onSearchSubmitted,
   }) {
@@ -53,11 +49,11 @@ abstract final class CupertinoNativePopover {
       route: route,
       anchor: anchor,
       preferredSize: preferredSize,
-      navigationBar: navigationBar ?? appBar,
+      navigationBar: navigationBar,
       backgroundColor: backgroundColor,
       showLoadingIndicator: showLoadingIndicator,
       isDark: isDark,
-      onToolbarAction: onToolbarAction ?? onBarAction,
+      onToolbarAction: onToolbarAction,
       onSearchChanged: onSearchChanged,
       onSearchSubmitted: onSearchSubmitted,
     );

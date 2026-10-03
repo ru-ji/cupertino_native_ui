@@ -94,9 +94,8 @@ class _CupertinoNativeSwitchState extends State<CupertinoNativeSwitch>
     if (defaultTargetPlatform == TargetPlatform.iOS) {
       final platformView = wrapForTransition(
         UiKitView(
-          // Must match FlutterCupertinoPlugin.swift's registration. The widget
-          // was renamed Toggle -> Switch on the Dart side only; this id is the
-          // native contract and deliberately keeps the old spelling.
+          // Must match FlutterCupertinoPlugin.swift's registration: the native
+          // side names it after SwiftUI's Toggle.
           viewType: 'com.example.cupertino_widgets/cupertino_native_toggle',
           layoutDirection: TextDirection.ltr,
           creationParams: _toMap(),

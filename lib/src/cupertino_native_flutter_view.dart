@@ -21,11 +21,10 @@ import 'package:flutter/widgets.dart';
 ///
 /// // Used anywhere Flutter is hosted inside SwiftUI.
 /// CupertinoNativeTextField(toolbarActions: [editorBar.island]);
-/// CupertinoNativeGlassContainer(route: editorBar.name);
 /// CupertinoNativeBody.column(children: [editorBar.island]);
 /// ```
 ///
-/// The raw-string constructor stays for routes declared elsewhere.
+/// A raw route name works too, for routes declared elsewhere.
 ///
 /// **This is the expensive item.** One view is one isolate, booted the first
 /// time it appears and kept for the process's lifetime. A row of

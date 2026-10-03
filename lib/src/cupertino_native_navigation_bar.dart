@@ -58,11 +58,6 @@ class CupertinoNativeSliverNavigationBar extends StatefulWidget {
     this.bottom,
     this.bottomHeight = 44,
     this.scrollEdgeEffect = CupertinoScrollEdgeEffectStyle.soft,
-    @Deprecated(
-      'The edge effect takes the page background, as the system\'s does; it '
-      'cannot be tinted on its own.',
-    )
-    this.tintColor,
   }) : searchPlaceholder = null,
        searchStyle = null,
        searchPrefixIcon = null,
@@ -100,11 +95,6 @@ class CupertinoNativeSliverNavigationBar extends StatefulWidget {
     this.onSearchChanged,
     this.onSearchActiveChanged,
     this.scrollEdgeEffect = CupertinoScrollEdgeEffectStyle.soft,
-    @Deprecated(
-      'The edge effect takes the page background, as the system\'s does; it '
-      'cannot be tinted on its own.',
-    )
-    this.tintColor,
   }) : bottom = null,
        bottomHeight = searchFieldHeight,
        _searchable = true;
@@ -197,10 +187,6 @@ class CupertinoNativeSliverNavigationBar extends StatefulWidget {
   final bool _searchable;
 
   final CupertinoScrollEdgeEffectStyle scrollEdgeEffect;
-
-  /// Ignored: the edge effect takes the page background, as the system's
-  /// does.
-  final Color? tintColor;
 
   @override
   State<CupertinoNativeSliverNavigationBar> createState() =>
@@ -639,7 +625,6 @@ class _CupertinoSliverAppBarState
                 child: CupertinoScrollEdgeEffect(
                   edge: CupertinoScrollEdgeEffectEdge.top,
                   style: widget.scrollEdgeEffect,
-                  intensity: _titleT.value,
                   onBrightnessChanged: (behind) {
                     if (mounted && behind != _effectBehind) {
                       setState(() => _effectBehind = behind);
@@ -1278,11 +1263,6 @@ class CupertinoNativeNavigationBar extends StatelessWidget {
     this.automaticallyImplyLeading = true,
     this.trailing = const [],
     this.scrollEdgeEffect = CupertinoScrollEdgeEffectStyle.soft,
-    @Deprecated(
-      'The edge effect takes the page background, as the system\'s does; it '
-      'cannot be tinted on its own.',
-    )
-    this.tintColor,
   });
 
   final String title;
@@ -1294,9 +1274,6 @@ class CupertinoNativeNavigationBar extends StatelessWidget {
   final bool automaticallyImplyLeading;
   final List<Widget> trailing;
   final CupertinoScrollEdgeEffectStyle scrollEdgeEffect;
-
-  /// See [CupertinoNativeSliverNavigationBar.tintColor].
-  final Color? tintColor;
 
   @override
   Widget build(BuildContext context) {

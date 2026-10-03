@@ -157,9 +157,6 @@ class CupertinoNativeToolbarItemGroup extends CupertinoNativeToolbarContent {
   }
 }
 
-@Deprecated('Use CupertinoNativeToolbarItem')
-typedef CupertinoNativeAppBarAction = CupertinoNativeToolbarItem;
-
 /// A gap between bar entries — SwiftUI's `ToolbarSpacer` (iOS 26).
 ///
 /// The toolbar draws one shared glass capsule behind its items; a spacer
@@ -191,12 +188,3 @@ class CupertinoNativeToolbarSpacer extends CupertinoNativeToolbarContent {
   @override
   int get hashCode => flexible.hashCode;
 }
-
-@Deprecated('Renamed CupertinoNativeToolbarContent, after SwiftUI')
-typedef CupertinoNativeBarEntry = CupertinoNativeToolbarContent;
-@Deprecated('Renamed CupertinoNativeToolbarItem, after SwiftUI')
-typedef CupertinoNativeBarItem = CupertinoNativeToolbarItem;
-@Deprecated('Renamed CupertinoNativeToolbarItemGroup, after SwiftUI')
-typedef CupertinoNativeBarItemGroup = CupertinoNativeToolbarItemGroup;
-@Deprecated('Renamed CupertinoNativeToolbarSpacer, after SwiftUI')
-typedef CupertinoNativeBarSpacer = CupertinoNativeToolbarSpacer;

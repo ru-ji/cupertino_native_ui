@@ -681,10 +681,7 @@ struct BodyGlassView: View {
     @available(iOS 26.0, *)
     private var glassed: some View {
         row
-            // `none` is the group case: the machinery without the material, so
-            // a tree can be transcribed into one platform view without wearing
-            // glass it never asked for. Anything else gets the effect.
-            .applyGlassEffect(config.variant == "none" ? nil : glass, in: shape)
+            .applyGlassEffect(glass, in: shape)
             .contentShape(shape)
             .onTapGesture {
                 if config.pressable == true, let nodeId { onEvent(nodeId, nil) }

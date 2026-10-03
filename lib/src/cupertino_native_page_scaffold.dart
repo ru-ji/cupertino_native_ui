@@ -120,8 +120,6 @@ class CupertinoNativePageScaffold extends StatefulWidget {
   /// A toolbar item was tapped: its page's route and its `actionId`.
   final CupertinoNativeToolbarActionCallback? onToolbarAction;
 
-  @Deprecated('Use onToolbarAction')
-  final CupertinoNativeToolbarActionCallback? onBarAction;
   final ValueChanged<String>? onTabChanged;
 
   /// iOS 26 scroll edge effect style for the native scroll views.
@@ -181,7 +179,6 @@ class CupertinoNativePageScaffold extends StatefulWidget {
     this.tabBar,
     this.controller,
     this.onToolbarAction,
-    @Deprecated('Use onToolbarAction') this.onBarAction,
     this.onTabChanged,
     this.scrollEdgeEffect = CupertinoScrollEdgeEffectStyle.automatic,
     this.backgroundColor,
@@ -692,8 +689,7 @@ class _CupertinoNativeScaffoldState extends State<CupertinoNativePageScaffold>
         if (id == _autoBackActionId) {
           Navigator.maybePop(context);
         } else if (route != null && id != null) {
-          // ignore: deprecated_member_use_from_same_package
-          (widget.onToolbarAction ?? widget.onBarAction)?.call(route, id);
+          widget.onToolbarAction?.call(route, id);
         }
         break;
       case 'onBodyAction':

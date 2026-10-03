@@ -128,21 +128,6 @@ void main() {
       });
     });
 
-    test('the old Bar… names are the new types', () {
-      expect(
-        const CupertinoNativeBarItem(actionId: 'a', title: 'A'),
-        isA<CupertinoNativeToolbarItem>(),
-      );
-      expect(
-        const CupertinoNativeBarItemGroup(items: []),
-        isA<CupertinoNativeToolbarItemGroup>(),
-      );
-      expect(
-        const CupertinoNativeBarSpacer(),
-        isA<CupertinoNativeToolbarSpacer>(),
-      );
-    });
-
     test('navigation bar sends overflow and minimize behaviour', () {
       final map = const CupertinoNativeScaffoldNavigationBar(
         title: 'T',
@@ -700,32 +685,6 @@ void main() {
       expect((args['nativeBody'] as Map)['type'], 'toggle');
       expect((args['navigationBar'] as Map)['title'], 'T');
       expect(events, ['notify=true', 'action done']);
-    }, variant: iOS);
-
-    testWidgets('the deprecated appBar and onBarAction still work', (
-      tester,
-    ) async {
-      Map? args;
-      String? action;
-      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(alert, (
-        call,
-      ) async {
-        args = call.arguments as Map;
-        await fromNative(
-          tester,
-          'cupertino_widgets/sheet_events',
-          'toolbarAction',
-          'close',
-        );
-        return null;
-      });
-      await CupertinoNativeSheet.show(
-        route: 'details',
-        appBar: const CupertinoNativeScaffoldNavigationBar(title: 'Old'),
-        onBarAction: (id) => action = id,
-      );
-      expect((args!['navigationBar'] as Map)['title'], 'Old');
-      expect(action, 'close');
     }, variant: iOS);
 
     testWidgets('route and nativeBody are exclusive', (tester) async {
