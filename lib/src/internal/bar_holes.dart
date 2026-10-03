@@ -14,6 +14,13 @@ import 'package:flutter/widgets.dart';
 class BarHoles extends ChangeNotifier {
   final _items = <RenderBarHole>{};
   bool _scheduled = false;
+  bool _disposed = false;
+
+  @override
+  void dispose() {
+    _disposed = true;
+    super.dispose();
+  }
 
   /// The box the holes are measured in: the effect's.
   RenderBox? Function()? origin;
@@ -27,6 +34,8 @@ class BarHoles extends ChangeNotifier {
     _scheduled = true;
     SchedulerBinding.instance.addPostFrameCallback((_) {
       _scheduled = false;
+      // A bar leaving reports its items going after the bar itself is gone.
+      if (_disposed) return;
       final box = origin?.call();
       if (box == null || !box.attached || !box.hasSize) return;
       final at = box.localToGlobal(Offset.zero);

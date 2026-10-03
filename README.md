@@ -1478,8 +1478,13 @@ underneath.
 
 ### Scroll Edge Effect
 
-The iOS 26 blur and tint where content meets a screen edge. The navigation bars
-and the tab bar already include it.
+The iOS 26 blur and tint where content meets a screen edge, fitted to the
+system's. The navigation bars and the tab bar already include it.
+
+It has no colour of its own: it takes the background of the page under it.
+On `CupertinoColors.systemBackground` or `systemGroupedBackground` the `soft`
+wash follows the content; on any other colour it is fixed in that colour, as
+SwiftUI's is once a page has a `.background`.
 
 ```dart
 Stack(
@@ -1496,8 +1501,7 @@ Stack(
 | Parameter | Type | Description |
 | --- | --- | --- |
 | `edge` | `CupertinoScrollEdgeEffectEdge` | Which edge: `top` or `bottom`. Default `top`. |
-| `style` | `CupertinoScrollEdgeEffectStyle` | `soft` blurs, `hard` paints `color`, `automatic` lets the system choose. Default `soft`. |
-| `color` | `Color?` | Background of the `hard` style. |
+| `style` | `CupertinoScrollEdgeEffectStyle` | `soft`: a wash that follows the content, with a light progressive blur at the top. `hard`: the page colour over an even blur, ending in a hard line. `automatic` is `soft`. Default `soft`. |
 | `onBrightnessChanged` | `ValueChanged<Brightness>?` | Brightness of the content behind the effect, to adapt text over it. |
 
 ### Symbol Image

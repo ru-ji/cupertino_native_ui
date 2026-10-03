@@ -257,6 +257,9 @@ final class EdgeBlurView: UIView {
 
     func apply(_ newConfig: EdgeBlurConfig) {
         config = newConfig
+        // `.hard`'s tint is flat to its edge: the profile does not shape it.
+        // Set before the layout below, which sizes every mask.
+        fixedWash.mask = config.hard ? nil : fixedMask
         blur.configure(
             sigma: config.sigma * config.radiusScale * config.intensity, bottom: config.bottom,
             uniform: config.hard)
@@ -312,9 +315,11 @@ final class EdgeBlurView: UIView {
         CATransaction.setDisableActions(true)
         blur.frame = bounds
         washLayer.frame = bounds
-        for wash in [fixedWash, lightWash, darkWash] {
+        // Every mask, attached or not: one detached for `.hard` comes back
+        // at its new size.
+        for (wash, mask) in [(fixedWash, fixedMask), (lightWash, lightMask), (darkWash, darkMask)] {
             wash.frame = washLayer.bounds
-            wash.mask?.frame = wash.bounds
+            mask.frame = wash.bounds
         }
         applyHoles()
         let insets = window?.safeAreaInsets ?? .zero
@@ -367,8 +372,6 @@ final class EdgeBlurView: UIView {
         darkWash.backgroundColor = UIColor.black.cgColor
         fixedWash.backgroundColor = UIColor(red: red, green: green, blue: blue, alpha: alpha).cgColor
         fixedWash.isHidden = adaptive || config.tint == nil
-        // `.hard`'s tint is flat to its edge: the profile does not shape it.
-        fixedWash.mask = config.hard ? nil : fixedMask
         lightWash.isHidden = !adaptive
         darkWash.isHidden = !adaptive
         if adaptive {

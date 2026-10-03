@@ -295,6 +295,16 @@ class _CupertinoSliverAppBarState
   }
 
   @override
+  void didUpdateWidget(covariant CupertinoNativeSliverNavigationBar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // A measurement taken under one style says nothing under the next
+    // (`.hard` measures nothing at all).
+    if (oldWidget.scrollEdgeEffect != widget.scrollEdgeEffect) {
+      _effectBehind = null;
+    }
+  }
+
+  @override
   void dispose() {
     _detachScrollListeners();
     _searchRowVisibility.dispose();
@@ -1284,7 +1294,12 @@ class CupertinoNativeNavigationBar extends StatelessWidget {
         automaticallyImplyLeading: automaticallyImplyLeading,
       );
     }
-    return _EffectBrightness(builder: _buildBar);
+    // Keyed by style: a measurement taken under one style says nothing under
+    // the next (`.hard` measures nothing at all).
+    return _EffectBrightness(
+      key: ValueKey(scrollEdgeEffect),
+      builder: _buildBar,
+    );
   }
 
   Widget _buildBar(
@@ -1454,7 +1469,7 @@ class CupertinoNativeNavigationBar extends StatelessWidget {
 /// Holds what a bar's edge effect reports about the content behind it, for a
 /// bar that is otherwise stateless.
 class _EffectBrightness extends StatefulWidget {
-  const _EffectBrightness({required this.builder});
+  const _EffectBrightness({super.key, required this.builder});
 
   final Widget Function(
     BuildContext context,
