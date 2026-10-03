@@ -42,6 +42,8 @@ struct AdaptiveSystemListView: View {
             set: { picked = $0; onSelectionChanged(Array($0)) })
     }
 
+    private var editModeActive: Bool { config.editing == true || config.reorderable == true }
+
     var body: some View {
         // The selection only exists while editing. Not even an empty one
         // otherwise: any selection binding makes every cell selectable, so a
@@ -51,7 +53,10 @@ struct AdaptiveSystemListView: View {
                 Section {
                     ForEach(visibleRows(section.rows), id: \.id) { row in
                         rowView(row)
-                            .badge(row.badge.map { Text($0) })
+                            // A row with a chevron draws its badge before it,
+                            // as a NavigationLink's: the List puts `.badge`
+                            // after the row's content, chevron included.
+                            .badge(Self.hasChevron(row) ? nil : row.badge.map { Text($0) })
                             .modifier(SwipeActions(row: row, onAction: onSwipeAction))
                     }
                     .onMove(perform: config.reorderable == true ? { from, to in
@@ -74,8 +79,10 @@ struct AdaptiveSystemListView: View {
             }
         }
         .listStyle(.insetGrouped)
-        .environment(\.editMode, .constant(config.editing == true ? .active : .inactive))
-        .animation(.default, value: config.editing)
+        // Either state is the List's edit mode; which accessories it shows
+        // follows from the selection binding and `.onMove` above.
+        .environment(\.editMode, .constant(editModeActive ? .active : .inactive))
+        .animation(.default, value: editModeActive)
         .onChange(of: config.selection ?? []) { _ in picked = nil }
         .applyNoScroll()
         .applyClearBackground()
@@ -128,6 +135,7 @@ struct AdaptiveSystemListView: View {
                 HStack {
                     label(row)
                     Spacer()
+                    if let badge = row.badge { Text(badge).foregroundStyle(.secondary) }
                     Image(systemName: "chevron.forward")
                         .font(.footnote.weight(.semibold))
                         .foregroundStyle(.tint)
@@ -175,8 +183,14 @@ struct AdaptiveSystemListView: View {
                         .font(.body.weight(.semibold)).foregroundStyle(.tint)
                 }
                 if row.showChevron ?? false {
+                    if let badge = row.badge { Text(badge).foregroundStyle(.secondary) }
+                    // Settings' disclosure indicator, measured on iOS 26 at
+                    // @3x: a 7 x 12pt glyph, 13.7pt after a value or badge,
+                    // its right edge 22pt inside the card.
                     Image(systemName: "chevron.forward")
-                        .font(.footnote.weight(.semibold)).foregroundStyle(.tertiary)
+                        .font(.body.weight(.semibold)).imageScale(.small)
+                        .foregroundStyle(.tertiary)
+                        .padding(.leading, 2).padding(.trailing, 1.7)
                 }
             }
             // A Button only when Dart listens: otherwise the cell would flash
@@ -191,6 +205,13 @@ struct AdaptiveSystemListView: View {
                     .opacity(row.enabled ?? true ? 1 : 0.4)
             }
         }
+    }
+
+    /// The rows `rowView` ends with a chevron: expandable ones, and plain ones
+    /// that ask for it.
+    private static func hasChevron(_ row: ListRowConfig) -> Bool {
+        if let children = row.children, !children.isEmpty { return true }
+        return row.type != "toggle" && row.trailing == nil && (row.showChevron ?? false)
     }
 
     /// The Flutter box's height animation, which the close waits out.

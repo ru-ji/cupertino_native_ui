@@ -228,6 +228,7 @@ class _NativeListDemoPageState extends State<NativeListDemoPage> {
                 ),
                 CupertinoNativeList(
                   editing: _editing,
+                  reorderable: _editing,
                   selection: _picked,
                   onSelectionChanged: (ids) => setState(() => _picked = ids),
                   onReorder: (_, from, to) => setState(

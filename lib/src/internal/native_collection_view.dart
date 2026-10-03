@@ -46,6 +46,7 @@ class NativeCollectionView extends StatefulWidget {
   final Set<String> selection;
   final ValueChanged<Set<String>>? onSelectionChanged;
   final CupertinoNativeListSwipeCallback? onSwipeAction;
+  final bool reorderable;
   final CupertinoNativeListReorderCallback? onReorder;
 
   const NativeCollectionView({
@@ -63,6 +64,7 @@ class NativeCollectionView extends StatefulWidget {
     this.selection = const {},
     this.onSelectionChanged,
     this.onSwipeAction,
+    this.reorderable = false,
     this.onReorder,
   });
 
@@ -101,7 +103,7 @@ class _NativeCollectionViewState extends State<NativeCollectionView>
       'sections': widget.sections.map(_sectionMap).toList(),
       'editing': widget.editing,
       'selection': widget.selection.toList(),
-      'reorderable': widget.onReorder != null,
+      'reorderable': widget.reorderable,
     };
   }
 

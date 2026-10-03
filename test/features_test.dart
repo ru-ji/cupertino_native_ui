@@ -255,6 +255,7 @@ void main() {
         CupertinoNativeList(
           editing: true,
           selection: const {'b'},
+          reorderable: true,
           onReorder: (_, _, _) {},
           sections: const [
             CupertinoNativeListSection(
@@ -294,14 +295,27 @@ void main() {
       expect(((child['children'] as List).single as Map)['id'], 'c');
     }, variant: iOS);
 
-    testWidgets('without onReorder the rows are not reorderable', (
-      tester,
-    ) async {
+    testWidgets('neither edit state is on by default', (tester) async {
       final params = await paramsOf(
         tester,
         const CupertinoNativeList(sections: []),
       );
       expect(params['reorderable'], isFalse);
+      expect(params['editing'], isFalse);
+    }, variant: iOS);
+
+    testWidgets('reorderable is its own state, apart from editing', (
+      tester,
+    ) async {
+      final params = await paramsOf(
+        tester,
+        CupertinoNativeList(
+          reorderable: true,
+          onReorder: (_, _, _) {},
+          sections: const [],
+        ),
+      );
+      expect(params['reorderable'], isTrue);
       expect(params['editing'], isFalse);
     }, variant: iOS);
 

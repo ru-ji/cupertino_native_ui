@@ -60,7 +60,8 @@ class CupertinoNativeList extends StatelessWidget {
 
   /// Edit mode: the system slides a selection circle in at each row's leading
   /// edge (SwiftUI `List(selection:)` + `editMode`). Drive it from your own
-  /// Edit / Done button.
+  /// Edit / Done button. Independent of [reorderable]: set both for circles
+  /// and handles together.
   final bool editing;
 
   /// Ids of the rows checked in edit mode. Controlled: echo what
@@ -73,7 +74,11 @@ class CupertinoNativeList extends StatelessWidget {
   /// Called when the user picks a row's swipe action.
   final CupertinoNativeListSwipeCallback? onSwipeAction;
 
-  /// Makes rows draggable in [editing] mode (the system reorder handles).
+  /// Shows the system reorder handles at each row's trailing edge, so rows
+  /// can be dragged within their section. Independent of [editing].
+  final bool reorderable;
+
+  /// Called when a row is dropped at a new place while [reorderable].
   /// Reorder your own data here and rebuild.
   final CupertinoNativeListReorderCallback? onReorder;
 
@@ -91,6 +96,7 @@ class CupertinoNativeList extends StatelessWidget {
     this.selection = const {},
     this.onSelectionChanged,
     this.onSwipeAction,
+    this.reorderable = false,
     this.onReorder,
   }) : _itemCount = null,
        _itemBuilder = null,
@@ -133,6 +139,7 @@ class CupertinoNativeList extends StatelessWidget {
     this.selection = const {},
     this.onSelectionChanged,
     this.onSwipeAction,
+    this.reorderable = false,
     this.onReorder,
   }) : sections = const [],
        _itemCount = itemCount,
@@ -176,6 +183,7 @@ class CupertinoNativeList extends StatelessWidget {
       selection: selection,
       onSelectionChanged: onSelectionChanged,
       onSwipeAction: onSwipeAction,
+      reorderable: reorderable,
       onReorder: onReorder,
     );
   }

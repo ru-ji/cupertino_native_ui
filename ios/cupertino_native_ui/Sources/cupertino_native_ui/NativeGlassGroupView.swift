@@ -396,7 +396,7 @@ struct AdaptiveGlassGroupView: View {
     /// It also settles the union on its own: a union's frame is the whole
     /// group's bounding box, and this fills it, where a `Circle` would be
     /// *inscribed* in it and collapse to one item's worth of glass in the
-    /// middle. Measured, not reasoned: see docs/glass-transitions.md.
+    /// middle. Measured, not reasoned: see doc/glass-transitions.md.
     @available(iOS 26.0, *)
     private func shape(for item: GlassGroupItemConfig, morph: CGFloat) -> AnyShape {
         if !sharesOneGlass, item.shape == "roundedRect" {

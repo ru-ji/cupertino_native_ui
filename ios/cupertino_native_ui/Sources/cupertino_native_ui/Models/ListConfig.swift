@@ -72,6 +72,7 @@ struct ListConfig: Codable {
     let editing: Bool?
     /// Ids of the rows checked in edit mode.
     let selection: [String]?
-    /// Rows get the system reorder handles in edit mode (`.onMove`).
+    /// Rows get the system reorder handles (`.onMove`), with or without
+    /// `editing`'s selection circles.
     let reorderable: Bool?
 }

@@ -361,6 +361,8 @@ CupertinoNativeTextField(
 `toolbarActions` fills the bar above the keyboard while this field is focused:
 the row of actions Notes and Numbers put there.
 
+<img src="https://raw.githubusercontent.com/ru-ji/cupertino_native_ui/main/doc/images/keyboard_toolbar.jpg" width="320" alt="Keyboard toolbar" />
+
 ```dart
 CupertinoNativeTextField(
   toolbarActions: [
@@ -596,15 +598,18 @@ CupertinoNativeList(
 )
 ```
 
-**Edit mode.** `editing: true` slides the system selection circles in at each
-row's leading edge. Selection is controlled: echo `onSelectionChanged` back into
-`selection`. With `onReorder` set, rows also get the drag handles.
+**Selecting and reordering.** Two separate states, set one or both.
+`editing: true` slides the system selection circles in at each row's leading
+edge; selection is controlled, so echo `onSelectionChanged` back into
+`selection`. `reorderable: true` shows the drag handles at the trailing edge;
+a row moves within its own section, and `onReorder` reports where it landed.
 
 ```dart
 CupertinoNativeList(
   editing: _editing, // toggled by your own Edit / Done button
   selection: _picked,
   onSelectionChanged: (ids) => setState(() => _picked = ids),
+  reorderable: _editing, // both at once here; either alone works too
   onReorder: (section, from, to) => setState(() {
     _rows.insert(to, _rows.removeAt(from));
   }),
@@ -637,10 +642,11 @@ onSwipeAction: (rowId, actionId) {},
 | `scrollable`                       | `bool`                                       | Scroll inside the list's own height instead of sizing to its rows. Default `false`.                                                     |
 | `height` / `cornerRadius`          | `double?`                                    | Fixed height / corner radius of the cards (the system's when null).                                                                     |
 | `activeColor`                      | `Color?`                                     | Tint of the rows' controls and checkmarks.                                                                                              |
-| `editing`                          | `bool`                                       | Edit mode: selection circles, and drag handles with `onReorder`. Default `false`.                                                       |
+| `editing`                          | `bool`                                       | Selection circles at each row's leading edge. Independent of `reorderable`. Default `false`.                                            |
 | `selection` / `onSelectionChanged` | `Set<String>` / `ValueChanged<Set<String>>?` | Ids of the rows checked in edit mode, and the call reporting them. Echo it back.                                                        |
 | `onSwipeAction`                    | `CupertinoNativeListSwipeCallback?`          | Called with the row's `id` and the `actionId` of the swipe button tapped.                                                               |
-| `onReorder`                        | `CupertinoNativeListReorderCallback?`        | Called with the section and the old and new index, the new one as `List.insert` takes it after the removal. `CupertinoNativeList` only. |
+| `reorderable`                      | `bool`                                       | Drag handles at each row's trailing edge; rows move within their section. Independent of `editing`. Default `false`. |
+| `onReorder`                        | `CupertinoNativeListReorderCallback?`        | Called when a row is dropped, with the section and the old and new index, the new one as `List.insert` takes it after the removal. `CupertinoNativeList` only. |
 
 ### Liquid Glass
 
@@ -1479,10 +1485,14 @@ On `CupertinoColors.systemBackground` or `systemGroupedBackground` the `soft`
 wash follows the content; on any other colour it is fixed in that colour, as
 SwiftUI's is once a page has a `.background`.
 
+<img src="https://raw.githubusercontent.com/ru-ji/cupertino_native_ui/main/doc/images/scroll_edge_effect.gif" width="320" alt="Scroll edge effect on a coloured page" />
+
 The `soft` wash adapts to what scrolls under it: lighter over bright content,
 darker over dark content, as the system's does. The glass buttons of the
 navigation bar and the tab bar follow it, turning light or dark with the
 content under the bar.
+
+<img src="https://raw.githubusercontent.com/ru-ji/cupertino_native_ui/main/doc/images/adaptive_scroll_edge_effect.gif" width="320" alt="Scroll edge effect adapting to the content" />
 
 ```dart
 Stack(

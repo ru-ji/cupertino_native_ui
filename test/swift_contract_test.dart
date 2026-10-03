@@ -269,6 +269,7 @@ void main() {
         CupertinoNativeList(
           editing: true,
           selection: const {'a'},
+          reorderable: true,
           onReorder: (_, _, _) {},
           sections: const [
             CupertinoNativeListSection(
