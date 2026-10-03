@@ -7,7 +7,7 @@ import UIKit
 /// ## Why UIKit `inputAccessoryView`, not SwiftUI's `.keyboard` toolbar
 ///
 /// `ToolbarItemGroup(placement: .keyboard)` is the documented SwiftUI way, and
-/// it is what this used to be — but it resolves to nothing, or crashes on the
+/// it is what this used to be, but it resolves to nothing, or crashes on the
 /// first focus, when the SwiftUI tree is a child `UIHostingController` embedded
 /// in a Flutter platform view, which is how every widget in this package is
 /// hosted. The system negotiates an accessory region with no bar in it and the
@@ -17,8 +17,8 @@ import UIKit
 /// The supported UIKit route is `UITextField.inputAccessoryView` (read-write on
 /// the field types SwiftUI's `TextField` is backed by) with a transparent
 /// accessory view. UIKit gives the accessory its own strip above the keyboard,
-/// so the bar lands inside the keyboard's own frame — it makes the keyboard
-/// taller rather than floating over it — and the bar draws no slab of its own
+/// so the bar lands inside the keyboard's own frame, it makes the keyboard
+/// taller rather than floating over it, and the bar draws no slab of its own
 /// where the SwiftUI placement drew one. The strip is left unpainted, so the
 /// page shows through it; see [KeyboardInputView].
 ///
@@ -30,19 +30,19 @@ import UIKit
 /// 1. **The bar was one point wide.** `KeyboardInputView` was built with a frame
 ///    width of `UIView.noIntrinsicMetric` and answered `intrinsicContentSize`
 ///    with the same value. `UIPeripheralHost` took that literally and installed
-///    the accessory at `frame = (-1 0; 1 48)` — an invisible sliver. The frame
+///    the accessory at `frame = (-1 0; 1 48)`: an invisible sliver. The frame
 ///    and the intrinsic size both need real numbers now; the keyboard stretches
 ///    the bar to its own width once it is placed.
 ///
 /// 2. **The accessory was never placed without a reload.** Assigning
 ///    `inputAccessoryView` on a field that is already the responder registers
-///    the view — it comes back from the property, and UIKit lists it in the
-///    input view set — but does not add it to the hierarchy. Measured: the bar
+///    the view (it comes back from the property, and UIKit lists it in the
+///    input view set) but does not add it to the hierarchy. Measured: the bar
 ///    stayed a root view, `superview == nil`, `window == nil`, with the
 ///    SwiftUI content never laid out (`contentSubviews == 0`) and nothing on
 ///    screen. `reloadInputViews()` is what makes UIKit rebuild the input views
 ///    around it. (The `.keyboard` style of `UIInputView` makes no difference
-///    either way — it is not placed with the style, without it, or as a plain
+///    either way: it is not placed with the style, without it, or as a plain
 ///    `UIView`, so a plain view is what this uses.)
 ///
 /// 3. **The bar was rebuilt on every config push, which is the choppiness.**
@@ -52,7 +52,7 @@ import UIKit
 ///    different orders (`{"type","id","isDark"}` against
 ///    `{"type","isDark","id"}`). Every push therefore looked like a change, so
 ///    the bar was rebuilt and `reloadInputViews()` ran *under a keyboard that
-///    was already up* — tearing down and rebuilding the input view set
+///    was already up*: tearing down and rebuilding the input view set
 ///    mid-edit. Three rebuilds in a twenty-second run that typed nothing.
 ///    The identity is now the payload Dart sent, compared with `isEqual:` the
 ///    way the rest of this file compares configs.
@@ -71,7 +71,7 @@ import UIKit
 /// outlives a released host is exactly the invalid SwiftUI state that crashed
 /// the previous `.keyboard`-based toolbar. The bar therefore owns its
 /// `UIHostingController` for its whole lifetime, and the bar itself is retained
-/// by the platform view until the toolbar's nodes change — so the keyboard walk
+/// by the platform view until the toolbar's nodes change, so the keyboard walk
 /// never touches a dead host.
 ///
 /// The SwiftUI content is the same lowered `BodyNodeConfig` tree a native body
@@ -82,7 +82,7 @@ final class KeyboardAccessoryBar: NSObject {
     /// Height for a bar whose content states no size of its own. The bar
     /// otherwise measures its SwiftUI content, so what surrounds the items is
     /// the caller's padding, not a number invented here. UIKit puts no ceiling
-    /// on an accessory's height — it is added to the keyboard's frame.
+    /// on an accessory's height: it is added to the keyboard's frame.
     static let fallbackHeight: CGFloat = 44
 
     /// The keyboard-styled, transparent accessory view handed to the field.
@@ -147,7 +147,7 @@ final class KeyboardAccessoryBar: NSObject {
     /// Bars live here, one per field id, for the process's life.
     ///
     /// They cannot be owned by a SwiftUI view: `init` runs on every
-    /// re-evaluation, so building one there churned a bar per frame — and the
+    /// re-evaluation, so building one there churned a bar per frame, and the
     /// accessory a focused field pointed at had already been deallocated.
     /// Measured: two builds and two deallocations per frame, forever.
     private static var cache: [String: KeyboardAccessoryBar] = [:]
@@ -193,7 +193,7 @@ final class KeyboardAccessoryBar: NSObject {
 ///
 /// A plain `UIView`, deliberately: `UIInputView` is the documented class for an
 /// input accessory, but `UIPeripheralHost` accepts one into its input view set
-/// and then never adds it to the hierarchy — the bar stayed a root view with no
+/// and then never adds it to the hierarchy. The bar stayed a root view with no
 /// superview, `window == nil`, and nothing on screen, with `.keyboard` style,
 /// with `.default` style, and with no style override at all. A plain view is
 /// what the keyboard actually places.
@@ -201,7 +201,7 @@ final class KeyboardAccessoryBar: NSObject {
 /// ## Unpainted
 ///
 /// UIKit places the accessory in its own strip above the keyboard, and the
-/// keyboard's own backdrop does not extend under it — measured on a red page,
+/// keyboard's own backdrop does not extend under it: measured on a red page,
 /// the strip behind the bar came back red while the keyboard's suggestion row
 /// stayed grey. So the bar shows the page through itself, which is what the
 /// toolbar wants: the capsule in it is a `CupertinoNativeGlassContainer`, and
@@ -220,14 +220,14 @@ final class KeyboardInputView: UIView {
         barHeight = height
         // A *real* width, not `UIView.noIntrinsicMetric`: `UIPeripheralHost`
         // reads the accessory's size from this frame, and the first version
-        // handed it -1 — which the keyboard installed as `frame = (-1 0; 1 48)`,
+        // handed it -1, which the keyboard installed as `frame = (-1 0; 1 48)`,
         // an invisible one-point sliver. The keyboard stretches the bar to its
         // own width once it is placed, so this only has to be a sane starting
         // point.
         super.init(frame: CGRect(x: 0, y: 0, width: Self.startingWidth, height: height))
         // `.flexibleWidth` so the stretch above actually happens.
         autoresizingMask = [.flexibleWidth]
-        // The bar paints nothing at all — the SwiftUI content added on top is
+        // The bar paints nothing at all: the SwiftUI content added on top is
         // the whole of what is drawn.
         isOpaque = false
         backgroundColor = .clear
@@ -239,7 +239,7 @@ final class KeyboardInputView: UIView {
     }
 
     /// The keyboard stretches the bar to the screen's width as it presents,
-    /// and the hosted SwiftUI content would animate along with that resize —
+    /// and the hosted SwiftUI content would animate along with that resize:
     /// the buttons visibly sliding in from the middle while the bar rises.
     /// The content is laid out to the new bounds in one step instead.
     override func layoutSubviews() {
@@ -260,7 +260,7 @@ final class KeyboardInputView: UIView {
     }
 
     /// The window's width, or the narrowest current iPhone when there is no
-    /// window yet. Only a starting value — see `init`.
+    /// window yet. Only a starting value, see `init`.
     static var startingWidth: CGFloat {
         for case let scene as UIWindowScene in UIApplication.shared.connectedScenes {
             for window in scene.windows where window.bounds.width > 0 {

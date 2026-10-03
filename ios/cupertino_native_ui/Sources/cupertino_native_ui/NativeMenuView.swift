@@ -43,7 +43,7 @@ class NativeMenuView: NativeHostingView {
         _view.viewId = viewId
 
         channel = FlutterMethodChannel(
-            name: "cupertino_widgets/menu_\(viewId)", binaryMessenger: messenger)
+            name: "cupertino_native_ui/menu_\(viewId)", binaryMessenger: messenger)
         sizeChannel = channel
         channel?.setMethodCallHandler({
             [weak self] (call: FlutterMethodCall, result: @escaping FlutterResult) in

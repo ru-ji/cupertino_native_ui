@@ -49,7 +49,7 @@ class NativeGlassGroupView: NativeHostingView {
         _view.viewId = viewId
 
         channel = FlutterMethodChannel(
-            name: "cupertino_widgets/glass_group_\(viewId)", binaryMessenger: messenger)
+            name: "cupertino_native_ui/glass_group_\(viewId)", binaryMessenger: messenger)
         sizeChannel = channel
         channel?.setMethodCallHandler({ [weak self] call, result in
             self?.handle(call, result: result)
@@ -74,7 +74,7 @@ class NativeGlassGroupView: NativeHostingView {
             // Centred and otherwise free. The `<= container` pair that used to
             // be here squeezed the glasses into whatever width the Flutter box
             // happened to hold, and the box only catches up once a measurement
-            // lands — so a group that grows was clamped for the whole animation
+            // lands, so a group that grows was clamped for the whole animation
             // and a "Select" capsule could settle at a width it never chose.
             // The container paints unclipped (see HostingContainerView), so
             // the glass is free to overrun its box while the box follows.
@@ -102,7 +102,7 @@ class NativeGlassGroupView: NativeHostingView {
             if let argsMap = call.arguments as? [String: Any],
                 let config = decodeConfig(GlassGroupConfig.self, from: argsMap)
             {
-                // Animated: this is where the merge happens — and, since the
+                // Animated: this is where the merge happens, and, since the
                 // container no longer changes identity with the spacing, where
                 // a split, an arrival and a replacement happen too. The whole
                 // config goes over at once, so `items` gaining, losing or
@@ -143,7 +143,7 @@ struct AdaptiveGlassGroupView: View {
     let onAction: (String) -> Void
 
     /// The identity space the morph runs in. Two glasses merge because their
-    /// `glassEffectID`s live in the same namespace inside the same container —
+    /// `glassEffectID`s live in the same namespace inside the same container:
     /// this is the thing that cannot cross a platform-view boundary.
     @Namespace private var namespace
 
@@ -155,7 +155,7 @@ struct AdaptiveGlassGroupView: View {
     /// group" mode.
     private var sharesOneGlass: Bool { spacing <= 0 }
 
-    /// What the container is told — the radius within which two glasses blend,
+    /// What the container is told: the radius within which two glasses blend,
     /// which is a different question from the gap they are laid out with.
     ///
     /// `mergeDistance` answers it outright. Without one, a shared glass needs
@@ -182,7 +182,7 @@ struct AdaptiveGlassGroupView: View {
     /// and that is why the merge never animated: swapping branches changes the
     /// container's identity, so SwiftUI tore it down and built another one
     /// instead of interpolating between the two. Which glasses are united is
-    /// now a *value* — the union id below — so a single container can carry
+    /// now a *value*, the union id below, so a single container can carry
     /// the group from two glasses to one and back.
     ///
     /// The container also has to be the same one across an item's arrival and
@@ -209,8 +209,8 @@ struct AdaptiveGlassGroupView: View {
     /// What the glass does to its own outline while a change plays.
     ///
     /// Measured off a 60fps capture of the system's own bar button swapping its
-    /// icon: it does **not** scale. It squares up — the top and bottom edges
-    /// flatten first, then the sides — and unwinds back to a circle. What reads
+    /// icon: it does **not** scale. It squares up (the top and bottom edges
+    /// flatten first, then the sides) and unwinds back to a circle. What reads
     /// as a press is the outline losing its roundness, not the glass growing.
     ///
     /// The scale left here is the hair of anisotropy that sells which edge went
@@ -235,7 +235,7 @@ struct AdaptiveGlassGroupView: View {
         var scaleX: CGFloat { self == .flattenVertical ? 1.02 : 1 }
         var scaleY: CGFloat { self == .flattenVertical ? 0.98 : 1 }
 
-        /// Out quickly, back at leisure — the timing of a press.
+        /// Out quickly, back at leisure: the timing of a press.
         var duration: Double {
             switch self {
             case .rest: return 0.28
@@ -270,7 +270,7 @@ struct AdaptiveGlassGroupView: View {
             // Custom, and deliberately not a transition: `materialize` scales
             // the glass in, and the glass this reproduces does not move at all.
             // The material is always mounted and only its opacity travels, so
-            // there is nothing for SwiftUI to insert or remove — which is also
+            // there is nothing for SwiftUI to insert or remove, which is also
             // why this glass cannot merge or match geometry with a neighbour.
             //
             // The material lives in a background layer of its own so the gauge
@@ -279,7 +279,7 @@ struct AdaptiveGlassGroupView: View {
             let on = item.glassVisible != false
             button(item)
                 .opacity(on ? 1 : 0)
-                // The content's own blur in and out, which is all it wants —
+                // The content's own blur in and out, which is all it wants:
                 // a bare fade reads as a decal being switched off, not as an
                 // icon resolving out of the material.
                 .blur(radius: on ? 0 : 6)
@@ -318,7 +318,7 @@ struct AdaptiveGlassGroupView: View {
     private func button(_ item: GlassGroupItemConfig) -> some View {
         if let menuItems = item.menuItems, !menuItems.isEmpty {
             // The glass is the `Menu`'s own label, so the system has the
-            // capsule as its anchor and grows the menu out of it — the whole
+            // capsule as its anchor and grows the menu out of it: the whole
             // shape transforms, which is what it does for a toolbar menu and
             // what a tap gesture presenting something separately cannot give.
             Menu {
@@ -352,7 +352,7 @@ struct AdaptiveGlassGroupView: View {
     ///
     /// A shared glass puts every item under one id, which is the old
     /// `glassEffectUnion(id: "group")` behaviour. Otherwise an item stands
-    /// alone unless it names a partner — and "alone" is still an explicit id,
+    /// alone unless it names a partner, and "alone" is still an explicit id,
     /// never a missing modifier, so moving an item in or out of a union is a
     /// change of value rather than a change of view.
     private func unionId(for item: GlassGroupItemConfig) -> String {
@@ -368,11 +368,11 @@ struct AdaptiveGlassGroupView: View {
     /// positioned within the container's spacing, and `materialize` for effects
     /// farther apart. `matchedGeometry` is what makes two glasses travel into
     /// each other; `materialize` fades the content in while the material
-    /// animates in or out, without matching any geometry — which is the effect
+    /// animates in or out, without matching any geometry, which is the effect
     /// for a glass that appears from nothing, or replaces another one in the
     /// same place.
     /// The transition the item asked for, before it is resolved to a SwiftUI
-    /// one — `intensity` has no SwiftUI equivalent, so it is read by name.
+    /// one: `intensity` has no SwiftUI equivalent, so it is read by name.
     private func transitionName(for item: GlassGroupItemConfig) -> String {
         item.transition ?? c.transition ?? "matchedGeometry"
     }
@@ -390,7 +390,7 @@ struct AdaptiveGlassGroupView: View {
     /// towards a square.
     ///
     /// One shape covers every case, which is what lets the morph be a single
-    /// number instead of a change of shape type — and a change of type is
+    /// number instead of a change of shape type, and a change of type is
     /// exactly what matched geometry cannot interpolate across.
     ///
     /// It also settles the union on its own: a union's frame is the whole
@@ -411,7 +411,7 @@ struct AdaptiveGlassGroupView: View {
 /// A capsule that can be squared up.
 ///
 /// The radius is half the frame's *short* side, taken from the frame it is
-/// handed rather than from the item's declared height — which is the whole
+/// handed rather than from the item's declared height, which is the whole
 /// point. A `RoundedRectangle` with a hard-coded radius is only a circle when
 /// the frame happens to match it, and a glass's frame is its own, larger than
 /// the label inside it. At `morph` 0 this is exactly a `Capsule`: a circle on a
@@ -451,8 +451,8 @@ private struct FixedRadiusShape: Shape {
     }
 }
 
-/// The glass group below iOS 26: the items as plain buttons — icon and/or title,
-/// in the accent colour, no material — the way a UIKit bar item looks there.
+/// The glass group below iOS 26: the items as plain buttons (icon and/or title,
+/// in the accent colour, no material) the way a UIKit bar item looks there.
 @available(iOS 15.0, *)
 final class NativeLegacyGlassGroupView: NativeHostingView {
     private var channel: FlutterMethodChannel?
@@ -465,7 +465,7 @@ final class NativeLegacyGlassGroupView: NativeHostingView {
         super.init()
         _view.viewId = viewId
         channel = FlutterMethodChannel(
-            name: "cupertino_widgets/glass_group_\(viewId)", binaryMessenger: messenger)
+            name: "cupertino_native_ui/glass_group_\(viewId)", binaryMessenger: messenger)
         sizeChannel = channel
         channel?.setMethodCallHandler { [weak self] call, result in
             self?.handle(call, result: result)

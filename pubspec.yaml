@@ -1,11 +1,11 @@
-name: cupertino_widgets
+name: cupertino_native_ui
 description: >-
-  Real UIKit and SwiftUI controls for Flutter on iOS — native buttons, lists,
+  Real UIKit and SwiftUI controls for Flutter on iOS: native buttons, lists,
   sheets, tab bars, navigation and Liquid Glass, driven by a Flutter-shaped API.
 version: 0.1.0
-homepage: https://github.com/ru-ji/cupertino_widgets
-repository: https://github.com/ru-ji/cupertino_widgets
-issue_tracker: https://github.com/ru-ji/cupertino_widgets/issues
+homepage: https://github.com/ru-ji/cupertino_native_ui
+repository: https://github.com/ru-ji/cupertino_native_ui
+issue_tracker: https://github.com/ru-ji/cupertino_native_ui/issues
 
 environment:
   sdk: ^3.13.2

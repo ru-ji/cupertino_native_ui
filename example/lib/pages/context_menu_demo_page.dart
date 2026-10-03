@@ -1,7 +1,7 @@
 import 'package:flutter/cupertino.dart';
-import 'package:cupertino_widgets/cupertino_widgets.dart';
+import 'package:cupertino_native_ui/cupertino_native_ui.dart';
 
-/// [CupertinoNativeContextMenu] — long-press any card for a real
+/// [CupertinoNativeContextMenu]: long-press any card for a real
 /// `UIContextMenuInteraction`: system lift, blur and haptics, with menu items
 /// built from the same model as the popup menu. The "Sunset ride" card also
 /// sets a custom [CupertinoNativeContextMenu.preview], so the lifted view
@@ -81,7 +81,7 @@ class _ContextMenuDemoPageState extends State<ContextMenuDemoPage> {
   ];
 
   void _onAction(String id, dynamic _) {
-    setState(() => _lastAction = id.replaceFirst(':', ' — '));
+    setState(() => _lastAction = id.replaceFirst(':', ': '));
   }
 
   @override
@@ -123,7 +123,7 @@ class _ContextMenuDemoPageState extends State<ContextMenuDemoPage> {
                     CupertinoNativeListSection(
                       header: 'Menu',
                       footer:
-                          'Touch and hold a photo — the system lifts it with the '
+                          'Touch and hold a photo: the system lifts it with the '
                           'native blur and haptic, and the menu is a real UIMenu. '
                           '"Sunset ride" shows a custom preview (a different view) '
                           'while its menu is open.',

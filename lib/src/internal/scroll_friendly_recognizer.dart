@@ -9,10 +9,10 @@ import 'package:flutter/gestures.dart';
 ///
 /// Unlike [EagerGestureRecognizer], it waits the way UIKit does inside a scroll
 /// view: a touch that moves sideways belongs to the control, one that runs
-/// vertically past the slop belongs to the page — even after the finger rested
+/// vertically past the slop belongs to the page, even after the finger rested
 /// (see [onLost]).
 ///
-/// Not for a control that needs vertical drags of its own — a wheel picker
+/// Not for a control that needs vertical drags of its own: a wheel picker
 /// keeps [EagerGestureRecognizer]. A view that holds one among other rows (a
 /// list with a wheel in a row) names where it is with [claims].
 class ScrollFriendlyPlatformViewRecognizer
@@ -25,17 +25,17 @@ class ScrollFriendlyPlatformViewRecognizer
   });
 
   /// Whether a touch landing here, in the view's own coordinates, is the
-  /// view's whatever way it then moves — on a wheel, a vertical drag spins it.
+  /// view's whatever way it then moves: on a wheel, a vertical drag spins it.
   final bool Function(Offset localPosition)? claims;
 
   /// How long a still finger takes to become the view's for good, for a view
-  /// whose hold opens something — a pull-down menu, a context menu. Null: a
+  /// whose hold opens something: a pull-down menu, a context menu. Null: a
   /// held finger stays the page's to scroll however long it rests, as in a
   /// `UIScrollView` and in a Flutter list.
   final Duration? claimAfter;
 
   /// The native view already had the touch ([holdTimeout]) and the page took
-  /// it: the view must let go natively — its `cancelTouches`.
+  /// it: the view must let go natively, its `cancelTouches`.
   final VoidCallback? onLost;
 
   /// When a still finger reaches the native view, without the arena deciding:
@@ -43,7 +43,7 @@ class ScrollFriendlyPlatformViewRecognizer
   /// switch presses as fast as in a native scroll view.
   static const Duration holdTimeout = Duration(milliseconds: 150);
 
-  /// The width of the strip a `CupertinoPageRoute`'s back swipe starts in —
+  /// The width of the strip a `CupertinoPageRoute`'s back swipe starts in:
   /// Flutter's `_kBackGestureWidth`, widened to the safe area like Flutter's.
   static const double _backGestureWidth = 20;
 
@@ -66,7 +66,7 @@ class ScrollFriendlyPlatformViewRecognizer
   bool _down = false;
 
   /// The touch landed in the back-swipe strip: a drag there is not the
-  /// view's, as no Flutter widget under it would claim it — a tap still is.
+  /// view's, just as no Flutter widget under it would claim it. A tap still is.
   bool _onBackEdge = false;
 
   @override
@@ -92,9 +92,9 @@ class ScrollFriendlyPlatformViewRecognizer
     // happens in the frames between the touch landing and the finger moving.
   }
 
-  /// Hands the touch to the native view the way the arena's win would — the
+  /// Hands the touch to the native view the way the arena's win would (the
   /// team captain is the `UiKitView`'s own recognizer, whose accept releases
-  /// it on the native side — but leaves the arena open, so a scroll can still
+  /// it on the native side) but leaves the arena open, so a scroll can still
   /// take it back.
   void _release(int pointer) {
     if (_resolved || _yielded) return;
@@ -118,7 +118,7 @@ class ScrollFriendlyPlatformViewRecognizer
     if (event is PointerMoveEvent) {
       final delta = event.position - start;
       // A vertical run past the slop is a scroll: left to the Scrollable, not
-      // given up — on a page that does not scroll, the view keeps it.
+      // given up. On a page that does not scroll, the view keeps it.
       if (delta.dy.abs() > kTouchSlop && delta.dy.abs() > delta.dx.abs()) {
         _yielded = true;
         _stopTimers();
@@ -126,8 +126,8 @@ class ScrollFriendlyPlatformViewRecognizer
       }
       // From the edge, sideways is the back swipe's: left to the arena.
       if (_onBackEdge) return;
-      // Anything else that has travelled — a sideways drag on a slider or a
-      // segmented control — belongs to the control.
+      // Anything else that has travelled, a sideways drag on a slider or a
+      // segmented control, belongs to the control.
       if (delta.distance > kTouchSlop) _finish(GestureDisposition.accepted);
       return;
     }
@@ -137,14 +137,14 @@ class ScrollFriendlyPlatformViewRecognizer
     if (event is PointerCancelEvent) _finish(GestureDisposition.rejected);
   }
 
-  /// Nobody else wanted it, so the control gets it — the common case for a
+  /// Nobody else wanted it, so the control gets it: the common case for a
   /// press-and-hold on a button with no scrollable in the way.
   @override
   void didStopTrackingLastPointer(int pointer) {
     if (!_resolved && !_yielded) _finish(GestureDisposition.accepted);
   }
 
-  // ponytail: left edge only — an RTL app's strip is on the right; pass the
+  // ponytail: left edge only, an RTL app's strip is on the right; pass the
   // text direction in if one ships.
   static bool _inBackStrip(PointerDownEvent event) {
     final view = GestureBinding.instance.platformDispatcher.view(
@@ -172,7 +172,7 @@ class ScrollFriendlyPlatformViewRecognizer
   }
 
   /// Called when the page (or the back swipe) won, and also when this view's
-  /// own team won — the team rejects every member but its captain.
+  /// own team won: the team rejects every member but its captain.
   @override
   void rejectGesture(int pointer) {
     final lost = _down && _released && !_accepted;
@@ -221,7 +221,7 @@ class NestedScrollState {
 }
 
 /// A platform-view recognizer for a view that scrolls its own content inside
-/// a scrolling page — a text view in a form — handing each drag to the view
+/// a scrolling page, a text view in a form, handing each drag to the view
 /// or to the page the way UIKit does, from where the view's scrolling stands
 /// when the finger lands:
 ///

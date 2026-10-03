@@ -1,5 +1,5 @@
 import 'package:flutter/cupertino.dart';
-import 'package:cupertino_widgets/cupertino_widgets.dart';
+import 'package:cupertino_native_ui/cupertino_native_ui.dart';
 
 import 'software_update_page.dart';
 

@@ -1,11 +1,11 @@
 import 'cupertino_native_icon.dart';
 import 'cupertino_symbols.dart';
 
-/// How hard a toolbar entry holds its place when the bar runs out of room —
+/// How hard a toolbar entry holds its place when the bar runs out of room:
 /// SwiftUI's `ToolbarItemVisibilityPriority` (iOS 27+; ignored earlier).
 enum CupertinoNativeToolbarVisibilityPriority { automatic, low, high }
 
-/// An entry of a [CupertinoNativeScaffoldNavigationBar]'s toolbar — SwiftUI's
+/// An entry of a [CupertinoNativeScaffoldNavigationBar]'s toolbar: SwiftUI's
 /// `ToolbarContent`: a single button ([CupertinoNativeToolbarItem]), a group
 /// of buttons sharing one glass capsule ([CupertinoNativeToolbarItemGroup]),
 /// or a gap ([CupertinoNativeToolbarSpacer]).
@@ -20,7 +20,7 @@ sealed class CupertinoNativeToolbarContent {
   Map<String, dynamic> toMap();
 }
 
-/// A single toolbar button — SwiftUI's `ToolbarItem`. Provide an [icon], a [title], or both;
+/// A single toolbar button: SwiftUI's `ToolbarItem`. Provide an [icon], a [title], or both;
 /// taps are reported through the app bar's `onAction` with [actionId].
 /// The [icon] accepts an SF Symbol or a Flutter icon via [CupertinoNativeIcon].
 class CupertinoNativeToolbarItem extends CupertinoNativeToolbarContent {
@@ -28,7 +28,7 @@ class CupertinoNativeToolbarItem extends CupertinoNativeToolbarContent {
   final CupertinoNativeIcon? icon;
   final String actionId;
 
-  /// An SF Symbol name — the shorthand for
+  /// An SF Symbol name: the shorthand for
   /// `icon: CupertinoNativeIcon.named(...)`, like SwiftUI's
   /// `Button(_:systemImage:)`. [icon] wins when both are given.
   final String? systemImage;
@@ -37,21 +37,21 @@ class CupertinoNativeToolbarItem extends CupertinoNativeToolbarContent {
   final CupertinoSymbols? symbol;
 
   /// Whether this item opts out of the toolbar's shared background and
-  /// carries its own — SwiftUI's `.sharedBackgroundVisibility(.hidden)` on
+  /// carries its own: SwiftUI's `.sharedBackgroundVisibility(.hidden)` on
   /// the `ToolbarItem`, iOS 26+. False (the default) leaves it in the shared
   /// capsule the system draws behind the whole toolbar.
   final bool sharedBackgroundVisibility;
 
   /// Whether the button takes the `.glass` style. Only applies with
   /// [sharedBackgroundVisibility]: outside the shared background an unstyled
-  /// button reads as plain text, so it is on by default — turn it off for
+  /// button reads as plain text, so it is on by default. Turn it off for
   /// exactly that plain look.
   final bool glass;
 
   /// Which entries the bar keeps visible when space runs out (iOS 27+).
   final CupertinoNativeToolbarVisibilityPriority visibilityPriority;
 
-  /// Pins a trailing entry so it never folds into the overflow menu —
+  /// Pins a trailing entry so it never folds into the overflow menu:
   /// `.topBarPinnedTrailing` (iOS 27+).
   final bool pinned;
 
@@ -121,7 +121,7 @@ class CupertinoNativeToolbarItem extends CupertinoNativeToolbarContent {
   );
 }
 
-/// Several buttons in one toolbar item — SwiftUI's `ToolbarItemGroup`. They
+/// Several buttons in one toolbar item: SwiftUI's `ToolbarItemGroup`. They
 /// share the capsule with their neighbours like any entry; put a
 /// [CupertinoNativeToolbarSpacer] around the group to give it its own.
 class CupertinoNativeToolbarItemGroup extends CupertinoNativeToolbarContent {
@@ -157,7 +157,7 @@ class CupertinoNativeToolbarItemGroup extends CupertinoNativeToolbarContent {
   }
 }
 
-/// A gap between bar entries — SwiftUI's `ToolbarSpacer` (iOS 26).
+/// A gap between bar entries: SwiftUI's `ToolbarSpacer` (iOS 26).
 ///
 /// The toolbar draws one shared glass capsule behind its items; a spacer
 /// breaks it in two, so the entries on either side get their own. Mail's

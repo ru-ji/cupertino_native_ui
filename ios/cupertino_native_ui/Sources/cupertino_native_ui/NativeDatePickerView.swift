@@ -43,7 +43,7 @@ final class DatePickerModel: ObservableObject {
     @Published var minimumDate: Date?
     @Published var maximumDate: Date?
     @Published var tint: Color?
-    /// "compact" | "graphical" | "wheel" — `.datePickerStyle`.
+    /// "compact" | "graphical" | "wheel": `.datePickerStyle`.
     @Published var style = "compact"
 
     /// Set while applying an update that came FROM Dart, so it isn't echoed.
@@ -72,7 +72,7 @@ final class DatePickerModel: ObservableObject {
 }
 
 /// The compact-style system date picker: renders as a tappable pill that
-/// pops the native calendar / time wheel over the app — the same control as
+/// pops the native calendar / time wheel over the app, the same control as
 /// iOS Settings and Calendar.
 @available(iOS 15.0, *)
 class NativeDatePickerView: NativeHostingView {
@@ -97,7 +97,7 @@ class NativeDatePickerView: NativeHostingView {
         _view.viewId = viewId
 
         channel = FlutterMethodChannel(
-            name: "cupertino_widgets/date_picker_\(viewId)", binaryMessenger: messenger)
+            name: "cupertino_native_ui/date_picker_\(viewId)", binaryMessenger: messenger)
         sizeChannel = channel
         channel?.setMethodCallHandler({
             [weak self] (call: FlutterMethodCall, result: @escaping FlutterResult) in
@@ -112,7 +112,7 @@ class NativeDatePickerView: NativeHostingView {
         setupSwiftUI(isDark: argsMap["isDark"] as? Bool)
     }
 
-    /// The picker fills the box Flutter built for it — the branch the button
+    /// The picker fills the box Flutter built for it: the branch the button
     /// takes for `expand: true`. Its own size comes back through
     /// `getIntrinsicSize`, same round trip as the button's.
     private func setupSwiftUI(isDark: Bool?) {

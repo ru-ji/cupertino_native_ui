@@ -16,8 +16,8 @@ enum CupertinoSymbolScale { small, medium, large }
 /// Every other icon in the package rides inside a native control. This one is
 /// for Flutter-drawn UI: the symbol is rasterized natively (`UIImage(systemName:)`)
 /// and handed back as an image, so it composites in Flutter's own layer tree.
-/// That matters wherever the icon sits under a `BackdropFilter` — a
-/// [CupertinoScrollEdgeEffect], a blurred bar — since a platform view is
+/// That matters wherever the icon sits under a `BackdropFilter` (a
+/// [CupertinoScrollEdgeEffect], a blurred bar) since a platform view is
 /// composited outside that tree and would leave an unblurred hole.
 ///
 /// Renders nothing until the first frame after the native call returns, and
@@ -54,8 +54,8 @@ class CupertinoSymbolImage extends StatefulWidget {
   final String name;
 
   /// Point size, as passed to `UIImage.SymbolConfiguration`. The rendered
-  /// image is taller/wider than this — a symbol's bounding box includes the
-  /// font's ascent — which is why the widget sizes itself to the image.
+  /// image is taller/wider than this, a symbol's bounding box includes the
+  /// font's ascent, which is why the widget sizes itself to the image.
   final double size;
 
   final Color? color;
@@ -72,7 +72,9 @@ class CupertinoSymbolImage extends StatefulWidget {
 }
 
 class _CupertinoSymbolImageState extends State<CupertinoSymbolImage> {
-  static const _channel = MethodChannel('com.example.cupertino_widgets/alert');
+  static const _channel = MethodChannel(
+    'com.example.cupertino_native_ui/alert',
+  );
 
   /// Rendered PNGs, keyed by the full request. Futures (not bytes) so that N
   /// simultaneous rows asking for the same symbol share one platform call.
@@ -121,10 +123,10 @@ class _CupertinoSymbolImageState extends State<CupertinoSymbolImage> {
           'scale': scale,
         })
         // An unknown symbol name (or a non-iOS host) is a missing icon, not a
-        // crash: the widget stays empty. Logged, not swallowed — a silent
+        // crash: the widget stays empty. Logged, not swallowed: a silent
         // catch here is indistinguishable from "the symbol just didn't draw".
         .catchError((Object e) {
-          debugPrint('CupertinoSymbolImage: "${widget.name}" failed — $e');
+          debugPrint('CupertinoSymbolImage: "${widget.name}" failed: $e');
           return null;
         });
   }

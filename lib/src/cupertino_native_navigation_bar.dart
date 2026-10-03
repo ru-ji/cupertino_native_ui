@@ -24,9 +24,9 @@ export 'cupertino_search_row_visibility.dart' show CupertinoSearchRowVisibility;
 /// An iOS 26-style navigation bar drawn in Flutter.
 ///
 /// SwiftUI's navigation title can't be hosted standalone in Flutter, so these
-/// widgets recreate the iOS 26 look: no solid background or hairline — the
+/// widgets recreate the iOS 26 look: no solid background or hairline (the
 /// bar floats on a [CupertinoScrollEdgeEffect]; the large title collapses
-/// with the system blur-morph; [leading]/[trailing] take any widget — a
+/// with the system blur-morph; [leading]/[trailing] take any widget) a
 /// `.glass` [CupertinoNativeButton] is the iOS 26 bar button, but a [Text] or
 /// anything else works; the title sits centered ([centerTitle], the
 /// default) or right after [leading], with an optional [subtitle].
@@ -36,7 +36,7 @@ export 'cupertino_search_row_visibility.dart' show CupertinoSearchRowVisibility;
 /// builds the search bar itself (a `CupertinoNativeTextField` configured with
 /// [searchPlaceholder]/[searchStyle]/[searchPrefixIcon]/[searchSuffixIcon],
 /// filled by default and glass via [searchGlass]): tapping it morphs the field to the top with a glass
-/// ✕, and [bottomMode] — only available there — decides whether the row
+/// ✕, and [bottomMode], only available there, decides whether the row
 /// collapses with the scroll ([NavigationBarBottomMode.automatic], the
 /// default: consumed *before* the page starts scrolling, shrinking while its
 /// content fades) or stays visible ([NavigationBarBottomMode.always]).
@@ -69,7 +69,7 @@ class CupertinoNativeSliverNavigationBar extends StatefulWidget {
        onSearchActiveChanged = null,
        _searchable = false;
 
-  /// A bar whose bottom row is a built-in search bar — the system's filled
+  /// A bar whose bottom row is a built-in search bar: the system's filled
   /// capsule, backed by a native `UITextField` (pass [searchGlass] for the
   /// Liquid Glass variant). Focus, the top-dock morph and the glass ✕ are
   /// managed internally; listen to [onSearchChanged] for the
@@ -106,13 +106,13 @@ class CupertinoNativeSliverNavigationBar extends StatefulWidget {
   final bool expandedTitle;
 
   /// Whether the large title collapses into the bar on scroll. False keeps it
-  /// expanded for good — the header never shrinks and no inline title appears,
-  /// like the iOS apps whose title stays large — while the scroll edge effect
+  /// expanded for good (the header never shrinks and no inline title appears,
+  /// like the iOS apps whose title stays large) while the scroll edge effect
   /// still comes up at the point the collapse would have fired. iOS 26+ only;
   /// the pre-26 fallback bar always collapses.
   final bool collapseTitle;
 
-  /// Secondary line — under the large title (like Photos' "3,356 Items") and
+  /// Secondary line: under the large title (like Photos' "3,356 Items") and
   /// under the inline title when collapsed.
   final String? subtitle;
 
@@ -120,7 +120,7 @@ class CupertinoNativeSliverNavigationBar extends StatefulWidget {
   /// (true, the default) or right after [leading].
   final bool centerTitle;
 
-  /// Leading bar content — any widget, e.g. a `CupertinoNativeButton.glass`.
+  /// Leading bar content: any widget, e.g. a `CupertinoNativeButton.glass`.
   final Widget? leading;
 
   /// With no [leading], a back button when the route can pop: the glass
@@ -134,14 +134,14 @@ class CupertinoNativeSliverNavigationBar extends StatefulWidget {
   final List<Widget> trailing;
 
   /// Widget under the large title (default constructor only). Unlike the
-  /// search row, it is **always visible** — when scrolling, the large title
+  /// search row, it is **always visible**: when scrolling, the large title
   /// collapses but the bottom stays pinned, like
   /// [NavigationBarBottomMode.always].
   final Widget? bottom;
 
-  /// Height of the [bottom] slot — or of the built-in search field for
+  /// Height of the [bottom] slot, or of the built-in search field for
   /// [CupertinoNativeSliverNavigationBar.search] (where it's named `searchFieldHeight`).
-  /// Defaults to 44 — the iOS 26 glass capsule (same height as the system
+  /// Defaults to 44: the iOS 26 glass capsule (same height as the system
   /// bar buttons).
   final double bottomHeight;
 
@@ -167,7 +167,7 @@ class CupertinoNativeSliverNavigationBar extends StatefulWidget {
   /// default) rests it on the system's plain filled capsule.
   ///
   /// Either way, on iOS 26 the field turns to glass while the search is open,
-  /// and — with [NavigationBarBottomMode.always] — as soon as the title
+  /// and, with [NavigationBarBottomMode.always], as soon as the title
   /// collapses and the row starts floating over content, like the system's.
   final bool searchGlass;
 
@@ -214,7 +214,7 @@ class _CupertinoSliverAppBarState
   /// crossing [_collapseTrigger] starts it and it runs to the end on its own
   /// clock, whether the scroll continues, stops, or is lifted. Crossing back
   /// the other way while it is still running reverses it from wherever it
-  /// got to — [AnimationController.forward]/[reverse] do exactly that.
+  /// got to: [AnimationController.forward]/[reverse] do exactly that.
   ///
   /// Timed on a 60fps capture of a SwiftUI `NavigationStack` with a title
   /// and a subtitle (iPhone 12 Pro Max, iOS 26): coming in, the inline title
@@ -246,7 +246,7 @@ class _CupertinoSliverAppBarState
   bool _collapsed = false;
 
   /// True from the instant the open animation starts until the instant the
-  /// close animation starts — the window in which the framework hides the
+  /// close animation starts: the window in which the framework hides the
   /// bar chrome (leading/trailing/title) outright, not gradually.
   bool _searchActive = false;
   ScrollableState? _scrollableState;
@@ -263,7 +263,7 @@ class _CupertinoSliverAppBarState
   /// The bar's native items, cut out of the edge effect's wash.
   final BarHoles _barHoles = BarHoles();
 
-  /// Focus of the built-in search field — driven by the morph (focused on
+  /// Focus of the built-in search field: driven by the morph (focused on
   /// open, unfocused on close).
   final FocusNode _searchFocusNode = FocusNode(
     debugLabel: 'CupertinoNativeSliverNavigationBar.search',
@@ -278,7 +278,7 @@ class _CupertinoSliverAppBarState
       _handleScrollChange,
     );
     _scrollableState?.position.addListener(_handleScrollTick);
-    // Adopt the current scroll instead of animating into it — but never
+    // Adopt the current scroll instead of animating into it, but never
     // mid-flight, nor during the search (the keyboard's inset change would
     // read as expanded).
     if (!_titleCollapse.isAnimating && !_searchMorphing) {
@@ -319,8 +319,8 @@ class _CupertinoSliverAppBarState
   }
 
   /// Scroll offset at which the collapse fires. The middle of the large-title
-  /// region — the same point the snap below resolves towards, so a light
-  /// scroll can still peek at the title instead of collapsing it outright —
+  /// region (the same point the snap below resolves towards, so a light
+  /// scroll can still peek at the title instead of collapsing it outright)
   /// plus [_triggerSlack], so it takes that much more travel to fire.
   double get _collapseTrigger =>
       _bottomScrollOffset + _largeTitleHeight / 2 + _triggerSlack;
@@ -428,7 +428,7 @@ class _CupertinoSliverAppBarState
   ///
   /// Not on this frame: closing the search hands the app back its list through
   /// [onSearchActiveChanged], and until that content is laid out the position's
-  /// maxScrollExtent is still the search view's — usually much shorter — so an
+  /// maxScrollExtent is still the search view's, usually much shorter, so an
   /// immediate jump lands clamped at the top, which reads as the page having
   /// been reset.
   void _restoreOffsetAfterLayout(double target) {
@@ -464,7 +464,7 @@ class _CupertinoSliverAppBarState
       _controller.forward();
       // Next frame, not this one: until the rebuild lands the field still sits
       // under the slot's AbsorbPointer, and a native UITextField whose view is
-      // not live refuses first responder — the keyboard simply never comes up.
+      // not live refuses first responder, so the keyboard simply never comes up.
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted && _searchActive) _searchFocusNode.requestFocus();
       });
@@ -532,7 +532,7 @@ class _CupertinoSliverAppBarState
       widget.automaticallyImplyLeading,
     );
     // The bar's buttons follow the content under the bar, as the system's
-    // do — not the wash right behind them.
+    // do, not the wash right behind them.
     // Each item that holds a native view is cut out of the wash (BarHole),
     // so its glass sees the content under the bar.
     final leading = implied == null
@@ -735,7 +735,7 @@ class _IOS26SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
 
   // The native search bar's fade window, in points of *height reduction*:
   // the hint text and prefix/suffix icons stay fully opaque for the first
-  // 5pt of squeeze, then fade to nothing by 13pt — while the capsule itself
+  // 5pt of squeeze, then fade to nothing by 13pt, while the capsule itself
   // keeps shrinking, tracking the scroll (and the snap) proportionally.
   static const double _fadeStartShrink = 5;
   static const double _fadeEndShrink = 13;
@@ -749,8 +749,8 @@ class _IOS26SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
   static const double _effectOverhang = 42;
 
   /// What the iOS 26 bar keeps under its 44pt title row: it is 54pt in all.
-  /// A collapsed page's content stops there, and the `.hard` band covers it
-  /// — both ended at 101pt on an iPhone 12 Pro Max (47 + 54).
+  /// A collapsed page's content stops there, and the `.hard` band covers it.
+  /// Both ended at 101pt on an iPhone 12 Pro Max (47 + 54).
   static const double _barSpacing = 10;
 
   /// The search row: the field, the gap above it and the bottom padding.
@@ -769,8 +769,8 @@ class _IOS26SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
   final Widget? leading;
   final Widget? trailing;
 
-  /// The bottom-slot widget: the built-in search field (permanently mounted —
-  /// platform views must never be created mid-animation) or the user's
+  /// The bottom-slot widget: the built-in search field (permanently mounted,
+  /// since platform views must never be created mid-animation) or the user's
   /// always-visible `bottom`.
   final Widget? searchField;
 
@@ -788,10 +788,10 @@ class _IOS26SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
   final bool hardEdge;
 
   /// Published search-row visibility, driven from [build] as the scroll
-  /// consumes the row — native fields fade their content from it.
+  /// consumes the row: native fields fade their content from it.
   final ValueNotifier<double> searchRowVisibility;
 
-  /// 0 = resting, 1 = search active (field docked at the top). Linear —
+  /// 0 = resting, 1 = search active (field docked at the top). Linear:
   /// straight off the controller, like the framework's height tweens.
   final double searchT;
 
@@ -800,7 +800,7 @@ class _IOS26SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
   /// completion once fired, instead of being scrubbed by the finger.
   final double titleT;
 
-  /// The inline subtitle's own progress — it trails the title.
+  /// The inline subtitle's own progress: it trails the title.
   final double subtitleT;
 
   /// True from open-animation start until close-animation start. The
@@ -920,7 +920,7 @@ class _IOS26SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
 
     // Framework behavior (CupertinoSliverNavigationBar.search): the glass
     // actions vanish the instant the morph starts and return the instant the
-    // close starts — no fade; the inline title additionally stays hidden
+    // close starts, no fade; the inline title additionally stays hidden
     // while the morph is running in either direction.
     final actionsVisible = !searchActive;
     final titleVisible = !searchActive && !morphing;
@@ -937,7 +937,7 @@ class _IOS26SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
     final inlineSigma = (1 - inlineT) * 3;
 
     // Search slot geometry: shrinks with the collapse, travels on activation.
-    // The capsule itself starts squeezing only past the dead zone — the
+    // The capsule itself starts squeezing only past the dead zone: the
     // row's padding absorbs the first few points of scroll.
     final fieldConsumed = (consumedBySearch - _collapseDeadZone).clamp(
       0.0,
@@ -948,14 +948,14 @@ class _IOS26SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
         .lerpDouble(restFieldH, fieldHeight, searchT)!
         .clamp(0.1, fieldHeight);
     // Bottom-anchored, like the framework's search bottom slot: the field
-    // doesn't travel on its own — the collapsing header carries it to the
+    // doesn't travel on its own. The collapsing header carries it to the
     // top. (At searchT == 1 the header is topPadding + fieldHeight + 12, so
     // this lands at topPadding + 4.)
     final fieldTop = height - fieldH - _bottomPadding * (1 - searchCollapseT);
     // The field narrows as it rises, making room for the ✕.
     final fieldRight = ui.lerpDouble(margin, margin + 44 + 12, searchT)!;
     // Content fade driven by how many points of height the capsule has lost
-    // (see _fadeStartShrink/_fadeEndShrink), not by the row fraction — the
+    // (see _fadeStartShrink/_fadeEndShrink), not by the row fraction: the
     // native look: brief full-opacity squeeze, quick fade, bare capsule
     // continues shrinking to nothing.
     final fieldShrink = fieldHeight - restFieldH;
@@ -966,7 +966,7 @@ class _IOS26SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
                       (_fadeEndShrink - _fadeStartShrink))
                   .clamp(0.0, 1.0);
     // Let the hosted field react natively (Opacity can't fade platform-view
-    // pixels). Listeners only push over a channel — no setState — so writing
+    // pixels). Listeners only push over a channel, no setState, so writing
     // during this build is safe.
     searchRowVisibility.value = contentFade;
 
@@ -1109,7 +1109,7 @@ class _IOS26SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
                   child: _SearchSlot(
                     // A plain bottom widget receives its touches directly; the
                     // search field starts absorbing them the moment the search
-                    // opens, not a few frames into the morph — the native view
+                    // opens, not a few frames into the morph: the native view
                     // has to be live to take first responder.
                     interactive: !searchable || searchActive,
                     onTap: onSearchOpen,
@@ -1119,7 +1119,7 @@ class _IOS26SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
                     ),
                   ),
                 ),
-                // Glass ✕ — permanently mounted. It rides with the field: same
+                // Glass ✕: permanently mounted. It rides with the field: same
                 // height the whole way up, sliding in as the field narrows so
                 // it stays 12pt from the field's right edge.
                 if (closeButton != null)
@@ -1207,7 +1207,7 @@ class _IOS26SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
 
 /// iOS's layout margin: 20pt on phones 414pt wide or more, 16pt otherwise.
 /// Bar buttons, titles and the search field all sit on it.
-/// [leading], or with none the iOS 26 back button — a glass chevron — when
+/// [leading], or with none the iOS 26 back button, a glass chevron, when
 /// the route can pop.
 Widget? _impliedLeading(BuildContext context, Widget? leading, bool imply) {
   if (leading != null || !imply) return leading;
@@ -1222,12 +1222,12 @@ double _barMargin(BuildContext context) =>
     MediaQuery.sizeOf(context).width >= 414 ? 20 : 16;
 
 /// Hosts the bottom-slot widget: passes the slot's (shrinking) height
-/// straight to the child — so a `fillHeight` native field physically
-/// squeezes with the collapse, proportional to the scroll and the snap —
+/// straight to the child (so a `fillHeight` native field physically
+/// squeezes with the collapse, proportional to the scroll and the snap)
 /// and intercepts taps at rest to trigger the morph.
 ///
 /// Deliberately applies NO Flutter-side opacity: only the field's *content*
-/// (text, hint, icons) fades, natively via [CupertinoSearchRowVisibility] —
+/// (text, hint, icons) fades, natively via [CupertinoSearchRowVisibility],
 /// never the capsule/glass container itself.
 class _SearchSlot extends StatelessWidget {
   const _SearchSlot({
@@ -1245,7 +1245,7 @@ class _SearchSlot extends StatelessWidget {
     // Same widgets in the same order whether the slot is interactive or not,
     // toggled by their properties. Adding/removing the GestureDetector and
     // AbsorbPointer instead changes the shape of the subtree, so Flutter tears
-    // the child down and rebuilds it — which for a platform view means the
+    // the child down and rebuilds it, which for a platform view means the
     // native UITextField is destroyed and recreated the moment the search
     // opens, losing both its channel (a pending 'focus' call goes nowhere, so
     // the keyboard never comes up) and its first-responder state.
@@ -1360,7 +1360,7 @@ class CupertinoNativeNavigationBar extends StatelessWidget {
       automaticallyImplyLeading,
     );
     // The bar's buttons follow the content under the bar, as the system's
-    // do — not the wash right behind them.
+    // do, not the wash right behind them.
     // Each item that holds a native view is cut out of the wash (BarHole),
     // so its glass sees the content under the bar.
     final leadingWidget = implied == null

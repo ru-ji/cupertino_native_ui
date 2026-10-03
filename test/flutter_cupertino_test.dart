@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:cupertino_widgets/cupertino_widgets.dart';
+import 'package:cupertino_native_ui/cupertino_native_ui.dart';
 
 void main() {
   test('CupertinoNativeMenuAction toMap', () {

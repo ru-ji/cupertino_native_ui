@@ -196,7 +196,7 @@ extension View {
     }
 
     /// Lets a button's label fill the space the style offers, so the style's
-    /// background stretches with it. `bothAxes` for an explicit height —
+    /// background stretches with it. `bothAxes` for an explicit height:
     /// `expand` alone is a width-only concept (a full-width button keeps its
     /// natural height).
     @ViewBuilder

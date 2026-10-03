@@ -23,7 +23,7 @@ jobs:
       - name: Check formatting
         run: dart format --output=none --set-exit-if-changed lib test
 
-      # pub.dev never runs these — this workflow is the only thing that does.
+      # pub.dev never runs these: this workflow is the only thing that does.
       - name: Test
         run: flutter test
 
@@ -51,7 +51,7 @@ jobs:
           FLUTTER_ROOT="$(dirname "$(dirname "$(command -v flutter)")")"
           FRAMEWORK="$FLUTTER_ROOT/bin/cache/artifacts/engine/ios/Flutter.xcframework/ios-arm64_x86_64-simulator"
           xcrun swift --version
-          find ios/cupertino_widgets/Sources -name '*.swift' -print0 \
+          find ios/cupertino_native_ui/Sources -name '*.swift' -print0 \
             | xargs -0 xcrun -sdk iphonesimulator swiftc -typecheck \
                 -target arm64-apple-ios15.0-simulator -F "$FRAMEWORK"
 

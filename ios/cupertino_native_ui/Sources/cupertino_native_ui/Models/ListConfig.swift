@@ -3,7 +3,7 @@ import Foundation
 /// One row of a native `List`/`Form` section. `type` selects the row rendering:
 /// "label" (icon + title/subtitle + optional trailing value/chevron),
 /// "toggle" (trailing switch), or "button" (tinted, tappable). Any row can
-/// also carry [trailing] — lowered native nodes rendered at the row's end.
+/// also carry [trailing]: lowered native nodes rendered at the row's end.
 @available(iOS 15.0, *)
 struct ListRowConfig: Codable {
     let id: String
@@ -20,7 +20,7 @@ struct ListRowConfig: Codable {
     /// False when no `onRowTap` listens: the plain row is then no `Button`.
     /// Nil (body lists, which always report taps) keeps it tappable.
     let tappable: Bool?
-    /// A lowered `CupertinoNativeListTile.trailing` — native nodes (switch,
+    /// A lowered `CupertinoNativeListTile.trailing`: native nodes (switch,
     /// slider, button, picker, …) rendered in the row by SwiftUI.
     let trailing: [BodyNodeConfig]?
     /// `.badge` text; nil for none.

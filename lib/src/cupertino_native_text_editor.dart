@@ -85,7 +85,7 @@ class CupertinoNativeTextEditor extends StatelessWidget
   /// move with it.
   final EdgeInsets? padding;
 
-  /// Drawn before the text, on its first line — any widget the package
+  /// Drawn before the text, on its first line: any widget the package
   /// transcribes natively (a `CupertinoNativeIcon`'s symbol image, a
   /// `CupertinoNativeButton`, a `Row` of them…), keeping its callbacks. Its
   /// measured width is added to the placeholder's left offset. Standalone
@@ -106,7 +106,7 @@ class CupertinoNativeTextEditor extends StatelessWidget
       onEvent: lowered?.dispatch,
       kind: 'textEditor',
       height: height,
-      // A drag scrolls the text or the page as UIKit would decide — see
+      // A drag scrolls the text or the page as UIKit would decide, see
       // NestedScrollPlatformViewRecognizer.
       props: {
         'text': text,

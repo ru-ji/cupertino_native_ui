@@ -5,7 +5,7 @@ import 'callbacks.dart';
 import 'internal/native_collection_view.dart';
 import 'models/cupertino_native_list_section.dart';
 
-/// A native SwiftUI `Form` with `Section`s — the grouped, settings-style
+/// A native SwiftUI `Form` with `Section`s: the grouped, settings-style
 /// container used for forms on iOS. Same section/row model as
 /// [CupertinoNativeList]; use [CupertinoNativeListTileType.toggle] rows for
 /// native switches.

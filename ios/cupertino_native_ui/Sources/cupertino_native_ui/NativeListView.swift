@@ -40,7 +40,7 @@ class NativeListView: NativeHostingView {
     /// the switch and the segmented control: `AdaptiveSystemListView` seeds its
     /// `@State` from the config once, so a row's value changed from Dart never
     /// reaches the screen through a root-view swap. Rebuilding the hosting
-    /// controller applies it; every other edit — labels, sections, tint — takes
+    /// controller applies it; every other edit (labels, sections, tint) takes
     /// the cheap path, which is the common one for a list.
     private var shownToggles: [String: Bool] = [:]
 
@@ -50,13 +50,13 @@ class NativeListView: NativeHostingView {
     /// frame the list was given, and `AdaptiveSystemListView` starts at
     /// `UIScreen.main.bounds.height * 2` so every row lays out and its probe can
     /// measure them. That placeholder is finite and plausible, so the base
-    /// class's measurement published it to Dart as the list's intrinsic size —
+    /// class's measurement published it to Dart as the list's intrinsic size,
     /// which sized the Flutter box to *twice the screen*. On a body that is a
     /// Flutter `Column` of lists (the sheet's form) the boxes then added up to
     /// ~3700pt of content inside one sheet, which is the endless scroll.
     ///
     /// The probe is the only thing that knows the real height, so once it has
-    /// one it is the only source this view reports from — see the
+    /// one it is the only source this view reports from, see the
     /// `intrinsicSize()` override.
     private var systemListHeight: CGFloat?
 
@@ -64,13 +64,13 @@ class NativeListView: NativeHostingView {
     /// those rows render from.
     ///
     /// Both live here, not in a SwiftUI view: a `View`'s `init` runs on every
-    /// re-evaluation, so a bar built there was rebuilt and freed every frame —
+    /// re-evaluation, so a bar built there was rebuilt and freed every frame,
     /// and the accessory a focused field pointed at was already dead.
     private let rowStore = TrailingRowStore()
 
     /// The transcribed field that currently holds the responder, as
     /// `"rowId.fieldId"`, or nil. Kept from the `.focused` reports the rows
-    /// send, so the responder can be put back — see [refocusOnReattach].
+    /// send, so the responder can be put back, see [refocusOnReattach].
     private var focusedFieldKey: String?
 
     /// The field to put the responder back on when this view next enters a
@@ -83,13 +83,13 @@ class NativeListView: NativeHostingView {
     /// there is nothing left to read the intent off.
     ///
     /// Only ever set while a field genuinely held the responder, so a page
-    /// whose route dismissed the keyboard first — `endEditing`, from
-    /// `RouteKeyboardDismissal` on the Dart side — has nothing to restore and
+    /// whose route dismissed the keyboard first (`endEditing`, from
+    /// `RouteKeyboardDismissal` on the Dart side) has nothing to restore and
     /// the keyboard does not come back on the way out.
     ///
     /// The list hosts real `UITextField`s now that a row's `trailing` can be a
     /// `CupertinoNativeTextField`, and the engine takes a platform view out of
-    /// the `FlutterView` on any frame it is not composited — scrolling is
+    /// the `FlutterView` on any frame it is not composited: scrolling is
     /// enough. A view outside a window cannot be first responder, so UIKit
     /// resigns the field and the keyboard closes mid-edit. Nothing public keeps
     /// a responder alive outside a window, so the fix is to put it back the
@@ -107,7 +107,7 @@ class NativeListView: NativeHostingView {
         _view.viewId = viewId
 
         channel = FlutterMethodChannel(
-            name: "cupertino_widgets/list_\(viewId)", binaryMessenger: messenger)
+            name: "cupertino_native_ui/list_\(viewId)", binaryMessenger: messenger)
         sizeChannel = channel
         channel?.setMethodCallHandler { [weak self] call, result in
             self?.handle(call, result: result)
@@ -119,7 +119,7 @@ class NativeListView: NativeHostingView {
         }
     }
 
-    /// The list fills the box Flutter built for it — the branch the button
+    /// The list fills the box Flutter built for it: the branch the button
     /// takes for `expand: true`. Its height still travels the same round trip
     /// as the button's, through the `intrinsicSize()` override below.
     private func setupSwiftUI(with config: ListConfig, isDark: Bool?) {
@@ -129,7 +129,7 @@ class NativeListView: NativeHostingView {
         _view.backgroundColor = .clear
         // Stay parented while the engine takes this platform view out of the
         // window on a frame it is not composited. Unparented, the hosted
-        // UIHostingController drops its field's first responder — the same trap
+        // UIHostingController drops its field's first responder: the same trap
         // NativeTextFieldView documents.
         _view.keepsParentWhileDetached = true
         // Staying parented is not enough on its own: the container still leaves
@@ -221,7 +221,7 @@ class NativeListView: NativeHostingView {
 
     /// Tells Dart where the rows' wheels are. Flutter decides who gets a
     /// touch before UIKit sees it, and in a scrolling page a vertical drag
-    /// goes to the page — unless it lands on a wheel, which it spins.
+    /// goes to the page, unless it lands on a wheel, which it spins.
     ///
     /// Sent whenever the rows move: a new height or a new config. On the next
     /// turn, once the collection view has laid its cells out.
@@ -297,7 +297,7 @@ class NativeListView: NativeHostingView {
     ///
     /// The probe's number wins once it has one, and that is the whole fix: a
     /// system `List` has no intrinsic height, so `sizeThatFits` echoes back the
-    /// frame it was given — and that frame is `AdaptiveSystemListView`'s
+    /// frame it was given, and that frame is `AdaptiveSystemListView`'s
     /// start-tall placeholder (twice the screen) until the probe measures the
     /// content. Publishing the placeholder is what sized a Flutter box to twice
     /// the screen, which on a body that is a `Column` of lists added up to
@@ -325,7 +325,7 @@ class NativeListView: NativeHostingView {
 
         var height: CGFloat = 0
         // Primary: sizeThatFits asks the UIHostingController for the size
-        // its SwiftUI content needs at the given width — the most reliable
+        // its SwiftUI content needs at the given width, the most reliable
         // measurement for a List/Form that self-sizes to its rows.
         let fittingSize = host.sizeThatFits(
             in: CGSize(width: width, height: .greatestFiniteMagnitude))

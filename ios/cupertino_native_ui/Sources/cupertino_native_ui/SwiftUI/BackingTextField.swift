@@ -5,7 +5,7 @@ import UIKit
 ///
 /// ## Why not SwiftUI's `TextField`
 ///
-/// The keyboard toolbar is the field's `inputAccessoryView` — the same UIKit
+/// The keyboard toolbar is the field's `inputAccessoryView`: the same UIKit
 /// slot SwiftUI's `.keyboard` placement fills. SwiftUI's `TextField` owns that
 /// slot on its backing field and re-asserts its own `InputAccessoryGenerator`
 /// as the field takes focus, so an accessory could only be attached *after*
@@ -14,19 +14,19 @@ import UIKit
 /// middle of a responder change (the dead toolbar buttons).
 ///
 /// A field we own is assigned its accessory while unfocused, and UIKit builds
-/// the input views around it — one presentation, and field-to-field switches
+/// the input views around it: one presentation, and field-to-field switches
 /// handled by UIKit itself.
 @available(iOS 15.0, *)
 struct BackingTextField: UIViewRepresentable {
     @ObservedObject var model: TextFieldModel
     @Binding var text: String
     /// Called straight from the delegate, as the field takes or gives up the
-    /// responder — before the keyboard starts to rise. Not through a SwiftUI
+    /// responder, before the keyboard starts to rise. Not through a SwiftUI
     /// state and `.onChange`: that waited for the next view update, and the
     /// keyboard was already moving when Flutter learned which field to lift.
     let onFocusChange: (Bool) -> Void
     let onSubmit: () -> Void
-    /// Whether a non-empty selection — and with it the handles — is showing.
+    /// Whether a non-empty selection, and with it the handles, is showing.
     /// Flutter cedes a vertical drag to the page otherwise, so a handle
     /// dragged up or down would scroll it instead.
     var onSelectionActive: (Bool) -> Void = { _ in }

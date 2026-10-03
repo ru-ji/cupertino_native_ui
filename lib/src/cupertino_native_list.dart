@@ -97,7 +97,7 @@ class CupertinoNativeList extends StatelessWidget {
        _header = null,
        _footer = null;
 
-  /// One section, built row by row — `ListView.builder`'s shape.
+  /// One section, built row by row: `ListView.builder`'s shape.
   ///
   /// ```dart
   /// CupertinoNativeList.builder(
@@ -113,7 +113,7 @@ class CupertinoNativeList extends StatelessWidget {
   ///
   /// Unlike `ListView.builder` the rows are **not** built lazily: the list is
   /// one native view, and it is handed the whole section at once. The builder
-  /// is for writing convenience, not for a long feed — use
+  /// is for writing convenience, not for a long feed: use
   /// `CupertinoNativeListSection` directly if you already hold the rows.
   const CupertinoNativeList.builder({
     super.key,

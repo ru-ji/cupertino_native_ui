@@ -1,5 +1,5 @@
-import 'package:cupertino_widgets/cupertino_widgets.dart';
-import 'package:cupertino_widgets/src/internal/widget_lowering.dart';
+import 'package:cupertino_native_ui/cupertino_native_ui.dart';
+import 'package:cupertino_native_ui/src/internal/widget_lowering.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 

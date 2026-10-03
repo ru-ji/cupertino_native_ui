@@ -19,20 +19,20 @@ import '../cupertino_native_text_field.dart';
 import '../models/cupertino_native_button_extra_options.dart';
 
 /// Turns package widgets written inline into native descriptions, plus the
-/// callbacks to fire when they report — the lowering every surface that
+/// callbacks to fire when they report: the lowering every surface that
 /// hosts content built by SwiftUI uses (a keyboard toolbar, a native list
 /// row's trailing, and the basis of `nativeBody`).
 ///
 /// Those surfaces are built by SwiftUI in a window Flutter cannot draw, so
 /// the widgets are **read, not mounted**: the package's own views are
-/// transcribed straight into SwiftUI — exactly like
-/// `CupertinoNativePageScaffold.nativeBody` — while real Flutter content goes
+/// transcribed straight into SwiftUI, exactly like
+/// `CupertinoNativePageScaffold.nativeBody`, while real Flutter content goes
 /// through a [CupertinoNativeFlutterView], which is an island in its own
 /// engine and the only way Flutter itself can appear there.
 ///
 /// The transcription is recursive: a [Row], a [Column] or a
 /// [CupertinoNativeGlassContainer] can hold further items, and every level is
-/// lowered the same way — SwiftUI views stay SwiftUI, only Flutter islands
+/// lowered the same way. SwiftUI views stay SwiftUI, only Flutter islands
 /// cost an engine. That is why only the package's own controls, [Text],
 /// [Spacer], [SizedBox] and [CupertinoNativeFlutterView] are accepted: a
 /// widget the native side has no equivalent for could not be drawn.
@@ -54,7 +54,7 @@ CupertinoNativeBody? lowerWidgetNode(
       return CupertinoNativeBody.spacer();
 
     // A childless SizedBox is a fixed gap. One *with* a child is a sizing
-    // box, and lowering it as a gap silently dropped the child — a 200pt
+    // box, and lowering it as a gap silently dropped the child: a 200pt
     // square where a field was meant to be.
     case SizedBox(:final child?):
       return lowerWidgetNode(child, id, callbacks);
@@ -81,7 +81,7 @@ CupertinoNativeBody? lowerWidgetNode(
             : widget.borderShape,
         color: widget.color,
         // A null `onPressed` is a disabled button, the way it is everywhere
-        // else in Flutter — greyed out rather than silently inert.
+        // else in Flutter: greyed out rather than silently inert.
         enabled: onPressed != null,
       );
 
@@ -304,7 +304,7 @@ CupertinoNativeBody? lowerWidgetNode(
       );
 
     case Padding(:final child?):
-      // The insets ride on the child's node — dropping them here is what made
+      // The insets ride on the child's node: dropping them here is what made
       // a `Padding` around a toolbar item do nothing.
       return lowerWidgetNode(
         child,
@@ -330,7 +330,7 @@ CupertinoNativeBody? lowerWidgetNode(
         false,
         'This content cannot hold a ${widget.runtimeType}. The surface is '
         'built by SwiftUI in a window Flutter cannot draw, so its items are '
-        'read rather than mounted. Use the package\'s own controls — '
+        'read rather than mounted. Use the package\'s own controls: '
         'CupertinoNativeButton, CupertinoNativeSwitch, CupertinoNativeCheckbox, '
         'CupertinoNativeMenu, CupertinoNativeSlider, CupertinoNativeStepper, '
         'CupertinoNativeColorPicker, CupertinoNativeGauge, '
@@ -338,14 +338,14 @@ CupertinoNativeBody? lowerWidgetNode(
         'CupertinoNativeSegmentedControl, CupertinoNativeDatePicker, '
         'CupertinoNativeActivityIndicator, CupertinoNativeSymbol, '
         'CupertinoNativeTextField, CupertinoNativeGlassContainer, Text, '
-        'Spacer, Row or Column — or CupertinoNativeFlutterView(route) to host '
+        'Spacer, Row or Column, or CupertinoNativeFlutterView(route) to host '
         'your own Flutter there, which costs an engine.',
       );
       // The assert is compiled out in release, where the widget was then
-      // dropped without a word — a glass container whose child hit this case
+      // dropped without a word: a glass container whose child hit this case
       // simply came up empty on screen. Say so at runtime too.
       debugPrint(
-        'cupertino_widgets: dropped ${widget.runtimeType} — this surface is '
+        'cupertino_native_ui: dropped ${widget.runtimeType}. This surface is '
         'rendered by SwiftUI and cannot mount Flutter widgets. Wrap it in '
         'CupertinoNativeFlutterView(route) to keep it.',
       );
@@ -369,7 +369,7 @@ List<CupertinoNativeBody> lowerWidgetChildren(
 
 /// A liquid glass container, transcribed to a native `glass` node: its
 /// [CupertinoNativeGlassContainer.icon] becomes a symbol and its `child` is
-/// lowered in place — so a container
+/// lowered in place, so a container
 /// inside a container works at any depth. A `onPressed` makes the glass
 /// itself a button, reporting `(id, null)`.
 CupertinoNativeBody lowerGlassContainer(
@@ -415,7 +415,7 @@ CupertinoNativeBody lowerGlassContainer(
   );
 }
 
-/// The widgets of a `CupertinoNativeTextField.toolbarActions` list, lowered —
+/// The widgets of a `CupertinoNativeTextField.toolbarActions` list, lowered:
 /// the keyboard bar's content.
 class LoweredToolbar {
   LoweredToolbar(List<Widget> items, {required bool isDark}) {
@@ -433,7 +433,7 @@ class LoweredToolbar {
   void dispatch(String id, Object? value) => callbacks[id]?.call(value);
 }
 
-/// One lowered widget for a single slot — a native list row's `trailing`.
+/// One lowered widget for a single slot: a native list row's `trailing`.
 /// The widget itself may be a container (Row, glass…) whose children lower
 /// recursively under it.
 class LoweredTrailing {

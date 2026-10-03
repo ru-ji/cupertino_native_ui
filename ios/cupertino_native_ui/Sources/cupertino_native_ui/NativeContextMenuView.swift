@@ -35,7 +35,7 @@ class NativeContextMenuFactory: NSObject, FlutterPlatformViewFactory {
 ///
 /// The lifted preview is either an image pushed from Dart (a custom "menu
 /// open" view rendered by Flutter) or, by default, a snapshot of the window
-/// region this surface covers — which is exactly the Flutter child's current
+/// region this surface covers, which is exactly the Flutter child's current
 /// pixels, since the child is composited directly above.
 @available(iOS 15.0, *)
 class NativeContextMenuView: NSObject, FlutterPlatformView, UIContextMenuInteractionDelegate {
@@ -53,7 +53,7 @@ class NativeContextMenuView: NSObject, FlutterPlatformView, UIContextMenuInterac
     private var isDark: Bool?
     /// The child's corner radius, from Dart. UIKit shapes the lift's plate and
     /// shadow from `UIPreviewParameters.visiblePath`, and its default is the
-    /// preview's full rectangle — square corners around a rounded child.
+    /// preview's full rectangle: square corners around a rounded child.
     private var previewCornerRadius: CGFloat = 0
     /// Takes the touch back, lift included, when the Flutter page scrolls.
     private let touchCanceller = TouchCancelRecognizer()
@@ -65,7 +65,7 @@ class NativeContextMenuView: NSObject, FlutterPlatformView, UIContextMenuInterac
         messenger: FlutterBinaryMessenger
     ) {
         channel = FlutterMethodChannel(
-            name: "cupertino_widgets/context_menu_\(viewId)", binaryMessenger: messenger)
+            name: "cupertino_native_ui/context_menu_\(viewId)", binaryMessenger: messenger)
         super.init()
 
         container.backgroundColor = .clear
@@ -98,7 +98,7 @@ class NativeContextMenuView: NSObject, FlutterPlatformView, UIContextMenuInterac
     }
 
     /// `UIContextMenuInteraction` presents its lifted content and menu chrome
-    /// in a separate system overlay window, not as a subview of `container` —
+    /// in a separate system overlay window, not as a subview of `container`:
     /// setting the style on `container` alone doesn't reach it. Override every
     /// window in the scene so whichever one the system parents the menu chrome
     /// to follows the app's own (possibly forced) theme, not the device's.
@@ -192,7 +192,7 @@ class NativeContextMenuView: NSObject, FlutterPlatformView, UIContextMenuInterac
     ) {
         // Hide the Flutter child for the duration: UIKit hides the original
         // of a lifted UIView automatically, but it can't touch Flutter's
-        // layer — leaving the child duplicated under the lifted snapshot.
+        // layer, leaving the child duplicated under the lifted snapshot.
         channel.invokeMethod("onOpenChanged", arguments: ["open": true])
     }
 
@@ -231,7 +231,7 @@ class NativeContextMenuView: NSObject, FlutterPlatformView, UIContextMenuInterac
         return controller
     }
 
-    /// The child's pixels anchored in the child's own frame — the source and
+    /// The child's pixels anchored in the child's own frame: the source and
     /// destination of the lift/dismiss morph.
     private func targetedPreview() -> UITargetedPreview? {
         guard let image = sessionSnapshot ?? childImage ?? snapshotChild(),

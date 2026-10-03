@@ -3,8 +3,8 @@ import 'package:flutter/cupertino.dart';
 import '../cupertino_symbol_image.dart';
 
 /// The iOS 15–18 bar's page transition, as `UINavigationBar` plays it between
-/// two pages that both have one: the page underneath's title — large or
-/// inline — flies up into the new page's back button and turns into its
+/// two pages that both have one: the page underneath's title, large or
+/// inline, flies up into the new page's back button and turns into its
 /// label, while the new back button's chevron fades in. Everything else
 /// rides with its page: the new large title slides in, the search field and
 /// the material go with their pages, the bar items fade.
@@ -40,7 +40,7 @@ class LegacyBarFlight {
 }
 
 /// The system's back button label: the previous page's title, or "Back" when
-/// that is too long — Flutter's `CupertinoNavigationBarBackButton` rule.
+/// that is too long (Flutter's `CupertinoNavigationBarBackButton` rule).
 String? legacyBackLabel(String? title) =>
     title == null || title.length <= 12 ? title : 'Back';
 
@@ -85,7 +85,7 @@ LegacyBarRole? _role(ModalRoute<dynamic>? route) {
   return null;
 }
 
-/// A part the transition draws itself while it flies — hidden in the page
+/// A part the transition draws itself while it flies: hidden in the page
 /// meanwhile, on the side it flies from.
 class LegacyBarFlyingPart extends StatelessWidget {
   const LegacyBarFlyingPart({
@@ -248,7 +248,7 @@ class _BarFlightShuttle extends StatelessWidget {
   final BuildContext topHero;
   final bool linear;
 
-  /// Where [key]'s part sits in its own bar — the bars sit at the top of
+  /// Where [key]'s part sits in its own bar: the bars sit at the top of
   /// their pages, so in the flight's box too.
   static Rect? _rect(GlobalKey key, BuildContext hero) {
     final box = key.currentContext?.findRenderObject();

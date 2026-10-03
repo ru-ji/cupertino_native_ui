@@ -14,7 +14,7 @@ import SwiftUI
 /// used to, through the base class's intrinsic-size measurement, and a Flutter
 /// box sized to twice the screen is what made a sheet's form scroll forever.
 /// The host therefore answers `intrinsicSize()` from this reported number
-/// once there is one — see `systemListHeight` there. Keep the two in step.
+/// once there is one, see `systemListHeight` there. Keep the two in step.
 @available(iOS 15.0, *)
 struct AdaptiveSystemListView: View {
     let config: ListConfig
@@ -26,7 +26,7 @@ struct AdaptiveSystemListView: View {
     var onReorder: (Int, Int, Int) -> Void = { _, _, _ in }
     let onTrailingEvent: (String, String, Any?) -> Void
     /// (height, animated): `animated` only for an expandable row opening or
-    /// closing — every other height change lands at once.
+    /// closing. Every other height change lands at once.
     let onHeight: (CGFloat, Bool) -> Void
 
     @State private var toggles: [String: Bool] = [:]
@@ -91,7 +91,7 @@ struct AdaptiveSystemListView: View {
         // the box would otherwise be centred in it and slide as either resizes.
         // `minHeight: 0` is what makes it hold for a list *taller* than the
         // box: a flexible frame with no minimum never shrinks below its child,
-        // so it grew past the box and the hosting view centred it — the whole
+        // so it grew past the box and the hosting view centred it. The whole
         // list jumped up by half of what an opening row added, then slid back
         // as the Flutter box caught up.
         .frame(minHeight: 0, maxHeight: .infinity, alignment: .top)
@@ -100,8 +100,8 @@ struct AdaptiveSystemListView: View {
         .clipped()
     }
 
-    /// The list's scroll content height — what it would need to show every
-    /// row — is the only honest measure: a `List` fills whatever frame it gets.
+    /// The list's scroll content height, what it would need to show every
+    /// row, is the only honest measure: a `List` fills whatever frame it gets.
     private func adopt(_ height: CGFloat) {
         guard height > 1 else { return }
         contentHeight = height
@@ -122,7 +122,7 @@ struct AdaptiveSystemListView: View {
             // Not a `DisclosureGroup`: with the row modifiers on it (badge,
             // swipe actions) the List took it for one cell and laid the open
             // children out beside the title. The children are real rows
-            // instead — see `visibleRows` — under the same rotating chevron.
+            // instead, see `visibleRows`, under the same rotating chevron.
             // See `toggle` for how the expansion animates.
             Button { toggle(row.id) } label: {
                 HStack {
@@ -201,12 +201,12 @@ struct AdaptiveSystemListView: View {
     /// While an expandable row opens or closes: its measure is reported as
     /// animated.
     @State private var expanding = false
-    /// The list's height before each open row was opened — what closing it
+    /// The list's height before each open row was opened: what closing it
     /// animates the Flutter box back to.
     @State private var closedHeights: [String: CGFloat] = [:]
 
     /// Opens or closes an expandable row with the List's own row animation
-    /// while the Flutter box — pinned to the top, clipping the list —
+    /// while the Flutter box (pinned to the top, clipping the list)
     /// animates to the new height with the same duration and curve (Dart
     /// side), so what is under the list moves with the rows.
     ///
@@ -257,8 +257,8 @@ struct AdaptiveSystemListView: View {
         }
     }
 
-    /// A `Label`: the List lines every icon up in one column, so titles — and
-    /// the separators that start at them — align whatever the glyph's width.
+    /// A `Label`: the List lines every icon up in one column, so titles, and
+    /// the separators that start at them, align whatever the glyph's width.
     @ViewBuilder
     private func label(_ row: ListRowConfig) -> some View {
         let text = VStack(alignment: .leading, spacing: 2) {
@@ -279,7 +279,7 @@ struct AdaptiveSystemListView: View {
 ///
 /// Not SwiftUI's `ScrollGeometry.contentSize` (iOS 18+): it never reports less
 /// than the list's own frame, so while the frame is grown ahead of an opening
-/// row (see `toggle`) it reported that room back instead of the rows — the
+/// row (see `toggle`) it reported that room back instead of the rows, so the
 /// Flutter box never learned the list had grown. The layout's content size is
 /// the rows alone, whatever the frame.
 private struct ContentHeightReader: UIViewRepresentable {
@@ -320,7 +320,7 @@ private struct ContentHeightReader: UIViewRepresentable {
         private weak var scroll: UIScrollView?
 
         /// Only from inside a window. The engine takes a platform view out of
-        /// it on any frame it is not composited — a list scrolled off screen —
+        /// it on any frame it is not composited (a list scrolled off screen),
         /// and a list re-laid out there measures wrong: it reported other
         /// heights, then one far too tall, and the Flutter box above the
         /// screen grew and pushed the whole page out of view.

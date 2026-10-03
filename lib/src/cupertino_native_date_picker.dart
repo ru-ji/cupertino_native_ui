@@ -11,8 +11,8 @@ import 'internal/native_color.dart';
 
 /// The system date picker. By default the **compact** style: the tappable
 /// gray pill used throughout iOS Settings/Calendar, which pops the native
-/// calendar or time wheel over the app when tapped — overlay, dimming and
-/// animations are all UIKit's. [style] switches to the inline calendar or the
+/// calendar or time wheel over the app when tapped (overlay, dimming and
+/// animations are all UIKit's). [style] switches to the inline calendar or the
 /// wheel.
 ///
 /// ```dart
@@ -51,7 +51,7 @@ class CupertinoNativeDatePicker extends StatefulWidget {
   final Color? activeColor;
 
   /// `compact` (a field that pops a calendar), `graphical` (the calendar
-  /// inline) or `wheel` — SwiftUI's `.datePickerStyle`.
+  /// inline) or `wheel`: SwiftUI's `.datePickerStyle`.
   final CupertinoNativeDatePickerStyle style;
 
   final double? width;
@@ -66,7 +66,7 @@ class _CupertinoNativeDatePickerState extends State<CupertinoNativeDatePicker>
     with NativePlatformViewStateMixin {
   bool? _lastIsDark;
 
-  // Follows the app's own theme brightness, not the device's — a light app
+  // Follows the app's own theme brightness, not the device's: a light app
   // forced on a dark-mode device should still get a light picker.
   bool get _isDark => Theme.of(context).brightness == Brightness.dark;
 
@@ -122,7 +122,7 @@ class _CupertinoNativeDatePickerState extends State<CupertinoNativeDatePicker>
   Future<void> _onPlatformViewCreated(int id) async {
     setUpChannel(
       id,
-      'cupertino_widgets/date_picker_$id',
+      'cupertino_native_ui/date_picker_$id',
       onMethodCall: _handleMethodCall,
     );
     requestIntrinsicSize();
@@ -151,7 +151,8 @@ class _CupertinoNativeDatePickerState extends State<CupertinoNativeDatePicker>
 
     final platformView = wrapForTransition(
       UiKitView(
-        viewType: 'com.example.cupertino_widgets/cupertino_native_date_picker',
+        viewType:
+            'com.example.cupertino_native_ui/cupertino_native_date_picker',
         layoutDirection: TextDirection.ltr,
         creationParams: _toMap(),
         creationParamsCodec: const StandardMessageCodec(),

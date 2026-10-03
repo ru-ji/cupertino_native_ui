@@ -59,7 +59,7 @@ class NativeSliderView: NativeHostingView {
         setupSwiftUI()
     }
 
-    /// The slider fills the box Flutter built for it — the branch the button
+    /// The slider fills the box Flutter built for it: the branch the button
     /// takes for `expand: true`; a slider has no natural width to hug. Its
     /// height still comes back through `getIntrinsicSize`, same as the button's.
     private func setupSwiftUI() {
@@ -95,7 +95,7 @@ class NativeSliderView: NativeHostingView {
                 return
             }
             // No re-attach: the slider's state lives in an `ObservableObject`
-            // this bridge owns, so an assignment already reaches the view —
+            // this bridge owns, so an assignment already reaches the view,
             // and rebuilding mid-drag would drop the gesture.
             updateViewModel(with: args)
             result(nil)

@@ -1,5 +1,5 @@
 import 'package:flutter/cupertino.dart';
-import 'package:cupertino_widgets/cupertino_widgets.dart';
+import 'package:cupertino_native_ui/cupertino_native_ui.dart';
 
 /// [CupertinoNativeButton]: styles, icon and label + icon buttons, sizes and
 /// full width. The rows are native list cells with the buttons lowered

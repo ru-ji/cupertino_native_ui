@@ -26,8 +26,8 @@ class _NativeTextFieldGestureRecognizer extends OneSequenceGestureRecognizer {
 
   /// Whether the native field currently shows a non-empty selection (reported
   /// by the platform side). Selection handles are on screen during that
-  /// window, and grabbing one is an immediate drag — indistinguishable from a
-  /// scroll by the slop/timeout heuristic — so every touch is claimed for the
+  /// window, and grabbing one is an immediate drag, indistinguishable from a
+  /// scroll by the slop/timeout heuristic, so every touch is claimed for the
   /// native field instead. Scrolling from elsewhere on the page still works.
   final bool Function() isSelectionActive;
 
@@ -124,7 +124,7 @@ class CupertinoNativeTextField extends StatefulWidget {
   final TextStyle? style;
   final Color? cursorColor;
 
-  /// When the built-in clear (×) button appears — the same
+  /// When the built-in clear (×) button appears: the same
   /// [OverlayVisibilityMode] `CupertinoTextField.clearButtonMode` takes,
   /// forwarded to UIKit's `UITextField.ViewMode`.
   final OverlayVisibilityMode clearButtonMode;
@@ -136,7 +136,7 @@ class CupertinoNativeTextField extends StatefulWidget {
   /// null).
   final double? cornerRadius;
 
-  /// Renders the field on Liquid Glass — `.glassEffect(glass.interactive())`
+  /// Renders the field on Liquid Glass: `.glassEffect(glass.interactive())`
   /// (a material below iOS 26). Null: no glass effect at all.
   final CupertinoNativeGlass? glass;
 
@@ -166,7 +166,7 @@ class CupertinoNativeTextField extends StatefulWidget {
   final ValueChanged<String>? onSubmitted;
   final VoidCallback? onEditingComplete;
 
-  /// The bar that rides above the keyboard while this field is focused —
+  /// The bar that rides above the keyboard while this field is focused:
   /// SwiftUI's own `ToolbarItemGroup(placement: .keyboard)`, the row of
   /// actions Notes and Numbers put there.
   ///
@@ -186,12 +186,12 @@ class CupertinoNativeTextField extends StatefulWidget {
   /// ([CupertinoNativeButton], [CupertinoNativeSwitch],
   /// [CupertinoNativePicker], [CupertinoNativeSymbol], [Text], [Spacer],
   /// [SizedBox], [CupertinoNativeGlassContainer]) are transcribed straight
-  /// into SwiftUI — the same lowering a `CupertinoNativePageScaffold.nativeBody`
-  /// uses — and each keeps its own `onPressed` / `onChanged`. The lowering is
+  /// into SwiftUI, the same lowering a `CupertinoNativePageScaffold.nativeBody`
+  /// uses, and each keeps its own `onPressed` / `onChanged`. The lowering is
   /// recursive: a [Row], a [Column] or a [CupertinoNativeGlassContainer] can
   /// hold further items, and every level follows the same rule. Flutter
-  /// content goes through a [CupertinoNativeFlutterView] — usually a
-  /// `CupertinoNativeBodyRoute.island` — a route hosted in its own engine,
+  /// content goes through a [CupertinoNativeFlutterView], usually a
+  /// `CupertinoNativeBodyRoute.island`, a route hosted in its own engine,
   /// and only it costs one. Anything else asserts.
   ///
   /// The bar belongs to *this* field's responder: it appears when this field
@@ -269,7 +269,7 @@ class CupertinoNativeTextField extends StatefulWidget {
 /// The live native fields, shared so a field's tap-outside handler can tell
 /// whether the tap landed on another native field of the same route. When it
 /// did, dropping focus right away would dismiss the keyboard and re-present it
-/// for the other field — the non-native flicker. Instead the tap is let
+/// for the other field: the non-native flicker. Instead the tap is let
 /// through: the other field's `onFocusChange(true)` report requests Flutter
 /// focus, the traversal unfocuses this field's node, and by then UIKit has
 /// already moved the first responder in one motion, like native.
@@ -282,7 +282,7 @@ class _NativeTextFieldRegistry {
 
   void remove(_CupertinoNativeTextFieldState field) => fields.remove(field);
 
-  /// Whether a field other than [field] currently holds Flutter focus — i.e.
+  /// Whether a field other than [field] currently holds Flutter focus, i.e.
   /// the focus moved between two native fields rather than leaving them.
   bool anotherFieldHasFocus(_CupertinoNativeTextFieldState field) {
     for (final other in fields) {
@@ -321,7 +321,7 @@ class _CupertinoNativeTextFieldState extends State<CupertinoNativeTextField>
 
   /// Claims a press-and-hold for native text selection while ceding a quick
   /// drag to an ancestor `Scrollable`; while [_selectionActive], claims every
-  /// touch so handle drags reach the native field — see
+  /// touch so handle drags reach the native field, see
   /// [_NativeTextFieldGestureRecognizer].
   late final Set<Factory<OneSequenceGestureRecognizer>> _gestureRecognizers =
       <Factory<OneSequenceGestureRecognizer>>{
@@ -332,7 +332,7 @@ class _CupertinoNativeTextFieldState extends State<CupertinoNativeTextField>
         ),
       };
 
-  /// The text native currently holds — used to break the controller<->native
+  /// The text native currently holds: used to break the controller<->native
   /// sync feedback loop.
   String _lastNativeText = '';
 
@@ -357,7 +357,7 @@ class _CupertinoNativeTextFieldState extends State<CupertinoNativeTextField>
   double _lastBottomInset = 0;
 
   /// Keyboard insets changed. iOS reports this repeatedly while the keyboard
-  /// animates (not just once at the end) — reacting on each *rising* tick with
+  /// animates (not just once at the end): reacting on each *rising* tick with
   /// an instant minimal jump tracks the keyboard's real motion progressively.
   /// Falling/settled insets are deliberately ignored so keyboard dismissal and
   /// post-settle blips (autocorrect bar, emoji switch) never move the scroll.
@@ -372,7 +372,7 @@ class _CupertinoNativeTextFieldState extends State<CupertinoNativeTextField>
   }
 
   /// Resigns the native first responder as the route starts leaving, so the
-  /// keyboard travels with the transition — see [RouteKeyboardDismissal].
+  /// keyboard travels with the transition, see [RouteKeyboardDismissal].
   @override
   void dismissKeyboardForRoute() {
     if (_focusNode.hasFocus) _focusNode.unfocus();
@@ -383,7 +383,7 @@ class _CupertinoNativeTextFieldState extends State<CupertinoNativeTextField>
 
   /// Who the keyboard is for. The native report, not only the Flutter node:
   /// the node follows it through the focus manager, which on the first focus
-  /// of a debug run took over a second — the keyboard had finished rising
+  /// of a debug run took over a second. The keyboard had finished rising
   /// before the node said this field was focused, so it was never lifted.
   bool get _keyboardOwner => _nativeFocused || _focusNode.hasFocus;
 
@@ -395,7 +395,7 @@ class _CupertinoNativeTextFieldState extends State<CupertinoNativeTextField>
       final box = context.findRenderObject();
       if (box is! RenderBox || !box.hasSize) return;
       // Only the part of the keyboard that really covers this viewport
-      // counts as padding — see [keyboardCoverOfViewport]. A page that
+      // counts as padding, see [keyboardCoverOfViewport]. A page that
       // already shrank for the keyboard adds nothing here, so a field that is
       // visible stays put.
       revealAboveKeyboard(
@@ -414,8 +414,8 @@ class _CupertinoNativeTextFieldState extends State<CupertinoNativeTextField>
     // keyboard for the whole animation, which is exactly the lag that reads
     // as "not native".
     if (postFrame) {
-      // A focus report: under a keyboard already up, glide — see
-      // [revealAboveKeyboard].
+      // A focus report: under a keyboard already up, glide (see
+      // [revealAboveKeyboard]).
       WidgetsBinding.instance.addPostFrameCallback(
         (_) => run(animate: mounted && keyboardIsUp(context)),
       );
@@ -478,7 +478,7 @@ class _CupertinoNativeTextFieldState extends State<CupertinoNativeTextField>
   /// platform view's pixels, so the fade is forwarded to the native side.
   ValueListenable<double>? _searchRowVisibility;
 
-  /// Last opacity actually sent, quantized — the scroll drives the value every
+  /// Last opacity actually sent, quantized: the scroll drives the value every
   /// frame and the channel shouldn't be spammed with sub-perceptual deltas.
   double? _lastSentOpacity;
 
@@ -518,7 +518,7 @@ class _CupertinoNativeTextFieldState extends State<CupertinoNativeTextField>
     }
     // Losing focus to another native field is a responder *move*: UIKit swaps
     // the first responder in one motion and the keyboard stays up. Resigning
-    // here first would close it and the next field would open it again —
+    // here first would close it and the next field would open it again,
     // which is what the toolbar's chevrons did. Deferred by a microtask
     // because Flutter unfocuses this node before focusing the next one.
     scheduleMicrotask(() {
@@ -528,7 +528,7 @@ class _CupertinoNativeTextFieldState extends State<CupertinoNativeTextField>
     });
   }
 
-  /// The creation params, captured on the first build and never rebuilt —
+  /// The creation params, captured on the first build and never rebuilt:
   /// `UiKitView` only reads them at creation.
   Map<String, dynamic>? _creationParams;
 
@@ -596,7 +596,7 @@ class _CupertinoNativeTextFieldState extends State<CupertinoNativeTextField>
   Future<void> _onPlatformViewCreated(int id) async {
     setUpChannel(
       id,
-      'cupertino_widgets/textfield_$id',
+      'cupertino_native_ui/textfield_$id',
       onMethodCall: _handleMethodCall,
     );
     // The creation params were memoized from the first build; push the live
@@ -656,7 +656,7 @@ class _CupertinoNativeTextFieldState extends State<CupertinoNativeTextField>
   @override
   Widget build(BuildContext context) {
     if (defaultTargetPlatform == TargetPlatform.iOS) {
-      // The paint room is for what a control draws *outside* its box — a
+      // The paint room is for what a control draws *outside* its box: a
       // glass rim and its shadow. A plain field draws nothing out there, and
       // the room is not free: an inflated platform view overlaps its
       // neighbours, and the engine cuts a new Flutter surface at every
@@ -666,7 +666,7 @@ class _CupertinoNativeTextFieldState extends State<CupertinoNativeTextField>
         wrapForTransition(
           UiKitView(
             viewType:
-                'com.example.cupertino_widgets/cupertino_native_text_field',
+                'com.example.cupertino_native_ui/cupertino_native_text_field',
             layoutDirection: TextDirection.ltr,
             // Memoized: every later change goes over `updateTextField`, not
             // through a map rebuilt on every build.
@@ -681,8 +681,8 @@ class _CupertinoNativeTextFieldState extends State<CupertinoNativeTextField>
 
       final Widget sized;
       if (widget.fillHeight) {
-        // Adopt the parent's (possibly animating) box outright — the app bar's
-        // collapsing search slot — so the native view really resizes with it.
+        // Adopt the parent's (possibly animating) box outright, the app bar's
+        // collapsing search slot, so the native view really resizes with it.
         sized = widget.width == null
             ? platformView
             : SizedBox(width: widget.width, child: platformView);
@@ -697,7 +697,7 @@ class _CupertinoNativeTextFieldState extends State<CupertinoNativeTextField>
         sized = SizedBox(height: intrinsicHeight ?? 52, child: platformView);
       }
 
-      // A tap outside dismisses the keyboard by default — unless it landed on
+      // A tap outside dismisses the keyboard by default, unless it landed on
       // another native field, whose focus report moves the responder without
       // a dismiss/re-present round trip (see [_NativeTextFieldRegistry]).
       final content = TapRegion(

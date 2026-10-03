@@ -108,7 +108,7 @@ class _NativeProgressState extends State<_NativeProgress>
   }
 
   Future<void> _onPlatformViewCreated(int id) async {
-    setUpChannel(id, 'cupertino_widgets/progress_$id');
+    setUpChannel(id, 'cupertino_native_ui/progress_$id');
     requestIntrinsicSize();
   }
 
@@ -122,7 +122,7 @@ class _NativeProgressState extends State<_NativeProgress>
       height: widget.circular ? (intrinsicHeight ?? 20) : null,
       child: wrapForTransition(
         UiKitView(
-          viewType: 'com.example.cupertino_widgets/cupertino_native_progress',
+          viewType: 'com.example.cupertino_native_ui/cupertino_native_progress',
           layoutDirection: TextDirection.ltr,
           creationParams: _toMap(),
           creationParamsCodec: const StandardMessageCodec(),

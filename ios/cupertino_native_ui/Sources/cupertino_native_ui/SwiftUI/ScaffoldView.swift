@@ -155,7 +155,7 @@ struct ScaffoldView: View {
     /// The page's content: a SwiftUI tree described from Dart when the
     /// scaffold has a `nativeBody`, an embedded FlutterEngine otherwise.
     ///
-    /// The two cannot be mixed — a native body IS the page, so there is no
+    /// The two cannot be mixed: a native body IS the page, so there is no
     /// engine under it and nothing goes Flutter → SwiftUI → FlutterView →
     /// SwiftUI. That nesting is exactly what it exists to remove.
     @ViewBuilder
@@ -183,7 +183,7 @@ struct ScaffoldView: View {
 extension View {
     /// The scaffold's `backgroundColor`, on the page itself and under the
     /// bars too: the navigation stack paints the system background over the
-    /// hosting view's, whatever the body — native or a Flutter engine.
+    /// hosting view's, whatever the body, native or a Flutter engine.
     func applyPageBackground(_ argb: Int?) -> some View {
         background(argb.map { Color(argb: $0).ignoresSafeArea() })
     }

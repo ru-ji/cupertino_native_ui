@@ -14,8 +14,8 @@ import 'models/cupertino_symbols.dart';
 import 'internal/native_color.dart';
 
 /// iOS's button, rendered by SwiftUI. Shaped like Flutter's [CupertinoButton]:
-/// the label is [child], and the style comes from the constructor —
-/// [CupertinoNativeButton.filled], [.tinted], [.glass], [.glassProminent].
+/// the label is [child], and the style comes from the constructor
+/// ([CupertinoNativeButton.filled], [.tinted], [.glass], [.glassProminent]).
 ///
 /// The native control draws the label itself, so [child] is read rather than
 /// built: a [Text] (title and style), a [CupertinoSymbolImage] (SF Symbol), an
@@ -88,7 +88,7 @@ class CupertinoNativeButton extends StatefulWidget {
     this.height,
   }) : style = CupertinoNativeButtonStyle.glassProminent;
 
-  /// A round icon button — the bar button of iOS 26: an SF Symbol in a
+  /// A round icon button: the bar button of iOS 26: an SF Symbol in a
   /// circle, Liquid Glass by default. The shorthand for
   /// `CupertinoNativeButton.glass(borderShape: circle, child:
   /// CupertinoSymbolImage.symbol(symbol))`.
@@ -128,7 +128,7 @@ class CupertinoNativeButton extends StatefulWidget {
   final CupertinoNativeButtonRole? role;
 
   /// Explicit point size, sizing the SwiftUI control itself and not just the
-  /// Flutter box around it. Left null the control is sized by [sizeStyle] —
+  /// Flutter box around it. Left null the control is sized by [sizeStyle],
   /// except that an icon-only button falls back to the standard 44pt square,
   /// which is what a bar button is.
   final double? width;
@@ -193,7 +193,7 @@ class _CupertinoNativeButtonState extends State<CupertinoNativeButton>
 
   bool? _lastIsDark;
 
-  // Follows the app's own theme brightness, not the device's — a light app
+  // Follows the app's own theme brightness, not the device's: a light app
   // forced on a dark-mode phone should still get a light control.
   /// In a bar, the content under it; elsewhere the app's theme.
   bool get _isDark =>
@@ -300,7 +300,7 @@ class _CupertinoNativeButtonState extends State<CupertinoNativeButton>
   Future<void> _onPlatformViewCreated(int id) async {
     setUpChannel(
       id,
-      'cupertino_widgets/button_$id',
+      'cupertino_native_ui/button_$id',
       onMethodCall: _handleMethodCall,
     );
     requestIntrinsicSize();
@@ -326,7 +326,7 @@ class _CupertinoNativeButtonState extends State<CupertinoNativeButton>
   /// button is.
   bool get _isIconOnly => _label.iconOnly;
 
-  /// Whether this button is a circle — the glass rim extends beyond the
+  /// Whether this button is a circle: the glass rim extends beyond the
   /// circle, but the label must not.
   bool get _isCircle =>
       widget.borderShape == CupertinoNativeButtonBorderShape.circle;
@@ -366,7 +366,7 @@ class _CupertinoNativeButtonState extends State<CupertinoNativeButton>
     if (defaultTargetPlatform == TargetPlatform.iOS) {
       final platformView = wrapForTransition(
         UiKitView(
-          viewType: 'com.example.cupertino_widgets/cupertino_native_button',
+          viewType: 'com.example.cupertino_native_ui/cupertino_native_button',
           layoutDirection: TextDirection.ltr,
           creationParams: _toMap(),
           creationParamsCodec: const StandardMessageCodec(),
@@ -375,7 +375,7 @@ class _CupertinoNativeButtonState extends State<CupertinoNativeButton>
       );
 
       if (_width != null && _height != null) {
-        // Circular buttons: the circle clips, so no extra paint room — the
+        // Circular buttons: the circle clips, so no extra paint room. The
         // label stays within the circle. Other shapes (capsule, roundedRect)
         // benefit from the rim/shadow room.
         return _isCircle
@@ -386,7 +386,7 @@ class _CupertinoNativeButtonState extends State<CupertinoNativeButton>
         return SizedBox(width: _width, height: _height, child: platformView);
       }
 
-      // expand: true — the native button already fills the box, so only the
+      // With expand: true, the native button already fills the box, so only the
       // height needs stating; the width constraint passes straight through.
       if (widget.expand) {
         return SizedBox(

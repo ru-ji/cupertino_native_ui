@@ -4,7 +4,7 @@ import SwiftUI
 /// Engines for `CupertinoNativeBody.flutter` nodes, one per route.
 ///
 /// A node that hosts Flutter needs a `FlutterViewController`, which needs an
-/// engine — the same machinery a scaffold body or a glass container's `route:`
+/// engine: the same machinery a scaffold body or a glass container's `route:`
 /// uses. It is kept per route rather than per node so the same island shown in
 /// two places (a keyboard toolbar that comes and goes, say) does not boot a
 /// second isolate each time.
@@ -52,7 +52,7 @@ enum BodyEngineRegistry {
 }
 
 /// A Flutter island inside a native tree. Sizes itself to the Dart content,
-/// with no placeholder height — an island must not claim the screen's height
+/// with no placeholder height: an island must not claim the screen's height
 /// before Dart has reported its own.
 ///
 /// It re-parents ONE controller per route rather than building a new

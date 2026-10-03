@@ -4,7 +4,7 @@ import 'package:flutter/widgets.dart';
 
 import 'cupertino_native_alert_dialog.dart';
 
-/// The system sheet of choices that rises from the bottom of the screen —
+/// The system sheet of choices that rises from the bottom of the screen:
 /// UIKit's `UIAlertController(preferredStyle: .actionSheet)`, which is what
 /// SwiftUI's `.confirmationDialog` presents.
 ///
@@ -30,13 +30,13 @@ import 'cupertino_native_alert_dialog.dart';
 /// );
 /// ```
 ///
-/// Mark the dismissing choice `isDefaultAction: true` — that maps to UIKit's
+/// Mark the dismissing choice `isDefaultAction: true`: that maps to UIKit's
 /// `.cancel` style, which pins it to its own capsule at the bottom.
 class CupertinoNativeActionSheet {
   const CupertinoNativeActionSheet._();
 
   static const MethodChannel _channel = MethodChannel(
-    'com.example.cupertino_widgets/alert',
+    'com.example.cupertino_native_ui/alert',
   );
 
   /// Presents the sheet and awaits the choice, calling that action's
@@ -44,8 +44,8 @@ class CupertinoNativeActionSheet {
   ///
   /// [anchor] is the global rect of the control that opened it (see
   /// [anchorOf]), which the sheet grows out of: a popover on iPad and Mac,
-  /// and on iOS 26 a bubble on iPhone too, dismissed by tapping outside — the
-  /// cancel action is not shown. Without one, an iPhone shows the sheet at the
+  /// and on iOS 26 a bubble on iPhone too, dismissed by tapping outside (the
+  /// cancel action is not shown). Without one, an iPhone shows the sheet at the
   /// bottom of the screen and an iPad a centred, arrowless popover.
   static Future<void> show({
     required BuildContext context,
@@ -60,7 +60,7 @@ class CupertinoNativeActionSheet {
         'message': message,
         'actions': actions.map((a) => a.toMap()).toList(),
         // Follows the app's own (possibly forced) theme, not the device's
-        // system appearance — same convention as every other native surface.
+        // system appearance: same convention as every other native surface.
         'isDark': Theme.of(context).brightness == Brightness.dark,
         if (anchor != null)
           'sourceRect': {

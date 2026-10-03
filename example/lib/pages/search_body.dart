@@ -1,12 +1,12 @@
 import 'dart:async';
 
 import 'package:flutter/cupertino.dart';
-import 'package:cupertino_widgets/cupertino_widgets.dart';
+import 'package:cupertino_native_ui/cupertino_native_ui.dart';
 
 /// Body for the searchable scaffold demo. It runs in its own FlutterEngine
 /// inside the native SwiftUI ScrollView and listens to
-/// [CupertinoNativePageScaffold.searchState] — the live snapshot of the native
-/// `.searchable` field — to decide what to render below the search bar:
+/// [CupertinoNativePageScaffold.searchState], the live snapshot of the native
+/// `.searchable` field, to decide what to render below the search bar:
 ///
 ///  * idle          → the full list
 ///  * active, empty → search suggestions
@@ -138,7 +138,7 @@ class _SearchBodyState extends State<SearchBody> {
         ),
         // Drawn Flutter rows, NOT CupertinoNativeList: this body already runs
         // inside a native platform view, and a platform view nested in another
-        // renders blank — the empty body after opening/closing search.
+        // renders blank (the empty body after opening/closing search).
         _Card(
           children: [
             for (final (name, category) in items)

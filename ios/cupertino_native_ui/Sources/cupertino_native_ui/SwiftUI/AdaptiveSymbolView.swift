@@ -123,7 +123,7 @@ extension View {
         }
     }
 
-    /// `.contentTransition(.symbolEffect(.replace))` — one symbol morphs into
+    /// `.contentTransition(.symbolEffect(.replace))`: one symbol morphs into
     /// the next when the name changes.
     @ViewBuilder
     fileprivate func applyReplaceTransition(_ enabled: Bool) -> some View {
@@ -137,7 +137,7 @@ extension View {
 
 @available(iOS 15.0, *)
 extension View {
-    /// `.symbolColorRenderingMode(.gradient)` — iOS 26+; flat colour before.
+    /// `.symbolColorRenderingMode(.gradient)`: iOS 26+; flat colour before.
     @ViewBuilder
     fileprivate func applyGradient(_ enabled: Bool) -> some View {
         if enabled, #available(iOS 26.0, *) {

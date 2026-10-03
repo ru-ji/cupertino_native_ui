@@ -13,9 +13,9 @@ final class TextFieldModel: ObservableObject {
     /// Bumped by `focus` / `unfocus` so the view can act on a repeated request.
     @Published var focusCommand: (id: Int, focused: Bool)?
 
-    /// The sequence behind [focusCommand]. One counter for every driver — the
+    /// The sequence behind [focusCommand]. One counter for every driver (the
     /// platform view's own `focus`/`unfocus`, and the re-focus that puts the
-    /// responder back after the hosting view left the window — because
+    /// responder back after the hosting view left the window) because
     /// `BackingTextField` only acts on a command whose id it has not seen.
     /// Two counters would hand out the same id twice and swallow the second
     /// request, which is a keyboard that never comes back.
@@ -30,7 +30,7 @@ final class TextFieldModel: ObservableObject {
 
     /// The keyboard accessory for this field, or nil. Set on the backing
     /// `UITextField` while it is still unfocused, so UIKit presents it in the
-    /// same animation as the keyboard — no `reloadInputViews()`.
+    /// same animation as the keyboard: no `reloadInputViews()`.
     @Published var accessory: UIView?
 
     /// Where the backing `UITextField` sat, in window coordinates, the moment
@@ -38,7 +38,7 @@ final class TextFieldModel: ObservableObject {
     ///
     /// Deliberately **not** `@Published`: the only reader is the focus event
     /// on its way to Flutter, and publishing it re-evaluated the field on
-    /// every scroll tick — which rebuilt the accessory and made the keyboard
+    /// every scroll tick, which rebuilt the accessory and made the keyboard
     /// close and re-present itself over and over.
     ///
     /// Read off the real `UITextField` in `textFieldDidBeginEditing` rather
@@ -47,7 +47,7 @@ final class TextFieldModel: ObservableObject {
     /// platform view.
     var focusFrameInWindow: CGRect = .zero
 
-    /// Bumped whenever `config` is replaced — the toolbar's declared values
+    /// Bumped whenever `config` is replaced: the toolbar's declared values
     /// reseed on it, without comparing configs in `body`.
     private(set) var configRevision = 0
 
@@ -58,7 +58,7 @@ final class TextFieldModel: ObservableObject {
 }
 
 /// The package's text field: SwiftUI chrome (glass, background) around a
-/// `UITextField`, which draws its own icons and clear button — see [BackingTextField] for why the editable part
+/// `UITextField`, which draws its own icons and clear button, see [BackingTextField] for why the editable part
 /// is UIKit (the keyboard toolbar).
 @available(iOS 15.0, *)
 struct AdaptiveTextFieldView: View {
@@ -102,7 +102,7 @@ struct AdaptiveTextFieldView: View {
     }
 
     /// `readOnly` is enforced here rather than with `.disabled`, which would
-    /// also grey the text out and refuse focus — a read-only field still takes
+    /// also grey the text out and refuse focus: a read-only field still takes
     /// the caret and the selection, it just does not accept edits.
     private var binding: Binding<String> {
         Binding(
@@ -129,7 +129,7 @@ struct AdaptiveTextFieldView: View {
     }
 
     /// Glass, and only glass, so the whole field including its icons sits on
-    /// one material — the same shape the background uses.
+    /// one material: the same shape the background uses.
     private struct GlassBackground: ViewModifier {
         let config: TextFieldConfig
 
@@ -142,7 +142,7 @@ struct AdaptiveTextFieldView: View {
         }
 
         /// `RoundedRectangle` clamps a radius past half its height on its own,
-        /// which `layer.cornerRadius` could not — so the app bar's collapsing
+        /// which `layer.cornerRadius` could not, so the app bar's collapsing
         /// search capsule needs no manual clamp any more.
         private var shape: RoundedRectangle {
             RoundedRectangle(

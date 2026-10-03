@@ -17,7 +17,7 @@ enum CupertinoGlassGroupShape { circle, capsule, roundedRect }
 /// How a glass arrives and leaves a [CupertinoNativeGlassGroup].
 ///
 /// A transition runs when a glass is **inserted or removed**, and at no other
-/// moment — so a change only animates if it changes which glasses exist, and
+/// moment, so a change only animates if it changes which glasses exist, and
 /// that is decided by [CupertinoNativeGlassGroupItem.actionId].
 ///
 /// | Change | How you cause it | |
@@ -30,7 +30,7 @@ enum CupertinoGlassGroupShape { circle, capsule, roundedRect }
 /// spacing, and it gives the departing glass and the arriving one one shape
 /// that travels between them: it is what makes a merge a merge, and what lets
 /// a "Select" capsule become an X circle in one piece. [materialize] matches no
-/// geometry at all — the material scales in or out while the content fades —
+/// geometry at all, the material scales in or out while the content fades,
 /// which is what a glass wants when it appears where there was nothing.
 enum CupertinoGlassTransition {
   /// Shapes travel into and out of each other. The default.
@@ -39,15 +39,15 @@ enum CupertinoGlassTransition {
   /// The material animates in or out and the content fades; no geometry match.
   materialize,
 
-  /// No transition — the glass appears and disappears immediately.
+  /// No transition: the glass appears and disappears immediately.
   identity,
 
   /// The material's own strength, turned up from nothing to full. Custom.
   ///
   /// Not one of SwiftUI's transitions, and the reason it exists: [materialize]
   /// *scales* the glass as it comes in, and the system's appearing button does
-  /// not. What that one does reads as a gauge on the material — zero at rest,
-  /// driven to full — while the content fades in place. So the glass here is
+  /// not. What that one does reads as a gauge on the material (zero at rest,
+  /// driven to full) while the content fades in place. So the glass here is
   /// never inserted or removed and nothing has a transition to run: the glass
   /// is always mounted and only the material's opacity moves.
   ///
@@ -90,7 +90,7 @@ class CupertinoNativeGlassGroupItem {
   ///
   /// Give an item a new [actionId] (with no [slotId]) and SwiftUI sees a
   /// different glass where the old one stood, so the old one leaves and the
-  /// new one arrives — the 1 → 1 replace case, which wants
+  /// new one arrives: the 1 → 1 replace case, which wants
   /// [CupertinoGlassTransition.materialize].
   ///
   /// A *toggle* button (add ↔ remove, select ↔ done) is not that case: it is
@@ -100,7 +100,7 @@ class CupertinoNativeGlassGroupItem {
   /// The item's identity, if it should differ from [actionId].
   ///
   /// A toggle button changes [actionId] every tap but should stay the *same*
-  /// glass — give both states the same [slotId] so SwiftUI never tears it
+  /// glass: give both states the same [slotId] so SwiftUI never tears it
   /// down and rebuilds it. Without this, the outgoing glass keeps its own tap
   /// gesture alive while it fades out, so a tap during the swap can land on
   /// it and fire the old action, snapping the state straight back.
@@ -128,14 +128,14 @@ class CupertinoNativeGlassGroupItem {
 
   /// Glasses sharing a [unionId] are drawn as one shape.
   ///
-  /// `null` — the default — leaves the item united with nothing, under its own
+  /// `null`, the default, leaves the item united with nothing, under its own
   /// [actionId]. Give two items the same id to make them one glass, and move an
   /// item between ids to take it in and out of a union. The shapes have to
   /// match: a circle and a capsule never combine.
   ///
   /// An item that shares its id with another is drawn as a capsule whatever
   /// [shape] says. A union's frame is the whole group, and a circle is
-  /// *inscribed* in the frame it is given — so a circle union collapses to one
+  /// *inscribed* in the frame it is given, so a circle union collapses to one
   /// item's worth of glass in the middle with the content hanging outside it.
   /// A capsule fills the frame, which is what a merge needs; on a square item
   /// it is a circle anyway, so nothing changes for a lone glass.
@@ -147,12 +147,12 @@ class CupertinoNativeGlassGroupItem {
   /// Turns this glass into a menu anchor instead of a plain button.
   ///
   /// The glass becomes the menu's own label, so the system has the capsule as
-  /// its anchor and grows the menu out of it — the whole shape transforms,
+  /// its anchor and grows the menu out of it: the whole shape transforms,
   /// which is what a toolbar menu does and what presenting a popover beside
   /// the button cannot give. Taps report through the menu entries' own action
   /// ids, not the item's [actionId].
   ///
-  /// Empty — the default — leaves it a button.
+  /// Empty, the default, leaves it a button.
   final List<CupertinoNativeMenuItem> menuItems;
 
   Map<String, dynamic> toMap() => {
@@ -173,7 +173,7 @@ class CupertinoNativeGlassGroupItem {
 
 /// Several liquid-glass controls in ONE platform view, so they behave as one
 /// piece of glass: brought close, they stretch towards each other and merge,
-/// then separate again — the effect a row of separate glass buttons cannot
+/// then separate again, the effect a row of separate glass buttons cannot
 /// have.
 ///
 /// ```dart
@@ -228,11 +228,11 @@ class CupertinoNativeGlassGroup extends StatefulWidget {
   ///
   /// The gap is how far apart the items are laid out, the radius how near they
   /// must be before the container merges them by proximity anyway. With one
-  /// number for both, the radius could never be set below the gap — and a
+  /// number for both, the radius could never be set below the gap, and a
   /// union could not be tested on its own.
   ///
   /// Set it below the gap to make [CupertinoNativeGlassGroupItem.unionId] the
-  /// only thing that unites two glasses. `null` — the default — inherits
+  /// only thing that unites two glasses. `null`, the default, inherits
   /// [spacing], which is the behaviour this widget has always had.
   final double? mergeDistance;
 
@@ -261,13 +261,13 @@ class CupertinoNativeGlassGroup extends StatefulWidget {
   /// the same place.
   final CupertinoGlassTransition transition;
 
-  /// How far the glass squares up as a change plays, 0…1. 0 — the default —
+  /// How far the glass squares up as a change plays, 0…1. 0, the default,
   /// leaves the outline alone; around 0.45 reads like the system's own.
   ///
   /// A swap and a reshape both work by handing the glass a new identity, and on
   /// its own that reads as flat: the material is matched so perfectly that
   /// nothing announces the change. What the system plays there is not a bulge
-  /// and not a scale — a 60fps capture of its bar button swapping an icon shows
+  /// and not a scale: a 60fps capture of its bar button swapping an icon shows
   /// the circle *squaring up*, top and bottom edges flattening first and then
   /// the sides, before unwinding. The glass barely changes size at all.
   ///
@@ -364,7 +364,7 @@ class _CupertinoNativeGlassGroupState extends State<CupertinoNativeGlassGroup>
       child: wrapForTransition(
         UiKitView(
           viewType:
-              'com.example.cupertino_widgets/cupertino_native_glass_group',
+              'com.example.cupertino_native_ui/cupertino_native_glass_group',
           layoutDirection: TextDirection.ltr,
           creationParams: _toMap(),
           creationParamsCodec: const StandardMessageCodec(),
@@ -374,7 +374,7 @@ class _CupertinoNativeGlassGroupState extends State<CupertinoNativeGlassGroup>
           gestureRecognizers: scrollFriendlyGestures(),
           onPlatformViewCreated: (id) => setUpChannel(
             id,
-            'cupertino_widgets/glass_group_$id',
+            'cupertino_native_ui/glass_group_$id',
             onMethodCall: (call) async {
               if (call.method == 'onAction') {
                 final args = call.arguments as Map?;

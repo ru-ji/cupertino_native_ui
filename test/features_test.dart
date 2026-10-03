@@ -1,8 +1,8 @@
 // The deprecated names are exercised on purpose: they must keep working.
 // ignore_for_file: deprecated_member_use, deprecated_member_use_from_same_package
 
-import 'package:cupertino_widgets/cupertino_widgets.dart';
-import 'package:cupertino_widgets/src/internal/widget_lowering.dart';
+import 'package:cupertino_native_ui/cupertino_native_ui.dart';
+import 'package:cupertino_native_ui/src/internal/widget_lowering.dart';
 import 'package:flutter/cupertino.dart' show CupertinoApp, CupertinoThemeData;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -10,7 +10,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 /// Behaviour of the iOS 27 / iOS 15–26 additions, end to end on the Dart
 /// side: what each widget sends at creation, and what it does with what the
-/// native side sends back. The native side is played by hand — a platform
+/// native side sends back. The native side is played by hand: a platform
 /// view's id is captured at creation and its channel is fed method calls.
 void main() {
   final iOS = TargetPlatformVariant.only(TargetPlatform.iOS);
@@ -195,7 +195,7 @@ void main() {
     testWidgets('clearCache asks the plugin', (tester) async {
       final calls = <String>[];
       tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
-        const MethodChannel('com.example.cupertino_widgets/alert'),
+        const MethodChannel('com.example.cupertino_native_ui/alert'),
         (call) async {
           calls.add(call.method);
           return null;
@@ -325,7 +325,7 @@ void main() {
           ],
         ),
       );
-      final channel = 'cupertino_widgets/list_${ids.single}';
+      final channel = 'cupertino_native_ui/list_${ids.single}';
       await fromNative(tester, channel, 'onSelectionChanged', {
         'ids': ['a', 'b'],
       });
@@ -361,7 +361,7 @@ void main() {
       expect(params['fixedOrder'], isTrue);
       await fromNative(
         tester,
-        'cupertino_widgets/menu_${ids.single}',
+        'cupertino_native_ui/menu_${ids.single}',
         'onPrimaryAction',
       );
       expect(pressed, 1);
@@ -426,7 +426,7 @@ void main() {
       );
       await fromNative(
         tester,
-        'cupertino_widgets/control_${ids.single}',
+        'cupertino_native_ui/control_${ids.single}',
         'onChanged',
         2,
       );
@@ -445,7 +445,7 @@ void main() {
       expect(params['color'], 0xFF112233);
       await fromNative(
         tester,
-        'cupertino_widgets/control_${ids.single}',
+        'cupertino_native_ui/control_${ids.single}',
         'onChanged',
         0x80FF0000,
       );
@@ -462,7 +462,7 @@ void main() {
       expect(params['dates'], [day.millisecondsSinceEpoch.toDouble()]);
       await fromNative(
         tester,
-        'cupertino_widgets/control_${ids.single}',
+        'cupertino_native_ui/control_${ids.single}',
         'onChanged',
         [day.millisecondsSinceEpoch.toDouble()],
       );
@@ -502,7 +502,7 @@ void main() {
       await tester.pumpWidget(build(1));
       await tester.pump(const Duration(milliseconds: 100));
       tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
-        MethodChannel('cupertino_widgets/control_${ids.single}'),
+        MethodChannel('cupertino_native_ui/control_${ids.single}'),
         (call) async {
           if (call.method == 'update') updates.add(call.arguments);
           return null;
@@ -646,7 +646,7 @@ void main() {
   });
 
   group('sheet', () {
-    const alert = MethodChannel('com.example.cupertino_widgets/alert');
+    const alert = MethodChannel('com.example.cupertino_native_ui/alert');
 
     testWidgets('a native body sheet sends the tree and routes its events', (
       tester,
@@ -661,13 +661,13 @@ void main() {
           // Native reports while the sheet is up, then it closes.
           await fromNative(
             tester,
-            'cupertino_widgets/sheet_events',
+            'cupertino_native_ui/sheet_events',
             'bodyEvent',
             {'id': 'notify', 'value': true},
           );
           await fromNative(
             tester,
-            'cupertino_widgets/sheet_events',
+            'cupertino_native_ui/sheet_events',
             'toolbarAction',
             'done',
           );
@@ -789,7 +789,7 @@ void main() {
 
   group('appearance in a CupertinoApp', () {
     // The other tests host widgets in a MaterialApp, and the widgets read the
-    // app's brightness through Theme.of — which a CupertinoApp has no Theme
+    // app's brightness through Theme.of, which a CupertinoApp has no Theme
     // for. These pin that a CupertinoApp's own brightness still wins over the
     // phone's, both ways.
     for (final (appDark, phoneDark) in [(true, false), (false, true)]) {
@@ -843,7 +843,7 @@ void main() {
       final updates = await updatesOnThemeSwitch(
         tester,
         CupertinoNativeStepper(value: 1, onChanged: (_) {}),
-        'cupertino_widgets/control_',
+        'cupertino_native_ui/control_',
       );
       expect(updates.last['isDark'], isTrue);
     }, variant: iOS);
@@ -856,7 +856,7 @@ void main() {
       final updates = await updatesOnThemeSwitch(
         tester,
         CupertinoNativePhotosPicker(onChanged: (_) {}),
-        'cupertino_widgets/photos_picker_',
+        'cupertino_native_ui/photos_picker_',
       );
       expect(updates.last['isDark'], isTrue);
     }, variant: iOS);
@@ -874,7 +874,7 @@ void main() {
         ),
       );
       await tester.pump(const Duration(milliseconds: 100));
-      return 'cupertino_widgets/list_${ids.single}';
+      return 'cupertino_native_ui/list_${ids.single}';
     }
 
     testWidgets('a plain measure lands at once', (tester) async {

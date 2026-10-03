@@ -20,7 +20,7 @@ enum CupertinoScrollEdgeEffectStyle { automatic, soft, hard }
 /// Which screen edge a [CupertinoScrollEdgeEffect] hugs.
 enum CupertinoScrollEdgeEffectEdge { top, bottom }
 
-/// iOS 26's **scroll edge effect** — the progressive blur plus adaptive wash
+/// iOS 26's **scroll edge effect**: the progressive blur plus adaptive wash
 /// where content meets a screen edge.
 ///
 /// Built on [CupertinoNativeEdgeBlur], it samples native controls as well as
@@ -28,8 +28,8 @@ enum CupertinoScrollEdgeEffectEdge { top, bottom }
 /// `Info.plist`. Other platforms draw nothing for `soft`.
 ///
 /// It has no colour of its own: both styles take the background of the page
-/// showing under the effect — its [CupertinoPageScaffold]'s or [Scaffold]'s,
-/// else the theme's — as the system's do. A bar laid over pages that each
+/// showing under the effect (its [CupertinoPageScaffold]'s or [Scaffold]'s,
+/// else the theme's) as the system's do. A bar laid over pages that each
 /// have their own scaffold, a tab bar over its tabs, takes the visible one's.
 /// On [CupertinoColors.systemBackground] or
 /// [CupertinoColors.systemGroupedBackground] the `soft` wash follows the
@@ -60,7 +60,7 @@ class CupertinoScrollEdgeEffect extends StatefulWidget {
   /// over a blur, ending in a hard cutoff. `automatic` is `soft`.
   final CupertinoScrollEdgeEffectStyle style;
 
-  /// Called when the content behind the effect turns bright or dark — so
+  /// Called when the content behind the effect turns bright or dark, so
   /// chrome drawn over the effect can follow, as the system's bar items do:
   /// dark over [Brightness.light], light over [Brightness.dark]. Measured
   /// under the wash, so it reports on a page of its own colour too. `soft`
@@ -89,12 +89,12 @@ class _CupertinoScrollEdgeEffectState extends State<CupertinoScrollEdgeEffect> {
 
   /// The `soft` blur's peak `inputRadius`, held under the bar and fading
   /// with the wash: the system's own PocketBlur's (iOS 26 layer dump). Not a
-  /// σ — on screen it measures σ ≈ 1.5–1.85pt (2026-10-03). Top edge only:
+  /// σ: on screen it measures σ ≈ 1.5–1.85pt (2026-10-03). Top edge only:
   /// the tab bar's edge is the wash alone, as the system's.
   static const double _blurPeak = 1;
 
   /// The background of a page showing under the effect that the effect is
-  /// not inside — a tab of the tab bar laid over them. Null: the page around
+  /// not inside: a tab of the tab bar laid over them. Null: the page around
   /// the effect.
   (Color, bool)? _pageUnder;
 
@@ -104,13 +104,13 @@ class _CupertinoScrollEdgeEffectState extends State<CupertinoScrollEdgeEffect> {
     SchedulerBinding.instance.addPostFrameCallback(_lookUnder);
   }
 
-  /// After every frame — a tab switched, a page pushed inside one — finds
+  /// After every frame (a tab switched, a page pushed inside one) finds
   /// the page under the effect. Asks for no frame of its own.
   void _lookUnder(Duration _) {
     if (!mounted) return;
     SchedulerBinding.instance.addPostFrameCallback(_lookUnder);
     final (hit, scaffold) = _scaffoldUnder();
-    // Nothing took the hit — a page mid-transition ignores pointers: keep
+    // Nothing took the hit: a page mid-transition ignores pointers: keep
     // what was there.
     if (!hit) return;
     final under = scaffold == null
@@ -119,8 +119,8 @@ class _CupertinoScrollEdgeEffectState extends State<CupertinoScrollEdgeEffect> {
     if (under != _pageUnder) setState(() => _pageUnder = under);
   }
 
-  /// Hit-tests what is painted under the effect's centre — the siblings
-  /// before it in a stack, up the tree until one takes the hit — and returns
+  /// Hit-tests what is painted under the effect's centre (the siblings
+  /// before it in a stack, up the tree until one takes the hit) and returns
   /// the innermost scaffold on the way down to what was hit. A stack only
   /// paints the children it shows, so this is the visible page.
   (bool, Element?) _scaffoldUnder() {
@@ -202,8 +202,8 @@ class _CupertinoScrollEdgeEffectState extends State<CupertinoScrollEdgeEffect> {
     return scaffold;
   }
 
-  /// The page's background — the nearest scaffold's, Cupertino or Material,
-  /// else its theme's — and whether it is one of the app's own.
+  /// The page's background (the nearest scaffold's, Cupertino or Material,
+  /// else its theme's) and whether it is one of the app's own.
   static (Color, bool) _pageBackground(BuildContext context) {
     Widget? scaffold;
     context.visitAncestorElements((element) {
@@ -216,8 +216,8 @@ class _CupertinoScrollEdgeEffectState extends State<CupertinoScrollEdgeEffect> {
     return _backgroundOf(context, scaffold);
   }
 
-  /// [scaffold]'s background, resolved in [context] — its theme's without
-  /// one of its own — and whether it is the app's own colour: anything but
+  /// [scaffold]'s background, resolved in [context], its theme's without
+  /// one of its own, and whether it is the app's own colour: anything but
   /// the system background a [CupertinoPageScaffold] starts from, or the
   /// grouped one. Only those let the wash adapt, as only a page without a
   /// `.background` lets
@@ -234,8 +234,8 @@ class _CupertinoScrollEdgeEffectState extends State<CupertinoScrollEdgeEffect> {
     return (resolved, !_systemBackgrounds.contains(resolved.toARGB32()));
   }
 
-  /// Every variant of [CupertinoColors.systemBackground] — white, black, and
-  /// the elevated darks — and of [CupertinoColors.systemGroupedBackground]:
+  /// Every variant of [CupertinoColors.systemBackground] (white, black, and
+  /// the elevated darks) and of [CupertinoColors.systemGroupedBackground]:
   /// what an inset-grouped `List` lays under its cards itself, with no
   /// `.background`, so SwiftUI's wash still adapts on it.
   static final Set<int> _systemBackgrounds = {
@@ -278,10 +278,10 @@ class _CupertinoScrollEdgeEffectState extends State<CupertinoScrollEdgeEffect> {
       return IgnorePointer(child: ColoredBox(color: wash));
     }
     if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) {
-      // No intensity: always on. A light blur under the top wash — none at
-      // the bottom — in the page's background, as the system's. The system
+      // No intensity: always on. A light blur under the top wash (none at
+      // the bottom), in the page's background, as the system's. The system
       // background follows
-      // the content; any other colour fixes the wash to it — SwiftUI's stops
+      // the content; any other colour fixes the wash to it: SwiftUI's stops
       // adapting once a page has a `.background`.
       return CupertinoNativeEdgeBlur(
         edge: edge,

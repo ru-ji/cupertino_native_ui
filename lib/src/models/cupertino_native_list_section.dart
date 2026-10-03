@@ -3,7 +3,7 @@ import 'package:flutter/painting.dart' show EdgeInsets;
 import 'cupertino_native_list_tile.dart';
 
 /// A `Section` of a [CupertinoNativeList] or [CupertinoNativeForm], with an
-/// optional header/footer and its rows — mirroring SwiftUI's
+/// optional header/footer and its rows: mirroring SwiftUI's
 /// `Section(header:footer:) { ... }`.
 ///
 /// Every spacing metric is optional: left null, SwiftUI decides it from the

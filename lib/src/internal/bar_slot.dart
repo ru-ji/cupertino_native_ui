@@ -6,7 +6,7 @@ import 'package:flutter/widgets.dart';
 ///
 /// * its symbol is medium, at the large scale of the body size;
 /// * on iOS 26 its title is medium too; in the iOS 15–18 bar it is regular,
-///   and semibold for a `glassProminent` button — UIKit's Done style;
+///   and semibold for a `glassProminent` button: UIKit's Done style;
 /// * in the iOS 15–18 bar, an icon-only button hugs its glyph, as a
 ///   `UIBarButtonItem` does, instead of centring it in a 44pt square that
 ///   would push it off the bar's 8pt / 16pt insets.
@@ -18,7 +18,7 @@ import 'package:flutter/widgets.dart';
 /// It also carries the brightness of the content under the bar, measured
 /// under the scroll edge effect's wash: a bar button takes its appearance
 /// from it, as the system's bar items take theirs from the content under
-/// their edge effect — not from the wash right behind them.
+/// their edge effect, not from the wash right behind them.
 class BarSlot extends InheritedWidget {
   const BarSlot({super.key, this.brightness, required super.child});
 

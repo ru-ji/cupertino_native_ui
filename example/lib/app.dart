@@ -10,7 +10,7 @@ import 'pages/home_page.dart';
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  /// App-wide theme mode — toggled by the home app bar's brightness action.
+  /// App-wide theme mode: toggled by the home app bar's brightness action.
   /// Starts on the device setting.
   static final ValueNotifier<ThemeMode> themeMode = ValueNotifier<ThemeMode>(
     ThemeMode.system,
@@ -41,10 +41,10 @@ class MyApp extends StatelessWidget {
         ),
         themeMode: mode,
         // No cross-fade: native views take the theme's brightness, which a
-        // lerping theme flips at its midpoint — so they snapped mid-fade
+        // lerping theme flips at its midpoint, so they snapped mid-fade
         // while the Flutter background was still grey.
         themeAnimationDuration: Duration.zero,
-        // Every page is a CupertinoPageScaffold, which is not a Material —
+        // Every page is a CupertinoPageScaffold, which is not a Material,
         // so a bare `Text` fell back to Flutter's debug style, the yellow
         // underline. One transparent Material at the root gives every page a
         // text style to inherit, and paints nothing.

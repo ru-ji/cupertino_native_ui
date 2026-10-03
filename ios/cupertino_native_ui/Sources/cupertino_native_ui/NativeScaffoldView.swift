@@ -103,15 +103,15 @@ class ScaffoldModel: ObservableObject {
 class NativeScaffoldView: NativeHostingView {
     /// One engine group shared by every scaffold instance. Engines spawned
     /// from the same group share the GPU context, font caches and isolate
-    /// snapshot, so every spawn after the first is drastically cheaper —
+    /// snapshot, so every spawn after the first is drastically cheaper:
     /// per-instance groups would pay the full cold start on each scaffold.
     static let sharedEngineGroup = FlutterEngineGroup(
-        name: "cupertino_widgets_scaffold", project: nil)
+        name: "cupertino_native_ui_scaffold", project: nil)
 
     /// Hidden idle engine that keeps `sharedEngineGroup` warm.
     private static var warmupEngine: FlutterEngine?
 
-    /// Engines fully booted ahead of time for specific routes — main() has
+    /// Engines fully booted ahead of time for specific routes: main() has
     /// run, the route's Dart libraries are loaded, runApp has been called.
     /// A scaffold/sheet that needs one of these routes attaches instantly
     /// instead of spawning.
@@ -148,7 +148,7 @@ class NativeScaffoldView: NativeHostingView {
 
     /// Parks a detached engine back in the pool, so the next view on the same
     /// route re-attaches it instead of paying a fresh Dart boot. Dropped on
-    /// the floor if that route is already parked — one parked engine per
+    /// the floor if that route is already parked: one parked engine per
     /// route, not one per view that ever existed.
     static func parkEngine(_ engine: FlutterEngine, route: String) {
         engine.viewController = nil
@@ -190,7 +190,7 @@ class NativeScaffoldView: NativeHostingView {
         messenger: FlutterBinaryMessenger
     ) {
         channel = FlutterMethodChannel(
-            name: "cupertino_widgets/scaffold_\(viewId)", binaryMessenger: messenger)
+            name: "cupertino_native_ui/scaffold_\(viewId)", binaryMessenger: messenger)
 
         if let argsMap = args as? [String: Any],
             let config = decodeConfig(ScaffoldConfig.self, from: argsMap)
@@ -209,7 +209,7 @@ class NativeScaffoldView: NativeHostingView {
         _view.backgroundColor = .clear
         // The scaffold fills the full-screen box Flutter gives it; it has no
         // intrinsic size to publish. Measuring would run `sizeThatFits` (a
-        // forced layout of the whole NavigationStack — bodies, tab bar,
+        // forced layout of the whole NavigationStack: bodies, tab bar,
         // navigation chrome) on every layout pass, which during body-engine
         // boot is every pass for a while: the freeze. Dart never asks either
         // (`CupertinoNativePageScaffold` does not call `requestIntrinsicSize`).
@@ -218,7 +218,7 @@ class NativeScaffoldView: NativeHostingView {
         // the parent's system margins, so never let it go unparented while the
         // engine briefly takes the view out of the window.
         _view.keepsParentWhileDetached = true
-        // Before the navigation bar ever lays out with zero margins — see
+        // Before the navigation bar ever lays out with zero margins, see
         // pinNavigationMargins. Dart also asks once each route slide settles.
         _view.onLayout = { [weak self] in self?.pinNavigationMargins(layout: false) }
         _view.onParentingChanged = { [weak self] in
@@ -251,7 +251,7 @@ class NativeScaffoldView: NativeHostingView {
 
         attachContent()
 
-        // Lazily create engines when the user switches tabs — the new
+        // Lazily create engines when the user switches tabs: the new
         // tab's engine is spun up on demand so init only blocks on one.
         selectionCancellable = model.$selection
             .removeDuplicates()
@@ -336,8 +336,8 @@ class NativeScaffoldView: NativeHostingView {
     }
 
     /// Polls for the navigation bar right after parenting. SwiftUI creates it
-    /// in a layout pass of its own — while the route still slides in, off
-    /// screen — and no layout pass of ours follows, so `onLayout` alone pins it
+    /// in a layout pass of its own (while the route still slides in, off
+    /// screen) and no layout pass of ours follows, so `onLayout` alone pins it
     /// only after it was seen flush. Stops once pinned, or after 2s.
     private var marginLink: CADisplayLink?
     private var marginLinkStart: CFTimeInterval = 0
@@ -403,11 +403,11 @@ class NativeScaffoldView: NativeHostingView {
         // Well-known channel so body isolates can drive navigation
         // (`CupertinoNativePageScaffold.push`/`pop` on the Dart side).
         let bodyChannel = FlutterMethodChannel(
-            name: "cupertino_widgets/scaffold_body", binaryMessenger: engine.binaryMessenger)
+            name: "cupertino_native_ui/scaffold_body", binaryMessenger: engine.binaryMessenger)
         bodyChannel.setMethodCallHandler { [weak self] call, result in
             self?.handle(call, result: result)
         }
-        // A pooled engine booted — and pulled its brightness — before this
+        // A pooled engine booted, and pulled its brightness, before this
         // scaffold existed (prewarm, or a previous visit parked it), and no
         // scaffold was alive to forward the toggles since: push the app's.
         bodyChannel.invokeMethod("setBrightness", arguments: ["isDark": currentIsDark])

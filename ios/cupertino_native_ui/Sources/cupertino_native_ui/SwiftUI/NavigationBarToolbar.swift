@@ -10,8 +10,8 @@ struct NavigationBarToolbar: ToolbarContent {
     let config: NavigationBarConfig
     let onAction: (String) -> Void
 
-    /// Split by side, because `@ToolbarContentBuilder` — like every SwiftUI
-    /// result builder — tops out at 10 children per block, and the three
+    /// Split by side, because `@ToolbarContentBuilder`, like every SwiftUI
+    /// result builder, tops out at 10 children per block, and the three
     /// sides together are 13.
     var body: some ToolbarContent {
         side(config.leading, .navigationBarLeading)
@@ -40,7 +40,7 @@ struct NavigationBarToolbar: ToolbarContent {
     /// in it, unstyled, the way they always have.
     ///
     /// An entry that opts out gets `.sharedBackgroundVisibility(.hidden)` and
-    /// carries its own — which is why `.buttonStyle(.glass)` comes with it by
+    /// carries its own, which is why `.buttonStyle(.glass)` comes with it by
     /// default: alone outside the capsule, a bare button is indistinguishable
     /// from plain text. `glass: false` is exactly that plain look, on purpose.
     @ToolbarContentBuilder
@@ -100,7 +100,7 @@ struct NavigationBarToolbar: ToolbarContent {
         applyGlassStyle(to: rawButton(item), enabled: item.glass != false && ownBackground)
     }
 
-    /// `.glass` only where the item left the shared background — inside it the
+    /// `.glass` only where the item left the shared background: inside it the
     /// system already draws the material, and a second one on top of it is the
     /// double capsule.
     @ViewBuilder
@@ -218,7 +218,7 @@ extension View {
         }
     }
 
-    /// SwiftUI `.navigationSubtitle` — iOS 26+; no-op earlier.
+    /// SwiftUI `.navigationSubtitle`: iOS 26+; no-op earlier.
     @available(iOS 15.0, *)
     @ViewBuilder
     func applyNavigationSubtitle(_ subtitle: String?) -> some View {

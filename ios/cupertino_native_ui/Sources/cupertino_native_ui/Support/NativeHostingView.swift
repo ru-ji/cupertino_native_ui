@@ -24,7 +24,7 @@ class NativeHostingView: NSObject, FlutterPlatformView {
     private var needsMeasure = false
     /// The container's size at the last measure attempt. The engine re-lays
     /// out a platform view on every frame it repositions it (a scroll), which
-    /// is `layoutSubviews` with identical bounds — measuring on those passes
+    /// is `layoutSubviews` with identical bounds: measuring on those passes
     /// is pure waste, so only a bounds change or [needsMeasure] schedules one.
     private var lastMeasuredBoundsSize: CGSize?
 
@@ -32,7 +32,7 @@ class NativeHostingView: NSObject, FlutterPlatformView {
     /// that fills the box Flutter built.
     var measuresIntrinsicSize = true
 
-    /// Appearance of the hosted content — the app's brightness, not the device's.
+    /// Appearance of the hosted content: the app's brightness, not the device's.
     /// `nil` follows the system. Set on the hosting controller, so UIKit internals
     /// and presented popovers follow it too.
     var isDark: Bool? {
@@ -42,7 +42,7 @@ class NativeHostingView: NSObject, FlutterPlatformView {
         }
     }
 
-    /// This view's own appearance when it differs from the app's — a bar
+    /// This view's own appearance when it differs from the app's: a bar
     /// button following the content under the bar. Never reaches the window:
     /// that would flip the whole app, and Flutter's theme with it. Changes
     /// cross-fade, as the system's bar items do.
@@ -147,7 +147,7 @@ class NativeHostingView: NSObject, FlutterPlatformView {
         configureConstraints(host.view, _view.contentView)
         hostingController = host
         // Subclasses set `isDark` BEFORE calling attach, while the controller
-        // is still the old one (or nil), and `didSet` skips unchanged values —
+        // is still the old one (or nil), and `didSet` skips unchanged values,
         // so without this the new controller follows the phone's theme.
         applyInterfaceStyle()
         // Keep the controller parented into the view-controller hierarchy for
@@ -161,7 +161,7 @@ class NativeHostingView: NSObject, FlutterPlatformView {
         _view.onLayoutMeasure = { [weak self] in self?.layoutPassDidRun() }
     }
 
-    /// Called from `HostingContainerView.layoutSubviews` — i.e. once per
+    /// Called from `HostingContainerView.layoutSubviews`: i.e. once per
     /// engine repositioning, which during a scroll is once per frame with the
     /// same bounds. Only a bounds change or content marked dirty by
     /// [attach]/[update] queues a measurement; the rest are free.
@@ -218,7 +218,7 @@ class NativeHostingView: NSObject, FlutterPlatformView {
     ///
     /// `sizingOptions = .intrinsicContentSize` keeps `intrinsicContentSize` in
     /// step with the content on every layout pass, so the common path is a
-    /// plain property read — no forced SwiftUI layout (`sizeThatFits`) per
+    /// plain property read: no forced SwiftUI layout (`sizeThatFits`) per
     /// frame. The forced measure is only the fallback for a view whose first
     /// layout has not happened yet, or one that fills its box.
     func intrinsicSize() -> [String: Double] {
@@ -373,7 +373,7 @@ final class HostingContainerView: UIView {
 
     /// Frames the clip container on the outset box and shifts the content back
     /// so the control does not move. Unclipped: the outset is room for what a
-    /// control paints past its bounds — a switch's rim, a glass shadow.
+    /// control paints past its bounds (a switch's rim, a glass shadow).
     ///
     /// Frame equality short-circuits: the engine repositions a platform view
     /// every frame of a scroll with identical bounds, and assigning unchanged

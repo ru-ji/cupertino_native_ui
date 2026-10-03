@@ -2,9 +2,9 @@ import Flutter
 import SwiftUI
 import UIKit
 
-/// Presents a page — a Flutter route in its own engine, or a native body with
-/// no engine at all — as a native iOS sheet
-/// (`UISheetPresentationController`) — the standard page-sheet modal that
+/// Presents a page (a Flutter route in its own engine, or a native body with
+/// no engine at all) as a native iOS sheet
+/// (`UISheetPresentationController`): the standard page-sheet modal that
 /// pushes the presenting screen back as it rises, with system detents, the
 /// grabber, and the swipe-to-dismiss gesture.
 @available(iOS 15.0, *)
@@ -25,7 +25,7 @@ final class NativeSheetManager: NSObject, UIAdaptivePresentationControllerDelega
     /// Completes the Dart `show()` future when the sheet is fully dismissed.
     private var showResult: FlutterResult?
 
-    /// The body route's engine — pooled if it was prewarmed — with the body
+    /// The body route's engine, pooled if it was prewarmed, with the body
     /// channel `CupertinoNativeSheet.pop()` talks to.
     private func makeEngine(route: String, isDark: Bool) -> FlutterEngine {
         let engine: FlutterEngine
@@ -45,7 +45,7 @@ final class NativeSheetManager: NSObject, UIAdaptivePresentationControllerDelega
         // Same well-known channel as scaffold bodies, so
         // `CupertinoNativeSheet.pop()` works from inside the sheet.
         let bodyChannel = FlutterMethodChannel(
-            name: "cupertino_widgets/scaffold_body", binaryMessenger: engine.binaryMessenger)
+            name: "cupertino_native_ui/scaffold_body", binaryMessenger: engine.binaryMessenger)
         bodyChannel.setMethodCallHandler { [weak self] call, res in
             switch call.method {
             case "pop":
@@ -105,7 +105,7 @@ final class NativeSheetManager: NSObject, UIAdaptivePresentationControllerDelega
         }
         if eventsChannel == nil, let messenger = mainMessenger {
             eventsChannel = FlutterMethodChannel(
-                name: "cupertino_widgets/sheet_events", binaryMessenger: messenger)
+                name: "cupertino_native_ui/sheet_events", binaryMessenger: messenger)
         }
 
         let isDark = args["isDark"] as? Bool ?? false
@@ -137,7 +137,7 @@ final class NativeSheetManager: NSObject, UIAdaptivePresentationControllerDelega
                         "bodyEvent", arguments: ["id": id, "value": value])
                 })
         } else {
-            // The body rides a native ScrollView — self-sized Columns scroll
+            // The body rides a native ScrollView: self-sized Columns scroll
             // instead of overflowing, and pull-down-at-top drags the sheet.
             content = AnyView(
                 PageScrollBody(
@@ -175,7 +175,7 @@ final class NativeSheetManager: NSObject, UIAdaptivePresentationControllerDelega
         }
 
         presented.overrideUserInterfaceStyle = isDark ? .dark : .light
-        // Unify the chrome background with the Flutter body's — otherwise the
+        // Unify the chrome background with the Flutter body's, otherwise the
         // hosting controller's default systemBackground shows as a distinct
         // band in the bar / safe-area regions the body doesn't paint.
         if let bg = args["backgroundColor"] as? Int {

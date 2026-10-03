@@ -32,7 +32,7 @@ class NativeTextFieldFactory: NSObject, FlutterPlatformViewFactory {
 /// A SwiftUI `TextField` embedded as a Flutter platform view.
 ///
 /// The field itself lives in [AdaptiveTextFieldView]; this class is only the
-/// bridge — it owns the shared [TextFieldModel], forwards edits and focus
+/// bridge: it owns the shared [TextFieldModel], forwards edits and focus
 /// changes to Dart, and applies what Dart pushes back over the channel.
 @available(iOS 15.0, *)
 class NativeTextFieldView: NativeHostingView {
@@ -56,7 +56,7 @@ class NativeTextFieldView: NativeHostingView {
         messenger: FlutterBinaryMessenger
     ) {
         channel = FlutterMethodChannel(
-            name: "cupertino_widgets/textfield_\(viewId)", binaryMessenger: messenger)
+            name: "cupertino_native_ui/textfield_\(viewId)", binaryMessenger: messenger)
         let config =
             (args as? [String: Any]).flatMap { decodeConfig(TextFieldConfig.self, from: $0) }
         model = TextFieldModel(config: config ?? TextFieldConfig.empty)
@@ -93,7 +93,7 @@ class NativeTextFieldView: NativeHostingView {
         roomConstraints[3].constant = -room
     }
 
-    /// The `keyboardToolbar` array Dart last sent, compared with `isEqual:` —
+    /// The `keyboardToolbar` array Dart last sent, compared with `isEqual:`:
     /// a `JSONEncoder` re-encoding is not stable (key order varies), so it
     /// reported a change on every push.
     private var accessoryToolbarPayload: [Any]?
@@ -147,7 +147,7 @@ class NativeTextFieldView: NativeHostingView {
             NSLayoutConstraint.activate(insets)
         }
         // The caret, the selection handles and the magnifier draw outside the
-        // field's bounds, so this host must not clip — unlike every other
+        // field's bounds, so this host must not clip: unlike every other
         // hosted view here, whose content has no business leaving its box.
         _view.clipsToBounds = false
         // Stay parented while the Flutter engine takes this platform view out
@@ -155,7 +155,7 @@ class NativeTextFieldView: NativeHostingView {
         // scroll off-screen). Unparented, the hosted UIHostingController drops
         // the field's first responder and the keyboard closes mid-edit.
         _view.keepsParentWhileDetached = true
-        // Staying parented is not enough on its own — see
+        // Staying parented is not enough on its own, see
         // [wantsFocusWhenVisible].
         _view.onWindowChanged = { [weak self] window in
             guard let self else { return }
@@ -184,7 +184,7 @@ class NativeTextFieldView: NativeHostingView {
     /// responder, so UIKit resigns the field and the keyboard closes. Nothing
     /// public keeps a responder alive outside a window and the engine offers no
     /// way to decline the removal, so what the plugin can do is put the field
-    /// back the moment the view returns — scrolling back then needs no fresh
+    /// back the moment the view returns: scrolling back then needs no fresh
     /// tap.
     ///
     /// Focus is re-driven through `TextFieldModel.focusCommand`, which
@@ -219,7 +219,7 @@ class NativeTextFieldView: NativeHostingView {
         )
     }
 
-    /// Routed through the model so its sequence is the only one issuing ids —
+    /// Routed through the model so its sequence is the only one issuing ids,
     /// see `TextFieldModel.requestFocus`.
     private func setFocus(_ focused: Bool) {
         model.requestFocus(focused)

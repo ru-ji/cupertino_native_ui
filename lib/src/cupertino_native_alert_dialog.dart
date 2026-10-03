@@ -30,7 +30,7 @@ class CupertinoNativeDialogAction {
 
 class CupertinoNativeAlertDialog {
   static const MethodChannel _channel = MethodChannel(
-    'com.example.cupertino_widgets/alert',
+    'com.example.cupertino_native_ui/alert',
   );
 
   static Future<void> show({
@@ -45,7 +45,7 @@ class CupertinoNativeAlertDialog {
         'message': content,
         'actions': actions.map((a) => a.toMap()).toList(),
         // Follows the app's own (possibly forced) theme, not the device's
-        // system appearance — same convention as every other native surface.
+        // system appearance: same convention as every other native surface.
         'isDark': Theme.of(context).brightness == Brightness.dark,
       });
 

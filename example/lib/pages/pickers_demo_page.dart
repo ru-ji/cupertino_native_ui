@@ -1,7 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/cupertino.dart';
-import 'package:cupertino_widgets/cupertino_widgets.dart';
+import 'package:cupertino_native_ui/cupertino_native_ui.dart';
 
 /// Every way to pick a value, on one page: segmented controls, a menu, the
 /// date pickers in their three styles, the multi-date calendar, the color well
@@ -33,8 +33,8 @@ class _PickersDemoPageState extends State<PickersDemoPage> {
   List<CupertinoNativePickedMedia> _media = [];
 
   /// A real native sheet: the system dims the whole screen, native views
-  /// included. Its body is the picker alone — a native-body node, no Flutter
-  /// engine — with the picker's own Photos / Collections bar as the header.
+  /// included. Its body is the picker alone (a native-body node, no Flutter
+  /// engine) with the picker's own Photos / Collections bar as the header.
   Future<void> _openPanel() => CupertinoNativeSheet.show(
     nativeBody: CupertinoNativeBody.photosPicker(
       id: 'photos',
@@ -199,7 +199,7 @@ class _PickersDemoPageState extends State<PickersDemoPage> {
                     ),
                     CupertinoNativeListSection(
                       header: 'Days Off',
-                      footer: '${_days.length} days picked — iOS 16+.',
+                      footer: '${_days.length} days picked (iOS 16+).',
                       children: [
                         CupertinoNativeListTile(
                           id: 'days',

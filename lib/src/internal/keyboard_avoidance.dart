@@ -4,7 +4,7 @@ import 'package:flutter/widgets.dart';
 ///
 /// A native UIKit/SwiftUI screen resigns the first responder in
 /// `viewWillDisappear`, so the keyboard slides down over the same frames as
-/// the push or pop — and follows an interactive back swipe finger-for-finger.
+/// the push or pop, and follows an interactive back swipe finger-for-finger.
 /// A Flutter platform view does neither on its own: the field stays mounted
 /// for the whole transition and only gives up the responder when it is
 /// disposed, which is why the keyboard appears to wait for the transition to
@@ -66,14 +66,14 @@ mixin RouteKeyboardDismissal<T extends StatefulWidget> on State<T> {
 }
 
 /// How much of the keyboard actually covers the scroll viewport [context] sits
-/// in — the padding a reveal has to add, and **not** the same thing as the
+/// in: the padding a reveal has to add, and **not** the same thing as the
 /// view inset.
 ///
 /// The inset is the keyboard's height against the *window*. A reveal that pads
 /// by it assumes the viewport still reaches the bottom of the screen, which is
 /// only true for a page that does not resize for the keyboard. When something
-/// upstream already shrinks the viewport — a `Scaffold` consuming the inset, a
-/// native scroll view doing its own avoidance — the field has been lifted
+/// upstream already shrinks the viewport (a `Scaffold` consuming the inset, a
+/// native scroll view doing its own avoidance) the field has been lifted
 /// clear once already, and padding by the full inset lifts it a second time.
 /// That is the page scrolling away from a field that was perfectly visible.
 ///
@@ -93,7 +93,7 @@ double keyboardCoverOfViewport(BuildContext context) {
 }
 
 /// A row's rectangle, measured in window coordinates, moved into the frame of
-/// the platform view that contains it — the space [RenderBox.showOnScreen]
+/// the platform view that contains it: the space [RenderBox.showOnScreen]
 /// expects.
 ///
 /// **Convert once, when the row reports focus, and keep the result.** The
@@ -102,7 +102,7 @@ double keyboardCoverOfViewport(BuildContext context) {
 /// together, so their difference is what stays put: re-subtracting the view's
 /// *current* position from a row captured earlier asks for a little more
 /// travel on each tick than the last, and the list walks off the top of the
-/// screen — taking the field's window with it, which is what closes the
+/// screen, taking the field's window with it, which is what closes the
 /// keyboard mid-animation. See `keyboard_avoidance_test.dart`.
 Rect rowInViewCoordinates({
   required Rect rowInWindow,
@@ -142,7 +142,7 @@ void revealAboveKeyboard(
   );
 }
 
-/// Whether the keyboard is up *and still* — a focus change then needs an
+/// Whether the keyboard is up *and still*: a focus change then needs an
 /// animated reveal, since no inset tick will come to drive it.
 ///
 /// Up is not enough: the first keyboard of a launch is slow to come, and the

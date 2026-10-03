@@ -61,7 +61,7 @@ mixin NativePlatformViewStateMixin<T extends StatefulWidget> on State<T> {
     });
   }
 
-  /// Takes a size the native side measured, ignoring anything degenerate —
+  /// Takes a size the native side measured, ignoring anything degenerate:
   /// a view that has not been laid out reports zero rather than a guess.
   void _adoptIntrinsicSize(Map? size) {
     final width = (size?['width'] as num?)?.toDouble();
@@ -186,8 +186,8 @@ mixin NativePlatformViewStateMixin<T extends StatefulWidget> on State<T> {
   /// between, and it is ready before a back swipe starts.
   ///
   /// Not while this page leaves (a pop, a back swipe): its photos had to be
-  /// taken the instant the transition started — every native view drawn on
-  /// the main thread at once, megabytes of pixels each — and on a page of
+  /// taken the instant the transition started (every native view drawn on
+  /// the main thread at once, megabytes of pixels each) and on a page of
   /// lists that held the main thread long enough to lose the swipe under the
   /// finger, which then snapped back or finished on its own. The leaving
   /// page keeps its live views.
@@ -269,7 +269,7 @@ mixin NativePlatformViewStateMixin<T extends StatefulWidget> on State<T> {
     final image = _transitionImage;
     // ONE shape, bitmap or not. Returning the bare view at rest and a Stack
     // during the transition moves the UiKitView in the element tree, which
-    // destroys and recreates the native view — the blink on every transition.
+    // destroys and recreates the native view: the blink on every transition.
     final dest = _transitionDest;
     return Stack(
       fit: StackFit.passthrough,

@@ -18,7 +18,7 @@ struct AdaptiveMenuView: View {
 
         // Same three the button uses: the label style decides what the anchor
         // shows, the button style draws the material, the border shape decides
-        // its outline. A circle needs `iconOnly` — a label with text is laid
+        // its outline. A circle needs `iconOnly`: a label with text is laid
         // out as a capsule whatever shape is asked for.
         applyMenuButtonStyle(menu.applyLabelStyle(config.labelStyle))
             .applyButtonShape(config.borderShape)
@@ -146,7 +146,7 @@ struct MenuItemMapper: View {
 
         case .controlGroup:
             // Inside a menu, SwiftUI lays a `ControlGroup` out as one row of
-            // compact icon buttons — the Copy / Paste / Share strip.
+            // compact icon buttons: the Copy / Paste / Share strip.
             ControlGroup {
                 ForEach(item.items ?? []) { child in
                     MenuItemMapper(item: child, onAction: onAction)
@@ -197,7 +197,7 @@ struct MenuItemMapper: View {
 
 @available(iOS 15.0, *)
 extension View {
-    /// `.menuOrder(.fixed)` — iOS 16+; the system order before.
+    /// `.menuOrder(.fixed)`: iOS 16+; the system order before.
     @ViewBuilder
     fileprivate func applyFixedOrder(_ fixed: Bool) -> some View {
         if fixed, #available(iOS 16.0, *) {

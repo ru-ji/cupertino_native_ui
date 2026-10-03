@@ -42,7 +42,7 @@ class NativeSymbolView: NativeHostingView {
         _view.viewId = viewId
 
         channel = FlutterMethodChannel(
-            name: "cupertino_widgets/symbol_\(viewId)", binaryMessenger: messenger)
+            name: "cupertino_native_ui/symbol_\(viewId)", binaryMessenger: messenger)
         sizeChannel = channel
         channel?.setMethodCallHandler { [weak self] call, result in
             self?.handle(call, result: result)

@@ -50,7 +50,7 @@ class NativeLiquidGlassView: NativeHostingView {
         _view.viewId = viewId
 
         channel = FlutterMethodChannel(
-            name: "cupertino_widgets/liquid_glass_\(viewId)", binaryMessenger: messenger)
+            name: "cupertino_native_ui/liquid_glass_\(viewId)", binaryMessenger: messenger)
         sizeChannel = channel
         channel?.setMethodCallHandler({
             [weak self] (call: FlutterMethodCall, result: @escaping FlutterResult) in
@@ -224,7 +224,7 @@ struct AdaptiveLiquidGlassView: View {
     }
 
     /// Inset, sized, ready for the material: the glass either fills the box
-    /// Flutter built (`expand` — which is where an explicit width/height from
+    /// Flutter built (`expand`, which is where an explicit width/height from
     /// the caller lands, since that box *is* that size) or hugs its content so
     /// `getIntrinsicSize` can measure it.
     @ViewBuilder
@@ -335,7 +335,7 @@ struct GlassLeavesView: View {
 
 @available(iOS 15.0, *)
 extension View {
-    /// Fills the box Flutter built, in both axes — which is where an explicit
+    /// Fills the box Flutter built, in both axes, which is where an explicit
     /// width/height from the caller ends up. Left alone otherwise, so an
     /// icon-only container keeps the size SwiftUI measures it at and reports
     /// that back to Flutter.

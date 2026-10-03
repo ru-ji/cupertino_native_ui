@@ -13,7 +13,7 @@ struct ToolbarItemConfig: Codable, Hashable {
 
 /// One bar entry: `type == "item"` is a single button (fields inline),
 /// `type == "group"` is several buttons sharing one glass capsule (`items`),
-/// and `type == "spacer"` is a `ToolbarSpacer` — the gap that splits the
+/// and `type == "spacer"` is a `ToolbarSpacer`, the gap that splits the
 /// shared background into separate capsules. Consecutive entries share one
 /// capsule, as consecutive `ToolbarItem`s do.
 @available(iOS 15.0, *)
@@ -28,7 +28,7 @@ struct ToolbarContentConfig: Codable, Hashable {
     /// its own background.
     let sharedBackgroundVisibility: Bool?
     let glass: Bool?
-    /// `.visibilityPriority` (iOS 27+): "low" | "high" | nil (automatic) —
+    /// `.visibilityPriority` (iOS 27+): "low" | "high" | nil (automatic),
     /// which entries the bar keeps when it runs out of room.
     let visibilityPriority: String?
     /// `.topBarPinnedTrailing` (iOS 27+): never moves to the overflow menu.
@@ -62,7 +62,7 @@ struct NavigationBarConfig: Codable, Hashable {
     let displayMode: String?  // "inline" | "large"
     let leading: [ToolbarContentConfig]?
     let trailing: [ToolbarContentConfig]?
-    /// Entries for the bottom toolbar (`.bottomBar`) — the glass bar that
+    /// Entries for the bottom toolbar (`.bottomBar`): the glass bar that
     /// rides above the home indicator in Mail, Safari and Notes.
     let bottom: [ToolbarContentConfig]?
     let search: SearchConfig?

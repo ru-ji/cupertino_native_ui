@@ -48,7 +48,7 @@ enum CupertinoNativeTabBarMinimizeBehavior {
 }
 
 /// A native iOS tab bar rendered by a bare `UITabBar` in a transparent
-/// container — no UITabBarController, so Flutter content stays visible
+/// container: no UITabBarController, so Flutter content stays visible
 /// around and behind the bar.
 ///
 /// Best used as a `Stack` overlay (`Align(alignment: Alignment.bottomCenter)`)
@@ -189,7 +189,7 @@ class _CupertinoNativeTabBarState extends State<CupertinoNativeTabBar> {
   }
 
   void _onPlatformViewCreated(int id) {
-    final channel = MethodChannel('cupertino_widgets/tabbar_$id');
+    final channel = MethodChannel('cupertino_native_ui/tabbar_$id');
     _channel = channel;
     channel.setMethodCallHandler(_handleMethodCall);
     _lastIndex = _selectedIndex;
@@ -305,7 +305,7 @@ class _CupertinoNativeTabBarState extends State<CupertinoNativeTabBar> {
     final isDark = _isDark;
     if (_lastIsDark != isDark) {
       // Recorded before the await: a second flip arriving meanwhile was
-      // compared with the stale value and dropped — the bar then missed
+      // compared with the stale value and dropped, and the bar then missed
       // every other change.
       _lastIsDark = isDark;
       await channel.invokeMethod('setBrightness', {'isDark': isDark});
@@ -375,7 +375,7 @@ class _CupertinoNativeTabBarState extends State<CupertinoNativeTabBar> {
     };
 
     final platformView = UiKitView(
-      viewType: 'com.example.cupertino_widgets/cupertino_native_tabbar',
+      viewType: 'com.example.cupertino_native_ui/cupertino_native_tabbar',
       layoutDirection: TextDirection.ltr,
       creationParams: creationParams,
       creationParamsCodec: const StandardMessageCodec(),
@@ -392,7 +392,7 @@ class _CupertinoNativeTabBarState extends State<CupertinoNativeTabBar> {
 
     // The standalone bar draws the scroll edge effect itself when one is
     // requested (iOS 26+): over the system tab bar's place, from the screen
-    // edge up to where that bar stops, in either style — whatever this bar's
+    // edge up to where that bar stops, in either style, whatever this bar's
     // own box.
     if (isIOS26OrLater &&
         widget.scrollEdgeEffect != CupertinoScrollEdgeEffectStyle.automatic) {
@@ -414,7 +414,7 @@ class _CupertinoNativeTabBarState extends State<CupertinoNativeTabBar> {
                               CupertinoScrollEdgeEffectStyle.hard
                           ? _effectBand
                           : _softBand)),
-              // Down to the physical screen edge — measured, not assumed: a
+              // Down to the physical screen edge: measured, not assumed: a
               // bar that already reaches it (no SafeArea around it) took the
               // home-indicator inset again, so the strongest part of the ramp
               // fell off screen and what showed above the bar was too faint

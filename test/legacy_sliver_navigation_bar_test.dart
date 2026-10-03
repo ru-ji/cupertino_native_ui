@@ -1,4 +1,4 @@
-import 'package:cupertino_widgets/src/internal/legacy_sliver_navigation_bar.dart';
+import 'package:cupertino_native_ui/src/internal/legacy_sliver_navigation_bar.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/rendering.dart' show RenderSliver;
 import 'package:flutter_test/flutter_test.dart';

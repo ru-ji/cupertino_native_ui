@@ -45,7 +45,7 @@ final class NativeEdgeBlurPlatformView: NSObject, FlutterPlatformView {
             }
         #endif
         channel = FlutterMethodChannel(
-            name: "cupertino_widgets/edge_blur_\(viewId)", binaryMessenger: messenger)
+            name: "cupertino_native_ui/edge_blur_\(viewId)", binaryMessenger: messenger)
         super.init()
         edgeView.onLightChange = { [weak self] light in
             self?.channel.invokeMethod("lumaChanged", arguments: ["light": light])
@@ -75,7 +75,7 @@ struct EdgeBlurConfig {
     /// The system's luma-tracked light/dark wash.
     var adaptive: Bool
     /// Measure the content's luma even under a fixed wash, for the chrome
-    /// over the effect — the system's bar items follow the content under its
+    /// over the effect: the system's bar items follow the content under its
     /// wash whatever the wash does.
     var tracksLuma: Bool
     /// Calibration factor on `inputRadius`.
@@ -86,7 +86,7 @@ struct EdgeBlurConfig {
     var intensity: CGFloat
     var debugPaintRect: Bool
     /// The `.hard` style: one even blur over the whole view under a flat
-    /// tint, ending in a hard line — no ramp, no adaptation, no holes.
+    /// tint, ending in a hard line, no ramp, no adaptation, no holes.
     var hard: Bool
     /// A bar's native items, in this view's points: the wash is cut out under
     /// each as a capsule, so their glass sees the content and not the wash.
@@ -131,15 +131,15 @@ enum EdgeBlurProfile {
     /// Near-white content or not (the white wash's decision).
     static let brightLow = 0.75
     static let brightHigh = 0.85
-    /// Among the rest: mid content — the warm gradient, busy, vivid, grey,
-    /// cool (~0.42 average luma), all ~27% black on iOS 26 (measured
-    /// 2026-10-03) — or dark content below it, the navy band and black.
+    /// Among the rest: mid content (the warm gradient, busy, vivid, grey,
+    /// cool (~0.42 average luma), all ~27% black on iOS 26, measured
+    /// 2026-10-03) or dark content below it, the navy band and black.
     // ponytail: the dark side was never seen on device (black hides the
     // wash); the line sits under the darkest mid band measured.
     static let deepLow = 0.28
     static let deepHigh = 0.34
 
-    /// A dark app: black alone, at three strengths — bright content (white,
+    /// A dark app: black alone, at three strengths for bright content (white,
     /// the warm gradient), mid content (grey, blue, lavender, vivid, navy),
     /// near-black content. iOS 26, measured frame by frame (2026-10-03).
     static let darkModeBright = 0.31
@@ -300,7 +300,7 @@ final class EdgeBlurView: UIView {
             }
         }
         // Until the first measurement the wash is the app's own: white on a
-        // light theme, dark on a dark one — what the system shows on arrival.
+        // light theme, dark on a dark one, what the system shows on arrival.
         if bright == nil { level = config.isDark ? .deep : .light } else { updateLevel() }
         layer.borderWidth = config.debugPaintRect ? 1 : 0
         layer.borderColor = UIColor.red.cgColor
@@ -333,7 +333,7 @@ final class EdgeBlurView: UIView {
     }
 
     /// Cuts the wash out under the bar's native items. A mask on the wash
-    /// layer only — never on this view, which the engine clips.
+    /// layer only, never on this view, which the engine clips.
     private func applyHoles() {
         guard !config.holes.isEmpty else {
             washLayer.mask = nil
@@ -351,7 +351,7 @@ final class EdgeBlurView: UIView {
         washLayer.mask = holeMask
     }
 
-    /// Colours the washes and shows the level's — cheap, every time — and
+    /// Colours the washes and shows the level's (cheap, every time) and
     /// re-renders the profile image only when the size or the edge changes:
     /// inline the first time, so the effect never shows up empty, off the
     /// main thread after.
@@ -431,8 +431,8 @@ final class EdgeBlurView: UIView {
     }
 
     /// The washes' shape, as a mask at the layer's own resolution: alpha
-    /// follows the tint curve per row, with ±0.5 code of dither per pixel —
-    /// a ramp this slow quantises into visible bands otherwise. Shared by all
+    /// follows the tint curve per row, with ±0.5 code of dither per pixel.
+    /// A ramp this slow quantises into visible bands otherwise. Shared by all
     /// three washes; their colours are their own.
     // ponytail: full-resolution RGBA (~3MB on a 3x bar); a narrower image
     // would stretch the dither into streaks.
@@ -523,7 +523,7 @@ final class LumaTracker: NSObject {
         return object as? UIView
     }
 
-    /// Samples the 44pt bar past the safe-area inset — the system's own
+    /// Samples the 44pt bar past the safe-area inset: the system's own
     /// `lumaSubrect` is the navigation bar, not the status bar above it.
     func layout(in bounds: CGRect, bottom: Bool, inset: CGFloat) {
         let height = min(44, max(bounds.height - inset, 0))
@@ -608,7 +608,7 @@ final class BackdropBlurView: UIView {
             Self.maskImage(sigmaPx: Double(sigma * scale), bottom: bottom, uniform: uniform),
             forKey: "inputMaskImage")
         // Renormalizes the kernel at the layer's bounds instead of averaging
-        // in transparent black — no dark rim at the hugged edge.
+        // in transparent black: no dark rim at the hugged edge.
         filter.setValue(true, forKey: "inputNormalizeEdges")
         // Breaks up the steps between the filter's own blur levels.
         filter.setValue(true, forKey: "inputDither")
@@ -624,7 +624,7 @@ final class BackdropBlurView: UIView {
         // A capture group of its own.
         if layer.responds(to: NSSelectorFromString("setGroupName:")) {
             layer.setValue(
-                "cupertino_widgets.edgeBlur.\(UInt(bitPattern: ObjectIdentifier(self).hashValue))",
+                "cupertino_native_ui.edgeBlur.\(UInt(bitPattern: ObjectIdentifier(self).hashValue))",
                 forKey: "groupName")
         }
         CATransaction.commit()

@@ -9,7 +9,7 @@ import 'internal/native_color.dart';
 
 /// iOS's segmented control, rendered by SwiftUI. Same shape as Flutter's
 /// [CupertinoSlidingSegmentedControl]: [children] maps each value to its
-/// segment label — a [Text], whose string is what the native control shows.
+/// segment label, a [Text], whose string is what the native control shows.
 class CupertinoNativeSlidingSegmentedControl<T extends Object>
     extends StatefulWidget {
   CupertinoNativeSlidingSegmentedControl({
@@ -29,8 +29,8 @@ class CupertinoNativeSlidingSegmentedControl<T extends Object>
        );
 
   /// The same options behind a button that opens them as a native menu,
-  /// instead of laid out as a strip. For the other picker styles — the wheel,
-  /// the Liquid Glass palette — see `CupertinoNativePicker`.
+  /// instead of laid out as a strip. For the other picker styles (the wheel,
+  /// the Liquid Glass palette) see `CupertinoNativePicker`.
   const CupertinoNativeSlidingSegmentedControl.menu({
     super.key,
     required this.children,
@@ -70,7 +70,7 @@ class _CupertinoNativeSegmentedControlState<T extends Object>
 
   bool? _lastIsDark;
 
-  // Follows the app's own theme brightness, not the device's — a light app
+  // Follows the app's own theme brightness, not the device's: a light app
   // forced on a dark-mode phone should still get a light control.
   bool get _isDark => Theme.of(context).brightness == Brightness.dark;
 
@@ -119,7 +119,7 @@ class _CupertinoNativeSegmentedControlState<T extends Object>
   Future<void> _onPlatformViewCreated(int id) async {
     setUpChannel(
       id,
-      'cupertino_widgets/segmented_$id',
+      'cupertino_native_ui/segmented_$id',
       onMethodCall: _handleMethodCall,
     );
     requestIntrinsicSize();
@@ -139,7 +139,8 @@ class _CupertinoNativeSegmentedControlState<T extends Object>
     if (defaultTargetPlatform == TargetPlatform.iOS) {
       final platformView = wrapForTransition(
         UiKitView(
-          viewType: 'com.example.cupertino_widgets/cupertino_native_segmented',
+          viewType:
+              'com.example.cupertino_native_ui/cupertino_native_segmented',
           layoutDirection: TextDirection.ltr,
           creationParams: _toMap(),
           creationParamsCodec: const StandardMessageCodec(),

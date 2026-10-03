@@ -1,4 +1,4 @@
-import 'package:cupertino_widgets/src/internal/scroll_friendly_recognizer.dart';
+import 'package:cupertino_native_ui/src/internal/scroll_friendly_recognizer.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter_test/flutter_test.dart';
 

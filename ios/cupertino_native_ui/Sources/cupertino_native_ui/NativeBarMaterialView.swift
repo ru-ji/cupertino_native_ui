@@ -2,7 +2,7 @@ import Flutter
 import UIKit
 
 /// The iOS 15–18 navigation bar's material: the system chrome blur plus its
-/// hairline, drawn natively so it blurs everything beneath it — native views
+/// hairline, drawn natively so it blurs everything beneath it, native views
 /// included, which a Flutter `BackdropFilter` cannot sample.
 @available(iOS 15.0, *)
 final class NativeBarMaterialFactory: NSObject, FlutterPlatformViewFactory {
@@ -29,7 +29,7 @@ final class BarMaterialView: UIView {
     private let effectView = UIVisualEffectView(effect: nil)
     private let hairline = CALayer()
     /// Over the blur, so the bar reads more opaque than the bare material.
-    /// ponytail: tuned by eye — raise the alpha for a denser bar.
+    /// ponytail: tuned by eye, raise the alpha for a denser bar.
     private let wash = UIView()
     private static let washAlpha: CGFloat = 0.45
     // A blur cannot take a fractional alpha; a paused animator scrubs the effect in.
@@ -82,7 +82,7 @@ final class NativeBarMaterialPlatformView: NSObject, FlutterPlatformView {
 
     init(viewId: Int64, arguments args: Any?, messenger: FlutterBinaryMessenger) {
         channel = FlutterMethodChannel(
-            name: "cupertino_widgets/bar_material_\(viewId)", binaryMessenger: messenger)
+            name: "cupertino_native_ui/bar_material_\(viewId)", binaryMessenger: messenger)
         super.init()
         apply(args)
         channel.setMethodCallHandler { [weak self] call, result in

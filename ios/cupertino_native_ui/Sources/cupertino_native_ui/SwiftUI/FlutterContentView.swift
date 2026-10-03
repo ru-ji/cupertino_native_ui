@@ -10,7 +10,7 @@ import UIKit
 struct FlutterContentView: View {
     let engine: FlutterEngine
     /// Show a native spinner until the engine's first layout reports in.
-    /// Off by default (matches CupertinoWidgetsSettings on the Dart side).
+    /// Off by default (matches CupertinoNativeSettings on the Dart side).
     var showLoadingIndicator = false
     /// Height reserved until Flutter's first layout reports in. Nil: the
     /// screen height, for page bodies.
@@ -73,8 +73,8 @@ private struct _FlutterContentRepresentable: UIViewControllerRepresentable {
     }
 }
 
-/// Hosts the FlutterViewController pinned top/leading/trailing to this view —
-/// its width is the host's — and leaves the height to the auto-resizable
+/// Hosts the FlutterViewController pinned top/leading/trailing to this view,
+/// its width is the host's, and leaves the height to the auto-resizable
 /// FlutterView, which installs its own (FlutterAutoResizeLayoutConstraint) and
 /// publishes the Dart-chosen size through intrinsicContentSize/bounds.
 @available(iOS 15.0, *)
@@ -100,7 +100,7 @@ final class FlutterHostViewController: UIViewController {
         flutterController.isAutoResizable = true
         super.init(nibName: nil, bundle: nil)
         let channel = FlutterMethodChannel(
-            name: "cupertino_widgets/body_height", binaryMessenger: engine.binaryMessenger)
+            name: "cupertino_native_ui/body_height", binaryMessenger: engine.binaryMessenger)
         channel.setMethodCallHandler { [weak self] call, result in
             if call.method == "height", let height = (call.arguments as? NSNumber)?.doubleValue {
                 self?.adoptDartHeight(CGFloat(height))
@@ -118,8 +118,8 @@ final class FlutterHostViewController: UIViewController {
     ///
     /// The engine's own auto-resize constraint is what sizes the view, and it is
     /// only ever created (or updated) on a frame without platform views. When it
-    /// exists, its constant is moved to the new height. When it does not — the
-    /// first frame already carried a platform view — it is created the way the
+    /// exists, its constant is moved to the new height. When it does not, the
+    /// first frame already carried a platform view, it is created the way the
     /// engine would have: `-[FlutterView setIntrinsicContentSize:]`, which takes
     /// physical pixels. Creating it (rather than sizing the view some other way)
     /// matters: with an engine constraint in place the engine keeps its limit at
@@ -178,7 +178,7 @@ final class FlutterHostViewController: UIViewController {
         // (`updateAutoResizeConstraints`). With nothing to say what the height
         // is meanwhile, UIKit keeps the old frame, so the limit becomes that
         // height and the content can never grow again. A weak zero height makes
-        // the frame collapse instead, which the engine reads as "unbounded" —
+        // the frame collapse instead, which the engine reads as "unbounded",
         // and loses to the engine's own (required) constraint whenever it exists.
         let weakHeight = flutterView.heightAnchor.constraint(equalToConstant: 0)
         weakHeight.priority = UILayoutPriority(1)

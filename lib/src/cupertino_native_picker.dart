@@ -16,7 +16,7 @@ enum CupertinoNativePickerStyle {
   /// The system default for the context.
   automatic,
 
-  /// The spinning drum — `UIPickerView`.
+  /// The spinning drum: `UIPickerView`.
   wheel,
 
   /// A button that opens the options as a native menu.
@@ -33,7 +33,7 @@ enum CupertinoNativePickerStyle {
   inline,
 
   /// A list row that pushes a picker page. Only inside a native
-  /// `NavigationStack` — that means a `CupertinoNativePageScaffold` body.
+  /// `NavigationStack`: that means a `CupertinoNativePageScaffold` body.
   navigationLink,
 }
 
@@ -125,7 +125,7 @@ class CupertinoNativePicker extends StatefulWidget {
          sizeStyle: sizeStyle,
        );
 
-  /// The spinning drum. Give it room — the wheel fills the box it is handed.
+  /// The spinning drum. Give it room: the wheel fills the box it is handed.
   const CupertinoNativePicker.wheel({
     Key? key,
     required List<CupertinoNativePickerItem> items,
@@ -148,7 +148,7 @@ class CupertinoNativePicker extends StatefulWidget {
   final ValueChanged<int>? onChanged;
   final CupertinoNativePickerStyle style;
 
-  /// The picker's own label. Hidden unless [showLabel] — a picker in a list
+  /// The picker's own label. Hidden unless [showLabel]: a picker in a list
   /// row shows it, a standalone control usually does not.
   final String? label;
   final bool showLabel;
@@ -222,7 +222,7 @@ class _CupertinoNativePickerState extends State<CupertinoNativePicker>
   void _onPlatformViewCreated(int id) {
     setUpChannel(
       id,
-      'cupertino_widgets/picker_$id',
+      'cupertino_native_ui/picker_$id',
       onMethodCall: _handleMethodCall,
     );
     requestIntrinsicSize();
@@ -241,7 +241,7 @@ class _CupertinoNativePickerState extends State<CupertinoNativePicker>
     }
     final platformView = wrapForTransition(
       UiKitView(
-        viewType: 'com.example.cupertino_widgets/cupertino_native_picker',
+        viewType: 'com.example.cupertino_native_ui/cupertino_native_picker',
         layoutDirection: TextDirection.ltr,
         creationParams: _toMap(),
         creationParamsCodec: const StandardMessageCodec(),

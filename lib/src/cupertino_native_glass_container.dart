@@ -29,7 +29,7 @@ enum CupertinoNativeGlass {
   /// `Glass.clear`: the more transparent variant, for media-rich backdrops.
   clear,
 
-  /// `Glass.identity`: the effect applied with no glass — the control as if
+  /// `Glass.identity`: the effect applied with no glass, the control as if
   /// it had none, keeping the same layout.
   identity,
 }
@@ -40,11 +40,11 @@ enum CupertinoNativeGlass {
 ///
 /// Content goes on the glass two ways:
 ///
-/// * **[child]** — an ordinary Flutter widget, laid out by your own engine
+/// * **[child]**: an ordinary Flutter widget, laid out by your own engine
 ///   and sizing the glass. Its texts and SF Symbols are drawn by SwiftUI
 ///   inside the material, so they adapt to the backdrop; the rest is Flutter
 ///   over it.
-/// * **[icon]** — a native SF Symbol, drawn by SwiftUI inside the material.
+/// * **[icon]**: a native SF Symbol, drawn by SwiftUI inside the material.
 ///
 /// ```dart
 /// CupertinoNativeGlassContainer(
@@ -85,7 +85,7 @@ class CupertinoNativeGlassContainer extends StatefulWidget {
   /// the glass, in the frames Flutter laid them out in, so their colour adapts
   /// to what is behind the glass as a native label's does. That holds through
   /// [Row], [Column], [Wrap], [Padding], [Align], [Center], [SizedBox],
-  /// [Expanded] and [Flexible]. Anything else — and any Text inside it — is
+  /// [Expanded] and [Flexible]. Anything else, and any Text inside it, is
   /// Flutter, *over* the material.
   ///
   /// A Text keeps an explicit `style.color`; without one it takes the
@@ -99,7 +99,7 @@ class CupertinoNativeGlassContainer extends StatefulWidget {
   /// (continuous corners, default 26 to match iOS 26 cards).
   final double cornerRadius;
 
-  /// Glass material variant — regular (default) or the more transparent
+  /// Glass material variant: regular (default) or the more transparent
   /// clear glass (iOS 26).
   final CupertinoGlassVariant variant;
 
@@ -110,18 +110,18 @@ class CupertinoNativeGlassContainer extends StatefulWidget {
   final bool interactive;
 
   /// Called when the glass is tapped (native tap gesture on the glass
-  /// surface). Set this to use the container as a liquid-glass button —
+  /// surface). Set this to use the container as a liquid-glass button:
   /// combine with [interactive] for the touch shimmer.
   final VoidCallback? onPressed;
 
-  /// SF Symbol (or Flutter glyph) rendered natively, centered in the glass —
+  /// SF Symbol (or Flutter glyph) rendered natively, centered in the glass:
   /// the easy way to make an icon-only glass button.
   final CupertinoNativeIcon? icon;
 
   /// Inset between the glass bounds and its content.
   final EdgeInsetsGeometry padding;
 
-  /// Whether config changes — tint, variant, shape, corner radius — animate
+  /// Whether config changes (tint, variant, shape, corner radius) animate
   /// Animate [width]/[height] from Dart instead.
   final bool animateChanges;
 
@@ -135,7 +135,7 @@ class CupertinoNativeGlassContainer extends StatefulWidget {
   /// Whether the running device renders real Liquid Glass (iOS 26+).
   static Future<bool> get isSupported async {
     if (defaultTargetPlatform != TargetPlatform.iOS) return false;
-    const channel = MethodChannel('com.example.cupertino_widgets/alert');
+    const channel = MethodChannel('com.example.cupertino_native_ui/alert');
     try {
       return await channel.invokeMethod<bool>('isLiquidGlassSupported') ??
           false;
@@ -196,7 +196,7 @@ class _CupertinoNativeGlassContainerState
     updateNativeView('updateGlass', config, refreshIntrinsicSize: _hugsContent);
   }
 
-  /// Follows the app's own theme brightness, not the device's — a light app
+  /// Follows the app's own theme brightness, not the device's: a light app
   /// forced on a dark-mode phone should still get light glass.
   /// In a bar, the content under it (see [BarSlot]); elsewhere the app's.
   bool get _isDark =>
@@ -220,7 +220,7 @@ class _CupertinoNativeGlassContainerState
     return bare ? const EdgeInsets.all(12) : padding;
   }
 
-  /// Whether a native [icon] is the only thing sizing this container — the one
+  /// Whether a native [icon] is the only thing sizing this container: the one
   /// case where the glass hugs its own content, exactly as the button does
   /// without `expand`. An explicit size, or nothing at all, means the glass
   /// fills the box Flutter builds instead.
@@ -247,11 +247,11 @@ class _CupertinoNativeGlassContainerState
   Future<void> _onPlatformViewCreated(int id) async {
     setUpChannel(
       id,
-      'cupertino_widgets/liquid_glass_$id',
+      'cupertino_native_ui/liquid_glass_$id',
       onMethodCall: _handleMethodCall,
     );
     // Only native content gives the hosted view something to measure; with
-    // nothing, SwiftUI answers zero — retried round trips for an answer this
+    // nothing, SwiftUI answers zero: retried round trips for an answer this
     // widget would discard.
     _sentConfig = _createdWith;
     // The leaves are measured after the first frame, so usually after the
@@ -280,13 +280,13 @@ class _CupertinoNativeGlassContainerState
     final Widget content;
     if (defaultTargetPlatform == TargetPlatform.iOS) {
       // Touches must reach the native view immediately for the interactive
-      // shimmer / tap gesture — inside scrollables Flutter's gesture arena
+      // shimmer / tap gesture: inside scrollables Flutter's gesture arena
       // would otherwise delay and cancel them.
       final wantsTouches = widget.interactive || widget.onPressed != null;
       final glass = wrapForTransition(
         UiKitView(
           viewType:
-              'com.example.cupertino_widgets/cupertino_native_liquid_glass',
+              'com.example.cupertino_native_ui/cupertino_native_liquid_glass',
           layoutDirection: TextDirection.ltr,
           creationParams: _createdWith ??= _toMap(),
           creationParamsCodec: const StandardMessageCodec(),
@@ -334,7 +334,7 @@ class _CupertinoNativeGlassContainerState
     // is as big as the padded child, and the glass fills it.
     if (widget.child != null) {
       // Buttons sharing a glass in the iOS 26 bar: the system's capsule is
-      // 44pt high, whatever is in it — the height of a bar button. Only the
+      // 44pt high, whatever is in it, the height of a bar button. Only the
       // horizontal padding is kept.
       final inBar = isIOS26OrLater && BarSlot.isIn(context);
       final resolved = widget.padding.resolve(Directionality.of(context));
@@ -374,7 +374,7 @@ class _CupertinoNativeGlassContainerState
       );
     }
     // 2. Native content: SwiftUI measured the glyph and
-    //    the material around it, so take that — the same `getIntrinsicSize`
+    //    the material around it, so take that, the same `getIntrinsicSize`
     //    round trip the button makes, with the same default until it lands.
     if (_hasNativeContent) {
       return SizedBox(

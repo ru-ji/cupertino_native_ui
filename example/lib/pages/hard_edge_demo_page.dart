@@ -1,8 +1,8 @@
 import 'package:flutter/cupertino.dart';
-import 'package:cupertino_widgets/cupertino_widgets.dart';
+import 'package:cupertino_native_ui/cupertino_native_ui.dart';
 
-/// A page with no Flutter in it — a SwiftUI `NavigationStack` in a `TabView`
-/// over a native list — with the scroll edge effect set to `.hard` on every
+/// A page with no Flutter in it, a SwiftUI `NavigationStack` in a `TabView`
+/// over a native list, with the scroll edge effect set to `.hard` on every
 /// edge: the system's own look for the navigation bar and the tab bar when
 /// the content scrolls under them. "Soft" / "Hard" switches the style;
 /// "Flutter" opens the same page drawn by Flutter, with the package's bars

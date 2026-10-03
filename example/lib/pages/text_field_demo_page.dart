@@ -2,7 +2,7 @@ import 'dart:io' show Platform;
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
-import 'package:cupertino_widgets/cupertino_widgets.dart';
+import 'package:cupertino_native_ui/cupertino_native_ui.dart';
 
 /// Below iOS 26 there is no Liquid Glass: a glass capsule floating in the
 /// input accessory reads as a small pill in empty space, not a bar. Below
@@ -39,21 +39,21 @@ class _TextFieldDemoPageState extends State<TextFieldDemoPage> {
   /// focus between them and grey out at the ends.
   final List<FocusNode> _toolbarFields = [FocusNode(), FocusNode()];
 
-  /// Which of [_toolbarFields] is focused, or null — only tracked for the
+  /// Which of [_toolbarFields] is focused, or null. Only tracked for the
   /// legacy bar below iOS 26; the native accessory (26+) needs no Flutter
   /// state, it comes and goes with the field's own first-responder status.
   int? _focusedToolbarField;
 
-  /// One field's bar: previous / next / done, in a glass capsule — the shape
+  /// One field's bar: previous / next / done, in a glass capsule, the shape
   /// the system bar uses on iOS 26.
   ///
   /// The items are `label`, resolved here: the glass sits over the keyboard,
-  /// which follows the app's brightness — light keyboard, dark items, and the
-  /// other way round. Resolved, because the bar is built by SwiftUI from an
+  /// which follows the app's brightness (light keyboard, dark items, and the
+  /// other way round). Resolved, because the bar is built by SwiftUI from an
   /// ARGB value and an unresolved `CupertinoDynamicColor` ships its light one.
   List<Widget> _keyboardToolbar(int index) {
     // No Liquid Glass below iOS 26: an empty accessory here means the native
-    // side never creates one (see `syncAccessory` — a nil `keyboardToolbar`
+    // side never creates one (see `syncAccessory`: a nil `keyboardToolbar`
     // is a nil `inputAccessoryView`), so the page's own `_legacyKeyboardToolbar`
     // sits flush against the keyboard instead, with nothing native behind it.
     if (!_isIOS26OrLater) return const [];
@@ -61,7 +61,7 @@ class _TextFieldDemoPageState extends State<TextFieldDemoPage> {
     final itemColor = CupertinoColors.label.resolveFrom(context);
     return [
       // The bar takes the height of what it is given, so the room around the
-      // capsule is this padding — nothing is added natively.
+      // capsule is this padding: nothing is added natively.
       Padding(
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
         child: CupertinoNativeGlassContainer(
@@ -130,7 +130,7 @@ class _TextFieldDemoPageState extends State<TextFieldDemoPage> {
   }
 
   /// The classic solid input-accessory bar: chevrons on the left, Done on
-  /// the right, flush against the keyboard — no gap, no glass, since there
+  /// the right, flush against the keyboard, no gap, no glass, since there
   /// is none to have below iOS 26. `systemGrey5`/`systemGrey6` are the
   /// keyboard's own toolbar colours in light/dark.
   Widget _legacyKeyboardToolbar(int index) {
@@ -185,8 +185,8 @@ class _TextFieldDemoPageState extends State<TextFieldDemoPage> {
     // navigation bar and a list.
     //
     // `resizeToAvoidBottomInset: false` is load-bearing here, not a detail.
-    // UIKit puts a field's `inputAccessoryView` *inside* the keyboard's frame
-    // — it makes the keyboard taller rather than floating a bar over it — so
+    // UIKit puts a field's `inputAccessoryView` *inside* the keyboard's frame:
+    // it makes the keyboard taller rather than floating a bar over it, so
     // `viewInsets.bottom` covers the toolbar's strip too. A scaffold that
     // shrinks for the keyboard therefore ends the page exactly at the top of
     // the bar, and the only thing left behind that strip is the scaffold's own
@@ -194,7 +194,7 @@ class _TextFieldDemoPageState extends State<TextFieldDemoPage> {
     // Full height instead, and what shows behind the bar is the page.
     //
     // The keyboard inset then pads the scroll content, as the comment on the
-    // sliver below says — which is also only true with the flag set, since
+    // sliver below says, which is also only true with the flag set, since
     // `CupertinoPageScaffold` zeroes `viewInsets` for its child when it
     // consumes them.
     return Stack(

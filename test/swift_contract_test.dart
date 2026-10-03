@@ -1,7 +1,7 @@
 import 'dart:io';
 
-import 'package:cupertino_widgets/cupertino_widgets.dart';
-import 'package:cupertino_widgets/src/internal/widget_lowering.dart';
+import 'package:cupertino_native_ui/cupertino_native_ui.dart';
+import 'package:cupertino_native_ui/src/internal/widget_lowering.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -10,12 +10,12 @@ import 'package:flutter_test/flutter_test.dart';
 ///
 /// The native side decodes Dart's maps with `Codable` structs (or reads
 /// `args["key"]` by hand), and both silently ignore a key they do not know. A
-/// renamed field on one side only — `appBar` → `navigationBar`, say — still
+/// renamed field on one side only (`appBar` → `navigationBar`, say) still
 /// compiles, still passes every other test, and just stops working on a
 /// device. These tests read the Swift files themselves, so a key Dart sends
 /// that Swift does not declare fails here.
 void main() {
-  const sources = 'ios/cupertino_widgets/Sources/cupertino_widgets';
+  const sources = 'ios/cupertino_native_ui/Sources/cupertino_native_ui';
 
   final swift = {
     for (final file in Directory(sources).listSync(recursive: true))
@@ -384,7 +384,7 @@ void main() {
     ) async {
       Map? sent;
       tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
-        const MethodChannel('com.example.cupertino_widgets/alert'),
+        const MethodChannel('com.example.cupertino_native_ui/alert'),
         (call) async {
           if (call.method == 'showSheet') sent = call.arguments as Map;
           return null;

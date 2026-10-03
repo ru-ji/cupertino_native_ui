@@ -1,7 +1,7 @@
 import Foundation
 
-/// An animated SF Symbol. Unlike `CupertinoSymbolImage` — which rasterizes a
-/// symbol into Flutter's own layer tree — this one stays a live SwiftUI
+/// An animated SF Symbol. Unlike `CupertinoSymbolImage`, which rasterizes a
+/// symbol into Flutter's own layer tree, this one stays a live SwiftUI
 /// `Image`, because `.symbolEffect` animates the view, not the pixels.
 @available(iOS 15.0, *)
 struct SymbolConfig: Codable {
@@ -15,7 +15,7 @@ struct SymbolConfig: Codable {
     /// "breathe". Nil draws a still symbol.
     let effect: String?
 
-    /// Discrete effects fire once each time this changes — Dart bumps it.
+    /// Discrete effects fire once each time this changes: Dart bumps it.
     let trigger: Int?
 
     /// Indefinite effects (pulse, variableColor, wiggle, rotate, breathe) run

@@ -128,7 +128,7 @@ class _NativeCollectionViewState extends State<NativeCollectionView>
   /// measured. The reveal runs on *every* rising metrics tick, and the page
   /// scrolls as it goes: a window-space row would be compared against a box
   /// that has already moved, so each tick would ask for slightly more travel
-  /// than the last and the list would walk off the top of the screen — taking
+  /// than the last and the list would walk off the top of the screen, taking
   /// the field's window with it, which is what closes the keyboard. The row's
   /// offset *inside* the platform view is unaffected by the page scrolling, so
   /// converting once, when the report arrives, is stable for the whole
@@ -140,7 +140,7 @@ class _NativeCollectionViewState extends State<NativeCollectionView>
 
   /// iOS reports the inset repeatedly while the keyboard animates. The focus
   /// event itself arrives before the keyboard has any height at all, so
-  /// revealing on focus alone scrolls by nothing — this is what actually
+  /// revealing on focus alone scrolls by nothing: this is what actually
   /// moves the list.
   @override
   void didChangeMetrics() {
@@ -153,7 +153,7 @@ class _NativeCollectionViewState extends State<NativeCollectionView>
   }
 
   /// A focus report's `y`/`height`, which are window coordinates, moved into
-  /// the space [RenderBox.showOnScreen] expects — this platform view's own.
+  /// the space [RenderBox.showOnScreen] expects: this platform view's own.
   /// See [_focusedRow] for why the conversion happens once, here.
   Rect? _rowInViewCoordinates(Map<Object?, Object?> report) {
     final y = (report['y'] as num?)?.toDouble();
@@ -168,7 +168,7 @@ class _NativeCollectionViewState extends State<NativeCollectionView>
   }
 
   /// One section, with each row's [CupertinoNativeListTile.trailing] lowered
-  /// to the native nodes SwiftUI renders — and its callbacks kept.
+  /// to the native nodes SwiftUI renders, and its callbacks kept.
   Map<String, dynamic> _sectionMap(CupertinoNativeListSection section) {
     return {
       ...section.toMap(isDark: _isDark),
@@ -200,7 +200,7 @@ class _NativeCollectionViewState extends State<NativeCollectionView>
   /// that actually went out.
   String? _lastConfigJson;
 
-  /// The creation params, captured on the first build and never rebuilt —
+  /// The creation params, captured on the first build and never rebuilt:
   /// `UiKitView` only reads them at creation.
   Map<String, dynamic>? _creationParams;
 
@@ -231,7 +231,7 @@ class _NativeCollectionViewState extends State<NativeCollectionView>
   Future<void> _onPlatformViewCreated(int id) async {
     setUpChannel(
       id,
-      'cupertino_widgets/list_$id',
+      'cupertino_native_ui/list_$id',
       onMethodCall: _handleMethodCall,
     );
     // The creation params were built on the first frame; push the live config
@@ -291,7 +291,7 @@ class _NativeCollectionViewState extends State<NativeCollectionView>
           // The native side reports it as `<nodeId>.focused`.
           if (nodeId.endsWith('.focused')) {
             final value = call.arguments['value'];
-            // `{focused, y, height}` — the row's own box, so the reveal can
+            // `{focused, y, height}`: the row's own box, so the reveal can
             // move the row rather than the whole list. See
             // `FocusReportingField` on the native side.
             final report = value is Map ? value.cast<Object?, Object?>() : null;
@@ -330,10 +330,10 @@ class _NativeCollectionViewState extends State<NativeCollectionView>
     }
   }
 
-  /// Scrolls the focused row clear of the keyboard — the row, not the list:
+  /// Scrolls the focused row clear of the keyboard: the row, not the list:
   /// revealing the whole box overshot a short section and undershot a long
   /// one. The row's rect comes from the native side with its focus report,
-  /// already converted into this view's coordinates — see [_focusedRow].
+  /// already converted into this view's coordinates, see [_focusedRow].
   void _revealAboveKeyboard({bool postFrame = false}) {
     void run({bool animate = false}) {
       if (!mounted) return;
@@ -358,7 +358,7 @@ class _NativeCollectionViewState extends State<NativeCollectionView>
   /// The fields here are transcribed into the platform view, so Flutter holds
   /// no focus node for them; `endEditing` resigns whichever one is first
   /// responder inside it. Called as the route starts leaving, so the keyboard
-  /// goes down with the transition — see [RouteKeyboardDismissal].
+  /// goes down with the transition, see [RouteKeyboardDismissal].
   @override
   void dismissKeyboardForRoute() {
     if (_fieldFocused) channel?.invokeMethod('endEditing');
@@ -372,7 +372,7 @@ class _NativeCollectionViewState extends State<NativeCollectionView>
 
     final platformView = wrapForTransition(
       UiKitView(
-        viewType: 'com.example.cupertino_widgets/cupertino_native_list',
+        viewType: 'com.example.cupertino_native_ui/cupertino_native_list',
         layoutDirection: TextDirection.ltr,
         // Memoized: every later change goes over `updateList`, not through a
         // map rebuilt on every build.
@@ -380,7 +380,7 @@ class _NativeCollectionViewState extends State<NativeCollectionView>
         creationParamsCodec: const StandardMessageCodec(),
         onPlatformViewCreated: _onPlatformViewCreated,
         // With no recognizer of its own, the view only got a touch once
-        // nothing else in Flutter wanted it — at the finger's lift, at best.
+        // nothing else in Flutter wanted it: at the finger's lift, at best.
         // A tap still worked; a press-and-hold that turns into a drag (moving
         // a field's cursor, the magnifier, a selection) never reached the
         // native field. A hold or a sideways drag is the row's now; a
@@ -392,7 +392,7 @@ class _NativeCollectionViewState extends State<NativeCollectionView>
     // Width fills the parent; height is fixed (given) or the measured content
     // height, with a generous placeholder until the native measurement arrives.
     final h = widget.height ?? intrinsicHeight ?? 400.0;
-    // Only an expandable row opening or closing animates the height — with
+    // Only an expandable row opening or closing animates the height, with
     // the same duration and curve as the native row animation, so what is
     // under the list moves with the rows. Every other change (the first
     // measurement, rows pushed from Dart) lands at once.

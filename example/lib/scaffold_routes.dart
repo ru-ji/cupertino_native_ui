@@ -7,11 +7,11 @@ import 'pages/search_body.dart';
 
 /// Route builders for every CupertinoNativePageScaffold body (tab roots and
 /// pushed pages alike). Consumed by `CupertinoNativePageScaffold.maybeRun` at the
-/// top of `main()` — no `@pragma('vm:entry-point')` function needed.
+/// top of `main()`: no `@pragma('vm:entry-point')` function needed.
 Map<String, Widget Function()> scaffoldRoutes() {
   return {
     // The Mail demo (NativeScaffoldDemoPage): the inbox, and one route per
-    // message — a pushed body has no arguments, so the route is the message.
+    // message (a pushed body has no arguments, so the route is the message).
     'inbox': () => const MailInboxBody(),
     for (var i = 0; i < mails.length; i++)
       'mail$i': () => MailMessageBody(index: i),

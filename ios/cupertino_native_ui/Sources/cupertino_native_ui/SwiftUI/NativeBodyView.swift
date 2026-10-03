@@ -4,7 +4,7 @@ import SwiftUI
 /// from Dart, keyed by node id.
 ///
 /// A control is the source of truth for its own value while the user is
-/// touching it — a slider that round-tripped every drag step through Dart
+/// touching it: a slider that round-tripped every drag step through Dart
 /// would stutter. Dart is told about every change and can push a different
 /// value back, which wins.
 @available(iOS 15.0, *)
@@ -21,7 +21,7 @@ final class NativeBodyModel: ObservableObject {
     private var dateModels: [String: DatePickerModel] = [:]
 
     /// Created once per node id and reused. Never reassigned during a view
-    /// update — the model is `@Published`, and writing to it from inside
+    /// update: the model is `@Published`, and writing to it from inside
     /// `body` is how a SwiftUI update loop starts.
     func dateModel(for id: String, config: DatePickerConfig) -> DatePickerModel {
         if let existing = dateModels[id] { return existing }
@@ -84,7 +84,7 @@ final class NativeBodyModel: ObservableObject {
         return model
     }
 
-    /// One store per list node — the rows' models and their keyboard bars.
+    /// One store per list node: the rows' models and their keyboard bars.
     private var listStores: [String: TrailingRowStore] = [:]
 
     func listStore(for id: String) -> TrailingRowStore {
@@ -99,7 +99,7 @@ final class NativeBodyModel: ObservableObject {
     private var fieldModels: [String: TextFieldModel] = [:]
 
     /// Created once per field id and reused. Never reassigned during a view
-    /// update — the model is `@Published`, and writing to it from inside
+    /// update: the model is `@Published`, and writing to it from inside
     /// `body` is how a SwiftUI update loop starts. `applyConfigs` pushes new
     /// configs instead, from the method channel.
     func fieldModel(for id: String, config: TextFieldConfig) -> TextFieldModel {
@@ -115,7 +115,7 @@ final class NativeBodyModel: ObservableObject {
     /// the *list's* platform view, and the iOS engine takes a platform view out
     /// of the `FlutterView` on any frame it is not composited. A view outside a
     /// window cannot be first responder, so UIKit resigns the field and the
-    /// keyboard closes — and nothing brings it back on its own. The standalone
+    /// keyboard closes, and nothing brings it back on its own. The standalone
     /// field solves the same problem the same way; see
     /// `NativeTextFieldView.wantsFocusWhenVisible`.
     func refocusField(id: String) {
@@ -174,7 +174,7 @@ final class NativeBodyModel: ObservableObject {
 struct NativeBodyView: View {
     @ObservedObject var model: NativeBodyModel
 
-    /// (nodeId, value) — value is Bool, Double, Int, String, or nil for a
+    /// (nodeId, value): value is Bool, Double, Int, String, or nil for a
     /// button.
     let onEvent: (String, Any?) -> Void
 
@@ -188,7 +188,7 @@ struct NativeBodyView: View {
 }
 
 /// One node. Split out from `NativeBodyView` so the recursion has a type to
-/// recurse into — a `View` cannot reference itself inside its own `body`.
+/// recurse into: a `View` cannot reference itself inside its own `body`.
 /// Internal rather than private: the scaffold's page root renders a tree's
 /// top-level node directly.
 @available(iOS 15.0, *)
@@ -330,7 +330,7 @@ struct NativeBodyNode: View {
                 onEditingComplete: {},
                 // The row's own frame rides along with the focus report, so
                 // Flutter can reveal *this row* rather than the whole platform
-                // view — see `TextFieldModel.focusFrameInWindow`.
+                // view, see `TextFieldModel.focusFrameInWindow`.
                 onFocusChange: { focused in
                     let frame = fieldModel.focusFrameInWindow
                     onEvent(
@@ -443,7 +443,7 @@ struct NativeBodyNode: View {
     }
 
     /// A Flutter island: real Flutter widgets, in their own engine, inside
-    /// the native tree. The expensive node — it is an isolate.
+    /// the native tree. The expensive node: it is an isolate.
     @ViewBuilder
     private var flutterView: some View {
         if let route = node.route {
@@ -530,8 +530,8 @@ struct NativeBodyNode: View {
 }
 
 /// Owns the `SymbolModel` an animated symbol needs. Building one inline would
-/// hand `AdaptiveSymbolView` a fresh object on every update, restarting — or
-/// dropping — the effect it exists to run.
+/// hand `AdaptiveSymbolView` a fresh object on every update, restarting, or
+/// dropping, the effect it exists to run.
 @available(iOS 15.0, *)
 private struct BodySymbolView: View {
     let config: SymbolConfig
@@ -634,13 +634,13 @@ extension View {
     }
 }
 
-/// A Liquid Glass container inside a native body — the same material the
+/// A Liquid Glass container inside a native body: the same material the
 /// standalone glass platform view renders, but here glass and content are one
 /// SwiftUI tree, so a container nested in a container (a toolbar item, a glass
 /// inside a glass) merges its effect with the tree around it.
 ///
 /// Its content sits *inside* the material, so it refracts whatever the glass
-/// itself refracts — unlike the platform view's `child`, which rides over it.
+/// itself refracts, unlike the platform view's `child`, which rides over it.
 @available(iOS 15.0, *)
 struct BodyGlassView: View {
     let config: GlassConfig
@@ -693,7 +693,7 @@ struct BodyGlassView: View {
         var glass: Glass = config.variant == "clear" ? .clear : .regular
         if let argb = config.tint { glass = glass.tint(Color(argb: argb)) }
         // Opt-in, not opt-out: a card that merely holds controls should not
-        // light up when one of them is tapped — the highlight is drawn on the
+        // light up when one of them is tapped. The highlight is drawn on the
         // node's rectangle, so it reads as a clipped block over the card.
         if config.interactive == true { glass = glass.interactive() }
         return glass
@@ -713,7 +713,7 @@ struct BodyGlassView: View {
 }
 
 /// A segmented control (or menu) inside a native body. Selection lives in
-/// `NativeBodyModel`, so pushes from Dart cannot fight a finger mid-touch —
+/// `NativeBodyModel`, so pushes from Dart cannot fight a finger mid-touch:
 /// the same contract as the toggle and picker nodes.
 @available(iOS 15.0, *)
 struct BodySegmentedView: View {
@@ -756,7 +756,7 @@ extension View {
         }
     }
 
-    /// The caller's size, or nothing at all — not `.frame(nil, nil)`.
+    /// The caller's size, or nothing at all, not `.frame(nil, nil)`.
     @ViewBuilder
     func applyGlassSize(width: Double?, height: Double?) -> some View {
         if width == nil && height == nil {

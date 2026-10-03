@@ -2,7 +2,7 @@ import 'package:flutter/widgets.dart';
 
 import 'internal/native_control.dart';
 
-/// A native SwiftUI `Stepper` — the − / + pair of the Settings app.
+/// A native SwiftUI `Stepper`: the − / + pair of the Settings app.
 ///
 /// ```dart
 /// CupertinoNativeStepper(

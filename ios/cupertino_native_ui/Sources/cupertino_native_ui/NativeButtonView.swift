@@ -43,7 +43,7 @@ class NativeButtonView: NativeHostingView {
         _view.viewId = viewId
 
         channel = FlutterMethodChannel(
-            name: "cupertino_widgets/button_\(viewId)", binaryMessenger: messenger)
+            name: "cupertino_native_ui/button_\(viewId)", binaryMessenger: messenger)
         sizeChannel = channel
         channel?.setMethodCallHandler({
             [weak self] (call: FlutterMethodCall, result: @escaping FlutterResult) in
@@ -63,7 +63,7 @@ class NativeButtonView: NativeHostingView {
     /// "Add" ↔ "Remove" toggle) used to go through `attach` here on every
     /// update, which discarded the in-flight press gesture and
     /// `ButtonStyleConfiguration.isPressed` animation along with the old
-    /// controller — a tap mid-press would see the button snap back to idle
+    /// controller: a tap mid-press would see the button snap back to idle
     /// because it was, underneath, a brand-new button.
     private func setupSwiftUI(with config: ButtonConfig, update: Bool = false) {
         isDark = config.isDark
@@ -84,7 +84,7 @@ class NativeButtonView: NativeHostingView {
         // center it, instead of stretching it across the container.
         //
         // Flutter sizes a transformed platform view's box to the ROTATED
-        // BOUNDING BOX — at 45° a capsule button's box becomes square. A
+        // BOUNDING BOX: at 45° a capsule button's box becomes square. A
         // stretched button fills that box, and since its border shape is a
         // capsule, a square capsule renders as the big circle seen when
         // rotating. Pinning to the content's natural size keeps the button

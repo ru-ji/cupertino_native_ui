@@ -1,9 +1,9 @@
 import 'package:flutter/cupertino.dart';
-import 'package:cupertino_widgets/cupertino_widgets.dart';
+import 'package:cupertino_native_ui/cupertino_native_ui.dart';
 
 /// [CupertinoNativeSwitch] presented as a settings page: the rows are native
 /// list cells and each switch is lowered straight into SwiftUI as the row's
-/// trailing control — a real native UISwitch, exactly like Settings.
+/// trailing control, a real native UISwitch, exactly like Settings.
 class SwitchDemoPage extends StatefulWidget {
   const SwitchDemoPage({super.key});
 
@@ -39,7 +39,7 @@ class _SwitchDemoPageState extends State<SwitchDemoPage> {
                     CupertinoNativeListSection(
                       header: 'Connectivity',
                       footer: _airplane
-                          ? 'Airplane Mode is on — wireless radios are disabled.'
+                          ? 'Airplane Mode is on: wireless radios are disabled.'
                           : 'Each switch is a native UISwitch; press-and-slide works.',
                       children: [
                         CupertinoNativeListTile(

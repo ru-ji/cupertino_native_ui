@@ -1,7 +1,7 @@
 import SwiftUI
 
 
-/// One row's lowered trailing controls, owning their own state model — the
+/// One row's lowered trailing controls, owning their own state model: the
 /// same `NativeBodyModel` the toolbar and native bodies use, seeded from the
 /// nodes the first time the row appears. A user's touch owns the value from
 /// then on; pushes from Dart cannot fight it mid-gesture.
@@ -48,7 +48,7 @@ extension View {
 /// The models and keyboard bars of a list's transcribed rows.
 ///
 /// Owned by the platform view. A row's model is created once per row id and
-/// kept, and a field that asked for a toolbar gets its bar attached here —
+/// kept, and a field that asked for a toolbar gets its bar attached here:
 /// outside any view update, so nothing is rebuilt per frame.
 @available(iOS 15.0, *)
 final class TrailingRowStore {
@@ -95,7 +95,7 @@ final class TrailingRowStore {
     /// Puts the responder back on the field `key` names, `"rowId.fieldId"`.
     ///
     /// The row's model is only ever created here, so a field that was focused
-    /// before the platform view left the window already has one — this just
+    /// before the platform view left the window already has one: this just
     /// bumps its focus command. See `NativeListView.refocusTranscribedField`.
     func refocus(key: String) {
         let parts = key.split(separator: ".", maxSplits: 1)

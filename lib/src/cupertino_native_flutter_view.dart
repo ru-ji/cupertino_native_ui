@@ -1,12 +1,12 @@
 import 'package:flutter/widgets.dart';
 
 /// Your own Flutter, hosted inside a native surface that Flutter cannot
-/// otherwise reach — a glass container, a native body, a keyboard toolbar.
+/// otherwise reach: a glass container, a native body, a keyboard toolbar.
 ///
 /// It runs in its own FlutterEngine, so it is named by [route] rather than
 /// passed as a widget: engines are isolates, and a widget written here lives
 /// in this isolate's heap where the hosting one cannot reach it. This is why
-/// there is no `child:` — the widget must be reachable from the body
+/// there is no `child:`: the widget must be reachable from the body
 /// isolate's `main()`, so it is declared once, at the top level, as a
 /// [CupertinoNativeBodyRoute], and used everywhere through that object:
 ///

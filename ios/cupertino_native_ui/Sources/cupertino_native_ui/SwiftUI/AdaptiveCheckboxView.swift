@@ -1,11 +1,11 @@
 import SwiftUI
 
 /// The checkbox: iOS has none, so this is the selection symbol Reminders and
-/// Mail use — `circle` when off, `checkmark.circle.fill` in the tint when on.
+/// Mail use (`circle` when off, `checkmark.circle.fill` in the tint when on).
 ///
 /// Driven by a `Binding`, not its own state: the standalone platform view
 /// binds the value it echoes to Dart, and a native body node binds the
-/// `NativeBodyModel` — so a value pushed from Dart wins either way.
+/// `NativeBodyModel`, so a value pushed from Dart wins either way.
 @available(iOS 15.0, *)
 struct AdaptiveCheckboxView: View {
     let config: CheckboxConfig

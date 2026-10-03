@@ -15,7 +15,7 @@ import 'models/cupertino_native_icon.dart';
 import 'models/cupertino_native_list_section.dart';
 import 'internal/native_color.dart';
 
-/// A node of a **native body** — a SwiftUI view tree described from Dart, for
+/// A node of a **native body**: a SwiftUI view tree described from Dart, for
 /// a [CupertinoNativePageScaffold] or a `CupertinoNativeSheet`.
 ///
 /// The ordinary body is a route running in its own FlutterEngine, so a native
@@ -42,7 +42,7 @@ import 'internal/native_color.dart';
 /// ```
 ///
 /// These are **descriptions, not widgets**: they are serialized and sent, not
-/// built. That is the trade — the body is no longer arbitrary Flutter, only
+/// built. That is the trade: the body is no longer arbitrary Flutter, only
 /// what this tree can express. You cannot have both a body you write in
 /// Flutter and controls that render as SwiftUI directly.
 ///
@@ -206,8 +206,8 @@ class CupertinoNativeBody {
          },
        );
 
-  /// A popup `Menu`, reporting a pick as `(id, {'id': actionId, 'value': v})`
-  /// — `value` is the new state of a toggle item, null for an action.
+  /// A popup `Menu`, reporting a pick as `(id, {'id': actionId, 'value': v})`:
+  /// `value` is the new state of a toggle item, null for an action.
   CupertinoNativeBody.menu({
     required String id,
     required List<Map<String, dynamic>> items,
@@ -246,9 +246,9 @@ class CupertinoNativeBody {
        );
 
   /// A `TextField`, reporting each edit as `(id, String)`. Focus and submit
-  /// arrive as `('<id>.focused', {focused, y, height})` — the row's own box
+  /// arrive as `('<id>.focused', {focused, y, height})` (the row's own box
   /// in window coordinates, so a host can reveal the row rather than the
-  /// whole platform view — and `('<id>.submitted', String)`.
+  /// whole platform view) and `('<id>.submitted', String)`.
   CupertinoNativeBody.textField({
     required String id,
     String? value,
@@ -471,7 +471,7 @@ class CupertinoNativeBody {
   CupertinoNativeBody.flutter(String route, {EdgeInsets? padding})
     : this._(type: 'flutter', route: route, padding: padding);
 
-  /// A Liquid Glass container — the same material the standalone
+  /// A Liquid Glass container: the same material the standalone
   /// `CupertinoNativeGlassContainer` platform view renders, but here the
   /// glass and its content are one SwiftUI tree, so a container nested in a
   /// container merges its effect with the tree around it.
@@ -562,9 +562,9 @@ class CupertinoNativeBody {
          },
        );
 
-  /// One of the single-value controls — a [CupertinoNativeStepper],
+  /// One of the single-value controls (a [CupertinoNativeStepper],
   /// [CupertinoNativeColorPicker], [CupertinoNativeGauge],
-  /// [CupertinoNativeMultiDatePicker] or [CupertinoNativeTextEditor] — as a
+  /// [CupertinoNativeMultiDatePicker] or [CupertinoNativeTextEditor]) as a
   /// node. The widget describes the control; its changes report as
   /// `(id, value)` like every other node (a double, an ARGB int, a list of
   /// milliseconds since epoch, a string); the widget's own `onChanged` is
@@ -592,7 +592,7 @@ class CupertinoNativeBody {
     return {...control.props, 'kind': control.kind, 'enabled': enabled ?? true};
   }
 
-  /// The embedded system photo picker (iOS 17+) as a node — the way to put
+  /// The embedded system photo picker (iOS 17+) as a node: the way to put
   /// it in a native sheet with no Flutter engine behind it:
   ///
   /// ```dart
@@ -607,7 +607,7 @@ class CupertinoNativeBody {
   /// ```
   ///
   /// The [picker] widget carries the settings; its own `onChanged` is not
-  /// called — selections report through `onBodyEvent`, read with
+  /// called: selections report through `onBodyEvent`, read with
   /// [CupertinoNativePickedMedia.listFrom]. As a page's only node it fills
   /// the page and scrolls itself.
   CupertinoNativeBody.photosPicker({
@@ -621,7 +621,7 @@ class CupertinoNativeBody {
          payload: {'photosPicker': picker.nativeConfig},
        );
 
-  /// A native `ProgressView` — determinate with [value], or an indeterminate
+  /// A native `ProgressView`: determinate with [value], or an indeterminate
   /// spinner with none. [style] is 0 (automatic), 1 (linear) or 2 (circular).
   CupertinoNativeBody.progress({
     double? value,
@@ -647,7 +647,7 @@ class CupertinoNativeBody {
   /// Serialized form consumed by `BodyNodeConfig` on the Swift side.
   ///
   /// [isDark] is threaded down the tree: every leaf config carries the app's
-  /// The same node with [insets] around it — what a `Padding` in a lowered
+  /// The same node with [insets] around it, what a `Padding` in a lowered
   /// tree becomes. A node already carrying padding keeps its own.
   CupertinoNativeBody withPadding(EdgeInsets insets) => CupertinoNativeBody._(
     type: type,
@@ -735,7 +735,7 @@ enum CupertinoNativeScrollDismissKeyboard {
   /// a text field, immediate otherwise.
   automatic,
 
-  /// The keyboard follows the drag, and comes back if the drag is reversed —
+  /// The keyboard follows the drag, and comes back if the drag is reversed:
   /// Messages' behaviour.
   interactively,
 

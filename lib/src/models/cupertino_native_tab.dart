@@ -25,7 +25,7 @@ class CupertinoNativeTab {
   /// renders the results via [CupertinoNativePageScaffold.searchState].
   final CupertinoNativeSearchField? search;
 
-  /// Red badge on the tab icon — a count like `'3'`, or any short text.
+  /// Red badge on the tab icon: a count like `'3'`, or any short text.
   /// SwiftUI `.badge` / `UITabBarItem.badgeValue`.
   final String? badge;
 

@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:cupertino_widgets_example/app.dart';
+import 'package:cupertino_native_ui_example/app.dart';
 
 void main() {
   testWidgets('demo catalog smoke test', (WidgetTester tester) async {

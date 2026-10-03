@@ -1,5 +1,5 @@
 import 'package:flutter/cupertino.dart';
-import 'package:cupertino_widgets/cupertino_widgets.dart';
+import 'package:cupertino_native_ui/cupertino_native_ui.dart';
 
 /// The scroll edge effect in its two hosting models, over identical content.
 ///
@@ -95,7 +95,7 @@ class _NativeProbe extends StatelessWidget {
 
 /// The recreation: plain Flutter content under [CupertinoNativeNavigationBar],
 /// which draws its own [CupertinoScrollEdgeEffect] over whatever scrolls
-/// beneath it — no manual `Stack` positioning needed.
+/// beneath it, no manual `Stack` positioning needed.
 class _FlutterProbe extends StatelessWidget {
   const _FlutterProbe();
 
@@ -119,8 +119,8 @@ class _FlutterProbe extends StatelessWidget {
 }
 
 /// The content both probes scroll: alternating bands chosen for what they do
-/// to a tint — saturated gradients, flat white, flat black, and a high-noise
-/// band that stands in for a photograph.
+/// to a tint (saturated gradients, flat white, flat black, and a high-noise
+/// band that stands in for a photograph).
 class EdgeEffectProbeBody extends StatelessWidget {
   const EdgeEffectProbeBody({super.key});
 
@@ -129,7 +129,7 @@ class EdgeEffectProbeBody extends StatelessWidget {
     ('Warm gradient', [Color(0xFFFF6B9D), Color(0xFFFFC371)]),
     ('Flat black', [Color(0xFF000000), Color(0xFF000000)]),
     ('Cool gradient', [Color(0xFF1A2980), Color(0xFF26D0CE)]),
-    ('Busy — photo-like', [Color(0xFF7F7FD5), Color(0xFF86A8E7)]),
+    ('Busy: photo-like', [Color(0xFF7F7FD5), Color(0xFF86A8E7)]),
     ('Flat mid grey', [Color(0xFF808080), Color(0xFF808080)]),
     ('Vivid', [Color(0xFFFF0080), Color(0xFFFFD200)]),
     ('Flat white', [Color(0xFFFFFFFF), Color(0xFFFFFFFF)]),

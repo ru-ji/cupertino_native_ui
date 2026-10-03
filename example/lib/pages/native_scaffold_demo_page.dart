@@ -1,9 +1,9 @@
 import 'package:flutter/cupertino.dart';
-import 'package:cupertino_widgets/cupertino_widgets.dart';
+import 'package:cupertino_native_ui/cupertino_native_ui.dart';
 
 /// Mail, on a fully native SwiftUI scaffold: a large title with a subtitle
 /// that collapses on scroll, the native search drawer, a glass bottom
-/// toolbar, and native push and pop into a message — which brings its own
+/// toolbar, and native push and pop into a message, which brings its own
 /// toolbars. The inbox and the messages are Flutter bodies (`mail_bodies.dart`),
 /// registered in `scaffoldRoutes()`.
 class NativeScaffoldDemoPage extends StatelessWidget {
@@ -27,7 +27,7 @@ class NativeScaffoldDemoPage extends StatelessWidget {
             placement: CupertinoNativeSearchPlacement.navigationBarDrawerAlways,
           ),
           // Mail's bottom bar: the filter on one side, compose on the other,
-          // each in its own glass — the spacer breaks the shared capsule.
+          // each in its own glass. The spacer breaks the shared capsule.
           bottom: [
             CupertinoNativeToolbarItem(
               systemImage: 'line.3.horizontal.decrease.circle',

@@ -62,7 +62,7 @@ class _CupertinoNativeSliderState extends State<CupertinoNativeSlider>
     with NativePlatformViewStateMixin {
   bool? _lastIsDark;
 
-  // Follows the app's own theme brightness, not the device's — a light app
+  // Follows the app's own theme brightness, not the device's: a light app
   // forced on a dark-mode phone should still get a light slider.
   bool get _isDark => Theme.of(context).brightness == Brightness.dark;
 
@@ -81,7 +81,7 @@ class _CupertinoNativeSliderState extends State<CupertinoNativeSlider>
   @override
   Widget build(BuildContext context) {
     const String viewType =
-        'com.example.cupertino_widgets/cupertino_native_slider';
+        'com.example.cupertino_native_ui/cupertino_native_slider';
     final Map<String, dynamic> creationParams = _props();
 
     // The slider fills the width offered, so only its height needs stating:

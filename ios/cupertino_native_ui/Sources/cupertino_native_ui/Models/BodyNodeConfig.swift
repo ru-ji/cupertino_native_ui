@@ -1,12 +1,12 @@
 import Foundation
 import SwiftUI
 
-/// One node of a scaffold's **native body** — a SwiftUI view tree described
+/// One node of a scaffold's **native body**: a SwiftUI view tree described
 /// from Dart instead of rendered by an embedded FlutterEngine.
 ///
 /// The ordinary body route boots its own engine, so a native control inside it
 /// goes Flutter → SwiftUI → FlutterView → SwiftUI: a platform view nested in a
-/// hierarchy that was already native. A native body cuts the middle out —
+/// hierarchy that was already native. A native body cuts the middle out:
 /// Dart sends this tree, SwiftUI renders it, and the result is the same view
 /// hierarchy you would get writing the SwiftUI by hand.
 ///
@@ -51,7 +51,7 @@ struct BodyNodeConfig: Codable {
     /// For `type == "scroll"`.
     let scroll: ScrollConfig?
 
-    // Leaf payloads — exactly one is set, matching `type`.
+    // Leaf payloads: exactly one is set, matching `type`.
     let text: BodyTextConfig?
     let button: ButtonConfig?
     let menu: MenuConfiguration?
@@ -66,11 +66,11 @@ struct BodyNodeConfig: Codable {
     let segmented: SegmentedControlConfig?
     let datePicker: DatePickerConfig?
     let progress: ProgressConfig?
-    /// Stepper, color picker, gauge, multi-date picker, text editor — the
+    /// Stepper, color picker, gauge, multi-date picker, text editor: the
     /// controls `NativeControlView` hosts standalone.
     let control: ControlConfig?
     /// The embedded system photo picker (iOS 17+). Fills the page it is the
-    /// root of — see `NativeBodyPage`.
+    /// root of (see `NativeBodyPage`).
     let photosPicker: PhotosPickerConfig?
 }
 
@@ -121,8 +121,8 @@ struct BodyTextConfig: Codable {
     let align: String?
 }
 
-/// The slider has no `Codable` config of its own — the standalone view drives
-/// an observable model — so the body carries its own.
+/// The slider has no `Codable` config of its own, the standalone view drives
+/// an observable model, so the body carries its own.
 @available(iOS 15.0, *)
 struct BodySliderConfig: Codable {
     let value: Double

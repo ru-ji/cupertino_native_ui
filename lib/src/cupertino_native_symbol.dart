@@ -11,7 +11,7 @@ import 'internal/native_color.dart';
 ///
 /// The discrete ones fire once per [CupertinoNativeSymbol.trigger] bump; the
 /// indefinite ones run for as long as [CupertinoNativeSymbol.repeating] is
-/// true. Most can do either — [bounce] is discrete only.
+/// true. Most can do either: [bounce] is discrete only.
 enum CupertinoNativeSymbolEffect {
   /// A quick downward nudge. Discrete.
   bounce,
@@ -19,7 +19,7 @@ enum CupertinoNativeSymbolEffect {
   /// Opacity breathing in place.
   pulse,
 
-  /// Layers light up one after another — the Wi-Fi / cellular animation.
+  /// Layers light up one after another: the Wi-Fi / cellular animation.
   /// Only means anything on a symbol drawn in several layers.
   variableColor,
 
@@ -33,7 +33,7 @@ enum CupertinoNativeSymbolEffect {
   breathe,
 }
 
-/// An SF Symbol that can animate — SwiftUI's `.symbolEffect`.
+/// An SF Symbol that can animate: SwiftUI's `.symbolEffect`.
 ///
 /// This is the one icon in the package that has to be a platform view: the
 /// effects animate the *view*, so rasterizing the symbol the way
@@ -41,7 +41,7 @@ enum CupertinoNativeSymbolEffect {
 /// for a still icon (it composites in Flutter's layer tree and so survives a
 /// [CupertinoScrollEdgeEffect]); use this one when it has to move.
 ///
-/// Discrete effects fire when [trigger] changes — bump it on each event:
+/// Discrete effects fire when [trigger] changes: bump it on each event:
 ///
 /// ```dart
 /// CupertinoNativeSymbol.symbol(
@@ -59,7 +59,7 @@ enum CupertinoNativeSymbolEffect {
 /// ```
 ///
 /// With [replaceOnChange], changing [name] morphs one symbol into the next
-/// (`.contentTransition(.symbolEffect(.replace))`) — the play/pause swap.
+/// (`.contentTransition(.symbolEffect(.replace))`): the play/pause swap.
 class CupertinoNativeSymbol extends StatefulWidget {
   const CupertinoNativeSymbol(
     this.name, {
@@ -124,13 +124,13 @@ class CupertinoNativeSymbol extends StatefulWidget {
   final int trigger;
 
   /// Run [effect] continuously instead of once per [trigger].
-  /// [CupertinoNativeSymbolEffect.bounce] ignores this — it is discrete only.
+  /// [CupertinoNativeSymbolEffect.bounce] ignores this: it is discrete only.
   final bool repeating;
 
   /// Morph between symbols when [name] changes, instead of cutting.
   final bool replaceOnChange;
 
-  /// 0...1: how many layers of a variable symbol are lit — the bars of
+  /// 0...1: how many layers of a variable symbol are lit, like the bars of
   /// `wifi` or `speaker.wave.3` (`Image(systemName:variableValue:)`, iOS 16+).
   final double? variableValue;
 
@@ -214,7 +214,7 @@ class _CupertinoNativeSymbolState extends State<CupertinoNativeSymbol>
   };
 
   void _onPlatformViewCreated(int id) {
-    setUpChannel(id, 'cupertino_widgets/symbol_$id');
+    setUpChannel(id, 'cupertino_native_ui/symbol_$id');
     requestIntrinsicSize();
   }
 
@@ -228,7 +228,7 @@ class _CupertinoNativeSymbolState extends State<CupertinoNativeSymbol>
       height: intrinsicHeight ?? widget.size * 1.3,
       child: wrapForTransition(
         UiKitView(
-          viewType: 'com.example.cupertino_widgets/cupertino_native_symbol',
+          viewType: 'com.example.cupertino_native_ui/cupertino_native_symbol',
           layoutDirection: TextDirection.ltr,
           creationParams: _toMap(),
           creationParamsCodec: const StandardMessageCodec(),

@@ -1,4 +1,4 @@
-import 'package:cupertino_widgets/cupertino_widgets.dart';
+import 'package:cupertino_native_ui/cupertino_native_ui.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart' show Scaffold, Theme, ThemeMode;
 import 'package:flutter/services.dart' show SystemUiOverlayStyle;
@@ -19,7 +19,7 @@ import 'slider_demo_page.dart';
 import 'switch_demo_page.dart';
 import 'text_field_demo_page.dart';
 
-/// The demo catalog — a native SwiftUI list of rows, like every page in the
+/// The demo catalog: a native SwiftUI list of rows, like every page in the
 /// app now. Each row is a real SwiftUI cell with a native chevron; tapping
 /// one reports its id and the page is pushed.
 class HomePage extends StatelessWidget {

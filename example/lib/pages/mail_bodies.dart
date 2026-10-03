@@ -1,5 +1,5 @@
 import 'package:flutter/cupertino.dart';
-import 'package:cupertino_widgets/cupertino_widgets.dart';
+import 'package:cupertino_native_ui/cupertino_native_ui.dart';
 
 /// One message of the Mail demo.
 class Mail {
@@ -43,9 +43,9 @@ const mails = <Mail>[
     color: CupertinoColors.systemPink,
     time: '8:12',
     subject: 'Photos from the weekend',
-    preview: 'I put them all in a shared album — the sunset ones turned out…',
+    preview: 'I put them all in a shared album. The sunset ones turned out…',
     body:
-        'Hi!\n\nI put them all in a shared album — the sunset ones turned '
+        'Hi!\n\nI put them all in a shared album. The sunset ones turned '
         'out even better than I hoped. Let me know which ones you want '
         'printed for the kitchen wall.\n\nChloé',
     unread: true,
@@ -81,13 +81,13 @@ const mails = <Mail>[
     preview: 'We are trying the new place by the river. 8pm? Bring Hugo…',
     body:
         'We are trying the new place by the river. 8pm?\n\nBring Hugo if '
-        'he is around — they have a terrace now.\n\nFatou',
+        'he is around. They have a terrace now.\n\nFatou',
   ),
   Mail(
     sender: 'GitHub',
     color: CupertinoColors.systemIndigo,
     time: 'Tuesday',
-    subject: '[cupertino_widgets] New issue: sheet detents on iPad',
+    subject: '[cupertino_native_ui] New issue: sheet detents on iPad',
     preview: 'A medium detent sheet opens at full height on iPad in split…',
     body:
         'A medium detent sheet opens at full height on iPad in split view.\n\n'
@@ -102,7 +102,7 @@ const mails = <Mail>[
     preview: 'Flights are booked! Here is the plan for Lisbon, day by day…',
     body:
         'Flights are booked! Here is the plan for Lisbon, day by day:\n\n'
-        'Friday — arrive, Alfama walk.\nSaturday — Sintra.\nSunday — '
+        'Friday: arrive, Alfama walk.\nSaturday: Sintra.\nSunday: '
         'Belém and pastéis.\n\nMateo',
   ),
   Mail(

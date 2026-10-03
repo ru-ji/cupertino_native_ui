@@ -1,12 +1,12 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
-/// Carries state between the host app and a scaffold body — the only way they
+/// Carries state between the host app and a scaffold body: the only way they
 /// *can* talk.
 ///
 /// Each body runs in its own FlutterEngine, so in its own isolate. Isolates
 /// share no memory: a Riverpod `ProviderContainer`, a BLoC, a `ValueNotifier`,
-/// a `BuildContext` — none of it reaches across. Objects cannot be passed,
+/// a `BuildContext`. None of it reaches across. Objects cannot be passed,
 /// only **data**.
 ///
 /// So the pattern is mirroring, not sharing. In the host, watch whatever your
@@ -34,7 +34,7 @@ import 'package:flutter/services.dart';
 /// String, Uint8List, List and Map of those. Serialize your own types.
 ///
 /// **The cheaper answer is often to not cross at all.** A body that is mostly
-/// system controls can be a `CupertinoNativePageScaffold.nativeBody` instead —
+/// system controls can be a `CupertinoNativePageScaffold.nativeBody` instead:
 /// that runs no engine, so it lives in the host isolate and your existing
 /// state management works untouched.
 abstract final class CupertinoNativeBodyBridge {
@@ -42,14 +42,16 @@ abstract final class CupertinoNativeBodyBridge {
   /// `CupertinoNativePageScaffold` when its view is created.
   static MethodChannel? hostChannel;
 
-  static const _bodyChannel = MethodChannel('cupertino_widgets/scaffold_body');
+  static const _bodyChannel = MethodChannel(
+    'cupertino_native_ui/scaffold_body',
+  );
 
   static final ValueNotifier<Map<String, Object?>> _state =
       ValueNotifier<Map<String, Object?>>(const {});
 
   /// The last snapshot published by the host. Read this from a body.
   ///
-  /// Empty until the host publishes — a body that boots mid-session has
+  /// Empty until the host publishes: a body that boots mid-session has
   /// missed whatever came before, so publish on a change *and* whenever a
   /// body asks (see [requestState]).
   static ValueListenable<Map<String, Object?>> get state => _state;

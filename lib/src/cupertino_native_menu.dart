@@ -23,12 +23,12 @@ class CupertinoNativeMenu extends StatefulWidget {
   final CupertinoNativeButtonBorderShape borderShape;
 
   /// Which halves of the anchor the button shows. A circular
-  /// [borderShape] needs [CupertinoNativeButtonLabelStyle.iconOnly] — an anchor
+  /// [borderShape] needs [CupertinoNativeButtonLabelStyle.iconOnly]: an anchor
   /// still carrying its title is laid out as a capsule whatever shape is asked
-  /// for — so pair the two for the icon-only glass circle the bar uses.
+  /// for, so pair the two for the icon-only glass circle the bar uses.
   final CupertinoNativeButtonLabelStyle labelStyle;
 
-  /// The anchor's metrics — height, padding and font — rather than an explicit
+  /// The anchor's metrics (height, padding and font) rather than an explicit
   /// size.
   final CupertinoNativeControlSize controlSize;
   final Color? activeColor;
@@ -73,7 +73,7 @@ class _CupertinoNativeMenuState extends State<CupertinoNativeMenu>
     with NativePlatformViewStateMixin {
   bool? _lastIsDark;
 
-  // Follows the app's own theme brightness, not the device's — a light app
+  // Follows the app's own theme brightness, not the device's: a light app
   // forced on a dark-mode device should still get a light menu.
   bool get _isDark => Theme.of(context).brightness == Brightness.dark;
 
@@ -124,7 +124,7 @@ class _CupertinoNativeMenuState extends State<CupertinoNativeMenu>
   Future<void> _onPlatformViewCreated(int id) async {
     setUpChannel(
       id,
-      'cupertino_widgets/menu_$id',
+      'cupertino_native_ui/menu_$id',
       onMethodCall: _handleMethodCall,
     );
     requestIntrinsicSize();
@@ -145,7 +145,7 @@ class _CupertinoNativeMenuState extends State<CupertinoNativeMenu>
     if (defaultTargetPlatform == TargetPlatform.iOS) {
       final platformView = wrapForTransition(
         UiKitView(
-          viewType: 'com.example.cupertino_widgets/cupertino_native_menu',
+          viewType: 'com.example.cupertino_native_ui/cupertino_native_menu',
           layoutDirection: TextDirection.ltr,
           creationParams: _toMap(),
           creationParamsCodec: const StandardMessageCodec(),

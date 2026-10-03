@@ -1,4 +1,4 @@
-import 'package:cupertino_widgets/cupertino_widgets.dart';
+import 'package:cupertino_native_ui/cupertino_native_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -81,7 +81,7 @@ void main() {
     test('does not echo its own pushes back to the router', () async {
       final captured = <List<String>>[];
       // No scaffold is attached, so the controller's channel is null and the
-      // ops are no-ops — enough to exercise the echo guard.
+      // ops are no-ops: enough to exercise the echo guard.
       final sync = CupertinoNativeRouteSync(
         controller: CupertinoNativePageScaffoldController(),
         onNativeStackChanged: captured.add,

@@ -1,9 +1,9 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart' show Scaffold, Theme;
-import 'package:cupertino_widgets/cupertino_widgets.dart';
+import 'package:cupertino_native_ui/cupertino_native_ui.dart';
 
 /// The App Store, built the way an iOS app builds one: the native navigation
-/// bar on top and the standalone native tab bar at the bottom — a workout for
+/// bar on top and the standalone native tab bar at the bottom, a workout for
 /// [CupertinoNativeSliverNavigationBar] and [CupertinoNativeTabBar] together.
 ///
 /// Every tab is its own page with its own bar: Today, Games, Apps, and Search
@@ -758,7 +758,7 @@ class _Banner extends StatelessWidget {
   }
 }
 
-/// An app row: icon, name, category, Get — numbered in a chart.
+/// An app row: icon, name, category, Get, numbered in a chart.
 class _AppRow extends StatelessWidget {
   const _AppRow({required this.app, required this.showSeparator, this.rank});
 

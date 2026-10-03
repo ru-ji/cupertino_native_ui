@@ -1,4 +1,4 @@
-import 'package:cupertino_widgets/src/internal/text_field_wire.dart';
+import 'package:cupertino_native_ui/src/internal/text_field_wire.dart';
 import 'package:flutter/cupertino.dart' show OverlayVisibilityMode;
 import 'package:flutter/widgets.dart' show TextAlignVertical;
 import 'package:flutter_test/flutter_test.dart';

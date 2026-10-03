@@ -8,8 +8,8 @@ enum CupertinoNativeButtonStyle {
   glassProminent,
 }
 
-/// SwiftUI's `ControlSize`, which sets a control's metrics — height, padding
-/// and font — rather than an explicit size.
+/// SwiftUI's `ControlSize`, which sets a control's metrics (height, padding
+/// and font) rather than an explicit size.
 enum CupertinoNativeControlSize {
   /// Tight spaces, like a sidebar.
   mini,

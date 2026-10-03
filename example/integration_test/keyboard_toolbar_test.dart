@@ -3,16 +3,14 @@ import 'package:flutter/material.dart' show Scaffold;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 
-import 'package:cupertino_widgets/cupertino_widgets.dart';
-import 'package:cupertino_widgets_example/pages/text_field_demo_page.dart';
+import 'package:cupertino_native_ui/cupertino_native_ui.dart';
+import 'package:cupertino_native_ui_example/pages/text_field_demo_page.dart';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
   testWidgets('the toolbar demo page builds with its field', (tester) async {
-    await tester.pumpWidget(
-      const CupertinoApp(home: TextFieldDemoPage()),
-    );
+    await tester.pumpWidget(const CupertinoApp(home: TextFieldDemoPage()));
     await tester.pump(const Duration(milliseconds: 800));
 
     expect(find.byKey(const Key('toolbar-field')), findsOneWidget);
@@ -68,7 +66,7 @@ void main() {
 
     // Give the platform view time to be created. A `focus` command sent before
     // its channel exists is dropped, and the Flutter-side focus succeeds
-    // anyway — so `node.hasFocus` is not a usable signal that the native field
+    // anyway, so `node.hasFocus` is not a usable signal that the native field
     // heard anything, which is why the loop below watches the inset instead.
     for (var i = 0; i < 6; i++) {
       await tester.pump(const Duration(milliseconds: 300));

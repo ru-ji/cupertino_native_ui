@@ -8,7 +8,7 @@ import 'package:flutter/widgets.dart';
 ///
 /// Flutter's `Opacity` can't fade the pixels of an embedded platform view,
 /// so native fields (like `CupertinoNativeTextField`) listen to this and fade
-/// their content natively instead. Drawn fields can ignore it — the slot
+/// their content natively instead. Drawn fields can ignore it: the slot
 /// already applies a Flutter-side fade.
 class CupertinoSearchRowVisibility extends InheritedWidget {
   const CupertinoSearchRowVisibility({

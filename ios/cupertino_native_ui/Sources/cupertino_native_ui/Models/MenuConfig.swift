@@ -10,7 +10,7 @@ enum MenuItemType: String, Codable, Hashable {
     case controlGroup
 }
 
-/// `Hashable` so that anything holding one stays hashable too — a glass group
+/// `Hashable` so that anything holding one stays hashable too: a glass group
 /// item carries a menu, and its own Hashable conformance is what drives the
 /// `ForEach` identity and the morph's trigger.
 @available(iOS 15.0, *)

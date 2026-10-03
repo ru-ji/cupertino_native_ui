@@ -2,7 +2,7 @@ import Flutter
 import SwiftUI
 import UIKit
 
-/// One platform view for the small single-value SwiftUI controls — stepper,
+/// One platform view for the small single-value SwiftUI controls: stepper,
 /// color picker, gauge, multi-date picker, text editor. `kind` picks the
 /// control; they share the channel, the sizing and the update path, so each
 /// one is just its `case` in `AdaptiveControlView`.
@@ -136,7 +136,7 @@ class NativeControlView: NativeHostingView {
         _view.viewId = viewId
 
         channel = FlutterMethodChannel(
-            name: "cupertino_widgets/control_\(viewId)", binaryMessenger: messenger)
+            name: "cupertino_native_ui/control_\(viewId)", binaryMessenger: messenger)
         sizeChannel = channel
         channel?.setMethodCallHandler { [weak self] call, result in
             self?.handle(call, result: result)
@@ -215,7 +215,7 @@ struct AdaptiveControlView: View {
     var onFocus: (Bool) -> Void = { _ in }
     /// An event from a lowered node (the text editor's `prefix`).
     var onEvent: (String, Any?) -> Void = { _, _ in }
-    /// Where the text editor's own scrolling stands — Flutter decides from it
+    /// Where the text editor's own scrolling stands: Flutter decides from it
     /// whether a drag on the editor scrolls the text or the page.
     var onScrollState: ([String: Bool]) -> Void = { _ in }
     /// The prefix's measured width, added to the placeholder's leading inset.
@@ -336,8 +336,8 @@ struct AdaptiveControlView: View {
         }
         .onPreferenceChange(PrefixWidthKey.self) { prefixWidth = $0 }
         // TextEditor has no placeholder of its own: draw it over the editor
-        // while empty, where typed text starts — the text view's inset plus
-        // the padding, past the prefix. Inside the glass, so the glass does
+        // while empty, where typed text starts (the text view's inset plus
+        // the padding, past the prefix). Inside the glass, so the glass does
         // not shift it.
         .overlay(alignment: .topLeading) {
             if model.text.isEmpty, let placeholder = config.placeholder {
@@ -402,7 +402,7 @@ struct AdaptiveControlView: View {
 
     /// Where typed text starts: the UITextView's own inset, 8 top and 5
     /// leading, overridable from Dart (`placeholderPadding`) where a font or
-    /// an iOS version moves it — plus the padding above the text.
+    /// an iOS version moves it, plus the padding above the text.
     private var placeholderInsets: (top: CGFloat, leading: CGFloat) {
         (
             CGFloat((config.placeholderTop ?? 8) + (config.padding?.top ?? 0)),
@@ -481,7 +481,7 @@ extension View {
 /// Finds the `UITextView` under a SwiftUI `TextEditor` and reports where its
 /// own scrolling stands, each time that changes: whether the text overflows
 /// (`scrolls`), whether it rests at the top or the bottom (`atTop`,
-/// `atBottom`), and whether it is still moving — dragged, decelerating or
+/// `atBottom`), and whether it is still moving, dragged, decelerating or
 /// bouncing (`moving`).
 ///
 /// Flutter hands a drag on the editor to the text or to the page from this,
@@ -492,7 +492,7 @@ extension View {
 private struct TextViewScrollProbe: UIViewRepresentable {
     let onScrollState: ([String: Bool]) -> Void
     /// The text view's focus, straight from UIKit's begin / end editing
-    /// notifications — posted as it takes the responder, before the keyboard
+    /// notifications: posted as it takes the responder, before the keyboard
     /// starts to rise. Not `@FocusState` + `.onChange`: that waited for the
     /// next view update, and on a first focus the keyboard had already risen
     /// when Flutter learned which field to lift.

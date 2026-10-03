@@ -60,7 +60,7 @@ class CupertinoNativeSubmenu extends CupertinoNativeMenuItem {
   }
 }
 
-/// A row of compact icon buttons at the top of a menu — SwiftUI's
+/// A row of compact icon buttons at the top of a menu: SwiftUI's
 /// `ControlGroup` (the Copy / Paste / Share strip of a text menu). Give each
 /// action a `systemImage`; up to 3 fit, each with its title under the icon.
 class CupertinoNativeMenuControlGroup extends CupertinoNativeMenuItem {

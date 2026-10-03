@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:cupertino_widgets/cupertino_widgets.dart';
+import 'package:cupertino_native_ui/cupertino_native_ui.dart';
 
 /// Single-page native scaffold with a SwiftUI `.searchable` search field,
 /// mirroring:

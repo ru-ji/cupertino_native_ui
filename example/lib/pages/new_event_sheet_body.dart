@@ -1,11 +1,11 @@
 import 'package:flutter/cupertino.dart';
-import 'package:cupertino_widgets/cupertino_widgets.dart';
+import 'package:cupertino_native_ui/cupertino_native_ui.dart';
 
-/// Content of the native sheet demo — a "New Event" form. Runs in its own
+/// Content of the native sheet demo: a "New Event" form. Runs in its own
 /// FlutterEngine hosted in the sheet's native ScrollView, so it must be a
 /// self-sized Column (same contract as scaffold bodies); the sheet's title,
 /// ✕/Add buttons, search field and segmented control are native chrome
-/// configured from `CupertinoNativeSheet.show`. Tall on purpose — scroll it
+/// configured from `CupertinoNativeSheet.show`. Tall on purpose: scroll it
 /// under the pinned bar.
 class NewEventSheetBody extends StatelessWidget {
   const NewEventSheetBody({super.key});

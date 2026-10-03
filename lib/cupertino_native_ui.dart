@@ -2,7 +2,7 @@ export 'src/cupertino_native_route_sync.dart';
 export 'src/callbacks.dart';
 export 'src/cupertino_native_menu.dart';
 export 'src/cupertino_native_context_menu.dart';
-export 'src/cupertino_widgets_settings.dart';
+export 'src/cupertino_native_settings.dart';
 export 'src/cupertino_native_button.dart' hide ButtonLabel;
 export 'src/cupertino_native_text_field.dart';
 export 'src/models/cupertino_native_menu_item.dart';

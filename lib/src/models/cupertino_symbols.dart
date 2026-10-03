@@ -2,7 +2,7 @@
 ///
 /// Enum case names use camelCase; each case carries the real SF Symbol string
 /// in [value] (which may contain dots, e.g. `star.fill`). This list is not
-/// exhaustive — SF Symbols ships thousands of glyphs. For any symbol not listed
+/// exhaustive: SF Symbols ships thousands of glyphs. For any symbol not listed
 /// here, use `CupertinoNativeIcon.named('some.symbol')` with the raw string.
 enum CupertinoSymbols {
   // Navigation & chevrons

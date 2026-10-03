@@ -1,5 +1,5 @@
-import 'package:cupertino_widgets/cupertino_widgets.dart';
-import 'package:cupertino_widgets/src/internal/bar_slot.dart';
+import 'package:cupertino_native_ui/cupertino_native_ui.dart';
+import 'package:cupertino_native_ui/src/internal/bar_slot.dart';
 import 'package:flutter/cupertino.dart'
     show CupertinoColors, CupertinoPageScaffold, OverlayVisibilityMode;
 import 'package:flutter/material.dart';
@@ -18,7 +18,7 @@ import 'package:flutter_test/flutter_test.dart';
 /// actual `creationParams` handed to `UiKitView` and assert the keys.
 ///
 /// The expected keys must match
-/// `ios/cupertino_widgets/Sources/cupertino_widgets/Models/*.swift`.
+/// `ios/cupertino_native_ui/Sources/cupertino_native_ui/Models/*.swift`.
 void main() {
   // Every widget here only builds a native view on iOS; the variant applies
   // the platform override per test (a global override trips the test
@@ -310,7 +310,7 @@ void main() {
           verticalAlignment: TextAlignVertical.bottom,
         ),
       );
-      // Flutter spells these differently from UIKit — see text_field_wire.dart.
+      // Flutter spells these differently from UIKit, see text_field_wire.dart.
       expect(params['clearButtonMode'], 'unlessEditing');
       expect(params['verticalAlignment'], 'bottom');
     }, variant: iOS);
@@ -456,12 +456,12 @@ void main() {
 
     expect(
       viewTypes,
-      contains('com.example.cupertino_widgets/cupertino_native_toggle'),
+      contains('com.example.cupertino_native_ui/cupertino_native_toggle'),
     );
   }, variant: iOS);
 
   // The bars' edge effect is a native view on iOS: pin what it asks Swift
-  // for — the adaptive wash, the system's radius, and the page colour.
+  // for (the adaptive wash, the system's radius, and the page colour).
   testWidgets('scroll edge effect runs the adaptive native blur', (
     tester,
   ) async {
@@ -552,8 +552,8 @@ void main() {
     expect(params['sigma'], 0.0);
   }, variant: iOS);
 
-  // Only the system backgrounds — a CupertinoPageScaffold's, and the one a
-  // grouped list lays under its cards — let the wash adapt; any other colour
+  // Only the system backgrounds (a CupertinoPageScaffold's, and the one a
+  // grouped list lays under its cards) let the wash adapt; any other colour
   // fixes it, wherever it comes from.
   testWidgets(
     'scroll edge effect follows the content on the system background',
@@ -654,7 +654,7 @@ void main() {
     expect(await washOver(0), red.withValues(alpha: 0.91));
   });
 
-  // The group is one platform view for several glasses — the only arrangement
+  // The group is one platform view for several glasses: the only arrangement
   // in which they can merge. If the items stop travelling as one payload,
   // there is no group left, just a row.
   testWidgets('glass group sends its items as one payload', (tester) async {
@@ -926,7 +926,7 @@ void main() {
 
       final row = (children[0] as Map)['children'] as List;
       expect(row, hasLength(3));
-      // Ids are paths: item0.0.0 … — unique at any depth. Non-interactive
+      // Ids are paths (item0.0.0 …), unique at any depth. Non-interactive
       // nodes (the spacer) carry none.
       expect((row[0] as Map)['id'], 'item0.0.0');
       expect((row[2] as Map)['id'], 'item0.0.2');

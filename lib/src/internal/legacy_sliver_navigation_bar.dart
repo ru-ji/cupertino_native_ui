@@ -130,7 +130,7 @@ class LegacyBarMaterial extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (progress <= 0) return const SizedBox.shrink();
-    // On iOS the material is native — see [_NativeBarMaterial].
+    // On iOS the material is native, see [_NativeBarMaterial].
     if (defaultTargetPlatform == TargetPlatform.iOS && style == null) {
       return _NativeBarMaterial(progress: progress);
     }
@@ -187,13 +187,14 @@ class _NativeBarMaterialState extends State<_NativeBarMaterial> {
     );
     return IgnorePointer(
       child: UiKitView(
-        viewType: 'com.example.cupertino_widgets/cupertino_native_bar_material',
+        viewType:
+            'com.example.cupertino_native_ui/cupertino_native_bar_material',
         layoutDirection: TextDirection.ltr,
         creationParams: params,
         creationParamsCodec: const StandardMessageCodec(),
         hitTestBehavior: PlatformViewHitTestBehavior.transparent,
         onPlatformViewCreated: (id) =>
-            _channel = MethodChannel('cupertino_widgets/bar_material_$id'),
+            _channel = MethodChannel('cupertino_native_ui/bar_material_$id'),
       ),
     );
   }
@@ -231,7 +232,7 @@ class LegacyBarHairline extends StatelessWidget {
 /// A pinned, collapsing iOS 15–18 navigation bar for a [CustomScrollView].
 ///
 /// Transparent while the page rests at its top; once content scrolls under it
-/// it turns to the system's material — a blur, a tint and a hairline. The large
+/// it turns to the system's material: a blur, a tint and a hairline. The large
 /// title collapses into a centred inline title and, in
 /// [NavigationBarBottomMode.automatic], the search row goes first, squeezing and
 /// fading before the page itself moves. A pull past the top stretches the
@@ -394,7 +395,7 @@ class _LegacyBarDelegate extends SliverPersistentHeaderDelegate {
       (_alwaysSearch ? LegacyBarMetrics.searchRowHeight : 0);
 
   /// A pull past the top makes the header taller than [maxExtent]: its
-  /// bottom-anchored content — the title and the search row — rides down with it.
+  /// bottom-anchored content, the title and the search row, rides down with it.
   @override
   OverScrollHeaderStretchConfiguration? get stretchConfiguration =>
       OverScrollHeaderStretchConfiguration();
@@ -605,7 +606,7 @@ class _LegacyBarDelegate extends SliverPersistentHeaderDelegate {
     final route = ModalRoute.of(context);
     // Insets from Apple's iOS 18 kit (393pt wide): leading 8, trailing 16.
     // On an iPhone 8 Plus (414pt) the system's back chevron sits 2.5pt further
-    // in and a trailing title ends 20pt from the edge — the wider phones'
+    // in and a trailing title ends 20pt from the edge: the wider phones'
     // layout margin. Buttons in either slot hug their glyph (see [BarSlot]).
     final wide = MediaQuery.sizeOf(context).width >= 414;
     Widget? leading = widget.leading;

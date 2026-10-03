@@ -35,7 +35,7 @@ class NativeProgressView: NativeHostingView {
 
     /// The style the hosted view was attached with. Circular and linear are laid
     /// out by different constraints, and constraints are installed at attach
-    /// time — so a style change is the one edit a root-view swap cannot deliver.
+    /// time, so a style change is the one edit a root-view swap cannot deliver.
     private var shownStyle = 0
 
     init(
@@ -48,7 +48,7 @@ class NativeProgressView: NativeHostingView {
         _view.viewId = viewId
 
         channel = FlutterMethodChannel(
-            name: "cupertino_widgets/progress_\(viewId)", binaryMessenger: messenger)
+            name: "cupertino_native_ui/progress_\(viewId)", binaryMessenger: messenger)
         sizeChannel = channel
         channel?.setMethodCallHandler({
             [weak self] (call: FlutterMethodCall, result: @escaping FlutterResult) in

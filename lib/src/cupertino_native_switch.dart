@@ -34,7 +34,7 @@ class _CupertinoNativeSwitchState extends State<CupertinoNativeSwitch>
     with NativePlatformViewStateMixin {
   bool? _lastIsDark;
 
-  // Follows the app's own theme brightness, not the device's — a light app
+  // Follows the app's own theme brightness, not the device's: a light app
   // forced on a dark-mode phone should still get a light switch.
   bool get _isDark => Theme.of(context).brightness == Brightness.dark;
 
@@ -76,7 +76,7 @@ class _CupertinoNativeSwitchState extends State<CupertinoNativeSwitch>
   Future<void> _onPlatformViewCreated(int id) async {
     setUpChannel(
       id,
-      'cupertino_widgets/toggle_$id',
+      'cupertino_native_ui/toggle_$id',
       onMethodCall: _handleMethodCall,
     );
     requestIntrinsicSize();
@@ -96,7 +96,7 @@ class _CupertinoNativeSwitchState extends State<CupertinoNativeSwitch>
         UiKitView(
           // Must match FlutterCupertinoPlugin.swift's registration: the native
           // side names it after SwiftUI's Toggle.
-          viewType: 'com.example.cupertino_widgets/cupertino_native_toggle',
+          viewType: 'com.example.cupertino_native_ui/cupertino_native_toggle',
           layoutDirection: TextDirection.ltr,
           creationParams: _toMap(),
           creationParamsCodec: const StandardMessageCodec(),
@@ -126,7 +126,7 @@ class _CupertinoNativeSwitchState extends State<CupertinoNativeSwitch>
       // Native measurement, with a default for the frame or two before it
       // lands. 68x32 is iOS 26's reported 61x28 plus the margin the native
       // side adds for what the control paints outside its layout bounds (see
-      // NativeToggleView.paintOverflow) — not the 51x31 UIKit drew for years,
+      // NativeToggleView.paintOverflow), not the 51x31 UIKit drew for years,
       // which was 20% short in width. A box that under-shoots does not shrink
       // the control, it lets it draw outside: the switch is centred in
       // whatever box it is given, so the excess spilled, and on a row flush

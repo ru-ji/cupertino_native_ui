@@ -4,7 +4,7 @@
 import PackageDescription
 
 let package = Package(
-    name: "cupertino_widgets",
+    name: "cupertino_native_ui",
     // The floor an app can LINK this package at, not the one it needs to get
     // anything out of it. Every view here is iOS 26 (Liquid Glass) and is
     // annotated as such; below 26 the plugin registers nothing and the app
@@ -14,14 +14,14 @@ let package = Package(
         .iOS("15.0")
     ],
     products: [
-        .library(name: "cupertino-widgets", targets: ["cupertino_widgets"])
+        .library(name: "cupertino-native-ui", targets: ["cupertino_native_ui"])
     ],
     dependencies: [
         .package(name: "FlutterFramework", path: "../FlutterFramework")
     ],
     targets: [
         .target(
-            name: "cupertino_widgets",
+            name: "cupertino_native_ui",
             dependencies: [
                 .product(name: "FlutterFramework", package: "FlutterFramework")
             ],

@@ -1,9 +1,9 @@
 import 'package:flutter/cupertino.dart';
-import 'package:cupertino_widgets/cupertino_widgets.dart';
+import 'package:cupertino_native_ui/cupertino_native_ui.dart';
 
 /// [CupertinoNativeSlider] presented as a "Sounds & Haptics"-style settings
 /// page: the rows are native list cells and each slider is lowered straight
-/// into SwiftUI as the row's trailing control — a real native UISlider, with
+/// into SwiftUI as the row's trailing control, a real native UISlider, with
 /// the live value in the row's trailing text.
 class SliderDemoPage extends StatefulWidget {
   const SliderDemoPage({super.key});
@@ -38,7 +38,7 @@ class _SliderDemoPageState extends State<SliderDemoPage> {
                     CupertinoNativeListSection(
                       header: 'Ringtone and Alerts',
                       footer:
-                          'The slider is a native UISlider — drag it and the value '
+                          'The slider is a native UISlider: drag it and the value '
                           'streams back to Flutter live.',
                       children: [
                         CupertinoNativeListTile(

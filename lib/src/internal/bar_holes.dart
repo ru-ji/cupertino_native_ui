@@ -5,11 +5,11 @@ import 'package:flutter/widgets.dart';
 
 /// The native views among a bar's items, and where they sit: the bar's scroll
 /// edge effect cuts its wash out under each, so their glass sees the content
-/// under the bar — and turns light or dark with it, as the system's bar items
-/// do — instead of a wash that hides it (a dark wash never let it turn light).
+/// under the bar (and turns light or dark with it, as the system's bar items
+/// do) instead of a wash that hides it (a dark wash never let it turn light).
 ///
-/// Generic on purpose: an item holding any native view — the package's glass
-/// buttons and containers, or a glass of the app's own — gets its hole. A
+/// Generic on purpose: an item holding any native view (the package's glass
+/// buttons and containers, or a glass of the app's own) gets its hole. A
 /// Flutter-drawn item keeps the wash behind it.
 class BarHoles extends ChangeNotifier {
   final _items = <RenderBarHole>{};
@@ -90,7 +90,7 @@ class BarHole extends SingleChildRenderObjectWidget {
   const BarHole({super.key, this.rects, required super.child});
 
   /// The glass inside the item, in its own coordinates, when it is not the
-  /// whole item — a tab bar's pills inside the bar's wider frame. Empty cuts
+  /// whole item: a tab bar's pills inside the bar's wider frame. Empty cuts
   /// nothing. Null: the item's box.
   final List<Rect>? rects;
 

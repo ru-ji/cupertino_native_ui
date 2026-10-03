@@ -1,12 +1,12 @@
 import 'package:flutter/cupertino.dart';
-import 'package:cupertino_widgets/cupertino_widgets.dart';
+import 'package:cupertino_native_ui/cupertino_native_ui.dart';
 
-/// [CupertinoNativeSheet] — the system page-sheet modal
+/// [CupertinoNativeSheet]: the system page-sheet modal
 /// (`UISheetPresentationController`): rising over the app it pushes this page
 /// back and down, with native detents, grabber and swipe-to-dismiss. With an
 /// app bar the sheet gets pinned native chrome (title, glass-circle bar
 /// buttons, optional search field and segmented control) and the Flutter
-/// content scrolls natively beneath it — like Safari's Page Menu.
+/// content scrolls natively beneath it, like Safari's Page Menu.
 class SheetDemoPage extends StatefulWidget {
   const SheetDemoPage({super.key});
 
@@ -18,7 +18,7 @@ class _SheetDemoPageState extends State<SheetDemoPage> {
   String _last = 'None yet';
 
   /// Liquid Glass (iOS 26+) closes a sheet with an X; before that the leading
-  /// item reads like the system back button — a chevron and a label.
+  /// item reads like the system back button: a chevron and a label.
   bool _glass = true;
 
   @override
@@ -72,7 +72,7 @@ class _SheetDemoPageState extends State<SheetDemoPage> {
       CupertinoNativeSheetDetent.large,
     ],
   }) async {
-    setState(() => _last = '$label — presented');
+    setState(() => _last = '$label: presented');
     await CupertinoNativeSheet.show(
       route: 'newEvent',
       isDark: CupertinoTheme.brightnessOf(context) == Brightness.dark,
@@ -89,11 +89,11 @@ class _SheetDemoPageState extends State<SheetDemoPage> {
       onBottomChanged: (i) => setState(() => _last = 'Segment: $i'),
       onSearchChanged: (q) => setState(() => _last = 'Search: "$q"'),
     );
-    if (mounted) setState(() => _last = '$label — dismissed');
+    if (mounted) setState(() => _last = '$label: dismissed');
   }
 
   // The native-body sheet: Display & Brightness, as in Settings, SwiftUI end
-  // to end. Nothing here runs in a Flutter engine — every change comes back
+  // to end. Nothing here runs in a Flutter engine: every change comes back
   // through `onBodyEvent` and the tree is pushed back.
   int _appearance = 1;
   double _brightness = 0.7;
@@ -208,7 +208,7 @@ class _SheetDemoPageState extends State<SheetDemoPage> {
   );
 
   Future<void> _presentNative() async {
-    setState(() => _last = 'Display & Brightness — presented');
+    setState(() => _last = 'Display & Brightness: presented');
     await CupertinoNativeSheet.show(
       nativeBody: _nativeBody(),
       navigationBar: const CupertinoNativeScaffoldNavigationBar(
@@ -251,7 +251,7 @@ class _SheetDemoPageState extends State<SheetDemoPage> {
     if (mounted) {
       setState(
         () => _last =
-            'Display — ${const ['Light', 'Dark', 'Automatic'][_appearance]}, '
+            'Display: ${const ['Light', 'Dark', 'Automatic'][_appearance]}, '
             'brightness ${(_brightness * 100).round()}%, '
             'text size ${_textSize + 1}/7',
       );
@@ -307,7 +307,8 @@ class _SheetDemoPageState extends State<SheetDemoPage> {
                       CupertinoNativeListTile(
                         id: 'navigationBar',
                         title: 'With App Bar',
-                        subtitle: 'Pinned title, ✕ leading, Add trailing — scrollable',
+                        subtitle:
+                            'Pinned title, ✕ leading, Add trailing, scrollable',
                         showChevron: true,
                       ),
                       CupertinoNativeListTile(
@@ -326,14 +327,13 @@ class _SheetDemoPageState extends State<SheetDemoPage> {
                       CupertinoNativeListTile(
                         id: 'native',
                         title: 'Native Body',
-                        subtitle: 'A reminder form in pure SwiftUI — no Flutter engine',
+                        subtitle: 'A reminder form in pure SwiftUI, no Flutter engine',
                         showChevron: true,
                       ),
                       CupertinoNativeListTile(
                         id: 'bare',
                         title: 'Bare Sheet',
-                        subtitle:
-                            'No chrome — the Flutter body owns everything',
+                        subtitle: 'No chrome: the Flutter body owns everything',
                         showChevron: true,
                       ),
                     ],

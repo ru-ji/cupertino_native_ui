@@ -1,4 +1,4 @@
-import 'package:cupertino_widgets/src/internal/native_platform_view_mixin.dart';
+import 'package:cupertino_native_ui/src/internal/native_platform_view_mixin.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -49,7 +49,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
     // Mid-pop: the uncovered page shows its photo; the leaving one stays
-    // live — photographing it as the pop starts held the main thread long
+    // live, because photographing it as the pop starts held the main thread long
     // enough to lose a back swipe under the finger.
     expect(pushed.currentState!.debugGuardingRouteTransition, isFalse);
     expect(home.currentState!.debugGuardingRouteTransition, isTrue);

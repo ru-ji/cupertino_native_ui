@@ -5,7 +5,7 @@ import UIKit.UIGestureRecognizerSubclass
 /// `UIScrollView` takes it back from its content when its pan begins.
 ///
 /// A still finger reaches the native content after UIKit's 150ms
-/// `delaysContentTouches` window — that is what highlights a row — while
+/// `delaysContentTouches` window (that is what highlights a row) while
 /// Flutter's arena is still open. If the Flutter page then scrolls, Dart sends
 /// `cancelTouches` (see `ScrollFriendlyPlatformViewRecognizer.onLost`) and this
 /// recognizer recognizes: UIKit sends the content `touchesCancelled`, so the
@@ -25,7 +25,7 @@ final class TouchCancelRecognizer: UIGestureRecognizer, UIGestureRecognizerDeleg
         guard state == .possible, numberOfTouches > 0, let view else { return }
         state = .ended
         // `touchesCancelled` reaches the views; recognizers already tracking
-        // the touch keep it unless reset — a disabled recognizer cancels.
+        // the touch keep it unless reset: a disabled recognizer cancels.
         reset(in: view)
     }
 

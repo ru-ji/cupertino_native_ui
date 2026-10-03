@@ -1,5 +1,5 @@
-import 'package:cupertino_widgets/src/internal/native_platform_view_mixin.dart';
-import 'package:cupertino_widgets/src/internal/scroll_friendly_recognizer.dart';
+import 'package:cupertino_native_ui/src/internal/native_platform_view_mixin.dart';
+import 'package:cupertino_native_ui/src/internal/scroll_friendly_recognizer.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';

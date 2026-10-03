@@ -13,7 +13,7 @@ import 'native_platform_view_mixin.dart';
 import 'scroll_friendly_recognizer.dart';
 import 'native_color.dart';
 
-/// A control that stands for a [NativeControl] — what lets the lowering put
+/// A control that stands for a [NativeControl]: what lets the lowering put
 /// it straight into a SwiftUI surface (a list row, a native body).
 abstract interface class NativeControlProvider {
   NativeControl get nativeControl;
@@ -97,7 +97,7 @@ class _NativeControlState extends State<NativeControl>
   }
 
   /// Lifts the focused editor above the keyboard on each rising inset tick,
-  /// the way [CupertinoNativeTextField] does — see its `didChangeMetrics`.
+  /// the way [CupertinoNativeTextField] does, see its `didChangeMetrics`.
   @override
   void didChangeMetrics() {
     final view = WidgetsBinding.instance.platformDispatcher.implicitView;
@@ -160,14 +160,14 @@ class _NativeControlState extends State<NativeControl>
     _sent ??= jsonEncode(params, toEncodable: (o) => o.toString());
     final view = wrapForTransition(
       UiKitView(
-        viewType: 'com.example.cupertino_widgets/cupertino_native_control',
+        viewType: 'com.example.cupertino_native_ui/cupertino_native_control',
         layoutDirection: TextDirection.ltr,
         creationParams: params,
         creationParamsCodec: const StandardMessageCodec(),
         onPlatformViewCreated: (id) {
           setUpChannel(
             id,
-            'cupertino_widgets/control_$id',
+            'cupertino_native_ui/control_$id',
             onMethodCall: (call) async {
               if (call.method == 'onChanged') {
                 widget.onChanged?.call(call.arguments);

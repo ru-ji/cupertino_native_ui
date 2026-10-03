@@ -9,11 +9,11 @@ struct PageScrollBody: View {
     let scrollEdgeEffect: String?
     /// Native spinner while the body engine boots / renders its first frame.
     var showLoadingIndicator = false
-    /// Bumped to send the scroll back to the top — the search view opens as
+    /// Bumped to send the scroll back to the top: the search view opens as
     /// its own thing, not at whatever offset the page was left at.
     var scrollToTopSignal = 0
 
-    private static let topAnchor = "cupertino_widgets.page_top"
+    private static let topAnchor = "cupertino_native_ui.page_top"
 
     var body: some View {
         if let engine = engine {
@@ -29,7 +29,7 @@ struct PageScrollBody: View {
                             .frame(maxWidth: .infinity)
                     }
                 }
-                // Stays on the ScrollView itself — the edge effect is a
+                // Stays on the ScrollView itself: the edge effect is a
                 // property of the scroll view, not of the reader around it.
                 .applyScrollEdgeEffect(scrollEdgeEffect)
                 // A scroll view dismisses the keyboard on scroll by default on
@@ -41,7 +41,7 @@ struct PageScrollBody: View {
             }
         } else if showLoadingIndicator {
             // Engine not yet created (lazy tab). Show a native spinner
-            // while the Dart isolate boots — avoids a blank white flash.
+            // while the Dart isolate boots: avoids a blank white flash.
             VStack {
                 Spacer()
                 ProgressView()

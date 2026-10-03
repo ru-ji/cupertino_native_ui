@@ -19,7 +19,7 @@ class SliderViewModel: ObservableObject {
 
     /// The finger is on the slider. A value pushed from Dart meanwhile is the
     /// echo of an earlier step of this very drag, one round trip late: applied,
-    /// it dragged the thumb back under the finger on every frame — on a first
+    /// it dragged the thumb back under the finger on every frame, on a first
     /// drag in a debug build, so far back that the slider seemed stuck.
     var isEditing = false
 

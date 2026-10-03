@@ -1,5 +1,5 @@
 /// Keeps a [CupertinoNativePageScaffold]'s native NavigationStack in step with
-/// whatever router the app already uses — GoRouter, auto_route, Beamer, or a
+/// whatever router the app already uses: GoRouter, auto_route, Beamer, or a
 /// plain imperative [Navigator].
 ///
 /// Scaffold bodies run in their own engines, so the app's router cannot drive
@@ -48,14 +48,14 @@ class CupertinoNativePopOp extends CupertinoNativeStackOp {
 
 /// The ops that turn [current] into [desired].
 ///
-/// Both lists start with the root route. The shared prefix is left alone —
-/// that is what makes a native push animate as a push rather than rebuilding
-/// the whole stack — then everything above it is popped, then the remainder of
+/// Both lists start with the root route. The shared prefix is left alone
+/// (that is what makes a native push animate as a push rather than rebuilding
+/// the whole stack), then everything above it is popped, then the remainder of
 /// [desired] is pushed.
 ///
 /// The root is never popped: a scaffold always shows something. If [desired]
 /// is empty or its root differs from [current]'s, the current root is kept and
-/// only the pages above it are reconciled — swapping the root is a tab change,
+/// only the pages above it are reconciled: swapping the root is a tab change,
 /// not a stack operation.
 List<CupertinoNativeStackOp> diffNativeStack(
   List<String> current,
@@ -88,7 +88,7 @@ List<CupertinoNativeStackOp> diffNativeStack(
 ///
 /// This is only the default convention. If your locations do not nest that
 /// way, map them yourself and hand the result to
-/// [CupertinoNativeRouteSync.syncTo] — the sync speaks stacks, not URLs, so it
+/// [CupertinoNativeRouteSync.syncTo]: the sync speaks stacks, not URLs, so it
 /// never has to agree with your router about path syntax.
 List<String> routesFromLocation(String location) {
   final path = Uri.parse(location).path;
@@ -111,7 +111,7 @@ String locationFromRoutes(List<String> routes) =>
 /// final controller = CupertinoNativePageScaffoldController();
 /// late final sync = CupertinoNativeRouteSync(
 ///   controller: controller,
-///   // Native back button / back-swipe happened — tell the router.
+///   // Native back button / back-swipe happened: tell the router.
 ///   onNativeStackChanged: (routes) => context.go(locationFromRoutes(routes)),
 /// );
 ///
@@ -122,7 +122,7 @@ String locationFromRoutes(List<String> routes) =>
 ///   // ...
 /// )
 ///
-/// // Router moved — push/pop natively to match.
+/// // Router moved: push/pop natively to match.
 /// sync.syncTo(routesFromLocation(GoRouterState.of(context).uri.path));
 /// ```
 ///
@@ -140,14 +140,14 @@ class CupertinoNativeRouteSync {
 
   final CupertinoNativePageScaffoldController controller;
 
-  /// Called when the *native* stack changed on its own — the back button, the
+  /// Called when the *native* stack changed on its own: the back button, the
   /// interactive back-swipe, or a body calling
   /// [CupertinoNativePageScaffold.push]. Drive your router from here.
   ///
   /// Not called for changes this object made itself via [syncTo].
   final void Function(List<String> routes)? onNativeStackChanged;
 
-  /// Builds the page config for a route being pushed — use it to give pushed
+  /// Builds the page config for a route being pushed: use it to give pushed
   /// pages their navigation bars. Defaults to a bare
   /// [CupertinoNativePageScaffoldPage] with no app bar.
   final CupertinoNativePageScaffoldPage Function(String route) pageBuilder;

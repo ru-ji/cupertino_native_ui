@@ -9,7 +9,7 @@ import 'internal/bar_holes.dart';
 import 'internal/native_color.dart';
 
 /// A progressive blur drawn by Core Animation, the way iOS 26's own scroll
-/// edge effect draws it — and, with [adaptiveTint], its luminance-tracked wash.
+/// edge effect draws it, and, with [adaptiveTint], its luminance-tracked wash.
 /// [CupertinoScrollEdgeEffect] is built on it.
 ///
 /// Paint it after the content it should blur and before the chrome on top of
@@ -55,14 +55,14 @@ class CupertinoNativeEdgeBlur extends StatefulWidget {
 
   /// Called when the content under the effect turns bright or dark:
   /// [Brightness.light] over bright content (so chrome over it should be
-  /// light glass with dark labels), [Brightness.dark] over darker content —
+  /// light glass with dark labels), [Brightness.dark] over darker content,
   /// the flip UIKit applies to its own bar items. Measured under the wash, so
   /// it works with a fixed [tint] too. Before the first measurement the app
   /// theme stands in.
   final ValueChanged<Brightness>? onBrightnessChanged;
 
   /// One even blur at [sigma] over the whole view, under a flat [tint] that
-  /// ends in a hard line — the `.hard` scroll edge effect. No ramp, no
+  /// ends in a hard line: the `.hard` scroll edge effect. No ramp, no
   /// adaptation, nothing cut out of it.
   final bool hard;
 
@@ -78,7 +78,7 @@ class _CupertinoNativeEdgeBlurState extends State<CupertinoNativeEdgeBlur> {
   MethodChannel? _channel;
   Map<String, Object?>? _sent;
 
-  /// What the view was created with — its first build's — and the latest.
+  /// What the view was created with, its first build's, and the latest.
   /// The tint can change before the view exists (the page under the effect
   /// is found after the first frame).
   Map<String, Object?>? _createdWith;
@@ -143,7 +143,7 @@ class _CupertinoNativeEdgeBlurState extends State<CupertinoNativeEdgeBlur> {
     if (defaultTargetPlatform != TargetPlatform.iOS) {
       return const SizedBox.shrink();
     }
-    // The app's brightness, not the device's — the plugin's other views follow
+    // The app's brightness, not the device's: the plugin's other views follow
     // `Theme.of` too.
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return IgnorePointer(
@@ -154,14 +154,14 @@ class _CupertinoNativeEdgeBlurState extends State<CupertinoNativeEdgeBlur> {
           _push(params);
           return UiKitView(
             viewType:
-                'com.example.cupertino_widgets/cupertino_native_edge_blur',
+                'com.example.cupertino_native_ui/cupertino_native_edge_blur',
             layoutDirection: TextDirection.ltr,
             creationParams: _createdWith ??= params,
             creationParamsCodec: const StandardMessageCodec(),
             // Never takes a touch: everything under it stays operable.
             hitTestBehavior: PlatformViewHitTestBehavior.transparent,
             onPlatformViewCreated: (id) {
-              _channel = MethodChannel('cupertino_widgets/edge_blur_$id')
+              _channel = MethodChannel('cupertino_native_ui/edge_blur_$id')
                 ..setMethodCallHandler((call) async {
                   if (call.method != 'lumaChanged') return;
                   final light = (call.arguments as Map?)?['light'] == true;

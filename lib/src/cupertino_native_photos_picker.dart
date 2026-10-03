@@ -10,10 +10,10 @@ import 'internal/native_platform_view_mixin.dart';
 
 /// How the embedded picker lays out.
 enum CupertinoNativePhotosPickerStyle {
-  /// The full grid, scrolling vertically — the body of an attachment sheet.
+  /// The full grid, scrolling vertically: the body of an attachment sheet.
   inline,
 
-  /// One row of thumbnails scrolling sideways — above a message field.
+  /// One row of thumbnails scrolling sideways: above a message field.
   compact,
 }
 
@@ -41,13 +41,13 @@ class CupertinoNativePickedMedia {
   /// The file, once loaded: a JPEG no larger than
   /// [CupertinoNativePhotosPicker.maxDimension], the original file when that
   /// is null, or the video as is. Lives in the app's temporary directory
-  /// until [CupertinoNativePhotosPicker.clearCache] (or iOS) removes it —
+  /// until [CupertinoNativePhotosPicker.clearCache] (or iOS) removes it:
   /// copy it elsewhere to keep it.
   final String? path;
   final bool isVideo;
 
   /// For a video: its first frame, as a JPEG no larger than
-  /// [CupertinoNativePhotosPicker.maxDimension] (600 when null) — what to
+  /// [CupertinoNativePhotosPicker.maxDimension] (600 when null), what to
   /// show in a grid. Same lifetime as [path]. Null for an image, or when no
   /// frame could be read.
   final String? thumbnailPath;
@@ -80,8 +80,8 @@ class CupertinoNativePickedMedia {
       );
 }
 
-/// The system photo picker **embedded in your page** — SwiftUI's
-/// `PhotosPicker` with the inline or compact style (iOS 17+) — rather than
+/// The system photo picker **embedded in your page** (SwiftUI's
+/// `PhotosPicker` with the inline or compact style (iOS 17+)) rather than
 /// presented full screen. Put it in your own sheet for a WhatsApp-style
 /// attachment panel.
 ///
@@ -124,7 +124,7 @@ class CupertinoNativePhotosPicker extends StatefulWidget {
   final int? maxSelection;
 
   /// Longest side of a delivered image, in pixels. Null delivers the original
-  /// file untouched — the fastest, but a HEIC stays a HEIC.
+  /// file untouched: the fastest, but a HEIC stays a HEIC.
   final double? maxDimension;
 
   /// 0...1, for the resized JPEGs.
@@ -134,7 +134,7 @@ class CupertinoNativePhotosPicker extends StatefulWidget {
   /// user can browse albums. Off (the default) shows the grid alone.
   final bool showsAlbums;
 
-  /// The picker's settings as the native side reads them — shared by the
+  /// The picker's settings as the native side reads them: shared by the
   /// platform view and the native-body node.
   Map<String, Object?> get nativeConfig => {
     'style': style.name,
@@ -158,7 +158,7 @@ class CupertinoNativePhotosPicker extends StatefulWidget {
   /// Call it once you have copied or uploaded what you keep.
   static Future<void> clearCache() async {
     if (defaultTargetPlatform != TargetPlatform.iOS) return;
-    await const MethodChannel('com.example.cupertino_widgets/alert')
+    await const MethodChannel('com.example.cupertino_native_ui/alert')
         .invokeMethod<void>('clearPhotoCache');
   }
 
@@ -207,13 +207,13 @@ class _CupertinoNativePhotosPickerState
     final view = wrapForTransition(
       UiKitView(
         viewType:
-            'com.example.cupertino_widgets/cupertino_native_photos_picker',
+            'com.example.cupertino_native_ui/cupertino_native_photos_picker',
         layoutDirection: TextDirection.ltr,
         creationParams: _config(),
         creationParamsCodec: const StandardMessageCodec(),
         onPlatformViewCreated: (id) => setUpChannel(
           id,
-          'cupertino_widgets/photos_picker_$id',
+          'cupertino_native_ui/photos_picker_$id',
           onMethodCall: (call) async {
             if (call.method != 'onChanged') return;
             widget.onChanged(
@@ -228,8 +228,8 @@ class _CupertinoNativePhotosPickerState
         },
       ),
     );
-    // It fills its box. In a scroll view or a Column the box has no height
-    // — the picker would take an infinite one and throw — so it falls back
+    // It fills its box. In a scroll view or a Column the box has no height,
+    // the picker would take an infinite one and throw, so it falls back
     // to a sensible one: a row of thumbnails, or a few rows of the grid.
     return LayoutBuilder(
       builder: (context, constraints) => constraints.hasBoundedHeight

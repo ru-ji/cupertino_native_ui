@@ -13,7 +13,7 @@ import 'cupertino_native_flutter_view.dart';
 import 'cupertino_native_scaffold_navigation_bar.dart';
 import 'cupertino_native_tab_bar.dart';
 import 'cupertino_scroll_edge_effect.dart';
-import 'cupertino_widgets_settings.dart';
+import 'cupertino_native_settings.dart';
 import 'internal/native_platform_view_mixin.dart';
 import 'models/cupertino_native_toolbar_item.dart';
 import 'models/cupertino_native_icon.dart';
@@ -82,7 +82,7 @@ class CupertinoNativePageScaffoldController {
     await _channel?.invokeMethod('push', page.toMap());
   }
 
-  /// Pushes [route] with no navigation bar of its own — the string-only form
+  /// Pushes [route] with no navigation bar of its own: the string-only form
   /// of [push], for when you don't need to configure the destination's bar.
   Future<void> pushNamed(String route) =>
       push(CupertinoNativePageScaffoldPage(route: route));
@@ -101,7 +101,7 @@ class CupertinoNativePageScaffoldController {
 ///
 /// Navigation between scaffold pages happens on the NATIVE stack via
 /// [CupertinoNativePageScaffoldController.push] (host isolate) or the static
-/// [push] (body isolates) — not Flutter's Navigator. Each body runs in its
+/// [push] (body isolates), not Flutter's Navigator. Each body runs in its
 /// own FlutterEngine. Register the route builders by calling [maybeRun] at
 /// the top of your `main()` (no entry point needed).
 class CupertinoNativePageScaffold extends StatefulWidget {
@@ -134,7 +134,7 @@ class CupertinoNativePageScaffold extends StatefulWidget {
   final Color? activeColor;
 
   /// Reports the current tab's native stack (root route first) whenever a
-  /// push/pop happens — including native back button and back-swipe.
+  /// push/pop happens, including native back button and back-swipe.
   final CupertinoNativeRouteChangedCallback? onRouteChanged;
 
   /// Fires on every keystroke in a page's [CupertinoNativeScaffoldNavigationBar.search] field.
@@ -155,13 +155,13 @@ class CupertinoNativePageScaffold extends StatefulWidget {
   /// of an embedded FlutterEngine.
   ///
   /// With it, a control in the body is a real SwiftUI view in the scaffold's
-  /// own hierarchy — no nested FlutterView, no platform view. Without it, the
+  /// own hierarchy: no nested FlutterView, no platform view. Without it, the
   /// body is a Flutter route and a native control there would go Flutter →
   /// SwiftUI → FlutterView → SwiftUI.
   ///
   /// It replaces [body] and the tabs' routes: a native body IS the page, so
   /// no body engine is spawned at all. The trade is that the body is only
-  /// what [CupertinoNativeBody] can describe — you cannot have both a body
+  /// what [CupertinoNativeBody] can describe: you cannot have both a body
   /// written in arbitrary Flutter and controls rendering as SwiftUI.
   ///
   /// Changes report through [onBodyEvent].
@@ -199,12 +199,12 @@ class CupertinoNativePageScaffold extends StatefulWidget {
 
   /// Whether a native spinner shows while a body engine boots and renders
   /// its first frame. Defaults to the global
-  /// [CupertinoWidgetsSettings.showLoadingIndicator] (off).
+  /// [CupertinoNativeSettings.showLoadingIndicator] (off).
   final bool? showLoadingIndicator;
 
   /// Well-known channel the native side attaches to every body engine.
   static const MethodChannel _bodyChannel = MethodChannel(
-    'cupertino_widgets/scaffold_body',
+    'cupertino_native_ui/scaffold_body',
   );
 
   /// Route prefix used by body engines so that [maybeRun] can intercept and
@@ -240,7 +240,7 @@ class CupertinoNativePageScaffold extends StatefulWidget {
     return route.substring(0, q);
   }
 
-  /// The screen's width in points, sent by the native side in `?width=` — the
+  /// The screen's width in points, sent by the native side in `?width=`: the
   /// UIKit value, which the display's pixel size only matches on some phones.
   static double? _routeWidth;
 
@@ -251,7 +251,7 @@ class CupertinoNativePageScaffold extends StatefulWidget {
   static void _ensureBodyHandlers() {
     if (_bodyHandlersInstalled) return;
     _bodyHandlersInstalled = true;
-    // maybeRun/run execute at the very top of main(), before runApp — so the
+    // maybeRun/run execute at the very top of main(), before runApp, so the
     // binary messenger isn't up yet. Setting a channel handler (or invoking a
     // method) before the binding is initialized throws and aborts the body's
     // main(), leaving the body blank. Initialize the binding first.
@@ -288,8 +288,8 @@ class CupertinoNativePageScaffold extends StatefulWidget {
   /// arguments, this spawns a hidden warm-up engine so the engine group's
   /// first-spawn cost (snapshot load, isolate-group creation) is paid early.
   ///
-  /// Pass [routes] to go further: one engine per route is **fully booted** —
-  /// `main()` runs, the route's builder executes, `runApp` is called — and
+  /// Pass [routes] to go further: one engine per route is **fully booted**
+  /// (`main()` runs, the route's builder executes, `runApp` is called) and
   /// parked. The first scaffold or sheet that opens that route attaches the
   /// parked engine instead of booting one, so its Flutter content appears
   /// immediately:
@@ -306,13 +306,13 @@ class CupertinoNativePageScaffold extends StatefulWidget {
     final isDark =
         ui.PlatformDispatcher.instance.platformBrightness == ui.Brightness.dark;
     try {
-      await const MethodChannel('com.example.cupertino_widgets/alert')
+      await const MethodChannel('com.example.cupertino_native_ui/alert')
           .invokeMethod<void>('prewarmScaffold', {
             'routes': routes,
             'isDark': isDark,
           });
     } on PlatformException {
-      // Plugin unavailable (e.g. iOS < 15) — nothing to warm.
+      // Plugin unavailable (e.g. iOS < 15): nothing to warm.
     }
   }
 
@@ -403,7 +403,7 @@ class CupertinoNativePageScaffold extends StatefulWidget {
     return _bodyChannel.invokeMethod('push', page.toMap());
   }
 
-  /// Pushes [route] with no navigation bar of its own — the string-only form
+  /// Pushes [route] with no navigation bar of its own: the string-only form
   /// of [push]. Only usable inside body isolates.
   static Future<void> pushNamed(String route) =>
       push(CupertinoNativePageScaffoldPage(route: route));
@@ -479,7 +479,7 @@ class _DynamicEnvWrapperState extends State<_DynamicEnvWrapper>
         ? platformDispatcher.locales.first
         : const Locale('en', 'US');
 
-    // Body isolates run without a WidgetsApp, so no MediaQuery exists —
+    // Body isolates run without a WidgetsApp, so no MediaQuery exists,
     // and without one, every CupertinoDynamicColor.resolveFrom falls back
     // to LIGHT regardless of the app/device brightness. Provide one with
     // the effective brightness so dynamic colors resolve correctly.
@@ -502,7 +502,7 @@ class _DynamicEnvWrapperState extends State<_DynamicEnvWrapper>
             // Material provides the default text styles so text isn't white-on-white.
             //
             // The width is pinned to the display's: the host FlutterView is
-            // auto-resizable, so it takes the size of the OUTERMOST widget —
+            // auto-resizable, so it takes the size of the OUTERMOST widget:
             // a body whose root is a Column would size to its widest child
             // and sit narrower than the page, with a phantom right margin.
             // `MediaQuery.size` can't be used for it: that is the view's own
@@ -540,7 +540,7 @@ class _CupertinoNativeScaffoldState extends State<CupertinoNativePageScaffold>
   bool? _lastIsDark;
 
   /// actionId of the leading item this state injects when the scaffold has
-  /// no leading item of its own and it was pushed onto Flutter's Navigator —
+  /// no leading item of its own and it was pushed onto Flutter's Navigator:
   /// the native NavigationStack has nothing above it to draw a back button
   /// for, so without this the page would show no way back at all.
   /// Intercepted in [_handleMethodCall], never forwarded to [onToolbarAction].
@@ -583,7 +583,7 @@ class _CupertinoNativeScaffoldState extends State<CupertinoNativePageScaffold>
           nativeArgb(theme.colorScheme.primary, isDark: _isDark)!,
       'showLoadingIndicator':
           widget.showLoadingIndicator ??
-          CupertinoWidgetsSettings.showLoadingIndicator,
+          CupertinoNativeSettings.showLoadingIndicator,
       'resizeToAvoidBottomInset': widget.resizeToAvoidBottomInset,
       'nativeBody': widget.nativeBody?.toMap(isDark: _isDark),
     };
@@ -645,7 +645,7 @@ class _CupertinoNativeScaffoldState extends State<CupertinoNativePageScaffold>
   void didUpdateWidget(covariant CupertinoNativePageScaffold oldWidget) {
     super.didUpdateWidget(oldWidget);
     // One serialization per update, compared against the config actually
-    // sent — the body tree can be large, so it is encoded only when it has
+    // sent: the body tree can be large, so it is encoded only when it has
     // to be and pushed only when it moved.
     final map = _toMap();
     final json = jsonEncode(map);
@@ -660,14 +660,14 @@ class _CupertinoNativeScaffoldState extends State<CupertinoNativePageScaffold>
   /// that actually went out.
   String? _lastScaffoldJson;
 
-  /// The creation params, captured on the first build and never rebuilt —
+  /// The creation params, captured on the first build and never rebuilt:
   /// `UiKitView` only reads them at creation.
   Map<String, dynamic>? _creationParams;
 
   Future<void> _onPlatformViewCreated(int id) async {
     setUpChannel(
       id,
-      'cupertino_widgets/scaffold_$id',
+      'cupertino_native_ui/scaffold_$id',
       onMethodCall: _handleMethodCall,
     );
     widget.controller?._channel = channel;
@@ -758,7 +758,7 @@ class _CupertinoNativeScaffoldState extends State<CupertinoNativePageScaffold>
     }
 
     final platformView = UiKitView(
-      viewType: 'com.example.cupertino_widgets/cupertino_native_scaffold',
+      viewType: 'com.example.cupertino_native_ui/cupertino_native_scaffold',
       layoutDirection: TextDirection.ltr,
       // Memoized: the body tree is serialized once for creation; every later
       // change goes over `updateScaffold`, not through a rebuilt map.
@@ -782,7 +782,7 @@ class _CupertinoNativeScaffoldState extends State<CupertinoNativePageScaffold>
 /// initial route. That is *why* a name exists: `maybeRun` executes in the body
 /// isolate and can only reach builders that are statically part of the
 /// program. A widget written inline in the host's `build()` is an object in
-/// the host's heap, and the body isolate has no way to reach it — which is why
+/// the host's heap, and the body isolate has no way to reach it, which is why
 /// there is no `child:` here, and why generating the name automatically would
 /// not help. The name is not the obstacle; the builder is.
 ///
@@ -802,11 +802,11 @@ class _CupertinoNativeScaffoldState extends State<CupertinoNativePageScaffold>
 /// ```
 ///
 /// The same object feeds every surface that hosts Flutter inside a native
-/// view — a scaffold body, a tab id, a toolbar action via [island], a glass
+/// view: a scaffold body, a tab id, a toolbar action via [island], a glass
 /// container's `route:` (through [name]). Declare once, use anywhere: the
 /// name is written in exactly one place.
 ///
-/// Declare these at the top level — the body isolate reaches them through
+/// Declare these at the top level: the body isolate reaches them through
 /// `main()`, so they must exist before `runApp`.
 @immutable
 class CupertinoNativeBodyRoute {
@@ -818,7 +818,7 @@ class CupertinoNativeBodyRoute {
   /// Runs in the body isolate, not the host's.
   final Widget Function() builder;
 
-  /// This route hosted as a Flutter island — the widget to put in a
+  /// This route hosted as a Flutter island: the widget to put in a
   /// `toolbarActions` list (or anywhere else that reads a
   /// [CupertinoNativeFlutterView]).
   ///
@@ -869,7 +869,7 @@ class _BodyHeightReporterState extends State<_BodyHeightReporter> {
       if (box.size == _last) return;
       _last = box.size;
       // Hosts that do not listen (no channel handler) just ignore it.
-      const MethodChannel('cupertino_widgets/body_height')
+      const MethodChannel('cupertino_native_ui/body_height')
           .invokeMethod<void>('height', box.size.height)
           .catchError((Object _) {});
     });

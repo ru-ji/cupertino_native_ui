@@ -7,14 +7,14 @@ import 'cupertino_native_body.dart';
 
 import 'cupertino_native_scaffold_navigation_bar.dart';
 import 'cupertino_scroll_edge_effect.dart';
-import 'cupertino_widgets_settings.dart';
+import 'cupertino_native_settings.dart';
 import 'internal/native_color.dart';
 
 /// The heights a [CupertinoNativeSheet] can rest at, mirroring
 /// `UISheetPresentationController.Detent`.
 enum CupertinoNativeSheetDetent { medium, large }
 
-/// A native segmented control pinned under the sheet's navigation bar —
+/// A native segmented control pinned under the sheet's navigation bar:
 /// the `bottom` slot of [CupertinoNativeSheet.show].
 class CupertinoNativeSheetSegmentedControl {
   const CupertinoNativeSheetSegmentedControl({
@@ -59,9 +59,15 @@ class CupertinoNativeSheetSegmentedControl {
 ///
 /// Inside the sheet's body, call [pop] to dismiss programmatically.
 abstract final class CupertinoNativeSheet {
-  static const _channel = MethodChannel('com.example.cupertino_widgets/alert');
-  static const _bodyChannel = MethodChannel('cupertino_widgets/scaffold_body');
-  static const _eventsChannel = MethodChannel('cupertino_widgets/sheet_events');
+  static const _channel = MethodChannel(
+    'com.example.cupertino_native_ui/alert',
+  );
+  static const _bodyChannel = MethodChannel(
+    'cupertino_native_ui/scaffold_body',
+  );
+  static const _eventsChannel = MethodChannel(
+    'cupertino_native_ui/sheet_events',
+  );
 
   static bool _eventsHandlerInstalled = false;
   static void Function(String actionId)? _onToolbarAction;
@@ -90,7 +96,7 @@ abstract final class CupertinoNativeSheet {
   /// (`isModalInPresentation`).
   ///
   /// Give [nativeBody] instead of [route] for a sheet whose content is pure
-  /// SwiftUI — a native list, a form of transcribed controls — with no
+  /// SwiftUI (a native list, a form of transcribed controls) with no
   /// FlutterEngine behind it: it opens faster and costs no isolate. Its
   /// controls report through [onBodyEvent] as `(nodeId, value)`; push a
   /// changed tree with [updateNativeBody].
@@ -129,7 +135,7 @@ abstract final class CupertinoNativeSheet {
   }) async {
     assert(
       (route == null) != (nativeBody == null),
-      'Give CupertinoNativeSheet.show a route or a nativeBody — exactly one.',
+      'Give CupertinoNativeSheet.show a route or a nativeBody: exactly one.',
     );
     if (defaultTargetPlatform != TargetPlatform.iOS) return;
 
@@ -161,7 +167,7 @@ abstract final class CupertinoNativeSheet {
         'backgroundColor': nativeArgb(backgroundColor, isDark: dark),
         'showLoadingIndicator':
             showLoadingIndicator ??
-            CupertinoWidgetsSettings.showLoadingIndicator,
+            CupertinoNativeSettings.showLoadingIndicator,
         'isDark': dark,
         if (anchor != null)
           'sourceRect': {
@@ -185,7 +191,7 @@ abstract final class CupertinoNativeSheet {
     }
   }
 
-  /// Replaces the open sheet's [show] `nativeBody` — how a controlled value
+  /// Replaces the open sheet's [show] `nativeBody`: how a controlled value
   /// (a stepper's count, a toggle) gets back to the native side.
   static Future<void> updateNativeBody(CupertinoNativeBody nativeBody) async {
     if (defaultTargetPlatform != TargetPlatform.iOS) return;

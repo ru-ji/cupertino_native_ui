@@ -10,7 +10,7 @@ import UIKit
 enum PlatformViewSnapshot {
 
     /// Returns `bytes`/`width`/`height`/`rowBytes` for [view], or nil when
-    /// there is nothing to capture — the Dart side then falls back to simply
+    /// there is nothing to capture: the Dart side then falls back to simply
     /// hiding the view for the transition.
     static func capture(_ view: UIView) -> [String: Any]? {
         // Photographed through the outset clip container, not the view: the
@@ -77,7 +77,7 @@ enum PlatformViewSnapshot {
             "rowBytes": bytesPerRow,
             // Where to put it back, in points, in the platform view's own
             // coordinates. Dart adds this to the widget's top-left and draws
-            // the bitmap at this size — no arithmetic to keep in step on two
+            // the bitmap at this size: no arithmetic to keep in step on two
             // sides of the channel.
             "dx": Double(origin.x),
             "dy": Double(origin.y),

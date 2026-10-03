@@ -28,7 +28,7 @@ class NativeTabBarFactory: NSObject, FlutterPlatformViewFactory {
     }
 }
 
-/// A bare `UITabBar` (or two, in split mode) inside a transparent container —
+/// A bare `UITabBar` (or two, in split mode) inside a transparent container:
 /// no UITabBarController/TabView wrapper, so nothing paints a content-area
 /// background and Flutter content stays visible around and through the bar.
 /// Technique reproduced from the cupertino_native package.
@@ -54,7 +54,7 @@ class NativeTabBarView: NSObject, FlutterPlatformView, UITabBarDelegate {
         messenger: FlutterBinaryMessenger
     ) {
         channel = FlutterMethodChannel(
-            name: "cupertino_widgets/tabbar_\(viewId)", binaryMessenger: messenger)
+            name: "cupertino_native_ui/tabbar_\(viewId)", binaryMessenger: messenger)
         container = TabBarContainerView(frame: frame)
 
         var labels: [String] = []
@@ -107,8 +107,8 @@ class NativeTabBarView: NSObject, FlutterPlatformView, UITabBarDelegate {
     /// The glass pills the bars draw, in the view's points, as last reported.
     private var sentPlatters: [CGRect] = []
 
-    /// Tells Dart where each bar's glass pill is — the bar's frame holds more
-    /// than the pill (the full width, the space under it) — so the scroll edge
+    /// Tells Dart where each bar's glass pill is. The bar's frame holds more
+    /// than the pill (the full width, the space under it), so the scroll edge
     /// effect cuts its wash out under the pill alone. After the bars' own
     /// layout, which follows the container's in the same pass.
     private func reportPlatters() {
@@ -399,7 +399,7 @@ class NativeTabBarView: NSObject, FlutterPlatformView, UITabBarDelegate {
                     self.container.overrideUserInterfaceStyle = style
                     // The iOS 26 bar redraws its glass for a new appearance
                     // only when it lays out. Without this the change stayed
-                    // unseen until a tap re-laid it out — and every later one
+                    // unseen until a tap re-laid it out, and every later one
                     // with it. Inside the transition, so the fade ends on the
                     // redrawn bar.
                     Self.markNeedsLayout(self.container)

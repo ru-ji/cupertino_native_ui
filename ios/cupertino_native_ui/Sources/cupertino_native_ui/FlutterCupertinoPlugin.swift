@@ -7,7 +7,7 @@ public class FlutterCupertinoPlugin: NSObject, FlutterPlugin {
         // Register the method channel unconditionally so calls on old systems
         // get a descriptive error instead of a MissingPluginException.
         let channel = FlutterMethodChannel(
-            name: "com.example.cupertino_widgets/alert", binaryMessenger: registrar.messenger())
+            name: "com.example.cupertino_native_ui/alert", binaryMessenger: registrar.messenger())
         let instance = FlutterCupertinoPlugin()
         registrar.addMethodCallDelegate(instance, channel: channel)
 
@@ -20,98 +20,98 @@ public class FlutterCupertinoPlugin: NSObject, FlutterPlugin {
 
         let menuFactory = NativeMenuFactory(messenger: registrar.messenger())
         registrar.register(
-            menuFactory, withId: "com.example.cupertino_widgets/cupertino_native_menu")
+            menuFactory, withId: "com.example.cupertino_native_ui/cupertino_native_menu")
 
         let contextMenuFactory = NativeContextMenuFactory(messenger: registrar.messenger())
         registrar.register(
             contextMenuFactory,
-            withId: "com.example.cupertino_widgets/cupertino_native_context_menu")
+            withId: "com.example.cupertino_native_ui/cupertino_native_context_menu")
 
         let symbolFactory = NativeSymbolFactory(messenger: registrar.messenger())
         registrar.register(
-            symbolFactory, withId: "com.example.cupertino_widgets/cupertino_native_symbol")
+            symbolFactory, withId: "com.example.cupertino_native_ui/cupertino_native_symbol")
 
         let pickerFactory = NativePickerFactory(messenger: registrar.messenger())
         registrar.register(
-            pickerFactory, withId: "com.example.cupertino_widgets/cupertino_native_picker")
+            pickerFactory, withId: "com.example.cupertino_native_ui/cupertino_native_picker")
 
         let buttonFactory = NativeButtonFactory(messenger: registrar.messenger())
         registrar.register(
-            buttonFactory, withId: "com.example.cupertino_widgets/cupertino_native_button")
+            buttonFactory, withId: "com.example.cupertino_native_ui/cupertino_native_button")
 
         let toggleFactory = NativeToggleFactory(messenger: registrar.messenger())
         registrar.register(
-            toggleFactory, withId: "com.example.cupertino_widgets/cupertino_native_toggle")
+            toggleFactory, withId: "com.example.cupertino_native_ui/cupertino_native_toggle")
 
         registrar.register(
             NativePhotosPickerFactory(messenger: registrar.messenger()),
-            withId: "com.example.cupertino_widgets/cupertino_native_photos_picker")
+            withId: "com.example.cupertino_native_ui/cupertino_native_photos_picker")
 
         registrar.register(
             NativeControlFactory(messenger: registrar.messenger()),
-            withId: "com.example.cupertino_widgets/cupertino_native_control")
+            withId: "com.example.cupertino_native_ui/cupertino_native_control")
 
         let checkboxFactory = NativeCheckboxFactory(messenger: registrar.messenger())
         registrar.register(
-            checkboxFactory, withId: "com.example.cupertino_widgets/cupertino_native_checkbox")
+            checkboxFactory, withId: "com.example.cupertino_native_ui/cupertino_native_checkbox")
 
         let segmentedFactory = NativeSegmentedControlFactory(messenger: registrar.messenger())
         registrar.register(
-            segmentedFactory, withId: "com.example.cupertino_widgets/cupertino_native_segmented")
+            segmentedFactory, withId: "com.example.cupertino_native_ui/cupertino_native_segmented")
 
         let sliderFactory = NativeSliderFactory(messenger: registrar.messenger())
         registrar.register(
-            sliderFactory, withId: "com.example.cupertino_widgets/cupertino_native_slider")
+            sliderFactory, withId: "com.example.cupertino_native_ui/cupertino_native_slider")
 
         let textFieldFactory = NativeTextFieldFactory(messenger: registrar.messenger())
         registrar.register(
-            textFieldFactory, withId: "com.example.cupertino_widgets/cupertino_native_text_field")
+            textFieldFactory, withId: "com.example.cupertino_native_ui/cupertino_native_text_field")
 
         let tabBarFactory = NativeTabBarFactory(messenger: registrar.messenger())
         registrar.register(
-            tabBarFactory, withId: "com.example.cupertino_widgets/cupertino_native_tabbar")
+            tabBarFactory, withId: "com.example.cupertino_native_ui/cupertino_native_tabbar")
 
         let scaffoldFactory = NativeScaffoldFactory(messenger: registrar.messenger())
         registrar.register(
-            scaffoldFactory, withId: "com.example.cupertino_widgets/cupertino_native_scaffold")
+            scaffoldFactory, withId: "com.example.cupertino_native_ui/cupertino_native_scaffold")
 
         let progressFactory = NativeProgressFactory(messenger: registrar.messenger())
         registrar.register(
-            progressFactory, withId: "com.example.cupertino_widgets/cupertino_native_progress")
+            progressFactory, withId: "com.example.cupertino_native_ui/cupertino_native_progress")
 
         let listFactory = NativeListFactory(messenger: registrar.messenger())
         registrar.register(
-            listFactory, withId: "com.example.cupertino_widgets/cupertino_native_list")
+            listFactory, withId: "com.example.cupertino_native_ui/cupertino_native_list")
 
         let glassGroupFactory = NativeGlassGroupFactory(messenger: registrar.messenger())
         registrar.register(
             glassGroupFactory,
-            withId: "com.example.cupertino_widgets/cupertino_native_glass_group")
+            withId: "com.example.cupertino_native_ui/cupertino_native_glass_group")
 
         let liquidGlassFactory = NativeLiquidGlassFactory(messenger: registrar.messenger())
         registrar.register(
             liquidGlassFactory,
-            withId: "com.example.cupertino_widgets/cupertino_native_liquid_glass")
+            withId: "com.example.cupertino_native_ui/cupertino_native_liquid_glass")
 
         let datePickerFactory = NativeDatePickerFactory(messenger: registrar.messenger())
         registrar.register(
             datePickerFactory,
-            withId: "com.example.cupertino_widgets/cupertino_native_date_picker")
+            withId: "com.example.cupertino_native_ui/cupertino_native_date_picker")
 
         let edgeBlurFactory = NativeEdgeBlurFactory(messenger: registrar.messenger())
         registrar.register(
             edgeBlurFactory,
-            withId: "com.example.cupertino_widgets/cupertino_native_edge_blur")
+            withId: "com.example.cupertino_native_ui/cupertino_native_edge_blur")
 
         registrar.register(
             NativeBarMaterialFactory(messenger: registrar.messenger()),
-            withId: "com.example.cupertino_widgets/cupertino_native_bar_material")
+            withId: "com.example.cupertino_native_ui/cupertino_native_bar_material")
     }
 
     /// Rasterizes an SF Symbol to PNG bytes so Flutter can draw it as a normal
     /// image instead of hosting a platform view for a 17pt glyph. Platform
     /// views are composited outside Flutter's layer tree, so anything drawn
-    /// through one is invisible to a `BackdropFilter` — an icon rendered that
+    /// through one is invisible to a `BackdropFilter`: an icon rendered that
     /// way would punch a hole in the app bar's scroll edge effect.
     @available(iOS 15.0, *)
     private static func renderSymbol(name: String, args: [String: Any]) -> FlutterStandardTypedData?

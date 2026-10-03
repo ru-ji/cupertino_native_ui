@@ -1,7 +1,7 @@
 import 'package:flutter/cupertino.dart';
-import 'package:cupertino_widgets/cupertino_widgets.dart';
+import 'package:cupertino_native_ui/cupertino_native_ui.dart';
 
-/// [CupertinoNativeGlassContainer] — the iOS 26 Liquid Glass material as
+/// [CupertinoNativeGlassContainer]: the iOS 26 Liquid Glass material as
 /// a Flutter container. The glass shapes below are real SwiftUI `.glassEffect`
 /// views refracting the colorful Flutter artwork rendered behind them; the
 /// labels on top are ordinary Flutter widgets.
@@ -68,7 +68,7 @@ class _LiquidGlassDemoPageState extends State<LiquidGlassDemoPage> {
                           child: const _Backdrop(),
                         ),
                       ),
-                      // Glass card — a Flutter child: laid out by Flutter, its
+                      // Glass card: a Flutter child: laid out by Flutter, its
                       // texts drawn by SwiftUI inside the glass, so they adapt
                       // to what is behind it.
                       Center(
@@ -129,14 +129,14 @@ class _LiquidGlassDemoPageState extends State<LiquidGlassDemoPage> {
                             child: Padding(
                               padding: EdgeInsets.symmetric(horizontal: 20),
                               child: Text(
-                                'Now Playing — Deep Focus',
+                                'Now Playing: Deep Focus',
                                 style: TextStyle(fontSize: 17),
                               ),
                             ),
                           ),
                         ),
                       ),
-                      // A pressable glass circle — onPressed makes the container a
+                      // A pressable glass circle: onPressed makes the container a
                       // liquid-glass button (tap it to cycle the tint).
                       Positioned(
                         top: 20,
@@ -169,7 +169,7 @@ class _LiquidGlassDemoPageState extends State<LiquidGlassDemoPage> {
                       footer: switch (_supported) {
                         true =>
                           'This device renders real Liquid Glass (iOS 26+). Touch '
-                              'and hold the shapes — interactive glass shimmers and '
+                              'and hold the shapes: interactive glass shimmers and '
                               'stretches under your finger. The circle is a glass button: '
                               'tap it to cycle the tint.',
                         false =>
@@ -284,7 +284,7 @@ class _Blob extends StatelessWidget {
 
 /// The three changes SwiftUI animates on its own, one at a time on one stage.
 ///
-/// Each is driven by nothing but `glassEffectID` and `glassEffectTransition` —
+/// Each is driven by nothing but `glassEffectID` and `glassEffectTransition`:
 /// SwiftUI noticing that a glass with one id left and a glass with another
 /// arrived. No width animation, no cross-fade: the transition is the effect.
 enum _Change {
@@ -307,7 +307,7 @@ enum _Change {
         'holds the material still while the content turns over.',
   ),
 
-  /// Two glasses replaced by two differently sized ones — the Photos
+  /// Two glasses replaced by two differently sized ones: the Photos
   /// "Select" change.
   reshape(
     'Reshape',

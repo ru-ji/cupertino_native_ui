@@ -24,7 +24,7 @@ struct TextFieldConfig: Codable {
     var clearButtonMode: String? = nil  // "never" | "whileEditing" | "unlessEditing" | "always"
     var textContentType: String? = nil
     var isDark: Bool? = nil  // Flutter brightness → override UITextField appearance
-    var backgroundColor: Int? = nil  // ARGB — nil = transparent (iOS default)
+    var backgroundColor: Int? = nil  // ARGB, nil = transparent (iOS default)
     var cornerRadius: Double? = nil  // rounds the background; nil/0 = square, no inset
     var glass: Bool? = nil  // Liquid Glass background (iOS 26; material fallback below)
     var glassCornerRadius: Double? = nil  // glass shape radius; nil = 16
@@ -35,7 +35,7 @@ struct TextFieldConfig: Codable {
     var suffixIcon: IconConfig? = nil
     var iconSpacing: Double? = nil  // between an icon and the text; nil = 8  // trailing SF Symbol, as `UITextField.rightView`
     var verticalAlignment: String? = nil  // "top" | "center" | "bottom"
-    /// The bar that rides above the keyboard while this field is focused —
+    /// The bar that rides above the keyboard while this field is focused:
     /// the items of a `ToolbarItemGroup(placement: .keyboard)`. Dart sends the
     /// `toolbarActions` list lowered to native nodes, like a native body.
     var keyboardToolbar: [BodyNodeConfig]? = nil

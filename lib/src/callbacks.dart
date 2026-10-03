@@ -27,7 +27,7 @@ typedef CupertinoNativeListSwipeCallback = void Function(
   String actionId,
 );
 
-/// Reports a row dragged to a new place in edit mode, within its section —
+/// Reports a row dragged to a new place in edit mode, within its section:
 /// indices as `List.insert` expects them after the removal.
 typedef CupertinoNativeListReorderCallback = void Function(
   int section,

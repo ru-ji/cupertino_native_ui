@@ -45,7 +45,7 @@ enum CupertinoNativeSearchToolbarBehavior {
   automatic,
 
   /// The field collapses into a single magnifying-glass button, expanding
-  /// again when tapped — the Liquid Glass bottom-search behaviour.
+  /// again when tapped: the Liquid Glass bottom-search behaviour.
   minimize,
 }
 
@@ -103,7 +103,7 @@ class CupertinoNativeScaffoldNavigationBar {
   final List<CupertinoNativeToolbarContent> leading;
   final List<CupertinoNativeToolbarContent> trailing;
 
-  /// Entries for the bottom toolbar — SwiftUI's `.bottomBar` placement, the
+  /// Entries for the bottom toolbar: SwiftUI's `.bottomBar` placement, the
   /// glass bar that rides above the home indicator in Mail, Safari and Notes.
   /// Insert a [CupertinoNativeToolbarSpacer] to split its shared capsule.
   ///
@@ -114,11 +114,11 @@ class CupertinoNativeScaffoldNavigationBar {
   /// When set, the page becomes `.searchable`.
   final CupertinoNativeSearchField? search;
 
-  /// Items that always live in the bar's overflow ("…") menu —
+  /// Items that always live in the bar's overflow ("…") menu:
   /// `.toolbarOverflowMenu` (iOS 27+; not shown earlier).
   final List<CupertinoNativeToolbarItem> overflow;
 
-  /// Whether the navigation bar collapses as the content scrolls —
+  /// Whether the navigation bar collapses as the content scrolls:
   /// `.toolbarMinimizationBehavior(_:for: .navigationBar)` (iOS 27+).
   final CupertinoNativeToolbarMinimizeBehavior minimizeBehavior;
 

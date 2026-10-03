@@ -16,7 +16,7 @@ import 'native_color.dart';
 /// paint it, and reports where it landed. The native side draws the leaf in
 /// that frame. Everything else in the child is still Flutter, over the glass.
 ///
-/// Only layout widgets are looked through — [Flex] (a [Row] or a [Column]),
+/// Only layout widgets are looked through: [Flex] (a [Row] or a [Column]),
 /// [Wrap], [Padding], [Align], [SizedBox], [Flexible]. A Text inside any
 /// other widget is that widget's, and stays Flutter with it.
 class GlassLeaves {
@@ -38,7 +38,7 @@ class GlassLeaves {
   Widget split(Widget child, {required bool isDark}) =>
       _split(child, '0', isDark);
 
-  /// Wraps the box the leaves' frames are measured in — the platform view's,
+  /// Wraps the box the leaves' frames are measured in: the platform view's,
   /// whose origin is the native side's.
   Widget host(Widget child) => _LeafHost(leaves: this, child: child);
 
@@ -145,7 +145,7 @@ class GlassLeaves {
   }
 
   /// A plain [Text] as the native side draws it, from the paragraph Flutter
-  /// laid out — so the size, weight and lines are the ones on screen. Null
+  /// laid out, so the size, weight and lines are the ones on screen. Null
   /// keeps it Flutter: a font of the app's own, or decoration SwiftUI's
   /// `Text` would not reproduce.
   static Map<String, Object?>? _describeText(

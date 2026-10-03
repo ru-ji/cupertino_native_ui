@@ -40,7 +40,7 @@ class NativePickerView: NativeHostingView {
         _view.viewId = viewId
 
         channel = FlutterMethodChannel(
-            name: "cupertino_widgets/picker_\(viewId)", binaryMessenger: messenger)
+            name: "cupertino_native_ui/picker_\(viewId)", binaryMessenger: messenger)
         sizeChannel = channel
         channel?.setMethodCallHandler { [weak self] call, result in
             self?.handle(call, result: result)

@@ -32,7 +32,7 @@ class AlertManager {
             preferredStyle: style
         )
         // Follows the app's own (possibly forced) theme, not the device's
-        // system appearance — same convention as every other native surface.
+        // system appearance: same convention as every other native surface.
         alertController.overrideUserInterfaceStyle = isDark ? .dark : .light
 
         for (index, actionData) in actions.enumerated() {
@@ -56,7 +56,7 @@ class AlertManager {
         // Ensure we present on the top-most controller
         DispatchQueue.main.async {
             let topController = self.getTopViewController(base: rootVC)
-            // An action sheet with a source grows out of it — a popover on
+            // An action sheet with a source grows out of it: a popover on
             // iPad, and on iOS 26 a bubble on iPhone too, which drops the
             // Cancel button. Without a source on iPhone it is the sheet at the
             // bottom of the screen. Only a regular width needs one anyway: a

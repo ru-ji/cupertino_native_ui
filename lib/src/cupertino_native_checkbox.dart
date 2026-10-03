@@ -19,7 +19,7 @@ class CupertinoNativeCheckbox extends StatefulWidget {
   final bool value;
 
   /// Called with the new value when the user taps the box. Null disables the
-  /// control — the box stays visible but dimmed and inert.
+  /// control: the box stays visible but dimmed and inert.
   final ValueChanged<bool>? onChanged;
 
   final String? label;
@@ -54,7 +54,7 @@ class _CupertinoNativeCheckboxState extends State<CupertinoNativeCheckbox>
     with NativePlatformViewStateMixin {
   bool? _lastIsDark;
 
-  // Follows the app's own theme brightness, not the device's — a light app
+  // Follows the app's own theme brightness, not the device's: a light app
   // forced on a dark-mode phone should still get a light checkbox.
   bool get _isDark => Theme.of(context).brightness == Brightness.dark;
 
@@ -98,7 +98,7 @@ class _CupertinoNativeCheckboxState extends State<CupertinoNativeCheckbox>
   Future<void> _onPlatformViewCreated(int id) async {
     setUpChannel(
       id,
-      'cupertino_widgets/checkbox_$id',
+      'cupertino_native_ui/checkbox_$id',
       onMethodCall: _handleMethodCall,
     );
     requestIntrinsicSize();
@@ -115,7 +115,7 @@ class _CupertinoNativeCheckboxState extends State<CupertinoNativeCheckbox>
     if (defaultTargetPlatform == TargetPlatform.iOS) {
       final platformView = wrapForTransition(
         UiKitView(
-          viewType: 'com.example.cupertino_widgets/cupertino_native_checkbox',
+          viewType: 'com.example.cupertino_native_ui/cupertino_native_checkbox',
           layoutDirection: TextDirection.ltr,
           creationParams: _toMap(),
           creationParamsCodec: const StandardMessageCodec(),

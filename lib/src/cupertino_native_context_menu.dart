@@ -55,7 +55,7 @@ class CupertinoNativeContextMenu extends StatefulWidget {
   /// Called with the tapped item's `actionId` (and the new value for toggles).
   final CupertinoNativeMenuActionCallback? onAction;
 
-  /// Reports the menu opening/closing — e.g. to dim or swap [child] on the
+  /// Reports the menu opening/closing: e.g. to dim or swap [child] on the
   /// Flutter side while the menu is up. Fires `false` the instant the
   /// dismissal starts, not when its animation ends.
   final ValueChanged<bool>? onOpenChanged;
@@ -64,8 +64,8 @@ class CupertinoNativeContextMenu extends StatefulWidget {
   /// square child.
   final double previewCornerRadius;
 
-  /// Whether [child] receives touches. Defaults to false so every touch —
-  /// including the long-press — reaches the native interaction; set true when
+  /// Whether [child] receives touches. Defaults to false so every touch,
+  /// including the long-press, reaches the native interaction; set true when
   /// the child has its own buttons (the menu then only opens where the child
   /// doesn't claim the touch).
   final bool childInteractive;
@@ -120,7 +120,7 @@ class _CupertinoNativeContextMenuState extends State<CupertinoNativeContextMenu>
 
   /// Debounce timer per capture method. A parent that rebuilds every frame
   /// (an animation, a platform view pushing sizes) would otherwise encode a
-  /// PNG every frame — the timer keeps getting pushed back, so the capture
+  /// PNG every frame: the timer keeps getting pushed back, so the capture
   /// fires only once the rebuild storm has stopped.
   final Map<String, Timer> _captureDebounce = {};
 
@@ -201,7 +201,7 @@ class _CupertinoNativeContextMenuState extends State<CupertinoNativeContextMenu>
   Future<void> _onPlatformViewCreated(int id) async {
     setUpChannel(
       id,
-      'cupertino_widgets/context_menu_$id',
+      'cupertino_native_ui/context_menu_$id',
       onMethodCall: _handleMethodCall,
     );
     _captureAfterFrame(_childKey, 'setChildImage');
@@ -241,14 +241,14 @@ class _CupertinoNativeContextMenuState extends State<CupertinoNativeContextMenu>
   /// Captured from the boundary's layer directly, not via
   /// [RenderRepaintBoundary.toImage]: that API asserts `!debugNeedsPaint`, and
   /// a boundary under a platform view can legitimately be dirty at
-  /// post-frame time — the assert then spams forever on every rebuild. The
+  /// post-frame time, and the assert then spams forever on every rebuild. The
   /// layer form never asserts and rasterizes the last-painted pixels, which
   /// is exactly what a menu lift wants anyway.
   ///
   /// Debounced (one capture per quiet period, per method) and skipped while
-  /// this route is covered by another — a page hidden under a pushed scaffold
+  /// this route is covered by another: a page hidden under a pushed scaffold
   /// must not keep encoding PNGs.
-  // ponytail: static snapshot, retaken when the widget changes — re-capture
+  // ponytail: static snapshot, retaken when the widget changes. Re-capture
   // on a timer if live/animated content ever needs to lift accurately.
   void _captureAfterFrame(GlobalKey key, String method) {
     _captureDebounce[method]?.cancel();
@@ -336,7 +336,7 @@ class _CupertinoNativeContextMenuState extends State<CupertinoNativeContextMenu>
           Positioned.fill(
             child: RepaintBoundary(
               child: UiKitView(
-                viewType: 'com.example.cupertino_widgets/cupertino_native_context_menu',
+                viewType: 'com.example.cupertino_native_ui/cupertino_native_context_menu',
                 layoutDirection: TextDirection.ltr,
                 creationParams: _toMap(),
                 creationParamsCodec: const StandardMessageCodec(),
@@ -358,7 +358,7 @@ class _CupertinoNativeContextMenuState extends State<CupertinoNativeContextMenu>
             child: Opacity(
               opacity: _menuOpen || _pressHidden ? 0 : 1,
               // Boundary so the child can be rendered to the image the system
-              // lifts — every layer of it, text included.
+              // lifts: every layer of it, text included.
               child: RepaintBoundary(key: _childKey, child: widget.child),
             ),
           ),

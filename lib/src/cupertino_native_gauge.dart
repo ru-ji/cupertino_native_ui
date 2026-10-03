@@ -17,7 +17,7 @@ enum CupertinoNativeGaugeStyle {
   circularCapacity,
 }
 
-/// A native SwiftUI `Gauge` (iOS 16+; a progress bar on iOS 15) — a value
+/// A native SwiftUI `Gauge` (iOS 16+; a progress bar on iOS 15): a value
 /// within a range, the battery or storage meter look.
 class CupertinoNativeGauge extends StatelessWidget
     implements NativeControlProvider {

@@ -49,7 +49,7 @@ class CupertinoNativeListTile {
   /// through `onRowTap`; the app keeps which row is selected.
   final bool selected;
 
-  /// A trailing control, transcribed straight into SwiftUI — the same
+  /// A trailing control, transcribed straight into SwiftUI: the same
   /// lowering a `toolbarActions` item goes through, so
   /// `CupertinoNativeSwitch`, `CupertinoNativeSlider`,
   /// `CupertinoNativeButton`, `CupertinoNativeSlidingSegmentedControl` and
@@ -59,7 +59,7 @@ class CupertinoNativeListTile {
   /// island.
   final Widget? trailing;
 
-  /// Grey pill at the row's trailing edge — a count or short text
+  /// Grey pill at the row's trailing edge: a count or short text
   /// (SwiftUI `.badge`).
   final String? badge;
 
@@ -68,8 +68,8 @@ class CupertinoNativeListTile {
   /// `onSwipeAction`.
   final List<CupertinoNativeMenuAction> swipeActions;
 
-  /// Nested rows: the tile becomes an expandable row — the look of a
-  /// SwiftUI `DisclosureGroup` in a list — whose chevron reveals them as real
+  /// Nested rows: the tile becomes an expandable row, the look of a
+  /// SwiftUI `DisclosureGroup` in a list, whose chevron reveals them as real
   /// rows underneath.
   final List<CupertinoNativeListTile> children;
 

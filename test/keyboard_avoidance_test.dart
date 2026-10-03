@@ -1,9 +1,9 @@
-import 'package:cupertino_widgets/src/internal/keyboard_avoidance.dart';
+import 'package:cupertino_native_ui/src/internal/keyboard_avoidance.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// The reveal for a field transcribed into a list runs on *every* rising
-/// metrics tick of the keyboard's animation — that is the real-time tracking,
+/// metrics tick of the keyboard's animation: that is the real-time tracking,
 /// and it is what `EditableText` does too ("the metrics change signal from
 /// engine will come here every frame"). The row's rectangle therefore has to
 /// be expressed in a frame that does not itself move as the reveal scrolls the
@@ -24,8 +24,8 @@ void main() {
       expect(captured.height, 22);
 
       // The keyboard's animation scrolls the page 120pt up. The row and the
-      // list move together, so the row's offset inside the list — the only
-      // thing the reveal should be using — does not move.
+      // list move together, so the row's offset inside the list, the only
+      // thing the reveal should be using, does not move.
       expect(
         rowInViewCoordinates(
           rowInWindow: rowInWindow.translate(0, -120),
@@ -39,7 +39,7 @@ void main() {
       // The shape of the bug this replaced: the row was captured in window
       // coordinates and the view's *current* position subtracted on every
       // reveal tick. By the second tick the row appeared 120pt further down
-      // than it was, so the list was asked to scroll 120pt more — and it kept
+      // than it was, so the list was asked to scroll 120pt more, and it kept
       // going until the platform view left the viewport, which detaches it and
       // closes the keyboard. Pinned so the mistake cannot come back.
       final drifted = rowInWindow.top - viewInWindow.translate(0, -120).top;

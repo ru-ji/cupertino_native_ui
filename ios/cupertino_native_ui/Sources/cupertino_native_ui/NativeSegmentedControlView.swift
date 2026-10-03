@@ -51,7 +51,7 @@ class NativeSegmentedControlView: NativeHostingView {
         _view.viewId = viewId
 
         channel = FlutterMethodChannel(
-            name: "cupertino_widgets/segmented_\(viewId)", binaryMessenger: messenger)
+            name: "cupertino_native_ui/segmented_\(viewId)", binaryMessenger: messenger)
         sizeChannel = channel
         channel?.setMethodCallHandler({
             [weak self] (call: FlutterMethodCall, result: @escaping FlutterResult) in
@@ -65,7 +65,7 @@ class NativeSegmentedControlView: NativeHostingView {
         }
     }
 
-    /// The control fills the box Flutter built for it — the branch the button
+    /// The control fills the box Flutter built for it: the branch the button
     /// takes for `expand: true`. A segmented picker has no size worth hugging:
     /// it is a full-width control, and `getIntrinsicSize` reports what SwiftUI
     /// measures so Dart can build the box around it.

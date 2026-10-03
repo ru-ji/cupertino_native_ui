@@ -1,4 +1,4 @@
-import 'package:cupertino_widgets/src/internal/bar_holes.dart';
+import 'package:cupertino_native_ui/src/internal/bar_holes.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -41,7 +41,7 @@ void main() {
                   ),
                 ),
               ),
-              // A wide native item whose glass is only part of it — a tab
+              // A wide native item whose glass is only part of it: a tab
               // bar's pill inside its frame: the pill is cut, not the frame.
               const Positioned(
                 left: 0,

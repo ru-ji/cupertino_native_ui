@@ -12,7 +12,7 @@ import UniformTypeIdentifiers
 /// over only what the user picks.
 ///
 /// Speed is the point of the loading path:
-/// - `preferredItemEncoding: .current` — the system does not transcode (a
+/// - `preferredItemEncoding: .current`: the system does not transcode (a
 ///   HEIC to JPEG conversion is the slowest thing it could do for us);
 /// - each pick arrives as a *file*, moved into our cache, never read whole
 ///   into memory;
@@ -72,7 +72,7 @@ class NativePhotosPickerView: NativeHostingView {
         super.init()
         _view.viewId = viewId
         channel = FlutterMethodChannel(
-            name: "cupertino_widgets/photos_picker_\(viewId)", binaryMessenger: messenger)
+            name: "cupertino_native_ui/photos_picker_\(viewId)", binaryMessenger: messenger)
         channel?.setMethodCallHandler { [weak self] call, result in
             self?.handle(call, result: result)
         }
@@ -142,7 +142,7 @@ final class PhotosPickerModel: ObservableObject {
     }
 
     /// Starts a load for every newly ticked item, cancels the ones unticked,
-    /// and reports the selection at once — loading items without a path —
+    /// and reports the selection at once, loading items without a path,
     /// so Dart can lay out placeholders before any file is ready.
     private func sync() {
         let keys = Set(selection.map(Self.key))
@@ -181,7 +181,7 @@ final class PhotosPickerModel: ObservableObject {
 @available(iOS 17.0, *)
 enum PhotoCache {
     static let directory = FileManager.default.temporaryDirectory
-        .appendingPathComponent("cupertino_widgets_photos", isDirectory: true)
+        .appendingPathComponent("cupertino_native_ui_photos", isDirectory: true)
 
     private static let lock = NSLock()
     private static var index: [String: [String: Any]] = [:]
@@ -192,7 +192,7 @@ enum PhotoCache {
     }
 
     /// The payload for one item: `id`, `path`, `isVideo`, `width`, `height`
-    /// (and `thumbnail` for a video) — or `id` + `error` when it could not be
+    /// (and `thumbnail` for a video), or `id` + `error` when it could not be
     /// loaded.
     static func load(_ item: PhotosPickerItem, key: String, config: PhotosPickerConfig) async
         -> [String: Any]
@@ -215,7 +215,7 @@ enum PhotoCache {
                 }
                 payload["path"] = file.url.path
                 // A video has no picture of its own to show in a grid: its
-                // first frame, as a JPEG next to it. Optional — the video
+                // first frame, as a JPEG next to it. Optional: the video
                 // stands without it.
                 let thumb = directory.appendingPathComponent(UUID().uuidString + ".jpg")
                 if let (w, h) = await videoThumbnail(
@@ -257,8 +257,8 @@ enum PhotoCache {
         return payload
     }
 
-    /// Decodes at the target size directly — never the full-resolution
-    /// bitmap — and writes a JPEG. EXIF orientation is applied.
+    /// Decodes at the target size directly, never the full-resolution
+    /// bitmap, and writes a JPEG. EXIF orientation is applied.
     private static func downsample(_ source: URL, to dest: URL, maxPixel: Double, quality: Double)
         -> (Int, Int)?
     {
@@ -363,7 +363,7 @@ struct InlinePhotosPickerView: View {
             matching: filter,
             // No transcoding: the fastest hand-over there is.
             preferredItemEncoding: .current,
-            // Gives each item a stable `itemIdentifier` — the cache key.
+            // Gives each item a stable `itemIdentifier`: the cache key.
             photoLibrary: .shared()
         ) {
             Text("Photos")
