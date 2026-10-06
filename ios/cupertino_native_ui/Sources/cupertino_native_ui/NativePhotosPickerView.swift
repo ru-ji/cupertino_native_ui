@@ -387,9 +387,13 @@ struct InlinePhotosPickerView: View {
         .photosPickerDisabledCapabilities([.selectionActions])
         .ignoresSafeArea()
         .background(GeometryReader { proxy in
-            Color.clear.onChange(of: proxy.size) {
-                NativeLog.log("photos picker size \($0) safe=\(proxy.safeAreaInsets)")
-            }
+            Color.clear
+                .onAppear {
+                    NativeLog.log("[size] photos picker initial \(proxy.size) safe=\(proxy.safeAreaInsets)")
+                }
+                .onChange(of: proxy.size) {
+                    NativeLog.log("[size] photos picker changed → \($0) safe=\(proxy.safeAreaInsets)")
+                }
         })
         .onAppear { NativeLog.log("photos picker appear model=\(ObjectIdentifier(model))") }
         .onDisappear { NativeLog.log("photos picker disappear model=\(ObjectIdentifier(model))") }

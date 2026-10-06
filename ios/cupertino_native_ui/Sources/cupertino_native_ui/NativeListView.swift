@@ -116,6 +116,7 @@ class NativeListView: NativeHostingView {
         let argsMap = args as? [String: Any]
         if let argsMap = argsMap, let config = decodeConfig(ListConfig.self, from: argsMap) {
             setupSwiftUI(with: config, isDark: (argsMap["isDark"] as? NSNumber)?.boolValue)
+            layOutAtCreation(width: config.width, height: config.height)
         }
     }
 
@@ -218,6 +219,7 @@ class NativeListView: NativeHostingView {
                     // same height several times per layout); each repeat cost a
                     // Flutter rebuild and a walk of the whole view tree.
                     guard self?.systemListHeight != h else { return }
+                    NativeLog.log("[size] list probe → Dart onContentSize \(h) (was \(String(describing: self?.systemListHeight)))")
                     self?.systemListHeight = h
                     self?.channel?.invokeMethod(
                         "onContentSize", arguments: ["height": Double(h), "animated": animated])
@@ -234,6 +236,33 @@ class NativeListView: NativeHostingView {
     ///
     /// Sent whenever the rows move: a new height or a new config. On the next
     /// turn, once the collection view has laid its cells out.
+    /// Inline calendars already settled, so each is nudged once.
+    private var settledCalendars = Set<ObjectIdentifier>()
+
+    /// An inline calendar first lays out for six week rows and spreads the
+    /// month's rows over that height; only a first interaction makes UIKit
+    /// fit it to the month (374.67 → 344 on a five-week month), so the row
+    /// jumped at the first tap. Once the calendar is on screen, ask for that
+    /// same re-measure up front.
+    private func settleCalendars() {
+        func find(_ view: UIView) {
+            if let picker = view as? UIDatePicker, picker.datePickerStyle == .inline {
+                let id = ObjectIdentifier(picker)
+                guard picker.window != nil, !settledCalendars.contains(id) else { return }
+                settledCalendars.insert(id)
+                let before = picker.intrinsicContentSize
+                picker.setDate(picker.date, animated: false)
+                picker.invalidateIntrinsicContentSize()
+                picker.setNeedsLayout()
+                picker.layoutIfNeeded()
+                NativeLog.log("[size] calendar settled \(before) → \(picker.intrinsicContentSize)")
+                return
+            }
+            view.subviews.forEach(find)
+        }
+        find(_view)
+    }
+
     private func reportWheels() {
         DispatchQueue.main.async { [weak self] in
             guard let self else { return }
@@ -246,6 +275,7 @@ class NativeListView: NativeHostingView {
                 view.subviews.forEach(find)
             }
             find(self._view)
+            self.settleCalendars()
             guard wheels != self.reportedWheels else { return }
             self.reportedWheels = wheels
             self.channel?.invokeMethod(

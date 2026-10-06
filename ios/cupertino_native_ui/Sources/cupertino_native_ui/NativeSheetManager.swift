@@ -204,7 +204,9 @@ final class NativeSheetManager: NSObject, UIAdaptivePresentationControllerDelega
             self.engine = engine
             self.controller = presented
             self.showResult = result
-            presenter.present(presented, animated: true) { NativeLog.log("sheet present finished") }
+            presenter.present(presented, animated: true) {
+            NativeLog.log("[size] sheet present finished, view \(presented.view.bounds.size) detent=\(String(describing: presented.sheetPresentationController?.selectedDetentIdentifier?.rawValue))")
+        }
             return
         }
 
@@ -243,7 +245,9 @@ final class NativeSheetManager: NSObject, UIAdaptivePresentationControllerDelega
         self.engine = engine
         self.controller = presented
         self.showResult = result
-        presenter.present(presented, animated: true) { NativeLog.log("sheet present finished") }
+        presenter.present(presented, animated: true) {
+            NativeLog.log("[size] sheet present finished, view \(presented.view.bounds.size) detent=\(String(describing: presented.sheetPresentationController?.selectedDetentIdentifier?.rawValue))")
+        }
     }
 
     /// Programmatic dismissal (Dart `dismiss()` / body `pop()`).
@@ -395,5 +399,14 @@ extension View {
         } else {
             self
         }
+    }
+}
+
+@available(iOS 15.0, *)
+extension NativeSheetManager: UISheetPresentationControllerDelegate {
+    func sheetPresentationControllerDidChangeSelectedDetentIdentifier(
+        _ sheet: UISheetPresentationController
+    ) {
+        NativeLog.log("[size] sheet detent → \(String(describing: sheet.selectedDetentIdentifier?.rawValue)) view \(sheet.presentedViewController.view.bounds.size)")
     }
 }
