@@ -26,7 +26,7 @@ struct AdaptiveMenuView: View {
     }
 
     private var items: some View {
-        ForEach(config.items) { item in
+        ForEach(Array(config.items.enumerated()), id: \.offset) { _, item in
             MenuItemMapper(item: item, onAction: onAction)
         }
     }
@@ -136,7 +136,7 @@ struct MenuItemMapper: View {
         case .submenu:
             Menu {
                 if let children = item.items {
-                    ForEach(children) { child in
+                    ForEach(Array(children.enumerated()), id: \.offset) { _, child in
                         MenuItemMapper(item: child, onAction: onAction)
                     }
                 }
@@ -148,7 +148,7 @@ struct MenuItemMapper: View {
             // Inside a menu, SwiftUI lays a `ControlGroup` out as one row of
             // compact icon buttons: the Copy / Paste / Share strip.
             ControlGroup {
-                ForEach(item.items ?? []) { child in
+                ForEach(Array((item.items ?? []).enumerated()), id: \.offset) { _, child in
                     MenuItemMapper(item: child, onAction: onAction)
                 }
             }
@@ -156,7 +156,7 @@ struct MenuItemMapper: View {
         case .section:
             Section(header: Text(item.title ?? "")) {
                 if let children = item.items {
-                    ForEach(children) { child in
+                    ForEach(Array(children.enumerated()), id: \.offset) { _, child in
                         MenuItemMapper(item: child, onAction: onAction)
                     }
                 }

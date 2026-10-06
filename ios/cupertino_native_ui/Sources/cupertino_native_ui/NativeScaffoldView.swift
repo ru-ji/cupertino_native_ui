@@ -502,6 +502,7 @@ class NativeScaffoldView: NativeHostingView {
             if let argsMap = call.arguments as? [String: Any],
                 let config = decodeConfig(ScaffoldConfig.self, from: argsMap)
             {
+                NativeLog.log("updateScaffold")
                 // Bars/tabs update in place; engines are kept as-is.
                 model.config = config
                 // Outside any view update, so pushing field configs here is

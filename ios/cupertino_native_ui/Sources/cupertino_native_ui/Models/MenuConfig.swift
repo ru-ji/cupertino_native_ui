@@ -11,11 +11,13 @@ enum MenuItemType: String, Codable, Hashable {
 }
 
 /// `Hashable` so that anything holding one stays hashable too: a glass group
-/// item carries a menu, and its own Hashable conformance is what drives the
-/// `ForEach` identity and the morph's trigger.
+/// item carries a menu, and the morph's trigger compares items.
+///
+/// Not `Identifiable`: `actionId` only routes a tap back over the channel.
+/// Menus list their entries by position (`ForEach(…enumerated(), id: \.offset)`),
+/// the identity SwiftUI gives views written one after another.
 @available(iOS 15.0, *)
-struct MenuItemConfig: Codable, Identifiable, Hashable {
-    var id: String { actionId ?? UUID().uuidString }
+struct MenuItemConfig: Codable, Hashable {
     let type: MenuItemType
     let title: String?
     let subtitle: String?

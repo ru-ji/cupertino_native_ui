@@ -173,6 +173,11 @@ struct AdaptiveDatePickerView: View {
         )
         .labelsHidden()
         .applyDatePickerStyle(model.style)
+        .background(GeometryReader { proxy in
+            Color.clear
+                .onAppear { NativeLog.log("date picker \(model.style) appear size=\(proxy.size)") }
+                .onChange(of: proxy.size) { NativeLog.log("date picker \(model.style) size=\($0)") }
+        })
         .tint(model.tint)
     }
 }

@@ -400,7 +400,7 @@ private struct SwipeActions: ViewModifier {
     func body(content: Content) -> some View {
         if let actions = row.swipeActions, !actions.isEmpty {
             content.swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                ForEach(actions) { action in
+                ForEach(Array(actions.enumerated()), id: \.offset) { _, action in
                     Button(role: action.isDestructive == true ? .destructive : nil) {
                         onAction(row.id, action.actionId ?? "")
                     } label: {

@@ -172,6 +172,14 @@ class _CupertinoNativePhotosPickerState
     with NativePlatformViewStateMixin {
   bool get _isDark => Theme.of(context).brightness == Brightness.dark;
 
+  /// Never swapped for a photo while its route or sheet animates. Hidden, the
+  /// engine takes the view out of the window, and the system picker (hosted
+  /// out of process) reloads when it comes back: a scroll started while the
+  /// sheet was still settling jumped back to the top. It trails the sheet a
+  /// little as it slides instead.
+  @override
+  bool get hidesDuringRouteTransition => false;
+
   Map<String, Object?> _config() => {...widget.nativeConfig, 'isDark': _isDark};
 
   bool? _lastIsDark;

@@ -408,4 +408,31 @@ void main() {
       );
     }, variant: TargetPlatformVariant.only(TargetPlatform.iOS));
   });
+
+  group('identity', () {
+    // actionId routes a tap over the channel and nothing else: a view keyed
+    // on it is torn down whenever the action flips, which is how a press or
+    // an open menu gets cut short.
+    test('no ForEach is keyed on actionId', () {
+      expect(
+        RegExp(r'ForEach\([^)]*id:\s*\\\.actionId').hasMatch(allSwift),
+        isFalse,
+      );
+    });
+
+    test('the glass groups list their items by position', () {
+      final source = swift.entries
+          .firstWhere((e) => e.key.endsWith('NativeGlassGroupView.swift'))
+          .value;
+      // A ForEach keyed on the item (its glass id) rebuilds the view under
+      // the finger when the id changes, cutting the press short.
+      expect(RegExp(r'ForEach\((c\.)?items\)').hasMatch(source), isFalse);
+    });
+
+    test('no identity is derived from actionId or a fresh UUID', () {
+      final derived = RegExp(r'var id: String \{[^}]*(actionId|UUID\(\))')
+          .allMatches(allSwift);
+      expect(derived.map((m) => m.group(0)), isEmpty);
+    });
+  });
 }

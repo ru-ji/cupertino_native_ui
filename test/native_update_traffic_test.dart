@@ -176,4 +176,30 @@ void main() {
     await tester.pump();
     expect(sent.length, before + 1);
   }, variant: iOS);
+
+  testWidgets('a glass group sends nothing on its first idle rebuild', (
+    tester,
+  ) async {
+    var back = false;
+    final rebuild = await pumpRebuildable(
+      tester,
+      () => CupertinoNativeGlassGroup(
+        items: [
+          CupertinoNativeGlassGroupItem(
+            actionId: back ? 'back' : 'more',
+            title: back ? 'Back' : 'More',
+          ),
+        ],
+      ),
+    );
+    // Created with its config: the first rebuild used to resend it, so every
+    // untouched group beside a tapped one got a setConfig of its own.
+    rebuild();
+    await tester.pump();
+    expect(sent.where((m) => m == 'setConfig'), isEmpty);
+    back = true;
+    rebuild();
+    await tester.pump();
+    expect(sent.where((m) => m == 'setConfig').length, 1);
+  }, variant: iOS);
 }

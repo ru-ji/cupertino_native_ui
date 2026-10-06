@@ -69,6 +69,7 @@ final class NativeBodyModel: ObservableObject {
     @MainActor
     func photosModel(for id: String, config: PhotosPickerConfig) -> PhotosPickerModel {
         if let existing = photosModels[id] as? PhotosPickerModel { return existing }
+        NativeLog.log("photos model created id=\(id)")
         let model = PhotosPickerModel(config: config) { _ in }
         photosModels[id] = model
         return model

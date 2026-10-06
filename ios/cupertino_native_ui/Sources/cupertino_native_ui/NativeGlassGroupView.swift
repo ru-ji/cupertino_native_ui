@@ -71,16 +71,30 @@ class NativeGlassGroupView: NativeHostingView {
         ) { host, container in
             host.setContentHuggingPriority(.required, for: .horizontal)
             host.setContentHuggingPriority(.required, for: .vertical)
-            // Centred and otherwise free. The `<= container` pair that used to
+            // Free apart from its anchor. The `<= container` pair that used to
             // be here squeezed the glasses into whatever width the Flutter box
             // happened to hold, and the box only catches up once a measurement
             // lands, so a group that grows was clamped for the whole animation
             // and a "Select" capsule could settle at a width it never chose.
             // The container paints unclipped (see HostingContainerView), so
             // the glass is free to overrun its box while the box follows.
+            //
+            // Pinned to the side Dart asked for: the box only takes a new
+            // size once a change has played, so glasses centred in it would
+            // jump by half the difference when it does.
+            let x = model.config.alignmentX ?? 0
+            let y = model.config.alignmentY ?? 0
             NSLayoutConstraint.activate([
-                host.centerXAnchor.constraint(equalTo: container.centerXAnchor),
-                host.centerYAnchor.constraint(equalTo: container.centerYAnchor),
+                x < 0
+                    ? host.leadingAnchor.constraint(equalTo: container.leadingAnchor)
+                    : x > 0
+                        ? host.trailingAnchor.constraint(equalTo: container.trailingAnchor)
+                        : host.centerXAnchor.constraint(equalTo: container.centerXAnchor),
+                y < 0
+                    ? host.topAnchor.constraint(equalTo: container.topAnchor)
+                    : y > 0
+                        ? host.bottomAnchor.constraint(equalTo: container.bottomAnchor)
+                        : host.centerYAnchor.constraint(equalTo: container.centerYAnchor),
             ])
         }
     }
@@ -107,7 +121,7 @@ class NativeGlassGroupView: NativeHostingView {
                 // a split, an arrival and a replacement happen too. The whole
                 // config goes over at once, so `items` gaining, losing or
                 // re-identifying an entry is what drives the transitions.
-                withAnimation(.smooth(duration: 0.35)) {
+                withAnimation(Self.animation(config.animation)) {
                     model.config = config
                 } completion: { [weak self] in
                     // The size it settled at. Any measurement taken while the
@@ -127,12 +141,76 @@ class NativeGlassGroupView: NativeHostingView {
     }
 }
 
+@available(iOS 26.0, *)
+extension NativeGlassGroupView {
+    /// The spring Dart asked for. A missing duration is never filled in here:
+    /// the preset is called without one, so SwiftUI keeps its own default.
+    fileprivate static func animation(_ c: GlassAnimationConfig?) -> Animation {
+        let d = c?.duration
+        switch c?.preset {
+        case "snappy": return d.map { .snappy(duration: $0) } ?? .snappy
+        case "bouncy": return d.map { .bouncy(duration: $0) } ?? .bouncy
+        case "spring":
+            let b = c?.bounce ?? 0
+            return d.map { .spring(duration: $0, bounce: b) } ?? .spring(bounce: b)
+        default: return d.map { .smooth(duration: $0) } ?? .smooth
+        }
+    }
+}
+
 @available(iOS 15.0, *)
 final class GlassGroupModel: ObservableObject {
     @Published var config = GlassGroupConfig(
         items: [], spacing: nil, mergeDistance: nil, variant: nil, tint: nil,
         interactive: nil, vertical: nil, cornerRadius: nil, isDark: nil,
-        transition: nil, morphOnChange: nil)
+        transition: nil, morphOnChange: nil, alignmentX: nil, alignmentY: nil,
+        animation: nil)
+    {
+        didSet { viewKeys = keys(for: config.items, after: oldValue.items, previous: viewKeys) }
+    }
+
+    /// One SwiftUI view identity per item, parallel to `config.items`.
+    ///
+    /// Not the glass id, and not the position, but what plain SwiftUI code
+    /// would keep: an item whose glass id carries over keeps its view (a play
+    /// glass inserted ahead of a ••• leaves the ••• where it is), and a glass
+    /// id that is new where an old one vanished takes that view over (a swap:
+    /// the same view, a new glass). Either way the view under a finger lives
+    /// on, and with it the press.
+    private(set) var viewKeys: [Int] = []
+    private var nextKey = 0
+
+    private func newKey() -> Int {
+        nextKey += 1
+        return nextKey
+    }
+
+    private func keys(
+        for items: [GlassGroupItemConfig], after old: [GlassGroupItemConfig], previous: [Int]
+    ) -> [Int] {
+        var oldKeys = previous
+        while oldKeys.count < old.count { oldKeys.append(newKey()) }
+        var byGlass: [String: Int] = [:]
+        for (item, key) in zip(old, oldKeys) where byGlass[item.id] == nil { byGlass[item.id] = key }
+        let newIds = Set(items.map(\.id))
+        var used = Set<Int>()
+        var result = [Int?](repeating: nil, count: items.count)
+        for (i, item) in items.enumerated() {
+            if let key = byGlass[item.id], !used.contains(key) {
+                result[i] = key
+                used.insert(key)
+            }
+        }
+        for i in result.indices where result[i] == nil {
+            if i < old.count, !newIds.contains(old[i].id), !used.contains(oldKeys[i]) {
+                result[i] = oldKeys[i]
+                used.insert(oldKeys[i])
+            } else {
+                result[i] = newKey()
+            }
+        }
+        return result.map { $0! }
+    }
 }
 
 /// iOS 16 is the floor: `AnyShape` is what lets one item be a circle and its
@@ -173,7 +251,20 @@ struct AdaptiveGlassGroupView: View {
 
     var body: some View {
         content
+            // Pinned inside the hosted view too, to the side the view itself
+            // is pinned to: the view takes its new width the moment a change
+            // starts, and glasses centred in it jumped by half the difference
+            // before the morph had even begun.
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: alignment)
             .environment(\.colorScheme, c.isDark == true ? .dark : .light)
+    }
+
+    private var alignment: Alignment {
+        let x = c.alignmentX ?? 0
+        let y = c.alignmentY ?? 0
+        let h: HorizontalAlignment = x < 0 ? .leading : x > 0 ? .trailing : .center
+        let v: VerticalAlignment = y < 0 ? .top : y > 0 ? .bottom : .center
+        return Alignment(horizontal: h, vertical: v)
     }
 
     /// ONE container, whatever the spacing.
@@ -189,20 +280,26 @@ struct AdaptiveGlassGroupView: View {
     /// departure, which is what `glassEffectID` and `glassEffectTransition`
     /// are for. Apple: those two "only affect their content during view
     /// hierarchy transitions or animations".
+    ///
+    /// Without `morphOnChange` the container is bare, as plain SwiftUI
+    /// writes it: no idle `PhaseAnimator` or identity `scaleEffect` around it.
     @ViewBuilder
     private var content: some View {
-        PhaseAnimator(
-            MorphPhase.script,
-            trigger: morphAmount > 0 ? c.items : []
-        ) { phase in
-            GlassEffectContainer(spacing: containerSpacing) {
-                stack { item in
-                    glassed(item, morph: phase.morph * morphAmount)
-                }
+        if morphAmount > 0 {
+            PhaseAnimator(MorphPhase.script, trigger: c.items) { phase in
+                container(morph: phase.morph * morphAmount)
+                    .scaleEffect(x: phase.scaleX, y: phase.scaleY)
+            } animation: { phase in
+                .spring(duration: phase.duration, bounce: 0.35)
             }
-            .scaleEffect(x: phase.scaleX, y: phase.scaleY)
-        } animation: { phase in
-            .spring(duration: phase.duration, bounce: 0.35)
+        } else {
+            container(morph: 0)
+        }
+    }
+
+    private func container(morph: CGFloat) -> some View {
+        GlassEffectContainer(spacing: containerSpacing) {
+            stack { item in glassed(item, morph: morph) }
         }
     }
 
@@ -246,14 +343,25 @@ struct AdaptiveGlassGroupView: View {
     }
 
     /// One row or one column of items, each passed through `decorate`.
+    ///
+    /// Keyed on `GlassGroupModel.viewKeys`, never on the item's id. The id is
+    /// the glass's (`glassEffectID`), not the view's: keyed on it, a new id
+    /// made a new view and destroyed the one under the finger mid-press.
+    /// Keyed on position, a glass inserted ahead shifted every view after it,
+    /// with the same result for the glass being pressed.
     @ViewBuilder
     private func stack<V: View>(
         @ViewBuilder decorate: @escaping (GlassGroupItemConfig) -> V
     ) -> some View {
+        let items = Array(zip(model.viewKeys, c.items))
         if c.vertical == true {
-            VStack(spacing: layoutSpacing) { ForEach(c.items) { decorate($0) } }
+            VStack(spacing: layoutSpacing) {
+                ForEach(items, id: \.0) { decorate($0.1) }
+            }
         } else {
-            HStack(spacing: layoutSpacing) { ForEach(c.items) { decorate($0) } }
+            HStack(spacing: layoutSpacing) {
+                ForEach(items, id: \.0) { decorate($0.1) }
+            }
         }
     }
 
@@ -322,7 +430,7 @@ struct AdaptiveGlassGroupView: View {
             // shape transforms, which is what it does for a toolbar menu and
             // what a tap gesture presenting something separately cannot give.
             Menu {
-                ForEach(menuItems) { entry in
+                ForEach(Array(menuItems.enumerated()), id: \.offset) { _, entry in
                     MenuItemMapper(item: entry) { actionId, _ in onAction(actionId) }
                 }
             } label: {
@@ -355,9 +463,13 @@ struct AdaptiveGlassGroupView: View {
     /// alone unless it names a partner, and "alone" is still an explicit id,
     /// never a missing modifier, so moving an item in or out of a union is a
     /// change of value rather than a change of view.
-    private func unionId(for item: GlassGroupItemConfig) -> String {
+    ///
+    /// "Alone" is `nil`, Apple's own value for no union (the id is optional),
+    /// not the item's own id: a glass united under an id of its own is not
+    /// what plain SwiftUI draws.
+    private func unionId(for item: GlassGroupItemConfig) -> String? {
         if sharesOneGlass { return Self.sharedGlassUnionId }
-        return item.unionId ?? item.actionId
+        return item.unionId
     }
 
     private static let sharedGlassUnionId = "group"
@@ -481,9 +593,23 @@ final class NativeLegacyGlassGroupView: NativeHostingView {
         ) { host, container in
             host.setContentHuggingPriority(.required, for: .horizontal)
             host.setContentHuggingPriority(.required, for: .vertical)
+            //
+            // Pinned to the side Dart asked for: the box only takes a new
+            // size once a change has played, so glasses centred in it would
+            // jump by half the difference when it does.
+            let x = model.config.alignmentX ?? 0
+            let y = model.config.alignmentY ?? 0
             NSLayoutConstraint.activate([
-                host.centerXAnchor.constraint(equalTo: container.centerXAnchor),
-                host.centerYAnchor.constraint(equalTo: container.centerYAnchor),
+                x < 0
+                    ? host.leadingAnchor.constraint(equalTo: container.leadingAnchor)
+                    : x > 0
+                        ? host.trailingAnchor.constraint(equalTo: container.trailingAnchor)
+                        : host.centerXAnchor.constraint(equalTo: container.centerXAnchor),
+                y < 0
+                    ? host.topAnchor.constraint(equalTo: container.topAnchor)
+                    : y > 0
+                        ? host.bottomAnchor.constraint(equalTo: container.bottomAnchor)
+                        : host.centerYAnchor.constraint(equalTo: container.centerYAnchor),
             ])
         }
     }
@@ -521,12 +647,16 @@ private struct LegacyGlassGroupView: View {
     private var c: GlassGroupConfig { model.config }
 
     var body: some View {
-        let items = c.items.filter { $0.glassVisible != false || $0.icon != nil || $0.title != nil }
+        // By position, as the glass group: an id that changes with the
+        // action would rebuild the button under the finger.
+        let items = Array(
+            c.items.filter { $0.glassVisible != false || $0.icon != nil || $0.title != nil }
+                .enumerated())
         Group {
             if c.vertical == true {
-                VStack(spacing: 0) { ForEach(items) { button($0) } }
+                VStack(spacing: 0) { ForEach(items, id: \.offset) { button($0.element) } }
             } else {
-                HStack(spacing: 0) { ForEach(items) { button($0) } }
+                HStack(spacing: 0) { ForEach(items, id: \.offset) { button($0.element) } }
             }
         }
         .foregroundColor(c.tint.map { Color(argb: $0) })
@@ -546,7 +676,7 @@ private struct LegacyGlassGroupView: View {
     private func button(_ item: GlassGroupItemConfig) -> some View {
         if let menuItems = item.menuItems, !menuItems.isEmpty {
             Menu {
-                ForEach(menuItems) { entry in
+                ForEach(Array(menuItems.enumerated()), id: \.offset) { _, entry in
                     MenuItemMapper(item: entry) { actionId, _ in onAction(actionId) }
                 }
             } label: {

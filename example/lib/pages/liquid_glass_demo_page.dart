@@ -297,14 +297,12 @@ enum _Change {
         'underneath the glass landing in it.',
   ),
 
-  /// A different glass in the same place: matched geometry holds the
-  /// material still while the content turns over.
+  /// A different glass in the same place.
   swap(
     'Swap',
     '1 → 1',
-    'A new actionId is a different glass, so one leaves and another arrives '
-        'in its place. Both are the same circle, so the matched geometry '
-        'holds the material still while the content turns over.',
+    'A new id is a different glass, so one leaves and another arrives '
+        'in its place, and matched geometry turns the content over.',
   ),
 
   /// Two glasses replaced by two differently sized ones: the Photos
@@ -312,9 +310,9 @@ enum _Change {
   reshape(
     'Reshape',
     '1 ⇄ 2',
-    'Both glasses are replaced at once, so matched geometry has an old shape '
-        'and a new one for each and morphs between them. The 6pt gap is under '
-        'the blend radius, which lets them run together on the way past.',
+    'Both glasses are replaced at once, so matched geometry morphs each old '
+        'shape into its new one. The 6pt gap is under the blend radius, which '
+        'lets them run together on the way past.',
   );
 
   const _Change(this.label, this.arrow, this.blurb);
@@ -396,6 +394,7 @@ class _TransitionsCardState extends State<_TransitionsCard> {
       onAction: (_) => _play(),
       items: [
         CupertinoNativeGlassGroupItem(
+          slotId: _isBack ? 'leading.back' : 'leading.more',
           actionId: _isBack ? 'leading.back' : 'leading.more',
           icon: CupertinoNativeIcon.named(
             _isBack ? 'chevron.backward' : 'ellipsis',
@@ -413,6 +412,7 @@ class _TransitionsCardState extends State<_TransitionsCard> {
       items: _selecting
           ? [
               const CupertinoNativeGlassGroupItem(
+                slotId: 'menu.wide',
                 actionId: 'menu.wide',
                 shape: CupertinoGlassGroupShape.capsule,
                 icon: CupertinoNativeIcon.named('line.3.horizontal'),
@@ -420,6 +420,7 @@ class _TransitionsCardState extends State<_TransitionsCard> {
                 menuItems: _menu,
               ),
               const CupertinoNativeGlassGroupItem(
+                slotId: 'close',
                 actionId: 'close',
                 shape: CupertinoGlassGroupShape.capsule,
                 icon: CupertinoNativeIcon.named('xmark'),
@@ -428,6 +429,7 @@ class _TransitionsCardState extends State<_TransitionsCard> {
             ]
           : [
               const CupertinoNativeGlassGroupItem(
+                slotId: 'menu',
                 actionId: 'menu',
                 shape: CupertinoGlassGroupShape.capsule,
                 icon: CupertinoNativeIcon.named('line.3.horizontal'),
@@ -435,6 +437,7 @@ class _TransitionsCardState extends State<_TransitionsCard> {
                 menuItems: _menu,
               ),
               const CupertinoNativeGlassGroupItem(
+                slotId: 'select',
                 actionId: 'select',
                 shape: CupertinoGlassGroupShape.capsule,
                 title: 'Select',

@@ -86,7 +86,7 @@ struct NavigationBarToolbar: ToolbarContent {
         let ownBackground = entry.hidesSharedBackground
         if items.count > 1 {
             HStack {
-                ForEach(items, id: \.actionId) { item in
+                ForEach(Array(items.enumerated()), id: \.offset) { _, item in
                     barButton(item, ownBackground: ownBackground)
                 }
             }
@@ -161,7 +161,9 @@ struct LegacyNavigationBarToolbar: ToolbarContent {
     @ViewBuilder
     private func buttons(_ entries: [ToolbarContentConfig]?) -> some View {
         let items = (entries ?? []).filter { !$0.isSpacer }.flatMap { $0.groupItems }
-        ForEach(items, id: \.actionId) { LegacyToolbarButton(item: $0, onAction: onAction) }
+        ForEach(Array(items.enumerated()), id: \.offset) {
+            LegacyToolbarButton(item: $0.element, onAction: onAction)
+        }
     }
 }
 
@@ -292,7 +294,7 @@ extension View {
             if #available(iOS 27.0, *) {
                 self
                     .toolbarOverflowMenu {
-                        ForEach(config.overflow ?? [], id: \.actionId) { item in
+                        ForEach(Array((config.overflow ?? []).enumerated()), id: \.offset) { _, item in
                             ToolbarButton(item: item, onAction: onAction)
                         }
                     }

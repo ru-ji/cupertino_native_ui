@@ -403,7 +403,10 @@ CupertinoNativeBody lowerGlassContainer(
   }
 
   return CupertinoNativeBody.glass(
-    id: onPressed != null ? id : null,
+    // Always: the id is also the node's SwiftUI identity, so dropping it with
+    // onPressed made a new view (and cut a press) whenever onPressed toggled.
+    // Whether a tap reports is `pressable`'s call.
+    id: id,
     children: children,
     shape: widget.shape,
     cornerRadius: widget.cornerRadius,

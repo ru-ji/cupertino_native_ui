@@ -68,6 +68,7 @@ final class NativeSheetManager: NSObject, UIAdaptivePresentationControllerDelega
         if let model = bodyModel,
             let body = decodeConfig(BodyNodeConfig.self, from: args)
         {
+            NativeLog.log("sheet updateBody root=\(body.type)")
             model.root = body
             model.seed(body)
             model.applyConfigs(body)
@@ -203,7 +204,7 @@ final class NativeSheetManager: NSObject, UIAdaptivePresentationControllerDelega
             self.engine = engine
             self.controller = presented
             self.showResult = result
-            presenter.present(presented, animated: true)
+            presenter.present(presented, animated: true) { NativeLog.log("sheet present finished") }
             return
         }
 
@@ -242,7 +243,7 @@ final class NativeSheetManager: NSObject, UIAdaptivePresentationControllerDelega
         self.engine = engine
         self.controller = presented
         self.showResult = result
-        presenter.present(presented, animated: true)
+        presenter.present(presented, animated: true) { NativeLog.log("sheet present finished") }
     }
 
     /// Programmatic dismissal (Dart `dismiss()` / body `pop()`).

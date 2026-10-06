@@ -165,13 +165,19 @@ class NativeListView: NativeHostingView {
         }
     }
 
+    /// Every toggle's value, nested rows included: a toggle inside an
+    /// expandable row reports through `onToggle` like any other, so leaving
+    /// it out made every flip of it read as a mismatch, and the mismatch path
+    /// rebuilds the whole list (open rows closed, the list blinked).
     private static func toggleValues(in config: ListConfig) -> [String: Bool] {
         var values: [String: Bool] = [:]
-        for section in config.sections {
-            for row in section.rows where row.type == "toggle" {
-                values[row.id] = row.toggleValue ?? false
+        func collect(_ rows: [ListRowConfig]) {
+            for row in rows {
+                if row.type == "toggle" { values[row.id] = row.toggleValue ?? false }
+                if let children = row.children { collect(children) }
             }
         }
+        for section in config.sections { collect(section.rows) }
         return values
     }
 
@@ -277,7 +283,9 @@ class NativeListView: NativeHostingView {
                 let config = decodeConfig(ListConfig.self, from: argsMap)
             {
                 let isDark = (argsMap["isDark"] as? NSNumber)?.boolValue
-                if Self.toggleValues(in: config) == shownToggles {
+                let toggles = Self.toggleValues(in: config)
+                NativeLog.log("updateList rebuild=\(toggles != shownToggles)")
+                if toggles == shownToggles {
                     update(AnyView(makeContent(config)))
                     if let isDark = isDark { self.isDark = isDark }
                     reportWheels()

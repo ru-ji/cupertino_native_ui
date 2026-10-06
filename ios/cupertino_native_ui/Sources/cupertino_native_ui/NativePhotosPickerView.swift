@@ -94,6 +94,15 @@ class NativePhotosPickerView: NativeHostingView {
         }
         self.model = model
         attach(AnyView(InlinePhotosPickerView(model: model)))
+        // Stay parented while the engine takes this platform view out of the
+        // window on a frame it is not composited (a route or sheet opening
+        // shows a photo of it instead). The picker is the system's own,
+        // hosted out of process: unparented and parented again, it reloaded
+        // and lost its scroll position, as a list loses its focused field.
+        _view.keepsParentWhileDetached = true
+        _view.onWindowChanged = { window in
+            NativeLog.log("photos picker window → \(window == nil ? "nil" : "attached")")
+        }
     }
 
     private func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
@@ -106,6 +115,8 @@ class NativePhotosPickerView: NativeHostingView {
                 let config = decodeConfig(PhotosPickerConfig.self, from: argsMap),
                 let model = model as? PhotosPickerModel
             {
+                let same = MainActor.assumeIsolated { model.config == config }
+                NativeLog.log("photos update sameConfig=\(same)")
                 isDark = config.isDark
                 // Method calls arrive on the main thread.
                 MainActor.assumeIsolated { model.config = config }
@@ -375,6 +386,13 @@ struct InlinePhotosPickerView: View {
             .hidden, edges: config.showsAlbums == true ? .bottom : .all)
         .photosPickerDisabledCapabilities([.selectionActions])
         .ignoresSafeArea()
+        .background(GeometryReader { proxy in
+            Color.clear.onChange(of: proxy.size) {
+                NativeLog.log("photos picker size \($0) safe=\(proxy.safeAreaInsets)")
+            }
+        })
+        .onAppear { NativeLog.log("photos picker appear model=\(ObjectIdentifier(model))") }
+        .onDisappear { NativeLog.log("photos picker disappear model=\(ObjectIdentifier(model))") }
     }
 
     private var filter: PHPickerFilter? {

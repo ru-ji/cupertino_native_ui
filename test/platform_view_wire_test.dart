@@ -681,8 +681,39 @@ void main() {
     expect(items.length, 2);
     expect((items[0] as Map)['actionId'], 'back');
     expect((items[1] as Map)['shape'], 'capsule');
-    // The id is also the morph identity on the SwiftUI side.
     expect((items[1] as Map)['actionId'], 'edit');
+  }, variant: iOS);
+
+  testWidgets('glass group identity: position unless a slotId is given', (
+    tester,
+  ) async {
+    final params = await paramsOf(
+      tester,
+      CupertinoNativeGlassGroup(
+        animation: const CupertinoGlassAnimation.bouncy(),
+        items: const [
+          CupertinoNativeGlassGroupItem(actionId: 'a', title: 'A'),
+          CupertinoNativeGlassGroupItem(
+            actionId: 'b',
+            title: 'B',
+            slotId: 'more',
+          ),
+        ],
+      ),
+    );
+
+    final items = (params['items'] as List).cast<Map>();
+    // Swift keys the glass on slotId ?? position, never on actionId.
+    expect(items[0]['position'], 0);
+    expect(items[0]['slotId'], isNull);
+    expect(items[1]['position'], 1);
+    expect(items[1]['slotId'], 'more');
+    // No duration given: Swift calls the preset bare, Apple picks it.
+    expect(params['animation'], {
+      'preset': 'bouncy',
+      'duration': null,
+      'bounce': 0.3,
+    });
   }, variant: iOS);
 
   testWidgets('glass group sends the transition and union fields', (
