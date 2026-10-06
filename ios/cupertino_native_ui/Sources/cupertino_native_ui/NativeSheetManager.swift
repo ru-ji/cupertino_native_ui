@@ -68,7 +68,6 @@ final class NativeSheetManager: NSObject, UIAdaptivePresentationControllerDelega
         if let model = bodyModel,
             let body = decodeConfig(BodyNodeConfig.self, from: args)
         {
-            NativeLog.log("sheet updateBody root=\(body.type)")
             model.root = body
             model.seed(body)
             model.applyConfigs(body)
@@ -204,9 +203,7 @@ final class NativeSheetManager: NSObject, UIAdaptivePresentationControllerDelega
             self.engine = engine
             self.controller = presented
             self.showResult = result
-            presenter.present(presented, animated: true) {
-            NativeLog.log("[size] sheet present finished, view \(presented.view.bounds.size) detent=\(String(describing: presented.sheetPresentationController?.selectedDetentIdentifier?.rawValue))")
-        }
+            presenter.present(presented, animated: true)
             return
         }
 
@@ -245,9 +242,7 @@ final class NativeSheetManager: NSObject, UIAdaptivePresentationControllerDelega
         self.engine = engine
         self.controller = presented
         self.showResult = result
-        presenter.present(presented, animated: true) {
-            NativeLog.log("[size] sheet present finished, view \(presented.view.bounds.size) detent=\(String(describing: presented.sheetPresentationController?.selectedDetentIdentifier?.rawValue))")
-        }
+        presenter.present(presented, animated: true)
     }
 
     /// Programmatic dismissal (Dart `dismiss()` / body `pop()`).
@@ -399,14 +394,5 @@ extension View {
         } else {
             self
         }
-    }
-}
-
-@available(iOS 15.0, *)
-extension NativeSheetManager: UISheetPresentationControllerDelegate {
-    func sheetPresentationControllerDidChangeSelectedDetentIdentifier(
-        _ sheet: UISheetPresentationController
-    ) {
-        NativeLog.log("[size] sheet detent → \(String(describing: sheet.selectedDetentIdentifier?.rawValue)) view \(sheet.presentedViewController.view.bounds.size)")
     }
 }

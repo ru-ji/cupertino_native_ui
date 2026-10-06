@@ -67,10 +67,6 @@ struct ListConfig: Codable {
     let isDark: Bool?
     let cornerRadius: Double?  // inset-grouped card radius; nil = default (26 on iOS 26+, else 10)
     let tint: Int?        // ARGB accent color
-    /// The box Flutter lays the view out in, sent at creation only (see
-    /// `NativeHostingView.layOutAtCreation`).
-    let width: Double?
-    let height: Double?
     let sections: [ListSectionConfig]
     /// Edit mode: the system selection circles at each row's leading edge.
     let editing: Bool?

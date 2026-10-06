@@ -323,9 +323,6 @@ class _NativeCollectionViewState extends State<NativeCollectionView>
         // (rows render, fonts load), so the fixed platform-view box grows to
         // fit instead of clipping.
         final h = (call.arguments['height'] as num?)?.toDouble();
-        debugPrint(
-          '[size] list dart got onContentSize $h (box was $intrinsicHeight)',
-        );
         if (h != null && h > 0 && mounted) {
           setState(() {
             intrinsicHeight = h;
@@ -377,38 +374,27 @@ class _NativeCollectionViewState extends State<NativeCollectionView>
     }
 
     final platformView = wrapForTransition(
-      LayoutBuilder(
-        builder: (context, constraints) => UiKitView(
-          viewType: 'com.example.cupertino_native_ui/cupertino_native_list',
-          layoutDirection: TextDirection.ltr,
-          // Memoized: every later change goes over `updateList`, not through a
-          // map rebuilt on every build. The box Flutter gives the view rides
-          // along (read once, at creation), so the native side lays out at it
-          // from its first pass.
-          creationParams: {
-            ...(_creationParams ??= _toMap()),
-            'width': constraints.maxWidth,
-            'height': constraints.maxHeight,
-          },
-          creationParamsCodec: const StandardMessageCodec(),
-          onPlatformViewCreated: _onPlatformViewCreated,
-          // With no recognizer of its own, the view only got a touch once
-          // nothing else in Flutter wanted it: at the finger's lift, at best.
-          // A tap still worked; a press-and-hold that turns into a drag (moving
-          // a field's cursor, the magnifier, a selection) never reached the
-          // native field. A hold or a sideways drag is the row's now; a
-          // vertical drag still scrolls the page.
-          gestureRecognizers: _gestures,
-        ),
+      UiKitView(
+        viewType: 'com.example.cupertino_native_ui/cupertino_native_list',
+        layoutDirection: TextDirection.ltr,
+        // Memoized: every later change goes over `updateList`, not through a
+        // map rebuilt on every build.
+        creationParams: _creationParams ??= _toMap(),
+        creationParamsCodec: const StandardMessageCodec(),
+        onPlatformViewCreated: _onPlatformViewCreated,
+        // With no recognizer of its own, the view only got a touch once
+        // nothing else in Flutter wanted it: at the finger's lift, at best.
+        // A tap still worked; a press-and-hold that turns into a drag (moving
+        // a field's cursor, the magnifier, a selection) never reached the
+        // native field. A hold or a sideways drag is the row's now; a
+        // vertical drag still scrolls the page.
+        gestureRecognizers: _gestures,
       ),
     );
 
     // Width fills the parent; height is fixed (given) or the measured content
     // height, with a generous placeholder until the native measurement arrives.
     final h = widget.height ?? intrinsicHeight ?? 400.0;
-    debugPrint(
-      '[size] list dart build box height $h (measured: $intrinsicHeight)',
-    );
     // Only an expandable row opening or closing animates the height, with
     // the same duration and curve as the native row animation, so what is
     // under the list moves with the rows. Every other change (the first

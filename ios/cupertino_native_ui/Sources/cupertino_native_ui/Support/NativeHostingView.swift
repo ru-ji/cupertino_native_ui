@@ -175,7 +175,6 @@ class NativeHostingView: NSObject, FlutterPlatformView {
         guard sizeChannel != nil, measuresIntrinsicSize, !measurementScheduled else { return }
         let boundsSize = _view.bounds.size
         guard needsMeasure || boundsSize != lastMeasuredBoundsSize else { return }
-        NativeLog.log("[size] view \(_view.viewId) container laid out at \(boundsSize) (was \(String(describing: lastMeasuredBoundsSize)))")
         needsMeasure = false
         lastMeasuredBoundsSize = boundsSize
         measurementScheduled = true
@@ -201,23 +200,7 @@ class NativeHostingView: NSObject, FlutterPlatformView {
         let size = CGSize(width: width, height: height)
         guard size != publishedSize else { return }
         publishedSize = size
-        NativeLog.log("[size] view \(_view.viewId) pushes intrinsicSize \(size)")
         sizeChannel.invokeMethod("intrinsicSize", arguments: measured)
-    }
-
-    /// Lays the hosted content out in the box Flutter will give it, before
-    /// the engine has framed the view, so the first layout is not at a
-    /// size that is about to change.
-    func layOutAtCreation(width: Double?, height: Double?) {
-        guard let width, let height, width > 0, height > 0, width.isFinite, height.isFinite
-        else {
-            NativeLog.log("[size] view \(_view.viewId) creation box unusable w=\(String(describing: width)) h=\(String(describing: height))")
-            return
-        }
-        NativeLog.log("[size] view \(_view.viewId) creation box \(width)x\(height)")
-        _view.frame = CGRect(x: 0, y: 0, width: width, height: height)
-        _view.layoutIfNeeded()
-        hostingController?.view.layoutIfNeeded()
     }
 
     /// Replaces the currently hosted SwiftUI view's root without re-attaching.
