@@ -116,7 +116,6 @@ class NativeListView: NativeHostingView {
         let argsMap = args as? [String: Any]
         if let argsMap = argsMap, let config = decodeConfig(ListConfig.self, from: argsMap) {
             setupSwiftUI(with: config, isDark: (argsMap["isDark"] as? NSNumber)?.boolValue)
-            layOutAtCreation(width: config.width, height: config.height)
         }
     }
 
@@ -219,7 +218,6 @@ class NativeListView: NativeHostingView {
                     // same height several times per layout); each repeat cost a
                     // Flutter rebuild and a walk of the whole view tree.
                     guard self?.systemListHeight != h else { return }
-                    NativeLog.log("[size] list probe → Dart onContentSize \(h) (was \(String(describing: self?.systemListHeight)))")
                     self?.systemListHeight = h
                     self?.channel?.invokeMethod(
                         "onContentSize", arguments: ["height": Double(h), "animated": animated])
@@ -230,12 +228,6 @@ class NativeListView: NativeHostingView {
     /// The wheels last reported to Dart, in this view's coordinates.
     private var reportedWheels: [CGRect] = []
 
-    /// Tells Dart where the rows' wheels are. Flutter decides who gets a
-    /// touch before UIKit sees it, and in a scrolling page a vertical drag
-    /// goes to the page, unless it lands on a wheel, which it spins.
-    ///
-    /// Sent whenever the rows move: a new height or a new config. On the next
-    /// turn, once the collection view has laid its cells out.
     /// Inline calendars already settled, so each is nudged once.
     private var settledCalendars = Set<ObjectIdentifier>()
 
@@ -250,12 +242,10 @@ class NativeListView: NativeHostingView {
                 let id = ObjectIdentifier(picker)
                 guard picker.window != nil, !settledCalendars.contains(id) else { return }
                 settledCalendars.insert(id)
-                let before = picker.intrinsicContentSize
                 picker.setDate(picker.date, animated: false)
                 picker.invalidateIntrinsicContentSize()
                 picker.setNeedsLayout()
                 picker.layoutIfNeeded()
-                NativeLog.log("[size] calendar settled \(before) → \(picker.intrinsicContentSize)")
                 return
             }
             view.subviews.forEach(find)
@@ -263,6 +253,12 @@ class NativeListView: NativeHostingView {
         find(_view)
     }
 
+    /// Tells Dart where the rows' wheels are. Flutter decides who gets a
+    /// touch before UIKit sees it, and in a scrolling page a vertical drag
+    /// goes to the page, unless it lands on a wheel, which it spins.
+    ///
+    /// Sent whenever the rows move: a new height or a new config. On the next
+    /// turn, once the collection view has laid its cells out.
     private func reportWheels() {
         DispatchQueue.main.async { [weak self] in
             guard let self else { return }
@@ -313,9 +309,8 @@ class NativeListView: NativeHostingView {
                 let config = decodeConfig(ListConfig.self, from: argsMap)
             {
                 let isDark = (argsMap["isDark"] as? NSNumber)?.boolValue
-                let toggles = Self.toggleValues(in: config)
-                NativeLog.log("updateList rebuild=\(toggles != shownToggles)")
-                if toggles == shownToggles {
+                rowStore.apply(config)
+                if Self.toggleValues(in: config) == shownToggles {
                     update(AnyView(makeContent(config)))
                     if let isDark = isDark { self.isDark = isDark }
                     reportWheels()

@@ -16,6 +16,11 @@ final class NativeBodyModel: ObservableObject {
     @Published var pickers: [String: Int] = [:]
     @Published var segmenteds: [String: Int] = [:]
 
+    /// The date each date picker was last sent from Dart. The picker takes
+    /// an *initial* date: a push only moves it when Dart changed that date,
+    /// or every rebuild elsewhere would drag a picked day back.
+    private var dartDates: [String: Double] = [:]
+
     /// One `DatePickerModel` per date-picker node, so the picker behaves
     /// exactly as it does standalone (same state, same callbacks).
     private var dateModels: [String: DatePickerModel] = [:]
@@ -32,6 +37,7 @@ final class NativeBodyModel: ObservableObject {
             maximumDate: config.maximumDate.map { Date(timeIntervalSince1970: $0 / 1000) },
             tint: config.tint.map { Color(argb: $0) })
         model.style = config.style ?? "compact"
+        dartDates[id] = config.value
         dateModels[id] = model
         return model
     }
@@ -109,6 +115,46 @@ final class NativeBodyModel: ObservableObject {
         return model
     }
 
+    /// Where a field's keyboard bar reports, as `"<fieldId>.toolbar.<itemId>"`.
+    /// Set by the field's node, which knows where this tree's events go.
+    var onToolbarEvent: ((String, Any?) -> Void)?
+
+    /// Each field's keyboard bar, with the items it was built from. Built
+    /// here, outside any view update: built in a `body` it was rebuilt and
+    /// freed every frame, see `KeyboardAccessoryBar.cache`.
+    private var bars: [String: (items: Data, bar: KeyboardAccessoryBar)] = [:]
+
+    /// Stable: sorted keys, so the same items always encode the same.
+    private static let barEncoder: JSONEncoder = {
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = .sortedKeys
+        return encoder
+    }()
+
+    /// Gives a field the bar its config asks for, as the standalone field
+    /// does: rebuilt when the items changed, else only re-themed, and
+    /// removed when there are none.
+    private func syncKeyboardBar(id: String, node: BodyNodeConfig, config: TextFieldConfig) {
+        let field = fieldModel(for: id, config: config)
+        let items = config.keyboardToolbar ?? []
+        guard !items.isEmpty else {
+            bars[id] = nil
+            if field.accessory != nil { field.accessory = nil }
+            return
+        }
+        let isDark = node.isDark == true
+        let encoded = (try? Self.barEncoder.encode(items)) ?? Data()
+        if let current = bars[id], current.items == encoded {
+            current.bar.applyBrightness(isDark)
+            return
+        }
+        let bar = KeyboardAccessoryBar(nodes: items, isDark: isDark) { [weak self] itemId, value in
+            self?.onToolbarEvent?("\(id).toolbar.\(itemId)", value)
+        }
+        bars[id] = (encoded, bar)
+        field.accessory = bar.inputView
+    }
+
     /// Puts the responder back on a field this model already owns.
     ///
     /// Needed because a transcribed field is a real `UITextField` living inside
@@ -130,16 +176,58 @@ final class NativeBodyModel: ObservableObject {
         if let id = node.id, let config = node.textField, let model = fieldModels[id] {
             model.config = config
         }
+        if let id = node.id, let config = node.textField {
+            syncKeyboardBar(id: id, node: node, config: config)
+        }
         // Controlled from Dart, like their standalone views: a pushed tree
         // carries the value Dart holds.
         if let id = node.id, let config = node.control, let model = controlModels[id] {
             model.apply(config)
         }
+        if #available(iOS 17.0, *), let id = node.id, let config = node.photosPicker,
+            let model = photosModels[id] as? PhotosPickerModel
+        {
+            // Method calls arrive on the main thread.
+            MainActor.assumeIsolated { if model.config != config { model.config = config } }
+        }
         if let id = node.id, let config = node.slider, let model = sliderModels[id] {
             Self.apply(config, to: model)
         }
         if let id = node.id, let config = node.datePicker, let model = dateModels[id] {
-            model.style = config.style ?? "compact"
+            // As the standalone picker applies `updateDatePicker`, without
+            // echoing it back.
+            model.suppressCallback = true
+            if let value = config.value, dartDates[id] != value {
+                dartDates[id] = value
+                model.date = Date(timeIntervalSince1970: value / 1000)
+            }
+            // Each only on change: every assignment to a `@Published` redraws
+            // the picker, and most pushes are about some other node.
+            let mode = config.mode ?? "date"
+            let style = config.style ?? "compact"
+            let minimumDate = config.minimumDate.map { Date(timeIntervalSince1970: $0 / 1000) }
+            let maximumDate = config.maximumDate.map { Date(timeIntervalSince1970: $0 / 1000) }
+            let tint = config.tint.map { Color(argb: $0) }
+            if model.mode != mode { model.mode = mode }
+            if model.style != style { model.style = style }
+            if model.minimumDate != minimumDate { model.minimumDate = minimumDate }
+            if model.maximumDate != maximumDate { model.maximumDate = maximumDate }
+            if model.tint != tint { model.tint = tint }
+            model.suppressCallback = false
+        }
+        // Controlled, like their standalone views: the value Dart holds wins,
+        // so a change the app refuses is put back. Only on change, since each
+        // write redraws.
+        if let id = node.id {
+            if let toggle = node.toggle, toggles[id] != toggle.value {
+                toggles[id] = toggle.value
+            }
+            if let checkbox = node.checkbox, checks[id] != checkbox.value {
+                checks[id] = checkbox.value
+            }
+            if let segmented = node.segmented, segmenteds[id] != segmented.selectedIndex {
+                segmenteds[id] = segmented.selectedIndex
+            }
         }
         for child in node.children ?? [] { applyConfigs(child) }
     }
@@ -163,6 +251,9 @@ final class NativeBodyModel: ObservableObject {
             }
             if let segmented = node.segmented, segmenteds[id] == nil {
                 segmenteds[id] = segmented.selectedIndex
+            }
+            if let config = node.textField, bars[id] == nil {
+                syncKeyboardBar(id: id, node: node, config: config)
             }
         }
         for child in node.children ?? [] { seed(child) }
@@ -323,6 +414,7 @@ struct NativeBodyNode: View {
     private var textFieldView: some View {
         if let config = node.textField, let id = node.id {
             let fieldModel = model.fieldModel(for: id, config: config)
+            let _ = model.onToolbarEvent = onEvent
             AdaptiveTextFieldView(
                 model: fieldModel,
                 onChanged: { onEvent(id, $0) },

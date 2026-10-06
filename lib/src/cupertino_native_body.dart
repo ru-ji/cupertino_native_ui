@@ -269,7 +269,7 @@ class CupertinoNativeBody {
     double? cornerRadius,
     CupertinoNativeIcon? prefix,
     CupertinoNativeIcon? suffix,
-    List<Map<String, dynamic>> keyboardToolbar = const [],
+    List<CupertinoNativeBody> keyboardToolbar = const [],
   }) : this._(
          type: 'textField',
          id: id,
@@ -714,6 +714,7 @@ class CupertinoNativeBody {
       return value.toMap(isDark: isDark);
     }
     if (value is CupertinoNativePickerItem) return value.toMap(0);
+    if (value is CupertinoNativeBody) return value.toMap(isDark: isDark);
     if (value is Enum) return value.name;
     if (value is List) {
       return [

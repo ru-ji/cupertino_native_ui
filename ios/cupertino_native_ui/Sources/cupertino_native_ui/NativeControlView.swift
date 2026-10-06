@@ -119,6 +119,7 @@ final class ControlModel: ObservableObject {
         // Only when it differs: re-assigning the same text still moves the caret.
         if let text = config.text, text != self.text { self.text = text }
         prefixModel.seedAll(config.prefix ?? [])
+        for node in config.prefix ?? [] { prefixModel.applyConfigs(node) }
     }
 
     static func day(_ date: Date) -> DateComponents {

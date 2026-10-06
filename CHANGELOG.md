@@ -1,3 +1,48 @@
+## Unreleased
+
+### Breaking
+
+* A glass in `CupertinoNativeGlassGroup` is identified by its new
+  `slotId`, or by its position when it has none, instead of its `actionId`.
+  `actionId` is now only what a tap reports: to swap one glass for another,
+  give it a new `slotId`.
+* `CupertinoNativeBody.textField(keyboardToolbar:)` takes
+  `List<CupertinoNativeBody>` instead of encoded maps.
+
+### Added
+
+* `CupertinoNativeGlassGroup.animation` (`CupertinoGlassAnimation.smooth`,
+  `.snappy`, `.bouncy`, `.spring`) and `.alignment`.
+* A text field in a `nativeBody` (page scaffold or sheet) shows its
+  keyboard bar. Its items report through `onBodyEvent` as
+  `<fieldId>.toolbar.<itemId>`.
+
+### Fixed
+
+* A glass keeps one SwiftUI view across changes, so a press carries into
+  its transition.
+* Menus, toolbar items and swipe actions are listed by position, not by
+  `actionId`.
+* A list no longer rebuilds when a toggle nested in an expandable row flips.
+* The inline photos picker no longer reloads, losing its scroll position,
+  when a sheet or route opens over it.
+* An inline calendar in a list fits its month from the start instead of
+  shrinking at the first tap.
+* Controls in a list row's `trailing` take the values Dart pushes (a date,
+  a switch, a field's config) instead of keeping their first ones.
+* In a `nativeBody`, a switch, checkbox and segmented control show the value
+  Dart pushes, so a change the app refuses is put back. A date picker takes
+  a new date, range, mode and tint, and keeps the day the user picked when
+  Dart did not change it.
+* The prefix controls of a text editor take the values Dart pushes.
+* The keyboard bar of a field in a list row follows changes to its items and
+  the app's light or dark mode.
+* A segmented control with no `groupValue` shows no segment selected inside
+  a list row or keyboard bar.
+* A stepper, color picker, gauge, multi-date picker or text editor no longer
+  drops a change made while its native view was being created.
+* A photos picker in a `nativeBody` takes a changed configuration.
+
 ## 0.1.0
 
 * Initial release.

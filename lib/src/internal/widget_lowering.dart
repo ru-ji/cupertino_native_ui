@@ -212,7 +212,9 @@ CupertinoNativeBody? lowerWidgetNode(
 
     case CupertinoNativeTextField():
       // The bar travels with the field: the native side owns it and puts it
-      // on the transcribed field's own UITextField.
+      // on the transcribed field's own UITextField. Its nodes stay unencoded,
+      // so they resolve their colours with the brightness the field is sent
+      // with, not a guess made here.
       final toolbar = widget.toolbarActions.isEmpty
           ? null
           : LoweredToolbar(widget.toolbarActions, isDark: false);
@@ -248,7 +250,7 @@ CupertinoNativeBody? lowerWidgetNode(
         cornerRadius: widget.cornerRadius,
         prefix: widget.prefix,
         suffix: widget.suffix,
-        keyboardToolbar: toolbar?.nodes ?? const [],
+        keyboardToolbar: toolbar?.bodies ?? const [],
       );
 
     case CupertinoNativeSlidingSegmentedControl():
@@ -274,7 +276,9 @@ CupertinoNativeBody? lowerWidgetNode(
         items: [
           for (final child in widget.children.values) ButtonLabel(child).title,
         ],
-        selectedIndex: selected < 0 ? 0 : selected,
+        // -1 when nothing is selected: no segment shows as picked, as with
+        // the standalone control.
+        selectedIndex: selected,
         style: widget.isMenu ? 'menu' : 'segmented',
         color: widget.thumbColor,
       );
@@ -426,10 +430,16 @@ class LoweredToolbar {
   LoweredToolbar(List<Widget> items, {required bool isDark}) {
     for (var i = 0; i < items.length; i++) {
       final node = lowerWidgetNode(items[i], 'item$i', callbacks);
-      if (node != null) nodes.add(node.toMap(isDark: isDark));
+      if (node == null) continue;
+      bodies.add(node);
+      nodes.add(node.toMap(isDark: isDark));
     }
   }
 
+  /// The items as nodes, for a bar nested in a node that is encoded later.
+  final List<CupertinoNativeBody> bodies = [];
+
+  /// The items encoded for [isDark].
   final List<Map<String, dynamic>> nodes = [];
 
   /// id → what to call when that item reports.

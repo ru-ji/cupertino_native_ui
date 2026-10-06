@@ -115,8 +115,6 @@ class NativePhotosPickerView: NativeHostingView {
                 let config = decodeConfig(PhotosPickerConfig.self, from: argsMap),
                 let model = model as? PhotosPickerModel
             {
-                let same = MainActor.assumeIsolated { model.config == config }
-                NativeLog.log("photos update sameConfig=\(same)")
                 isDark = config.isDark
                 // Method calls arrive on the main thread.
                 MainActor.assumeIsolated { model.config = config }
@@ -386,17 +384,6 @@ struct InlinePhotosPickerView: View {
             .hidden, edges: config.showsAlbums == true ? .bottom : .all)
         .photosPickerDisabledCapabilities([.selectionActions])
         .ignoresSafeArea()
-        .background(GeometryReader { proxy in
-            Color.clear
-                .onAppear {
-                    NativeLog.log("[size] photos picker initial \(proxy.size) safe=\(proxy.safeAreaInsets)")
-                }
-                .onChange(of: proxy.size) {
-                    NativeLog.log("[size] photos picker changed → \($0) safe=\(proxy.safeAreaInsets)")
-                }
-        })
-        .onAppear { NativeLog.log("photos picker appear model=\(ObjectIdentifier(model))") }
-        .onDisappear { NativeLog.log("photos picker disappear model=\(ObjectIdentifier(model))") }
     }
 
     private var filter: PHPickerFilter? {

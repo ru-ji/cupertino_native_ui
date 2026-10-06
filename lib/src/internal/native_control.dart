@@ -134,7 +134,9 @@ class _NativeControlState extends State<NativeControl>
   void _push() {
     final map = _map();
     final json = jsonEncode(map, toEncodable: (o) => o.toString());
-    if (_sent == null || json == _sent) return;
+    // Not sent until the view exists: marking it sent meanwhile lost the
+    // change for good. `onPlatformViewCreated` pushes again.
+    if (_sent == null || json == _sent || channel == null) return;
     _sent = json;
     updateNativeView('update', map, refreshIntrinsicSize: false);
   }
@@ -193,6 +195,8 @@ class _NativeControlState extends State<NativeControl>
               }
             },
           );
+          // What changed while the view was being created.
+          _push();
           requestIntrinsicSize();
         },
         hitTestBehavior: PlatformViewHitTestBehavior.opaque,

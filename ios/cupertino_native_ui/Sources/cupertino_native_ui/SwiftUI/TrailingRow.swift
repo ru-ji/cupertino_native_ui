@@ -15,10 +15,7 @@ struct TrailingRow: View {
     /// Read, never created here: the store owns it, so re-evaluating this
     /// view cannot churn models or bars.
     private var model: NativeBodyModel {
-        store.model(
-            rowId: rowId,
-            nodes: nodes,
-            onEvent: { nodeId, value in onEvent(rowId, nodeId, value) })
+        store.model(rowId: rowId, nodes: nodes)
     }
 
     var body: some View {
@@ -45,51 +42,38 @@ extension View {
     }
 }
 
-/// The models and keyboard bars of a list's transcribed rows.
+/// The models of a list's transcribed rows.
 ///
 /// Owned by the platform view. A row's model is created once per row id and
-/// kept, and a field that asked for a toolbar gets its bar attached here:
-/// outside any view update, so nothing is rebuilt per frame.
+/// kept; it also owns its fields' keyboard bars (see
+/// `NativeBodyModel.syncKeyboardBar`).
 @available(iOS 15.0, *)
 final class TrailingRowStore {
     private var models: [String: NativeBodyModel] = [:]
-    private var bars: [String: KeyboardAccessoryBar] = [:]
 
-    func model(
-        rowId: String,
-        nodes: [BodyNodeConfig],
-        onEvent: @escaping (String, Any?) -> Void
-    ) -> NativeBodyModel {
+    func model(rowId: String, nodes: [BodyNodeConfig]) -> NativeBodyModel {
         if let existing = models[rowId] { return existing }
         let model = NativeBodyModel()
         model.seedAll(nodes)
         models[rowId] = model
-        for node in nodes { attachAccessory(node, rowId: rowId, model: model, onEvent: onEvent) }
         return model
     }
 
-    private func attachAccessory(
-        _ node: BodyNodeConfig,
-        rowId: String,
-        model: NativeBodyModel,
-        onEvent: @escaping (String, Any?) -> Void
-    ) {
-        if let id = node.id, let config = node.textField,
-            let items = config.keyboardToolbar, !items.isEmpty
-        {
-            let key = "\(rowId).\(id)"
-            let bar =
-                bars[key]
-                ?? KeyboardAccessoryBar(
-                    nodes: items,
-                    isDark: node.isDark == true,
-                    onEvent: { itemId, value in onEvent("\(id).toolbar.\(itemId)", value) })
-            bars[key] = bar
-            model.fieldModel(for: id, config: config).accessory = bar.inputView
+    /// Hands each row's controls the values a new config carries, as a
+    /// native body does on every push. Rows not built yet are skipped: they
+    /// seed from this config when they first appear. Called from the method
+    /// channel, outside any view update.
+    func apply(_ config: ListConfig) {
+        func walk(_ rows: [ListRowConfig]) {
+            for row in rows {
+                if let trailing = row.trailing, let model = models[row.id] {
+                    model.seedAll(trailing)
+                    for node in trailing { model.applyConfigs(node) }
+                }
+                walk(row.children ?? [])
+            }
         }
-        for child in node.children ?? [] {
-            attachAccessory(child, rowId: rowId, model: model, onEvent: onEvent)
-        }
+        for section in config.sections { walk(section.rows) }
     }
 
     /// Puts the responder back on the field `key` names, `"rowId.fieldId"`.
