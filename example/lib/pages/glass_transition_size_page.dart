@@ -2,7 +2,7 @@ import 'package:cupertino_native_ui/cupertino_native_ui.dart';
 import 'package:flutter/cupertino.dart';
 
 /// Every glass transition on one backdrop, a row each: tap a glass to play
-/// it. The control on top picks the spring all of them play on.
+/// it.
 class GlassTransitionSizePage extends StatefulWidget {
   const GlassTransitionSizePage({super.key});
 
@@ -12,7 +12,6 @@ class GlassTransitionSizePage extends StatefulWidget {
 }
 
 class _GlassTransitionSizePageState extends State<GlassTransitionSizePage> {
-  int _spring = 0;
   bool _shown = true;
   bool _swapped = false;
   bool _selecting = false;
@@ -20,15 +19,8 @@ class _GlassTransitionSizePageState extends State<GlassTransitionSizePage> {
   bool _playing = false;
   bool _united = true;
 
-  static const _springs = {
-    0: ('Smooth', CupertinoGlassAnimation.smooth()),
-    1: ('Snappy', CupertinoGlassAnimation.snappy()),
-    2: ('Bouncy', CupertinoGlassAnimation.bouncy()),
-  };
-
   @override
   Widget build(BuildContext context) {
-    final animation = _springs[_spring]!.$2;
     return CupertinoPageScaffold(
       navigationBar: const CupertinoNavigationBar(
         middle: Text('Glass Transitions'),
@@ -37,14 +29,6 @@ class _GlassTransitionSizePageState extends State<GlassTransitionSizePage> {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
           children: [
-            CupertinoNativeSlidingSegmentedControl<int>(
-              children: {
-                for (final e in _springs.entries) e.key: Text(e.value.$1),
-              },
-              groupValue: _spring,
-              onValueChanged: (v) => setState(() => _spring = v!),
-            ),
-            const SizedBox(height: 16),
             // One backdrop for every row: the glasses refract the same
             // continuous colour, and the rows are wide enough for any of them.
             DecoratedBox(
@@ -68,7 +52,6 @@ class _GlassTransitionSizePageState extends State<GlassTransitionSizePage> {
                           : () => setState(() => _shown = true),
                       child: CupertinoNativeGlassGroup(
                         alignment: Alignment.centerRight,
-                        animation: animation,
                         transition: CupertinoGlassTransition.materialize,
                         onAction: (_) => setState(() => _shown = false),
                         items: [
@@ -87,11 +70,9 @@ class _GlassTransitionSizePageState extends State<GlassTransitionSizePage> {
                       subtitle: 'A new glass in its place',
                       child: CupertinoNativeGlassGroup(
                         alignment: Alignment.centerRight,
-                        animation: animation,
                         onAction: (_) => setState(() => _swapped = !_swapped),
                         items: [
                           CupertinoNativeGlassGroupItem(
-                            slotId: _swapped ? 'back' : 'more',
                             actionId: _swapped ? 'back' : 'more',
                             icon: CupertinoNativeIcon.named(
                               _swapped ? 'chevron.backward' : 'ellipsis',
@@ -105,7 +86,6 @@ class _GlassTransitionSizePageState extends State<GlassTransitionSizePage> {
                       subtitle: 'Both glasses replaced',
                       child: CupertinoNativeGlassGroup(
                         alignment: Alignment.centerRight,
-                        animation: animation,
                         spacing: 6,
                         onAction: (id) {
                           if (id == 'select' || id == 'close') {
@@ -115,7 +95,6 @@ class _GlassTransitionSizePageState extends State<GlassTransitionSizePage> {
                         items: _selecting
                             ? const [
                                 CupertinoNativeGlassGroupItem(
-                                  slotId: 'menu.wide',
                                   actionId: 'menu.wide',
                                   shape: CupertinoGlassGroupShape.capsule,
                                   icon: CupertinoNativeIcon.named(
@@ -124,7 +103,6 @@ class _GlassTransitionSizePageState extends State<GlassTransitionSizePage> {
                                   title: '•••',
                                 ),
                                 CupertinoNativeGlassGroupItem(
-                                  slotId: 'close',
                                   actionId: 'close',
                                   shape: CupertinoGlassGroupShape.capsule,
                                   icon: CupertinoNativeIcon.named('xmark'),
@@ -133,7 +111,6 @@ class _GlassTransitionSizePageState extends State<GlassTransitionSizePage> {
                               ]
                             : const [
                                 CupertinoNativeGlassGroupItem(
-                                  slotId: 'menu',
                                   actionId: 'menu',
                                   shape: CupertinoGlassGroupShape.capsule,
                                   icon: CupertinoNativeIcon.named(
@@ -142,7 +119,6 @@ class _GlassTransitionSizePageState extends State<GlassTransitionSizePage> {
                                   width: 44,
                                 ),
                                 CupertinoNativeGlassGroupItem(
-                                  slotId: 'select',
                                   actionId: 'select',
                                   shape: CupertinoGlassGroupShape.capsule,
                                   title: 'Select',
@@ -155,7 +131,6 @@ class _GlassTransitionSizePageState extends State<GlassTransitionSizePage> {
                       subtitle: 'A second glass joins',
                       child: CupertinoNativeGlassGroup(
                         alignment: Alignment.centerRight,
-                        animation: animation,
                         spacing: 0,
                         onAction: (_) => setState(() => _split = !_split),
                         items: [
@@ -182,20 +157,15 @@ class _GlassTransitionSizePageState extends State<GlassTransitionSizePage> {
                       subtitle: 'Out of its neighbour',
                       child: CupertinoNativeGlassGroup(
                         alignment: Alignment.centerRight,
-                        animation: animation,
                         spacing: 12,
                         onAction: (_) => setState(() => _playing = !_playing),
                         items: [
                           if (_playing)
-                            // Ids here only: play is inserted ahead of the
-                            // •••, which would otherwise take its position.
                             const CupertinoNativeGlassGroupItem(
-                              slotId: 'play',
                               actionId: 'play',
                               icon: CupertinoNativeIcon.named('play.fill'),
                             ),
                           const CupertinoNativeGlassGroupItem(
-                            slotId: 'more',
                             actionId: 'more',
                             icon: CupertinoNativeIcon.named('ellipsis'),
                           ),
@@ -208,7 +178,6 @@ class _GlassTransitionSizePageState extends State<GlassTransitionSizePage> {
                       last: true,
                       child: CupertinoNativeGlassGroup(
                         alignment: Alignment.centerRight,
-                        animation: animation,
                         spacing: 8,
                         mergeDistance: 4,
                         onAction: (_) => setState(() => _united = !_united),

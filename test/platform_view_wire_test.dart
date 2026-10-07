@@ -684,36 +684,22 @@ void main() {
     expect((items[1] as Map)['actionId'], 'edit');
   }, variant: iOS);
 
-  testWidgets('glass group identity: position unless a slotId is given', (
-    tester,
-  ) async {
+  testWidgets('glass group identity is the actionId alone', (tester) async {
     final params = await paramsOf(
       tester,
       CupertinoNativeGlassGroup(
-        animation: const CupertinoGlassAnimation.bouncy(),
         items: const [
           CupertinoNativeGlassGroupItem(actionId: 'a', title: 'A'),
-          CupertinoNativeGlassGroupItem(
-            actionId: 'b',
-            title: 'B',
-            slotId: 'more',
-          ),
+          CupertinoNativeGlassGroupItem(actionId: 'b', title: 'B'),
         ],
       ),
     );
 
     final items = (params['items'] as List).cast<Map>();
-    // Swift keys the glass on slotId ?? position, never on actionId.
-    expect(items[0]['position'], 0);
-    expect(items[0]['slotId'], isNull);
-    expect(items[1]['position'], 1);
-    expect(items[1]['slotId'], 'more');
-    // No duration given: Swift calls the preset bare, Apple picks it.
-    expect(params['animation'], {
-      'preset': 'bouncy',
-      'duration': null,
-      'bounce': 0.3,
-    });
+    // Swift keys the glass (`glassEffectID`) on actionId: no second id.
+    expect(items.map((e) => e['actionId']), ['a', 'b']);
+    expect(items.every((e) => !e.containsKey('slotId')), isTrue);
+    expect(items.every((e) => !e.containsKey('position')), isTrue);
   }, variant: iOS);
 
   testWidgets('glass group sends the transition and union fields', (

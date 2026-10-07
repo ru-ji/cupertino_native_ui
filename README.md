@@ -1280,14 +1280,13 @@ CupertinoNativeGlassGroup(
 
 | Parameter                        | Type                                  | Description                                                                                                                                                                                                                                      |
 | -------------------------------- | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `items`                          | `List<CupertinoNativeGlassGroupItem>` | The glasses, in order. Each has an `actionId` (what a tap reports), an optional `slotId` (its identity, position when null), an `icon` and / or `title`, a `shape` and size, `enabled`, `glassVisible`, `unionId`, `transition` and `menuItems`. |
+| `items`                          | `List<CupertinoNativeGlassGroupItem>` | The glasses, in order. Each has an `actionId` (what a tap reports, and its identity), an `icon` and / or `title`, a `shape` and size, `enabled`, `glassVisible`, `unionId`, `transition` and `menuItems`. |
 | `onAction`                       | `ValueChanged<String>?`               | Called with the `actionId` of the tapped glass or menu entry.                                                                                                                                                                                    |
 | `spacing`                        | `double`                              | Gap between the glasses, and the distance at which they merge. Default `8`.                                                                                                                                                                      |
 | `vertical`                       | `bool`                                | Stack the glasses vertically. Default `false`.                                                                                                                                                                                                   |
 | `tint` / `clear` / `interactive` |                                       | As on the glass container, for every glass of the group.                                                                                                                                                                                         |
 | `cornerRadius`                   | `double`                              | Corner radius of `roundedRect` glasses. Default `16`.                                                                                                                                                                                            |
 | `transition`                     | `CupertinoGlassTransition`            | How a glass arrives and leaves. Default `matchedGeometry`.                                                                                                                                                                                       |
-| `animation`                      | `CupertinoGlassAnimation`             | The spring changes play on: `.smooth()`, `.snappy()`, `.bouncy()` or `.spring(duration:, bounce:)`. Read when a change is sent. Default `.smooth()`.                                                                                             |
 | `alignment`                      | `Alignment`                           | Where the glasses sit in the group's box, and so which way they grow when a change resizes it. Read at creation. Default `center`.                                                                                                               |
 
 #### Transitions
@@ -1295,19 +1294,19 @@ CupertinoNativeGlassGroup(
 A transition runs when a glass is **inserted or removed**, and at no other
 moment. That one sentence decides every question below, because it means a
 change only animates if it changes _which glasses exist_. Which glasses
-exist is decided by each item's `slotId`, the `glassEffectID` SwiftUI morphs
-along, or by its position in `items` when it has none. `actionId` is only what
-a tap reports: changing it never makes a new glass.
+exist is decided by each item's `actionId`, which is also its `glassEffectID`:
+a new `actionId` is a new glass, the same `actionId` is the same glass wherever
+it sits in `items`.
 
 | Change       | How you cause it                               | Transition         |
 | ------------ | ---------------------------------------------- | ------------------ |
 | 0 → 1, 1 → 0 | flip `glassVisible`                            | `.materialize`     |
-| 1 → 1        | give the item a **new `slotId`**               | `.matchedGeometry` |
+| 1 → 1        | give the item a **new `actionId`**             | `.matchedGeometry` |
 | 1 → 2, 2 → 1 | replace the items with differently shaped ones | `.matchedGeometry` |
 
 <p>
 <img src="https://raw.githubusercontent.com/ru-ji/cupertino_native_ui/main/doc/images/arrive.gif" width="260" alt="0 to 1: a glass materializes" />
-<img src="https://raw.githubusercontent.com/ru-ji/cupertino_native_ui/main/doc/images/swap.gif" width="260" alt="1 to 1: a new slotId morphs the glass" />
+<img src="https://raw.githubusercontent.com/ru-ji/cupertino_native_ui/main/doc/images/swap.gif" width="260" alt="1 to 1: a new actionId morphs the glass" />
 <img src="https://raw.githubusercontent.com/ru-ji/cupertino_native_ui/main/doc/images/reshape.gif" width="260" alt="1 to 2: two glasses split from one" />
 </p>
 
@@ -1335,7 +1334,7 @@ CupertinoNativeGlassGroup(
 )
 ```
 
-**Swapping one glass for another is a change of `slotId`, not of icon.**
+**Swapping one glass for another is a change of `actionId`, not of icon.**
 Keep the id and change only the icon and nothing animates: no glass left, none
 arrived, so there was no transition to run and the content hard-cuts. Change
 the id and SwiftUI sees a different glass in the same place; both are the same
@@ -1344,16 +1343,13 @@ the content turns over:
 
 ```dart
 CupertinoNativeGlassGroupItem(
-  // NOT a constant id with a changing icon.
-  slotId: _isBack ? 'leading.back' : 'leading.more',
   actionId: _isBack ? 'leading.back' : 'leading.more',
   icon: CupertinoNativeIcon.named(_isBack ? 'chevron.backward' : 'ellipsis'),
 )
 ```
 
 **One glass becoming two is the same trick on a list.** Replace the items with
-differently sized ones under new `slotId`s (by position alone, the two slots
-would stay the same glasses and nothing would morph) and let matched geometry
+differently sized ones under new `actionId`s and let matched geometry
 morph each old shape into its new one; the gap does the rest, blending the two
 as they pass:
 
@@ -1363,14 +1359,12 @@ CupertinoNativeGlassGroup(
   items: _selecting
       ? [
           CupertinoNativeGlassGroupItem(
-            slotId: 'menu.wide',
             actionId: 'menu.wide',
             shape: CupertinoGlassGroupShape.capsule,
             icon: menuIcon,
             title: '•••',
           ),
           CupertinoNativeGlassGroupItem(
-            slotId: 'close',
             actionId: 'close',
             shape: CupertinoGlassGroupShape.capsule,
             icon: closeIcon,
@@ -1379,14 +1373,12 @@ CupertinoNativeGlassGroup(
         ]
       : [
           CupertinoNativeGlassGroupItem(
-            slotId: 'menu',
             actionId: 'menu',
             shape: CupertinoGlassGroupShape.capsule,
             icon: menuIcon,
             width: 44,
           ),
           CupertinoNativeGlassGroupItem(
-            slotId: 'select',
             actionId: 'select',
             shape: CupertinoGlassGroupShape.capsule,
             title: 'Select',

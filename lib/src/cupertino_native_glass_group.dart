@@ -18,12 +18,12 @@ enum CupertinoGlassGroupShape { circle, capsule, roundedRect }
 ///
 /// A transition runs when a glass is **inserted or removed**, and at no other
 /// moment, so a change only animates if it changes which glasses exist, and
-/// that is decided by [CupertinoNativeGlassGroupItem.slotId] (or, without one, position).
+/// that is decided by [CupertinoNativeGlassGroupItem.actionId].
 ///
 /// | Change | How you cause it | |
 /// | --- | --- | --- |
 /// | 0 → 1, 1 → 0 | flip `glassVisible` | [materialize] |
-/// | 1 → 1 | give the item a new `slotId` | [matchedGeometry] |
+/// | 1 → 1 | give the item a new `actionId` | [matchedGeometry] |
 /// | 1 → 2, 2 → 1 | replace the items with differently shaped ones | [matchedGeometry] |
 ///
 /// [matchedGeometry] is SwiftUI's own default for glasses inside a container's
@@ -57,57 +57,6 @@ enum CupertinoGlassTransition {
   intensity,
 }
 
-/// The spring a [CupertinoNativeGlassGroup] plays its changes on.
-///
-/// SwiftUI's `.smooth`, `.snappy` and `.bouncy` are all this one spring with
-/// different settings, hence one type.
-@immutable
-class CupertinoGlassAnimation {
-  /// [duration] in seconds; [bounce] 0 for none, up to 1. Negative values
-  /// are not supported. Leave [duration] out to keep Apple's own.
-  const CupertinoGlassAnimation.spring({this.duration, this.bounce = 0})
-    : _preset = 'spring',
-      assert(duration == null || duration > 0),
-      assert(bounce >= 0 && bounce < 1);
-
-  /// No bounce. SwiftUI's `.smooth`.
-  const CupertinoGlassAnimation.smooth({this.duration})
-    : _preset = 'smooth',
-      bounce = 0;
-
-  /// A little bounce. SwiftUI's `.snappy`.
-  const CupertinoGlassAnimation.snappy({this.duration})
-    : _preset = 'snappy',
-      bounce = 0.15;
-
-  /// A clear bounce. SwiftUI's `.bouncy`.
-  const CupertinoGlassAnimation.bouncy({this.duration})
-    : _preset = 'bouncy',
-      bounce = 0.3;
-
-  /// Seconds. `null`, the default, lets SwiftUI pick: the native side then
-  /// calls the preset with no duration at all.
-  final double? duration;
-  final double bounce;
-  final String _preset;
-
-  Map<String, dynamic> _toMap() => {
-    'preset': _preset,
-    'duration': duration,
-    'bounce': bounce,
-  };
-
-  @override
-  bool operator ==(Object other) =>
-      other is CupertinoGlassAnimation &&
-      other._preset == _preset &&
-      other.duration == duration &&
-      other.bounce == bounce;
-
-  @override
-  int get hashCode => Object.hash(_preset, duration, bounce);
-}
-
 /// One glass in a group: an icon, a title, or both.
 ///
 /// Configuration rather than a widget: the items are laid out by SwiftUI in
@@ -124,7 +73,6 @@ class CupertinoNativeGlassGroupItem {
     this.enabled = true,
     this.glassVisible = true,
     this.unionId,
-    this.slotId,
     this.transition,
     this.menuItems = const [],
   }) : assert(
@@ -133,19 +81,14 @@ class CupertinoNativeGlassGroupItem {
          'around.',
        );
 
-  /// Handed back to [CupertinoNativeGlassGroup.onAction] on tap. Only
-  /// that: changing it never makes a new glass.
-  final String actionId;
-
-  /// The glass's identity across changes, like SwiftUI's `glassEffectID` or
-  /// a Flutter [Key]. Optional.
+  /// Handed back to [CupertinoNativeGlassGroup.onAction] on tap, and the
+  /// glass's identity (SwiftUI's `glassEffectID`).
   ///
-  /// `null`, the default, identifies the glass by its position in
-  /// [CupertinoNativeGlassGroup.items], as SwiftUI does for views written one
-  /// after another. Set it when position is not enough: an item inserted
-  /// ahead of this one, or a reorder. Give a glass a new id to have SwiftUI
-  /// replace it with another one.
-  final String? slotId;
+  /// A new [actionId] is a different glass: the old one leaves and the new
+  /// one arrives in its place (a swap). The same [actionId] is the same
+  /// glass wherever it sits in [CupertinoNativeGlassGroup.items], so an item
+  /// inserted ahead of it does not take it over. Keep ids unique in a group.
+  final String actionId;
 
   final CupertinoNativeIcon? icon;
   final String? title;
@@ -204,7 +147,6 @@ class CupertinoNativeGlassGroupItem {
     'enabled': enabled,
     'glassVisible': glassVisible,
     'unionId': unionId,
-    'slotId': slotId,
     'transition': transition?.name,
     'menuItems': menuItems.map((e) => e.toMap()).toList(),
   };
@@ -248,7 +190,6 @@ class CupertinoNativeGlassGroup extends StatefulWidget {
     this.cornerRadius = 16,
     this.transition = CupertinoGlassTransition.matchedGeometry,
     this.morphOnChange = 0,
-    this.animation = const CupertinoGlassAnimation.smooth(),
     this.alignment = Alignment.center,
   });
 
@@ -319,12 +260,6 @@ class CupertinoNativeGlassGroup extends StatefulWidget {
   /// reading as a press is set by eye against the real thing, on a device.
   final double morphOnChange;
 
-  /// The spring changes play on. Defaults to [CupertinoGlassAnimation.smooth].
-  ///
-  /// Read when a change is sent, so pass a different one alongside a change
-  /// to give that change its own spring.
-  final CupertinoGlassAnimation animation;
-
   /// Where the glasses sit in the group's box, and so which way they grow
   /// when a change makes the group wider or taller.
   ///
@@ -345,10 +280,7 @@ class _CupertinoNativeGlassGroupState extends State<CupertinoNativeGlassGroup>
   String? _sent;
 
   Map<String, dynamic> _toMap() => {
-    'items': [
-      for (final (i, item) in widget.items.indexed)
-        {...item.toMap(), 'position': i},
-    ],
+    'items': widget.items.map((e) => e.toMap()).toList(),
     'spacing': widget.spacing,
     'mergeDistance': widget.mergeDistance,
     'variant': widget.clear ? 'clear' : 'regular',
@@ -361,7 +293,6 @@ class _CupertinoNativeGlassGroupState extends State<CupertinoNativeGlassGroup>
     'morphOnChange': widget.morphOnChange,
     'alignmentX': widget.alignment.x,
     'alignmentY': widget.alignment.y,
-    'animation': widget.animation._toMap(),
   };
 
   @override

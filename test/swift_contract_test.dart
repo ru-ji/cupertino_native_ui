@@ -429,8 +429,8 @@ void main() {
       expect(RegExp(r'ForEach\((c\.)?items\)').hasMatch(source), isFalse);
     });
 
-    test('no identity is derived from actionId or a fresh UUID', () {
-      final derived = RegExp(r'var id: String \{[^}]*(actionId|UUID\(\))')
+    test('no identity is a fresh UUID', () {
+      final derived = RegExp(r'var id: String \{[^}]*UUID\(\)')
           .allMatches(allSwift);
       expect(derived.map((m) => m.group(0)), isEmpty);
     });

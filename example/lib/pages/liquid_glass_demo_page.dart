@@ -394,7 +394,6 @@ class _TransitionsCardState extends State<_TransitionsCard> {
       onAction: (_) => _play(),
       items: [
         CupertinoNativeGlassGroupItem(
-          slotId: _isBack ? 'leading.back' : 'leading.more',
           actionId: _isBack ? 'leading.back' : 'leading.more',
           icon: CupertinoNativeIcon.named(
             _isBack ? 'chevron.backward' : 'ellipsis',
@@ -412,7 +411,6 @@ class _TransitionsCardState extends State<_TransitionsCard> {
       items: _selecting
           ? [
               const CupertinoNativeGlassGroupItem(
-                slotId: 'menu.wide',
                 actionId: 'menu.wide',
                 shape: CupertinoGlassGroupShape.capsule,
                 icon: CupertinoNativeIcon.named('line.3.horizontal'),
@@ -420,7 +418,6 @@ class _TransitionsCardState extends State<_TransitionsCard> {
                 menuItems: _menu,
               ),
               const CupertinoNativeGlassGroupItem(
-                slotId: 'close',
                 actionId: 'close',
                 shape: CupertinoGlassGroupShape.capsule,
                 icon: CupertinoNativeIcon.named('xmark'),
@@ -429,7 +426,6 @@ class _TransitionsCardState extends State<_TransitionsCard> {
             ]
           : [
               const CupertinoNativeGlassGroupItem(
-                slotId: 'menu',
                 actionId: 'menu',
                 shape: CupertinoGlassGroupShape.capsule,
                 icon: CupertinoNativeIcon.named('line.3.horizontal'),
@@ -437,7 +433,6 @@ class _TransitionsCardState extends State<_TransitionsCard> {
                 menuItems: _menu,
               ),
               const CupertinoNativeGlassGroupItem(
-                slotId: 'select',
                 actionId: 'select',
                 shape: CupertinoGlassGroupShape.capsule,
                 title: 'Select',

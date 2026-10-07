@@ -8,11 +8,11 @@ import Foundation
 /// container is the only way two glasses ever merge.
 @available(iOS 15.0, *)
 struct GlassGroupItemConfig: Codable, Hashable, Identifiable {
-    /// Sent back to Dart on tap.
+    /// Sent back to Dart on tap, and the glass's identity: its
+    /// `glassEffectID`. A new `actionId` is a different glass, so the old one
+    /// leaves and the new one arrives (a swap); the same `actionId` is the
+    /// same glass wherever it moves (an item inserted ahead of it).
     let actionId: String
-    /// The identity SwiftUI morphs along, like `glassEffectID`. Optional:
-    /// nil = the item's position. See `id`.
-    let slotId: String?
     let icon: IconConfig?
     let title: String?
     /// "circle" | "capsule" | "roundedRect"; nil = circle.
@@ -25,8 +25,7 @@ struct GlassGroupItemConfig: Codable, Hashable, Identifiable {
     /// nil = true.
     let glassVisible: Bool?
     /// Joins this glass to every other item carrying the same id, making them
-    /// one shape (`glassEffectUnion`). nil = the item's own `actionId`, i.e.
-    /// united with nothing.
+    /// one shape (`glassEffectUnion`). nil = united with nothing.
     let unionId: String?
     /// "matchedGeometry" | "materialize" | "identity"; nil = the group's.
     let transition: String?
@@ -34,15 +33,8 @@ struct GlassGroupItemConfig: Codable, Hashable, Identifiable {
     /// system morphs open, so the menu grows out of the glass rather than
     /// appearing beside it. nil or empty = a plain button.
     let menuItems: [MenuItemConfig]?
-    /// The item's index in the group, sent by Dart.
-    let position: Int?
 
-    /// The identity SwiftUI keeps the glass under: the caller's `slotId`
-    /// when there is one (the `glassEffectID` case: an item inserted ahead
-    /// of it, or a reorder), otherwise its position, the identity SwiftUI
-    /// gives views written one after another. Never `actionId`: that only
-    /// routes a tap, and changing it must not make a new glass.
-    var id: String { slotId ?? "#\(position ?? 0)" }
+    var id: String { actionId }
 }
 
 @available(iOS 15.0, *)
@@ -79,17 +71,4 @@ struct GlassGroupConfig: Codable {
     /// `Alignment`; nil = centred. Read once, when the view is created.
     let alignmentX: Double?
     let alignmentY: Double?
-    /// The spring every change plays on. nil = `.smooth`.
-    let animation: GlassAnimationConfig?
-}
-
-/// A SwiftUI spring as Dart names it.
-@available(iOS 15.0, *)
-struct GlassAnimationConfig: Codable {
-    /// "smooth" | "snappy" | "bouncy" | "spring".
-    let preset: String
-    /// Seconds; nil = whatever SwiftUI's preset defaults to.
-    let duration: Double?
-    /// Only read for "spring"; the named presets carry their own.
-    let bounce: Double?
 }

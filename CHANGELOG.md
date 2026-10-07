@@ -2,17 +2,15 @@
 
 ### Breaking
 
-* A glass in `CupertinoNativeGlassGroup` is identified by its new
-  `slotId`, or by its position when it has none, instead of its `actionId`.
-  `actionId` is now only what a tap reports: to swap one glass for another,
-  give it a new `slotId`.
+* `CupertinoNativeGlassGroupItem.slotId` is removed: a glass is
+  identified by its `actionId` alone. To swap one glass for another, give
+  it a new `actionId`.
 * `CupertinoNativeBody.textField(keyboardToolbar:)` takes
   `List<CupertinoNativeBody>` instead of encoded maps.
 
 ### Added
 
-* `CupertinoNativeGlassGroup.animation` (`CupertinoGlassAnimation.smooth`,
-  `.snappy`, `.bouncy`, `.spring`) and `.alignment`.
+* `CupertinoNativeGlassGroup.alignment`.
 * A text field in a `nativeBody` (page scaffold or sheet) shows its
   keyboard bar. Its items report through `onBodyEvent` as
   `<fieldId>.toolbar.<itemId>`.
