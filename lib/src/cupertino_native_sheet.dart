@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:ui' as ui;
 
 import 'package:flutter/foundation.dart';
@@ -8,6 +9,7 @@ import 'cupertino_native_body.dart';
 import 'cupertino_native_scaffold_navigation_bar.dart';
 import 'cupertino_scroll_edge_effect.dart';
 import 'cupertino_native_settings.dart';
+import 'internal/body_echo.dart';
 import 'internal/native_color.dart';
 
 /// The heights a [CupertinoNativeSheet] can rest at, mirroring
@@ -76,6 +78,11 @@ abstract final class CupertinoNativeSheet {
   static ValueChanged<String>? _onSearchSubmitted;
   static void Function(String id, Object? value)? _onBodyEvent;
   static bool _dark = false;
+
+  /// The open sheet's native body as last sent, and encoded: a tree that
+  /// encodes the same is not sent again (see [adoptBodyEvent]).
+  static Map<String, dynamic>? _sentBody;
+  static String? _sentBodyJson;
 
   /// Presents the sheet and completes when it has been dismissed (either by
   /// [dismiss]/[pop], a bar action calling them, or the user's swipe).
@@ -150,10 +157,12 @@ abstract final class CupertinoNativeSheet {
         isDark ??
         ui.PlatformDispatcher.instance.platformBrightness == ui.Brightness.dark;
     _dark = dark;
+    final body = _sentBody = nativeBody?.toMap(isDark: dark);
+    _sentBodyJson = body == null ? null : jsonEncode(body);
     try {
       await _channel.invokeMethod<void>('showSheet', {
         'route': route,
-        'nativeBody': nativeBody?.toMap(isDark: dark),
+        'nativeBody': body,
         'navigationBar': navigationBar?.toMap(),
         'bottomSegments': bottom?.segments,
         'bottomSelectedIndex': bottom?.selectedIndex,
@@ -188,6 +197,8 @@ abstract final class CupertinoNativeSheet {
       _onSearchChanged = null;
       _onSearchSubmitted = null;
       _onBodyEvent = null;
+      _sentBody = null;
+      _sentBodyJson = null;
     }
   }
 
@@ -195,10 +206,12 @@ abstract final class CupertinoNativeSheet {
   /// (a stepper's count, a toggle) gets back to the native side.
   static Future<void> updateNativeBody(CupertinoNativeBody nativeBody) async {
     if (defaultTargetPlatform != TargetPlatform.iOS) return;
-    await _channel.invokeMethod<void>(
-      'updateSheetBody',
-      nativeBody.toMap(isDark: _dark),
-    );
+    final body = nativeBody.toMap(isDark: _dark);
+    final json = jsonEncode(body);
+    if (json == _sentBodyJson) return;
+    _sentBody = body;
+    _sentBodyJson = json;
+    await _channel.invokeMethod<void>('updateSheetBody', body);
   }
 
   static void _ensureEventsHandler() {
@@ -216,7 +229,11 @@ abstract final class CupertinoNativeSheet {
           _onSearchSubmitted?.call(call.arguments as String);
         case 'bodyEvent':
           final args = call.arguments as Map;
-          _onBodyEvent?.call(args['id'] as String, args['value']);
+          final id = args['id'] as String;
+          if (adoptBodyEvent(_sentBody, id, args['value'])) {
+            _sentBodyJson = jsonEncode(_sentBody);
+          }
+          _onBodyEvent?.call(id, args['value']);
       }
     });
   }

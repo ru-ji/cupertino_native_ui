@@ -264,22 +264,21 @@ struct AdaptiveGlassGroupView: View {
 
     /// One row or one column of items, each passed through `decorate`.
     ///
-    /// Keyed on position; the glass's identity (`actionId`) goes to
-    /// `glassEffectID` alone. A new `actionId` at the same place is then the
-    /// same view under a new glass: SwiftUI's glass transition plays, while
-    /// the view under the finger, and its press, live on. Keyed on the
-    /// `actionId`, a swap tore the pressed view down mid-press.
+    /// Keyed on the glass's id, as in Apple's examples: a new id is a view
+    /// removed and another inserted, which is when `glassEffectTransition`
+    /// runs (and blurs the content over). A new `glassEffectID` on a view
+    /// that stays inserts and removes nothing, so nothing transitions.
     @ViewBuilder
     private func stack<V: View>(
         @ViewBuilder decorate: @escaping (GlassGroupItemConfig) -> V
     ) -> some View {
         if c.vertical == true {
             VStack(spacing: layoutSpacing) {
-                ForEach(c.items.indices, id: \.self) { decorate(c.items[$0]) }
+                ForEach(c.items) { decorate($0) }
             }
         } else {
             HStack(spacing: layoutSpacing) {
-                ForEach(c.items.indices, id: \.self) { decorate(c.items[$0]) }
+                ForEach(c.items) { decorate($0) }
             }
         }
     }

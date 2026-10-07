@@ -18,6 +18,7 @@ import 'internal/native_platform_view_mixin.dart';
 import 'models/cupertino_native_toolbar_item.dart';
 import 'models/cupertino_native_icon.dart';
 import 'models/cupertino_symbols.dart';
+import 'internal/body_echo.dart';
 import 'internal/native_color.dart';
 
 /// A page pushed onto a [CupertinoNativePageScaffold]'s native NavigationStack.
@@ -653,12 +654,16 @@ class _CupertinoNativeScaffoldState extends State<CupertinoNativePageScaffold>
     updateNativeView('updateScaffold', map);
     // A push that never reached the native side (no channel yet) is not
     // counted as sent; the creation callback re-syncs.
-    if (channel != null) _lastScaffoldJson = json;
+    if (channel != null) {
+      _lastScaffoldJson = json;
+      _lastScaffold = map;
+    }
   }
 
-  /// The config last pushed over the channel, encoded. Only set for pushes
-  /// that actually went out.
+  /// The config last pushed over the channel, and encoded. Only set for
+  /// pushes that actually went out.
   String? _lastScaffoldJson;
+  Map<String, dynamic>? _lastScaffold;
 
   /// The creation params, captured on the first build and never rebuilt:
   /// `UiKitView` only reads them at creation.
@@ -676,7 +681,7 @@ class _CupertinoNativeScaffoldState extends State<CupertinoNativePageScaffold>
     CupertinoNativeBodyBridge.hostChannel = channel;
     // The creation params were memoized from the first build; push the live
     // config once so nothing that changed mid-creation is lost.
-    final map = _toMap();
+    final map = _lastScaffold = _toMap();
     _lastScaffoldJson = jsonEncode(map);
     updateNativeView('updateScaffold', map);
   }
@@ -699,7 +704,12 @@ class _CupertinoNativeScaffoldState extends State<CupertinoNativePageScaffold>
         {
           final String? id = call.arguments['id'];
           if (id != null) {
-            widget.onBodyEvent?.call(id, call.arguments['value']);
+            final value = call.arguments['value'];
+            // The control already shows it: an echo of it is not news.
+            if (adoptBodyEvent(_lastScaffold?['nativeBody'], id, value)) {
+              _lastScaffoldJson = jsonEncode(_lastScaffold);
+            }
+            widget.onBodyEvent?.call(id, value);
           }
         }
         break;

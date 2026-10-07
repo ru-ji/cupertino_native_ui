@@ -8,7 +8,6 @@ import 'bars_demo_page.dart';
 import 'button_demo_page.dart';
 import 'context_menu_demo_page.dart';
 import 'edge_effect_probe_page.dart';
-import 'glass_transition_size_page.dart';
 import 'hard_edge_demo_page.dart';
 import 'liquid_glass_demo_page.dart';
 import 'native_list_demo_page.dart';
@@ -158,12 +157,6 @@ class HomePage extends StatelessWidget {
                           CupertinoColors.systemCyan,
                         ),
                         _row(
-                          'glassSize',
-                          'Glass Transitions',
-                          'arrow.left.and.right',
-                          CupertinoColors.systemTeal,
-                        ),
-                        _row(
                           'edgeEffect',
                           'Scroll Edge Effect',
                           'square.stack.3d.up',
@@ -210,7 +203,6 @@ class HomePage extends StatelessWidget {
       'sheet' => const SheetDemoPage(),
       'list' => const NativeListDemoPage(),
       'liquidGlass' => const LiquidGlassDemoPage(),
-      'glassSize' => const GlassTransitionSizePage(),
       'edgeEffect' => const EdgeEffectProbePage(),
       _ => const SliderDemoPage(),
     };

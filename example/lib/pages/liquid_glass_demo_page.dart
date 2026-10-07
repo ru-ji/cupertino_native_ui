@@ -282,7 +282,7 @@ class _Blob extends StatelessWidget {
   }
 }
 
-/// The three changes SwiftUI animates on its own, one at a time on one stage.
+/// The changes SwiftUI animates on its own, one at a time on one stage.
 ///
 /// Each is driven by nothing but `glassEffectID` and `glassEffectTransition`:
 /// SwiftUI noticing that a glass with one id left and a glass with another
@@ -313,6 +313,15 @@ enum _Change {
     'Both glasses are replaced at once, so matched geometry morphs each old '
         'shape into its new one. The 6pt gap is under the blend radius, which '
         'lets them run together on the way past.',
+  ),
+
+  /// A glass inserted beside another.
+  insert(
+    'Insert',
+    '1 → 2',
+    'The play glass is inserted ahead of the ••• and inside the 12pt '
+        'spacing, so matched geometry grows it out of its neighbour, which '
+        'keeps its id and moves aside.',
   );
 
   const _Change(this.label, this.arrow, this.blurb);
@@ -336,6 +345,7 @@ class _TransitionsCardState extends State<_TransitionsCard> {
   bool _shown = false;
   bool _isBack = false;
   bool _selecting = false;
+  bool _playing = false;
 
   /// The menu the reshape's left glass opens, in both states.
   static const _menu = [
@@ -365,6 +375,8 @@ class _TransitionsCardState extends State<_TransitionsCard> {
         _isBack = !_isBack;
       case _Change.reshape:
         _selecting = !_selecting;
+      case _Change.insert:
+        _playing = !_playing;
     }
   });
 
@@ -372,6 +384,7 @@ class _TransitionsCardState extends State<_TransitionsCard> {
     _Change.arrive => _shown ? 'Remove' : 'Add',
     _Change.swap => 'Swap',
     _Change.reshape => _selecting ? 'Done' : 'Select',
+    _Change.insert => _playing ? 'Remove' : 'Add',
   };
 
   /// The glass on stage. Keyed by the change, so switching changes builds a
@@ -391,6 +404,9 @@ class _TransitionsCardState extends State<_TransitionsCard> {
     ),
     _Change.swap => CupertinoNativeGlassGroup(
       key: const ValueKey(_Change.swap),
+      // The pressed glass is the one replaced: an interactive glass lights
+      // up a second time as it leaves.
+      interactive: false,
       onAction: (_) => _play(),
       items: [
         CupertinoNativeGlassGroupItem(
@@ -438,6 +454,22 @@ class _TransitionsCardState extends State<_TransitionsCard> {
                 title: 'Select',
               ),
             ],
+    ),
+    _Change.insert => CupertinoNativeGlassGroup(
+      key: const ValueKey(_Change.insert),
+      spacing: 12,
+      onAction: (_) => _play(),
+      items: [
+        if (_playing)
+          const CupertinoNativeGlassGroupItem(
+            actionId: 'play',
+            icon: CupertinoNativeIcon.named('play.fill'),
+          ),
+        const CupertinoNativeGlassGroupItem(
+          actionId: 'more',
+          icon: CupertinoNativeIcon.named('ellipsis'),
+        ),
+      ],
     ),
   };
 

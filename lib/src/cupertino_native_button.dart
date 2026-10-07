@@ -8,6 +8,7 @@ import 'internal/bar_slot.dart';
 import 'internal/native_platform_view_mixin.dart';
 import 'models/cupertino_native_button_style.dart';
 import 'models/cupertino_native_button_extra_options.dart';
+import 'models/cupertino_native_toolbar_item.dart';
 import 'cupertino_symbol_image.dart';
 import 'models/cupertino_native_icon.dart';
 import 'models/cupertino_symbols.dart';
@@ -33,6 +34,8 @@ class CupertinoNativeButton extends StatefulWidget {
     this.role,
     this.width,
     this.height,
+    this.visibilityPriority =
+        CupertinoNativeToolbarVisibilityPriority.automatic,
   }) : style = CupertinoNativeButtonStyle.plain;
 
   const CupertinoNativeButton.filled({
@@ -46,6 +49,8 @@ class CupertinoNativeButton extends StatefulWidget {
     this.role,
     this.width,
     this.height,
+    this.visibilityPriority =
+        CupertinoNativeToolbarVisibilityPriority.automatic,
   }) : style = CupertinoNativeButtonStyle.filled;
 
   const CupertinoNativeButton.tinted({
@@ -59,6 +64,8 @@ class CupertinoNativeButton extends StatefulWidget {
     this.role,
     this.width,
     this.height,
+    this.visibilityPriority =
+        CupertinoNativeToolbarVisibilityPriority.automatic,
   }) : style = CupertinoNativeButtonStyle.tinted;
 
   /// iOS 26 Liquid Glass.
@@ -73,6 +80,8 @@ class CupertinoNativeButton extends StatefulWidget {
     this.role,
     this.width,
     this.height,
+    this.visibilityPriority =
+        CupertinoNativeToolbarVisibilityPriority.automatic,
   }) : style = CupertinoNativeButtonStyle.glass;
 
   /// iOS 26 prominent (tinted) Liquid Glass.
@@ -87,6 +96,8 @@ class CupertinoNativeButton extends StatefulWidget {
     this.role,
     this.width,
     this.height,
+    this.visibilityPriority =
+        CupertinoNativeToolbarVisibilityPriority.automatic,
   }) : style = CupertinoNativeButtonStyle.glassProminent;
 
   /// A round icon button: the bar button of iOS 26: an SF Symbol in a
@@ -101,6 +112,8 @@ class CupertinoNativeButton extends StatefulWidget {
     this.sizeStyle = CupertinoNativeControlSize.regular,
     this.color,
     this.role,
+    this.visibilityPriority =
+        CupertinoNativeToolbarVisibilityPriority.automatic,
   }) : child = CupertinoSymbolImage.symbol(symbol),
        borderShape = CupertinoNativeButtonBorderShape.circle,
        expand = false,
@@ -134,6 +147,12 @@ class CupertinoNativeButton extends StatefulWidget {
   /// which is what a bar button is.
   final double? width;
   final double? height;
+
+  /// Only read in a navigation bar's `trailing`: which buttons stay in the
+  /// bar when they do not all fit, SwiftUI's `.visibilityPriority`. The
+  /// others go into the bar's ••• menu, low first, then from the end.
+  /// Ignored anywhere else. Default `automatic`.
+  final CupertinoNativeToolbarVisibilityPriority visibilityPriority;
 
   @override
   State<CupertinoNativeButton> createState() => _CupertinoNativeButtonState();

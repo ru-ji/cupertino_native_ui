@@ -327,7 +327,7 @@ class _SheetDemoPageState extends State<SheetDemoPage> {
                       CupertinoNativeListTile(
                         id: 'native',
                         title: 'Native Body',
-                        subtitle: 'A reminder form in pure SwiftUI, no Flutter engine',
+                        subtitle: 'Display & Brightness in pure SwiftUI, no Flutter engine',
                         showChevron: true,
                       ),
                       CupertinoNativeListTile(

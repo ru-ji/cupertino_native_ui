@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart' show Theme;
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
@@ -74,6 +76,7 @@ class _CupertinoNativeSliderState extends State<CupertinoNativeSlider>
       updateNativeView('updateProps', {
         'isDark': _isDark,
       }, refreshIntrinsicSize: false);
+      _native?['isDark'] = _isDark;
     }
     _lastIsDark = _isDark;
   }
@@ -83,6 +86,7 @@ class _CupertinoNativeSliderState extends State<CupertinoNativeSlider>
     const String viewType =
         'com.example.cupertino_native_ui/cupertino_native_slider';
     final Map<String, dynamic> creationParams = _props();
+    _native ??= creationParams;
 
     // The slider fills the width offered, so only its height needs stating:
     // SwiftUI's own, through the same `getIntrinsicSize` round trip the button
@@ -123,11 +127,22 @@ class _CupertinoNativeSliderState extends State<CupertinoNativeSlider>
     requestIntrinsicSize();
   }
 
+  /// What the native slider holds, as last sent or reported. A drag reports
+  /// every frame and the page hands the value straight back through
+  /// `setState`: comparing against this sends nothing for that echo, where
+  /// every frame used to send the whole configuration back.
+  Map<String, dynamic>? _native;
+
+  /// Compared encoded: the icons are maps of their own.
+  static String _encode(Map<String, dynamic>? props) =>
+      jsonEncode(props, toEncodable: (o) => o.toString());
+
   Future<void> _handleMethodCall(MethodCall call) async {
     final value = (call.arguments as num?)?.toDouble();
     if (value == null) return;
     switch (call.method) {
       case 'onChanged':
+        _native?['value'] = value;
         widget.onChanged?.call(value);
       case 'onChangeStart':
         widget.onChangeStart?.call(value);
@@ -139,18 +154,9 @@ class _CupertinoNativeSliderState extends State<CupertinoNativeSlider>
   @override
   void didUpdateWidget(CupertinoNativeSlider oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.value != widget.value ||
-        oldWidget.min != widget.min ||
-        oldWidget.max != widget.max ||
-        oldWidget.divisions != widget.divisions ||
-        oldWidget.activeColor != widget.activeColor ||
-        oldWidget.thumbColor != widget.thumbColor ||
-        oldWidget.minimumIcon != widget.minimumIcon ||
-        oldWidget.maximumIcon != widget.maximumIcon ||
-        oldWidget.showTicks != widget.showTicks ||
-        oldWidget.neutralValue != widget.neutralValue ||
-        (oldWidget.onChanged == null) != (widget.onChanged == null)) {
-      updateNativeView('updateProps', _props(), refreshIntrinsicSize: false);
-    }
+    final props = _props();
+    if (_encode(props) == _encode(_native)) return;
+    _native = props;
+    updateNativeView('updateProps', props, refreshIntrinsicSize: false);
   }
 }

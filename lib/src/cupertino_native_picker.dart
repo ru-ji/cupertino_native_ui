@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/rendering.dart';
@@ -181,23 +183,30 @@ class _CupertinoNativePickerState extends State<CupertinoNativePicker>
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (_lastIsDark != null && _lastIsDark != _isDark) {
-      updateNativeView('updatePicker', _toMap(), refreshIntrinsicSize: false);
+      updateNativeView(
+        'updatePicker',
+        _native = _toMap(),
+        refreshIntrinsicSize: false,
+      );
     }
     _lastIsDark = _isDark;
   }
 
+  /// What the native picker holds, as last sent or reported. Compared whole:
+  /// an item renamed in place is a change (counting the items missed it),
+  /// and the page handing back the index the picker just reported is not.
+  Map<String, dynamic>? _native;
+
+  static String _encode(Map<String, dynamic>? map) =>
+      jsonEncode(map, toEncodable: (o) => o.toString());
+
   @override
   void didUpdateWidget(covariant CupertinoNativePicker oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.selectedIndex != widget.selectedIndex ||
-        oldWidget.style != widget.style ||
-        oldWidget.label != widget.label ||
-        oldWidget.showLabel != widget.showLabel ||
-        oldWidget.activeColor != widget.activeColor ||
-        oldWidget.sizeStyle != widget.sizeStyle ||
-        oldWidget.items.length != widget.items.length) {
-      updateNativeView('updatePicker', _toMap());
-    }
+    final map = _toMap();
+    if (_encode(map) == _encode(_native)) return;
+    _native = map;
+    updateNativeView('updatePicker', map);
   }
 
   Map<String, dynamic> _toMap() {
@@ -230,6 +239,7 @@ class _CupertinoNativePickerState extends State<CupertinoNativePicker>
 
   Future<dynamic> _handleMethodCall(MethodCall call) async {
     if (call.method == 'onChanged' && call.arguments is int) {
+      _native?['selectedIndex'] = call.arguments as int;
       widget.onChanged?.call(call.arguments as int);
     }
   }
@@ -243,7 +253,7 @@ class _CupertinoNativePickerState extends State<CupertinoNativePicker>
       UiKitView(
         viewType: 'com.example.cupertino_native_ui/cupertino_native_picker',
         layoutDirection: TextDirection.ltr,
-        creationParams: _toMap(),
+        creationParams: _native ??= _toMap(),
         creationParamsCodec: const StandardMessageCodec(),
         onPlatformViewCreated: _onPlatformViewCreated,
         // The wheel is a drag control: it has to win the gesture arena

@@ -420,13 +420,13 @@ void main() {
       );
     });
 
-    test('the glass groups list their items by position', () {
+    test('the glass group keys each view on its glass id', () {
       final source = swift.entries
           .firstWhere((e) => e.key.endsWith('NativeGlassGroupView.swift'))
           .value;
-      // A ForEach keyed on the item (its glass id) rebuilds the view under
-      // the finger when the id changes, cutting the press short.
-      expect(RegExp(r'ForEach\((c\.)?items\)').hasMatch(source), isFalse);
+      // A new glass id must be a view inserted and one removed: that is the
+      // only change `glassEffectTransition` animates.
+      expect(source, contains('ForEach(c.items) { decorate(\$0) }'));
     });
 
     test('no identity is a fresh UUID', () {

@@ -10,6 +10,12 @@
 
 ### Added
 
+* The Flutter navigation bars group their `trailing` buttons (glass or the
+  default style) into one capsule, as SwiftUI groups toolbar items. A
+  `Spacer()` ends a capsule; a `glassProminent` button stands alone. Three
+  trailing items or more move the inline title to the leading side. What
+  does not fit goes into a ••• menu, ordered by the new
+  `CupertinoNativeButton.visibilityPriority` (navigation bars only).
 * `CupertinoNativeGlassGroup.alignment`.
 * A text field in a `nativeBody` (page scaffold or sheet) shows its
   keyboard bar. Its items report through `onBodyEvent` as
@@ -17,8 +23,15 @@
 
 ### Fixed
 
-* A glass keeps one SwiftUI view across changes, so a press carries into
-  its transition.
+* A picker whose items are renamed in place (same count) shows the new
+  names.
+* A slider, and a control in a native body (page scaffold or sheet), no
+  longer sends its value back to the native side when the page hands back
+  the value it just reported: a drag used to send the whole configuration,
+  or the whole body, on every frame. A sheet's `updateNativeBody` sends
+  nothing when the tree has not changed.
+* The Flutter navigation bars' inline title follows a theme change instead
+  of staying white after a switch from dark to light.
 * Menus, toolbar items and swipe actions are listed by position, not by
   `actionId`.
 * A list no longer rebuilds when a toggle nested in an expandable row flips.

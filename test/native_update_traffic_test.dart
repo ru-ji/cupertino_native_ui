@@ -119,6 +119,79 @@ void main() {
     expect(sent.where((m) => m == 'updateGlass'), isEmpty);
   }, variant: iOS);
 
+  testWidgets('a picker sends an item renamed in place, and nothing idle', (
+    tester,
+  ) async {
+    var names = ['A', 'B'];
+    final rebuild = await pumpRebuildable(
+      tester,
+      () => CupertinoNativePicker(
+        items: [for (final n in names) CupertinoNativePickerItem(title: n)],
+        selectedIndex: 0,
+        onChanged: (_) {},
+      ),
+    );
+    rebuild();
+    await tester.pump();
+    expect(sent.where((m) => m == 'updatePicker'), isEmpty);
+
+    names = ['A', 'C'];
+    rebuild();
+    await tester.pump();
+    expect(sent.where((m) => m == 'updatePicker'), hasLength(1));
+  }, variant: iOS);
+
+  testWidgets('a slider does not send back the value it reported', (
+    tester,
+  ) async {
+    final messenger =
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+    final forward = messenger.allMessagesHandler!;
+    String? channel;
+    messenger.allMessagesHandler = (name, handler, message) {
+      if (name.startsWith('adaptive_slider_')) {
+        channel = name;
+        sent.add(codec.decodeMethodCall(message).method);
+        return Future.value(codec.encodeSuccessEnvelope(null));
+      }
+      return forward(name, handler, message);
+    };
+    final value = ValueNotifier(0.2);
+    addTearDown(value.dispose);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Center(
+          child: SizedBox(
+            width: 300,
+            child: ValueListenableBuilder<double>(
+              valueListenable: value,
+              builder: (context, v, _) => CupertinoNativeSlider(
+                value: v,
+                onChanged: (next) => value.value = next,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 200));
+    sent.clear();
+
+    // A drag frame: the native slider reports 0.5, the page hands it back.
+    await messenger.handlePlatformMessage(
+      channel!,
+      codec.encodeMethodCall(const MethodCall('onChanged', 0.5)),
+      (_) {},
+    );
+    await tester.pump();
+    expect(sent.where((m) => m == 'updateProps'), isEmpty);
+
+    // A value the page sets on its own still goes across.
+    value.value = 0.8;
+    await tester.pump();
+    expect(sent.where((m) => m == 'updateProps'), hasLength(1));
+  }, variant: iOS);
+
   testWidgets('a checkbox ignores a new onChanged closure', (tester) async {
     final rebuild = await pumpRebuildable(
       tester,

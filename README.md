@@ -33,6 +33,8 @@ Xcode 27; an older Xcode compiles them out.
   - [List](#list)
 - [Scaffold and navigation](#scaffold-and-navigation)
   - [Page Scaffold](#page-scaffold)
+    - [State management: talking to a body](#state-management-talking-to-a-body)
+    - [Native body: SwiftUI without the nesting](#native-body-swiftui-without-the-nesting)
   - [Navigation Bar](#navigation-bar)
   - [Tab Bar](#tab-bar)
   - [Router Integration](#router-integration)
@@ -115,6 +117,7 @@ default (`style:` to change it).
 | `expand`           | `bool`                             | Fill the available width. Default `false`.                                                                        |
 | `role`             | `CupertinoNativeButtonRole?`       | `destructive` (drawn red), `cancel`.                                                                              |
 | `width` / `height` | `double?`                          | Fixed size. Null hugs the label.                                                                                  |
+| `visibilityPriority` | `CupertinoNativeToolbarVisibilityPriority` | Only in a navigation bar's `trailing`: which buttons stay in the bar when they do not all fit (`low`, `automatic`, `high`); the others go into its ••• menu. Ignored elsewhere. Default `automatic`. |
 
 ### Switch
 
@@ -710,7 +713,7 @@ obstacle, the builder is.
 | `nativeBody`                            | `CupertinoNativeBody?`                     | A body rendered as SwiftUI directly, no engine. Replaces `body` / the tabs' routes.                 |
 | `onBodyEvent`                           | `void Function(String id, Object? value)?` | Called when a `nativeBody` control changes, with its node `id` and the new value.                   |
 
-#### Talking to a body: the isolate boundary
+#### State management: talking to a body
 
 Each body runs in its own FlutterEngine, so in its own **isolate**. Isolates
 share no memory: a Riverpod `ProviderContainer`, a BLoC, a `ValueNotifier`, a
@@ -921,6 +924,10 @@ The iOS 26 bar, with a large title that collapses on scroll, glass buttons and
 an optional search field. Its edge effect and buttons adapt to the content
 under the bar (see [Scroll Edge Effect](#scroll-edge-effect)).
 
+As the page scrolls, the inline title and subtitle rise into the bar while
+they fade in and unblur, the subtitle arriving after its title and leaving
+before it.
+
 ```dart
 CustomScrollView(
   slivers: [
@@ -943,8 +950,8 @@ CustomScrollView(
 | `subtitle`                  | `String?`                        | A second line under the title.                                                                                                 |
 | `leading`                   | `Widget?`                        | At the leading edge. Left null on a page that can pop, the bar adds the back button.                                           |
 | `automaticallyImplyLeading` | `bool`                           | Whether that back button is added: a glass chevron on iOS 26, the chevron and the previous page's title below. Default `true`. |
-| `trailing`                  | `List<Widget>`                   | Buttons at the trailing edge. In the bar a button takes the system's bar weights: medium title and symbol on iOS 26.           |
-| `centerTitle`               | `bool`                           | Centre the inline title. Default `true`.                                                                                       |
+| `trailing`                  | `List<Widget>`                   | Buttons at the trailing edge, grouped as SwiftUI groups toolbar items (see below). In the bar a button takes the system's bar weights: medium title and symbol on iOS 26. |
+| `centerTitle`               | `bool`                           | Centre the inline title. With three `trailing` items or more it moves to the leading side, as SwiftUI's does. Default `true`. |
 | `expandedTitle`             | `bool`                           | Whether the large title row exists; false makes the bar inline only. Default `true`.                                           |
 | `collapseTitle`             | `bool`                           | Whether the large title collapses into the bar on scroll; false keeps it large. Default `true`. _iOS 26+_                      |
 | `bottom` / `bottomHeight`   | `Widget?` / `double`             | A widget under the large title, and its height. Default height `44`.                                                           |
@@ -953,6 +960,26 @@ CustomScrollView(
 `.search` adds `searchPlaceholder`, `searchStyle`, `searchPrefixIcon`,
 `searchSuffixIcon`, `searchGlass`, `searchFieldHeight`, `bottomMode`,
 `scrollToTopOnSearch`, `onSearchChanged` and `onSearchActiveChanged`.
+
+**Trailing items share one glass capsule**, as the system's toolbar items do:
+buttons side by side, glass or in the default style, are drawn in one capsule. A `Spacer()` between two
+ends the capsule, and a `CupertinoNativeButton.glassProminent` (or any other
+widget) always stands alone. What does not fit goes into a ••• menu at the
+end, buttons with a `low` `visibilityPriority` first and `high` last, from the
+end. A button labelled with an icon and a `Text` shows its icon in the bar and
+its title in that menu:
+
+```dart
+trailing: [
+  CupertinoNativeButton.icon(CupertinoSymbols.squareAndArrowUp, onPressed: share),
+  CupertinoNativeButton.icon(CupertinoSymbols.heart, onPressed: like),
+  CupertinoNativeButton.glassProminent(
+    borderShape: CupertinoNativeButtonBorderShape.circle,
+    onPressed: add,
+    child: CupertinoSymbolImage.symbol(CupertinoSymbols.plus),
+  ),
+],
+```
 
 `CupertinoNativeNavigationBar` is the version for pages that do not scroll:
 `title`, `subtitle`, `centerTitle`, `leading`, `trailing`, `scrollEdgeEffect`.
@@ -1347,6 +1374,10 @@ CupertinoNativeGlassGroupItem(
   icon: CupertinoNativeIcon.named(_isBack ? 'chevron.backward' : 'ellipsis'),
 )
 ```
+
+A glass replaced under the finger lights up a second time as the new one
+arrives: SwiftUI does the same with an interactive glass. Pass
+`interactive: false` to a group whose glass is swapped on tap.
 
 **One glass becoming two is the same trick on a list.** Replace the items with
 differently sized ones under new `actionId`s and let matched geometry

@@ -13,6 +13,7 @@ import 'cupertino_scroll_edge_effect.dart';
 import 'cupertino_symbol_image.dart';
 import 'internal/bar_holes.dart';
 import 'internal/bar_slot.dart';
+import 'internal/toolbar_groups.dart';
 import 'internal/ios_version.dart';
 import 'internal/legacy_sliver_navigation_bar.dart';
 import 'models/cupertino_native_icon.dart';
@@ -117,7 +118,8 @@ class CupertinoNativeSliverNavigationBar extends StatefulWidget {
   final String? subtitle;
 
   /// Whether the inline title (and subtitle) sits centered in the bar
-  /// (true, the default) or right after [leading].
+  /// (true, the default) or right after [leading]. With three [trailing]
+  /// items or more it sits after [leading] either way, as SwiftUI's does.
   final bool centerTitle;
 
   /// Leading bar content: any widget, e.g. a `CupertinoNativeButton.glass`.
@@ -128,9 +130,26 @@ class CupertinoNativeSliverNavigationBar extends StatefulWidget {
   /// Like [CupertinoNavigationBar.automaticallyImplyLeading].
   final bool automaticallyImplyLeading;
 
-  /// Trailing bar content, laid out in a row with 12pt between entries. Group
-  /// several into one glass capsule by passing a single
-  /// [CupertinoNativeGlassContainer] holding them.
+  /// Trailing bar content, grouped as SwiftUI groups toolbar items:
+  /// [CupertinoNativeButton]s side by side, glass or in the default style,
+  /// share one glass capsule. A
+  /// [Spacer] between two ends the capsule; a
+  /// [CupertinoNativeButton.glassProminent], or any other widget, stands
+  /// alone. Separate capsules sit 12pt apart.
+  ///
+  /// What does not fit goes into a ••• menu at the end, as the system's
+  /// overflow does: see [CupertinoNativeButton.visibilityPriority]. A button
+  /// whose label holds an icon and a title shows the icon in the bar and the
+  /// title in that menu, as SwiftUI's `Button("Add", systemImage:)` does.
+  ///
+  /// ```dart
+  /// trailing: [
+  ///   CupertinoNativeButton.icon(CupertinoSymbols.squareAndArrowUp, onPressed: share),
+  ///   CupertinoNativeButton.icon(CupertinoSymbols.heart, onPressed: like),
+  ///   const Spacer(), // a capsule of its own for what follows
+  ///   CupertinoNativeButton.icon(CupertinoSymbols.ellipsis, onPressed: more),
+  /// ]
+  /// ```
   final List<Widget> trailing;
 
   /// Widget under the large title (default constructor only). Unlike the
@@ -260,6 +279,9 @@ class _CupertinoSliverAppBarState
   /// title follows it. Null until the first measurement.
   Brightness? _effectBehind;
 
+  /// The app's brightness [_effectBehind] was measured under.
+  Brightness? _appBrightness;
+
   /// The bar's native items, cut out of the edge effect's wash.
   final BarHoles _barHoles = BarHoles();
 
@@ -272,6 +294,14 @@ class _CupertinoSliverAppBarState
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    // A theme change restarts the effect's measurement without a report,
+    // and from then on it reports only changes: a dark reading kept from the
+    // dark theme left the inline title white over a light page for good.
+    final appBrightness = CupertinoTheme.brightnessOf(context);
+    if (appBrightness != _appBrightness) {
+      _appBrightness = appBrightness;
+      _effectBehind = null;
+    }
     _detachScrollListeners();
     _scrollableState = Scrollable.maybeOf(context);
     _scrollableState?.position.isScrollingNotifier.addListener(
@@ -480,7 +510,13 @@ class _CupertinoSliverAppBarState
     if (!isIOS26OrLater) {
       final trailingRow = widget.trailing.isEmpty
           ? null
-          : Row(mainAxisSize: MainAxisSize.min, children: widget.trailing);
+          : Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                for (final item in widget.trailing)
+                  if (item is! Spacer) item,
+              ],
+            );
       if (widget._searchable) {
         // The iOS 26-only glass icon properties don't apply here and are
         // ignored. The search-activation morph is not drawn yet: tapping the
@@ -547,11 +583,12 @@ class _CupertinoSliverAppBarState
             brightness: _effectBehind,
             child: Row(
               mainAxisSize: MainAxisSize.min,
-              // Between two glass buttons, measured on iOS 26 Notes.
+              // Between two glass capsules, measured on iOS 26 Notes.
               spacing: 12,
-              children: [
-                for (final item in widget.trailing) BarHole(child: item),
-              ],
+              children: toolbarGroups(
+                widget.trailing,
+                width: _trailingWidth(context, hasLeading: implied != null),
+              ),
             ),
           );
     final closeButton = !widget._searchable
@@ -618,7 +655,7 @@ class _CupertinoSliverAppBarState
             delegate: _IOS26SliverAppBarDelegate(
               largeTitle: widget.largeTitle,
               subtitle: widget.subtitle,
-              centerTitle: widget.centerTitle,
+              centerTitle: titleCentered(widget.centerTitle, widget.trailing),
               expandedTitle: widget.expandedTitle,
               collapseTitle: widget.collapseTitle,
               leading: leading,
@@ -934,7 +971,6 @@ class _IOS26SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
         : (1 - subtitleT / 0.75).clamp(0.0, 1.0);
     final inlineT = !expandedTitle ? 1.0 : tTitle;
     final inlineSubT = !expandedTitle ? 1.0 : subtitleT;
-    final inlineSigma = (1 - inlineT) * 3;
 
     // Search slot geometry: shrinks with the collapse, travels on activation.
     // The capsule itself starts squeezing only past the dead zone: the
@@ -971,16 +1007,30 @@ class _IOS26SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
     searchRowVisibility.value = contentFade;
 
     // Blur-morph + translate-from-below, like the system collapse. Title and
-    // subtitle fade/travel on their own (lagged) progress so the subtitle
-    // arrives just after the title.
-    Widget inlineFade(Widget child, double t) => Opacity(
-      opacity: titleVisible ? t : 0.0,
-      // The system's rises ~10pt into place.
-      child: Transform.translate(offset: Offset(0, (1 - t) * 10), child: child),
-    );
-    // With a subtitle the system inline bar drops the title to 15pt (and the
-    // subtitle to 11pt) so both lines read as one compact block.
-    Widget inlineTitleBlock = subtitle == null
+    // subtitle each blur, fade and travel on their own (lagged) progress, so
+    // the subtitle arrives just after the title and leaves just before it.
+    Widget inlineFade(Widget child, double t) {
+      // 3.3pt at the start, measured on the system's collapse.
+      final sigma = (1 - t) * 3.3;
+      return Opacity(
+        opacity: titleVisible ? t : 0.0,
+        // Rises into place from half a bar button's height below.
+        child: Transform.translate(
+          offset: Offset(0, (1 - t) * _barH / 2),
+          child: sigma > 0.1
+              ? ImageFiltered(
+                  imageFilter: ui.ImageFilter.blur(
+                    sigmaX: sigma,
+                    sigmaY: sigma,
+                  ),
+                  child: child,
+                )
+              : child,
+        ),
+      );
+    }
+
+    final inlineTitleBlock = subtitle == null
         ? inlineFade(Text(largeTitle, style: inlineTitleStyle), inlineT)
         : Column(
             mainAxisSize: MainAxisSize.min,
@@ -1008,15 +1058,6 @@ class _IOS26SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
               ),
             ],
           );
-    if (inlineSigma > 0.1) {
-      inlineTitleBlock = ImageFiltered(
-        imageFilter: ui.ImageFilter.blur(
-          sigmaX: inlineSigma,
-          sigmaY: inlineSigma,
-        ),
-        child: inlineTitleBlock,
-      );
-    }
 
     // Fixed height: resizing the native blur every scroll frame re-renders
     // its masks and makes it lag.
@@ -1221,6 +1262,13 @@ Widget? _impliedLeading(BuildContext context, Widget? leading, bool imply) {
 double _barMargin(BuildContext context) =>
     MediaQuery.sizeOf(context).width >= 414 ? 20 : 16;
 
+/// The room the trailing items have before they spill into the ••• menu:
+/// the bar between its margins, less a leading button and its 12pt gap.
+double _trailingWidth(BuildContext context, {required bool hasLeading}) =>
+    MediaQuery.sizeOf(context).width -
+    2 * _barMargin(context) -
+    (hasLeading ? 44 + 12 : 0);
+
 /// Hosts the bottom-slot widget: passes the slot's (shrinking) height
 /// straight to the child (so a `fillHeight` native field physically
 /// squeezes with the collapse, proportional to the scroll and the snap)
@@ -1277,11 +1325,15 @@ class CupertinoNativeNavigationBar extends StatelessWidget {
 
   final String title;
   final String? subtitle;
+
+  /// See [CupertinoNativeSliverNavigationBar.centerTitle].
   final bool centerTitle;
   final Widget? leading;
 
   /// See [CupertinoNativeSliverNavigationBar.automaticallyImplyLeading].
   final bool automaticallyImplyLeading;
+
+  /// See [CupertinoNativeSliverNavigationBar.trailing].
   final List<Widget> trailing;
   final CupertinoScrollEdgeEffectStyle scrollEdgeEffect;
 
@@ -1307,6 +1359,7 @@ class CupertinoNativeNavigationBar extends StatelessWidget {
     Brightness? behind,
     ValueChanged<Brightness> onBrightnessChanged,
   ) {
+    final centerTitle = titleCentered(this.centerTitle, trailing);
     final theme = CupertinoTheme.of(context);
     final topPadding = MediaQuery.paddingOf(context).top;
     final navTitleStyle = theme.textTheme.navTitleTextStyle.copyWith(
@@ -1373,9 +1426,12 @@ class CupertinoNativeNavigationBar extends StatelessWidget {
       brightness: behind,
       child: Row(
         mainAxisSize: MainAxisSize.min,
-        // Between two glass buttons, measured on iOS 26 Notes.
+        // Between two glass capsules, measured on iOS 26 Notes.
         spacing: 12,
-        children: [for (final item in trailing) BarHole(child: item)],
+        children: toolbarGroups(
+          trailing,
+          width: _trailingWidth(context, hasLeading: implied != null),
+        ),
       ),
     );
 
@@ -1485,11 +1541,25 @@ class _EffectBrightness extends StatefulWidget {
 class _EffectBrightnessState extends State<_EffectBrightness> {
   Brightness? _behind;
 
+  /// The app's brightness [_behind] was measured under.
+  Brightness? _appBrightness;
+
   /// The bar's native items, cut out of the edge effect's wash.
   final BarHoles _holes = BarHoles();
 
   void _report(Brightness behind) {
     if (mounted && behind != _behind) setState(() => _behind = behind);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // As in the sliver bar: a theme change makes the last reading stale.
+    final appBrightness = CupertinoTheme.brightnessOf(context);
+    if (appBrightness != _appBrightness) {
+      _appBrightness = appBrightness;
+      _behind = null;
+    }
   }
 
   @override

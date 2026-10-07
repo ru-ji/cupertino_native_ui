@@ -6,6 +6,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
+import 'internal/bar_slot.dart';
 import 'internal/native_platform_view_mixin.dart';
 import 'models/cupertino_native_icon.dart';
 import 'models/cupertino_native_menu_item.dart';
@@ -298,7 +299,11 @@ class _CupertinoNativeGlassGroupState extends State<CupertinoNativeGlassGroup>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final dark = CupertinoTheme.brightnessOf(context) == Brightness.dark;
+    // In a bar, the content under the bar, as for the bar's own buttons.
+    final dark =
+        (BarSlot.brightnessOf(context) ??
+            CupertinoTheme.brightnessOf(context)) ==
+        Brightness.dark;
     if (dark != _isDark) {
       _isDark = dark;
       _sendIfChanged();
