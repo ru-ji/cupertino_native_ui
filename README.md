@@ -1,8 +1,11 @@
 # cupertino_native_ui
 
-Native iOS views in Flutter, Liquid Glass included, that adapt to the iOS
-version they run on. They look and feel exactly like iOS, and fit into your
-Flutter code like any other widget.
+Real iOS 26 **Liquid Glass** in Flutter: native SwiftUI and UIKit widgets
+(glass effects, tab bar, toolbar, sheets, menus, lists, scroll edge effects)
+that look and feel exactly like iOS, adapt to the iOS version they run on, and
+fit into your Flutter code like any other widget.
+
+<img src="https://raw.githubusercontent.com/ru-ji/cupertino_native_ui/main/doc/images/reshape.gif" width="260" alt="Flutter Liquid Glass: two native glasses morphing into one" />
 
 Options tied to a newer iOS (marked _iOS 26+_ or _iOS 27+_ below) are simply
 ignored on older releases. The iOS 27 ones also need the app built with
@@ -1327,15 +1330,10 @@ it sits in `items`.
 
 | Change       | How you cause it                               | Transition         |
 | ------------ | ---------------------------------------------- | ------------------ |
-| 0 → 1, 1 → 0 | flip `glassVisible`                            | `.materialize`     |
-| 1 → 1        | give the item a **new `actionId`**             | `.matchedGeometry` |
-| 1 → 2, 2 → 1 | replace the items with differently shaped ones | `.matchedGeometry` |
-
-<p>
-<img src="https://raw.githubusercontent.com/ru-ji/cupertino_native_ui/main/doc/images/arrive.gif" width="260" alt="0 to 1: a glass materializes" />
-<img src="https://raw.githubusercontent.com/ru-ji/cupertino_native_ui/main/doc/images/swap.gif" width="260" alt="1 to 1: a new actionId morphs the glass" />
-<img src="https://raw.githubusercontent.com/ru-ji/cupertino_native_ui/main/doc/images/reshape.gif" width="260" alt="1 to 2: two glasses split from one" />
-</p>
+| 0 to 1, 1 to 0 | flip `glassVisible`                          | `.materialize`     |
+| 1 to 1       | give the item a **new `actionId`**             | `.matchedGeometry` |
+| 1 to 2, 2 to 1 | replace the items with differently shaped ones | `.matchedGeometry` |
+| 1 to 2       | add an item beside another                     | `.matchedGeometry` |
 
 `.matchedGeometry` gives the departing glass and the arriving one a single
 shape that travels between them: it is what makes a merge a merge, and what
@@ -1344,9 +1342,13 @@ no geometry at all: the material scales in or out while the content fades,
 which is what a glass wants when it appears where there was nothing.
 `.identity` does neither.
 
-**A glass that arrives from nothing keeps its slot.** Leave the item in the
-list and flip `glassVisible`; taking it out shrinks the group's box underneath
-the transition and the arriving glass has nowhere to land:
+##### Arrive (0 to 1)
+
+A glass that arrives from nothing keeps its slot. Leave the item in the list
+and flip `glassVisible`; taking it out shrinks the group's box underneath the
+transition and the arriving glass has nowhere to land.
+
+<img src="https://raw.githubusercontent.com/ru-ji/cupertino_native_ui/main/doc/images/arrive.gif" width="260" alt="0 to 1: a glass materializes" />
 
 ```dart
 CupertinoNativeGlassGroup(
@@ -1361,12 +1363,15 @@ CupertinoNativeGlassGroup(
 )
 ```
 
-**Swapping one glass for another is a change of `actionId`, not of icon.**
-Keep the id and change only the icon and nothing animates: no glass left, none
-arrived, so there was no transition to run and the content hard-cuts. Change
-the id and SwiftUI sees a different glass in the same place; both are the same
-44pt circle, so the matched geometry holds the material perfectly still while
-the content turns over:
+##### Swap (1 to 1)
+
+Swapping one glass for another is a change of `actionId`, not of icon. Keep
+the id and change only the icon and nothing animates: no glass left, none
+arrived, so the content hard-cuts. Change the id and SwiftUI sees a different
+glass in the same place; both are the same 44pt circle, so the matched
+geometry holds the material still while the content turns over.
+
+<img src="https://raw.githubusercontent.com/ru-ji/cupertino_native_ui/main/doc/images/swap.gif" width="260" alt="1 to 1: a new actionId morphs the glass" />
 
 ```dart
 CupertinoNativeGlassGroupItem(
@@ -1379,82 +1384,15 @@ A glass replaced under the finger lights up a second time as the new one
 arrives: SwiftUI does the same with an interactive glass. Pass
 `interactive: false` to a group whose glass is swapped on tap.
 
-**One glass becoming two is the same trick on a list.** Replace the items with
-differently sized ones under new `actionId`s and let matched geometry
-morph each old shape into its new one; the gap does the rest, blending the two
-as they pass:
+##### Reshape (1 to 2)
 
-```dart
-CupertinoNativeGlassGroup(
-  spacing: 6, // under the blend radius, so they run together on the way
-  items: _selecting
-      ? [
-          CupertinoNativeGlassGroupItem(
-            actionId: 'menu.wide',
-            shape: CupertinoGlassGroupShape.capsule,
-            icon: menuIcon,
-            title: '•••',
-          ),
-          CupertinoNativeGlassGroupItem(
-            actionId: 'close',
-            shape: CupertinoGlassGroupShape.capsule,
-            icon: closeIcon,
-            width: 44,
-          ),
-        ]
-      : [
-          CupertinoNativeGlassGroupItem(
-            actionId: 'menu',
-            shape: CupertinoGlassGroupShape.capsule,
-            icon: menuIcon,
-            width: 44,
-          ),
-          CupertinoNativeGlassGroupItem(
-            actionId: 'select',
-            shape: CupertinoGlassGroupShape.capsule,
-            title: 'Select',
-          ),
-        ],
-)
-```
+The Photos "Select" change.
 
-##### Unions
+Replace the items with differently shaped ones and the glasses split from, or
+merge into, one shape. `morphOnChange` plays that on the group rather than on
+one glass (the glass that starts the change is not the one that finishes it).
 
-Two glasses are drawn as one shape for either of two reasons, and they are
-separate questions: a `unionId` **states** it, and the container's spacing
-**infers** it. SwiftUI merges effects nearer to each other than the container's
-spacing, whatever their ids say. `spacing` sets the gap, `mergeDistance` the
-radius on its own:
-
-```dart
-CupertinoNativeGlassGroup(
-  spacing: 20,        // the glasses sit 20pt apart
-  mergeDistance: 0,   // and blend only where a unionId says so
-  items: [
-    CupertinoNativeGlassGroupItem(
-      actionId: 'back', unionId: _united ? 'pair' : null, icon: backIcon),
-    CupertinoNativeGlassGroupItem(
-      actionId: 'forward', unionId: _united ? 'pair' : null, icon: forwardIcon),
-  ],
-)
-```
-
-`spacing: 0` is the shorthand that puts every item under one id, which is why an
-explicit `unionId` is only read when `spacing` is above 0. A union's frame is
-the whole group's bounding box, and the glass fills it, so a union of two
-44pt items is one 96pt capsule, not a circle stranded in the middle.
-
-##### When the default is not what the system does
-
-Two of these are exact and one is not. Held against a 60fps capture of the
-system's own bar button, a swap on `.matchedGeometry` is _too still_: the
-material is matched so perfectly that nothing announces the change. What the
-system plays there is neither a fade nor a scale: the circle **squares up**,
-top and bottom edges flattening first and then the sides, before unwinding. The
-glass barely changes size at all.
-
-`morphOnChange` plays that, on the group rather than on one glass (the glass
-that starts the change is not the one that finishes it):
+<img src="https://raw.githubusercontent.com/ru-ji/cupertino_native_ui/main/doc/images/reshape.gif" width="260" alt="1 to 2: two glasses split from one" />
 
 ```dart
 CupertinoNativeGlassGroup(
@@ -1463,13 +1401,53 @@ CupertinoNativeGlassGroup(
 )
 ```
 
-Likewise `.materialize` scales the glass in, and a system button appearing does
-not move at all: the material reads as a gauge driven from zero while the
-content blurs in. `CupertinoGlassTransition.intensity` is that, and because
-nothing is inserted or removed, it is not a transition at all, so a glass on
-`intensity` does not merge or match geometry with its neighbours.
+##### Insert (1 to 2)
 
-The example app's **Liquid Glass** page plays all three, and each glass is
+Add an item beside one that stays. Inside the group's spacing, matched
+geometry grows the new glass out of its neighbour, which keeps its
+`actionId` and moves aside.
+
+<img src="https://raw.githubusercontent.com/ru-ji/cupertino_native_ui/main/doc/images/insert.gif" width="260" alt="1 to 2: a play glass grows out of the ellipsis glass" />
+
+```dart
+CupertinoNativeGlassGroup(
+  spacing: 12,
+  items: [
+    if (_playing)
+      const CupertinoNativeGlassGroupItem(
+        actionId: 'play',
+        icon: CupertinoNativeIcon.named('play.fill'),
+      ),
+    const CupertinoNativeGlassGroupItem(
+      actionId: 'more',
+      icon: CupertinoNativeIcon.named('ellipsis'),
+    ),
+  ],
+)
+```
+
+##### Intensity
+
+`.materialize` scales the glass in, but a system button appearing does not
+move at all: the material reads as a gauge driven from zero while the content
+blurs in. `CupertinoGlassTransition.intensity` is that, and because nothing is
+inserted or removed, it is not a transition at all, so a glass on `intensity`
+does not merge or match geometry with its neighbours.
+
+```dart
+CupertinoNativeGlassGroup(
+  transition: CupertinoGlassTransition.intensity,
+  items: [
+    CupertinoNativeGlassGroupItem(
+      actionId: 'more',
+      icon: CupertinoNativeIcon.named('ellipsis'),
+      glassVisible: _shown,
+    ),
+  ],
+)
+```
+
+The example app's **Liquid Glass** page plays all of them, and each glass is
 tappable there: the change is driven by the glass as much as by the button
 under it.
 

@@ -1,17 +1,24 @@
 name: cupertino_native_ui
 description: >-
-  Real UIKit and SwiftUI controls for Flutter on iOS: native buttons, lists,
-  sheets, tab bars, navigation and Liquid Glass, driven by a Flutter-shaped API.
-version: 0.1.0
+  Native iOS 26 Liquid Glass widgets for Flutter, backed by SwiftUI: glass
+  effects, tab bar, toolbar, sheets, menus, lists and scroll edge effects.
+version: 0.2.0
 homepage: https://github.com/ru-ji/cupertino_native_ui
 repository: https://github.com/ru-ji/cupertino_native_ui
 issue_tracker: https://github.com/ru-ji/cupertino_native_ui/issues
 topics:
   - liquid-glass
-  - glass
   - cupertino
   - ios
+  - swiftui
   - native-widgets
+screenshots:
+  - description: Liquid Glass morphing between two glasses
+    path: doc/images/reshape.gif
+  - description: Liquid Glass swap transition
+    path: doc/images/swap.gif
+  - description: iOS 26 scroll edge effect
+    path: doc/images/scroll_edge_effect.gif
 
 environment:
   sdk: ^3.13.2
