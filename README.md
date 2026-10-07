@@ -5,8 +5,6 @@ Real iOS 26 **Liquid Glass** in Flutter: native SwiftUI and UIKit widgets
 that look and feel exactly like iOS, adapt to the iOS version they run on, and
 fit into your Flutter code like any other widget.
 
-<img src="https://raw.githubusercontent.com/ru-ji/cupertino_native_ui/main/doc/images/reshape.gif" width="260" alt="Flutter Liquid Glass: two native glasses morphing into one" />
-
 Options tied to a newer iOS (marked _iOS 26+_ or _iOS 27+_ below) are simply
 ignored on older releases. The iOS 27 ones also need the app built with
 Xcode 27; an older Xcode compiles them out.
