@@ -35,4 +35,8 @@ migrate_working_dir/
 
 
 # Not shipped in the package: the README loads these from GitHub.
-/doc/images/
+# Only the pub.dev screenshots listed in pubspec.yaml go in the archive.
+/doc/images/*
+!/doc/images/reshape.gif
+!/doc/images/swap.gif
+!/doc/images/scroll_edge_effect.gif
