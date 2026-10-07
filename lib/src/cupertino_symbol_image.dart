@@ -4,6 +4,7 @@ import 'package:flutter/widgets.dart';
 
 import 'models/cupertino_symbols.dart';
 import 'internal/native_color.dart';
+import 'internal/native_log.dart';
 
 import 'package:flutter/material.dart' show Theme;
 
@@ -126,7 +127,7 @@ class _CupertinoSymbolImageState extends State<CupertinoSymbolImage> {
         // crash: the widget stays empty. Logged, not swallowed: a silent
         // catch here is indistinguishable from "the symbol just didn't draw".
         .catchError((Object e) {
-          debugPrint('CupertinoSymbolImage: "${widget.name}" failed: $e');
+          nativeLog(() => 'CupertinoSymbolImage: "${widget.name}" failed: $e');
           return null;
         });
   }

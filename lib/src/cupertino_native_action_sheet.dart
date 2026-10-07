@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
 import 'cupertino_native_alert_dialog.dart';
+import 'internal/native_log.dart';
 
 /// The system sheet of choices that rises from the bottom of the screen:
 /// UIKit's `UIAlertController(preferredStyle: .actionSheet)`, which is what
@@ -75,7 +76,7 @@ class CupertinoNativeActionSheet {
         actions[index].onPressed?.call();
       }
     } on PlatformException catch (e) {
-      debugPrint('Failed to show action sheet: ${e.message}');
+      nativeLog(() => 'Failed to show action sheet: ${e.message}');
     }
   }
 

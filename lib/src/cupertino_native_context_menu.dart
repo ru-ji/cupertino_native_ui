@@ -13,6 +13,7 @@ import 'callbacks.dart';
 
 import 'internal/native_platform_view_mixin.dart';
 import 'models/cupertino_native_menu_item.dart';
+import 'internal/native_log.dart';
 
 /// Wraps Flutter content in a native iOS context menu: a long-press lifts the
 /// content and shows a menu built from [actions], the same model
@@ -313,7 +314,7 @@ class _CupertinoNativeContextMenuState extends State<CupertinoNativeContextMenu>
       final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
       image.dispose();
       if (bytes == null) {
-        debugPrint('[ctxmenu] $method: encode returned null');
+        nativeLog(() => '[ctxmenu] $method: encode returned null');
         return;
       }
       // The capture is re-run on every rebuild (a non-const child is a new
@@ -325,10 +326,10 @@ class _CupertinoNativeContextMenuState extends State<CupertinoNativeContextMenu>
       if (listEquals(_lastSent[method], png)) return;
       _lastSent[method] = png;
       await channel?.invokeMethod(method, {'bytes': png, 'scale': dpr});
-      debugPrint('[ctxmenu] $method sent: ${bytes.lengthInBytes}B');
+      nativeLog(() => '[ctxmenu] $method sent: ${bytes.lengthInBytes}B');
     } catch (e) {
       // Nothing to rasterize yet; the next update re-captures.
-      debugPrint('[ctxmenu] $method FAILED: $e');
+      nativeLog(() => '[ctxmenu] $method FAILED: $e');
     }
   }
 

@@ -30,6 +30,18 @@ what shows it as intended; older versions get the fallbacks described in the
 README. The example is also the manual test suite for anything visual: there
 is no screenshot testing, so a UI change needs a look on device.
 
+### Diagnostics
+
+The package logs nothing by default, so an app using it sees a clean
+console. To see its own diagnostics while working on it, turn them on:
+
+- **Dart:** `flutter run --dart-define=CUPERTINO_NATIVE_UI_LOG=true`
+- **Swift:** set `CUPERTINO_NATIVE_UI_LOG` to `1` in the Runner scheme
+  (Product › Scheme › Edit Scheme › Run › Arguments › Environment Variables).
+  Debug builds only.
+
+Every line starts with `[cupertino_native_ui]`.
+
 ## Before opening a PR
 
 CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs these; matching

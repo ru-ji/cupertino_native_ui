@@ -4,6 +4,7 @@ import 'package:flutter/widgets.dart';
 
 import 'cupertino_native_text_field.dart';
 import 'internal/text_field_wire.dart';
+import 'internal/native_log.dart';
 
 /// A button of a [CupertinoNativeAlertDialog], shaped like Flutter's
 /// [CupertinoDialogAction]. [child] is a [Text]: UIKit draws the label.
@@ -78,7 +79,7 @@ class CupertinoNativeAlertDialog {
       }
     } on PlatformException catch (e) {
       // Handle error or print
-      debugPrint("Failed to show alert: ${e.message}");
+      nativeLog(() => 'Failed to show alert: ${e.message}');
     }
   }
 

@@ -158,12 +158,43 @@ final class FlutterHostViewController: UIViewController {
         super.viewDidLoad()
         view.backgroundColor = .clear
 
+        // The engine's own first-frame signal, so the spinner never outlives
+        // visible content.
+        displayObservation = flutterController.observe(
+            \.isDisplayingFlutterUI, options: [.initial, .new]
+        ) { [weak self] controller, _ in
+            if controller.isDisplayingFlutterUI {
+                DispatchQueue.main.async { self?.onFirstFrame?() }
+            }
+        }
+
+        // The engine resizes the FlutterView through its own constraints;
+        // host layout passes don't reliably re-run when that happens, so
+        // observe the view's bounds directly.
+        boundsObservation = flutterController.view.observe(\.bounds, options: [.new]) {
+            [weak self] observedView, _ in
+            self?.reportIfChanged(observedView.bounds.size)
+        }
+    }
+
+    /// Whether the FlutterView is in place: see [installFlutterView].
+    private var flutterViewInstalled = false
+
+    /// Puts the FlutterView in, pinned top/leading/trailing, on this view's
+    /// first layout that has a width.
+    ///
+    /// Not in `viewDidLoad`: SwiftUI lays a representable out at zero width
+    /// before it places it, and an auto-resizable FlutterView keeps the frame
+    /// of its first layout as its size limit. Pinned from the start, that
+    /// first frame was 0 wide: the engine logged "the host native view's width
+    /// is 0" on every layout from then on and treated the width as unbounded.
+    /// Pinned once this view has a width, the first frame is the real one,
+    /// the way Flutter's own add-to-app sample does it (left unconstrained it
+    /// gets an arbitrary width: 360pt on a 414pt Plus iPhone). Width and top
+    /// are the host's; the height stays Dart's.
+    private func installFlutterView() {
+        flutterViewInstalled = true
         addChild(flutterController)
-        // Pinned before the first layout, the way Flutter's own add-to-app
-        // sample does it: an auto-resizable FlutterView takes its width limit
-        // from its frame at that first layout, so a view left unconstrained
-        // gets an arbitrary one (360pt, on a 414pt Plus iPhone). Width and
-        // top are the host's; the height stays Dart's.
         let flutterView = flutterController.view!
         flutterView.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(flutterView)
@@ -184,24 +215,6 @@ final class FlutterHostViewController: UIViewController {
         weakHeight.priority = UILayoutPriority(1)
         weakHeight.isActive = true
         flutterController.didMove(toParent: self)
-
-        // The engine's own first-frame signal, so the spinner never outlives
-        // visible content.
-        displayObservation = flutterController.observe(
-            \.isDisplayingFlutterUI, options: [.initial, .new]
-        ) { [weak self] controller, _ in
-            if controller.isDisplayingFlutterUI {
-                DispatchQueue.main.async { self?.onFirstFrame?() }
-            }
-        }
-
-        // The engine resizes the FlutterView through its own constraints;
-        // host layout passes don't reliably re-run when that happens, so
-        // observe the view's bounds directly.
-        boundsObservation = flutterController.view.observe(\.bounds, options: [.new]) {
-            [weak self] observedView, _ in
-            self?.reportIfChanged(observedView.bounds.size)
-        }
     }
 
     deinit {
@@ -211,6 +224,10 @@ final class FlutterHostViewController: UIViewController {
 
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
+        if !flutterViewInstalled {
+            guard view.bounds.width > 0 else { return }
+            installFlutterView()
+        }
         if let dartHeight { adoptDartHeight(dartHeight) }
         reportIfChanged(flutterController.view.intrinsicContentSize)
         // Dart layout can settle after this pass (fonts, images, async

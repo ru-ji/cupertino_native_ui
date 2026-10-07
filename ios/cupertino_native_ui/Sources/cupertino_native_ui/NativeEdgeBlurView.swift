@@ -39,7 +39,7 @@ final class NativeEdgeBlurPlatformView: NSObject, FlutterPlatformView {
             // that surface: a stale copy of any Flutter chrome drawn over it (a
             // bar title) comes back blurred inside the effect.
             if Bundle.main.object(forInfoDictionaryKey: "FLTDisablePartialRepaint") as? Bool != true {
-                print(
+                NativeLog.log(
                     "[EdgeBlur] WARNING: partial repaint is enabled. Flutter content drawn over this blur will ghost inside it. Add <key>FLTDisablePartialRepaint</key><true/> to the app's Info.plist."
                 )
             }
@@ -488,7 +488,7 @@ final class LumaTracker: NSObject {
         super.init()
         guard let view = Self.makeTrackingView(delegate: self, low: low, high: high) else {
             #if DEBUG
-                print("[EdgeBlur] _UILumaTrackingBackdropView unavailable: the wash stays light")
+                NativeLog.log("[EdgeBlur] _UILumaTrackingBackdropView unavailable: the wash stays light")
             #endif
             return nil
         }
@@ -574,8 +574,8 @@ final class BackdropBlurView: UIView {
         super.init(frame: frame)
         isUserInteractionEnabled = false
         #if DEBUG
-            if filter == nil { print("[EdgeBlur] CAFilter variableBlur is unavailable") }
-            if NSClassFromString("CABackdropLayer") == nil { print("[EdgeBlur] CABackdropLayer is unavailable") }
+            if filter == nil { NativeLog.log("[EdgeBlur] CAFilter variableBlur is unavailable") }
+            if NSClassFromString("CABackdropLayer") == nil { NativeLog.log("[EdgeBlur] CABackdropLayer is unavailable") }
         #endif
     }
 

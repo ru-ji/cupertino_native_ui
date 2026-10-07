@@ -5,6 +5,7 @@ import '../cupertino_native_body.dart';
 import '../cupertino_native_button.dart';
 import '../cupertino_native_checkbox.dart';
 import 'native_control.dart';
+import 'native_log.dart';
 import '../cupertino_native_date_picker.dart';
 import '../cupertino_native_flutter_view.dart';
 import '../cupertino_native_glass_container.dart';
@@ -345,13 +346,13 @@ CupertinoNativeBody? lowerWidgetNode(
         'Spacer, Row or Column, or CupertinoNativeFlutterView(route) to host '
         'your own Flutter there, which costs an engine.',
       );
-      // The assert is compiled out in release, where the widget was then
-      // dropped without a word: a glass container whose child hit this case
-      // simply came up empty on screen. Say so at runtime too.
-      debugPrint(
-        'cupertino_native_ui: dropped ${widget.runtimeType}. This surface is '
-        'rendered by SwiftUI and cannot mount Flutter widgets. Wrap it in '
-        'CupertinoNativeFlutterView(route) to keep it.',
+      // The assert stops a debug build; release drops the widget, which only
+      // the package's own diagnostics mention.
+      nativeLog(
+        () =>
+            'dropped ${widget.runtimeType}. This surface is '
+            'rendered by SwiftUI and cannot mount Flutter widgets. Wrap it in '
+            'CupertinoNativeFlutterView(route) to keep it.',
       );
       return null;
   }

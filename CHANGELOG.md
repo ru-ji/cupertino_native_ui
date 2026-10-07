@@ -23,6 +23,12 @@
 
 ### Fixed
 
+* The package logs nothing unless its diagnostics are turned on
+  (`CUPERTINO_NATIVE_UI_LOG`, see CONTRIBUTING.md): an app using it no
+  longer sees its debug lines.
+* A Flutter body (page scaffold or sheet) is laid out at its real width from
+  its first frame: the engine no longer warns, on every layout, that the
+  host view's width is 0.
 * A picker whose items are renamed in place (same count) shows the new
   names.
 * A slider, and a control in a native body (page scaffold or sheet), no
