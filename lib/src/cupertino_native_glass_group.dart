@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:flutter/cupertino.dart' show CupertinoTheme;
+import 'package:cupertino_ui/cupertino_ui.dart' show CupertinoTheme;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';

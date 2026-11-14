@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:flutter/cupertino.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:cupertino_native_ui/cupertino_native_ui.dart';
 
 enum _Stage { checking, available, downloading, ready, installing, upToDate }

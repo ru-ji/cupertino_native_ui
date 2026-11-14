@@ -1,11 +1,11 @@
-import 'package:flutter/cupertino.dart'
+import 'package:cupertino_ui/cupertino_ui.dart'
     show
         CupertinoColors,
         CupertinoDynamicColor,
         CupertinoPageScaffold,
         CupertinoTheme;
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart' show Scaffold, Theme;
+import 'package:material_ui/material_ui.dart' show Scaffold, Theme;
 import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';

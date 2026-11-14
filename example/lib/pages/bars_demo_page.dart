@@ -1,5 +1,5 @@
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart' show Scaffold, Theme;
+import 'package:cupertino_ui/cupertino_ui.dart';
+import 'package:material_ui/material_ui.dart' show Scaffold, Theme;
 import 'package:cupertino_native_ui/cupertino_native_ui.dart';
 
 /// The App Store, built the way an iOS app builds one: the native navigation

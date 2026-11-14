@@ -1,4 +1,4 @@
-import 'package:flutter/cupertino.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:cupertino_native_ui/cupertino_native_ui.dart';
 
 /// [CupertinoNativeGlassContainer]: the iOS 26 Liquid Glass material as

@@ -1,4 +1,4 @@
-import 'package:flutter/cupertino.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:cupertino_native_ui/cupertino_native_ui.dart';
 
 /// A page with no Flutter in it, a SwiftUI `NavigationStack` in a `TabView`

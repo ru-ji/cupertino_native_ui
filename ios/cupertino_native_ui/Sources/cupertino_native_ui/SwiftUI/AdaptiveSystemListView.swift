@@ -78,7 +78,7 @@ struct AdaptiveSystemListView: View {
                 }
             }
         }
-        .listStyle(.insetGrouped)
+        .applyListStyle(config.style)
         // Either state is the List's edit mode; which accessories it shows
         // follows from the selection binding and `.onMove` above.
         .environment(\.editMode, .constant(editModeActive ? .active : .inactive))
@@ -414,6 +414,22 @@ private struct SwipeActions: ViewModifier {
             }
         } else {
             content
+        }
+    }
+}
+
+private extension View {
+    /// SwiftUI's `ListStyle`s by name. `plain` and `inset` are the edge-to-edge
+    /// lists (Messages, WhatsApp): no cards, rows span the width.
+    @ViewBuilder
+    func applyListStyle(_ style: String?) -> some View {
+        switch style {
+        case "plain": listStyle(.plain)
+        case "inset": listStyle(.inset)
+        case "grouped": listStyle(.grouped)
+        case "sidebar": listStyle(.sidebar)
+        case "automatic": listStyle(.automatic)
+        default: listStyle(.insetGrouped)
         }
     }
 }

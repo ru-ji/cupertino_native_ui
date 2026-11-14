@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:flutter/cupertino.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:cupertino_native_ui/cupertino_native_ui.dart';
 
 /// Body for the searchable scaffold demo. It runs in its own FlutterEngine

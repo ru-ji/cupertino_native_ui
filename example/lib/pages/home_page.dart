@@ -1,6 +1,6 @@
 import 'package:cupertino_native_ui/cupertino_native_ui.dart';
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart' show Scaffold, Theme, ThemeMode;
+import 'package:cupertino_ui/cupertino_ui.dart';
+import 'package:material_ui/material_ui.dart' show Scaffold, Theme, ThemeMode;
 import 'package:flutter/services.dart' show SystemUiOverlayStyle;
 
 import '../app.dart';
@@ -10,6 +10,7 @@ import 'context_menu_demo_page.dart';
 import 'edge_effect_probe_page.dart';
 import 'hard_edge_demo_page.dart';
 import 'liquid_glass_demo_page.dart';
+import 'mail_tab_bar_demo_page.dart';
 import 'native_list_demo_page.dart';
 import 'native_scaffold_demo_page.dart';
 import 'native_searchable_demo_page.dart';
@@ -113,6 +114,12 @@ class HomePage extends StatelessWidget {
                           CupertinoColors.systemIndigo,
                         ),
                         _row(
+                          'mailTabBar',
+                          'Mail Tab Bar',
+                          'envelope',
+                          CupertinoColors.systemBlue,
+                        ),
+                        _row(
                           'nativeScaffold',
                           'Native Scaffold',
                           'iphone',
@@ -197,6 +204,7 @@ class HomePage extends StatelessWidget {
       'textField' => const TextFieldDemoPage(),
       'contextMenu' => const ContextMenuDemoPage(),
       'bars' => const BarsDemoPage(),
+      'mailTabBar' => const MailTabBarDemoPage(),
       'nativeScaffold' => const NativeScaffoldDemoPage(),
       'hardEdge' => const HardEdgeDemoPage(),
       'searchable' => const NativeSearchableDemoPage(),

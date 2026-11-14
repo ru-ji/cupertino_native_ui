@@ -7,7 +7,7 @@
 /// `test/text_field_wire_test.dart`.
 library;
 
-import 'package:flutter/cupertino.dart' show OverlayVisibilityMode;
+import 'package:cupertino_ui/cupertino_ui.dart' show OverlayVisibilityMode;
 import 'package:flutter/services.dart' show TextInputType;
 import 'package:flutter/widgets.dart' show TextAlignVertical;
 

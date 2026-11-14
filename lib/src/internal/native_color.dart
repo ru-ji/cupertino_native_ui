@@ -1,4 +1,4 @@
-import 'package:flutter/cupertino.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
 
 /// A colour as the native side reads it: ARGB, with a [CupertinoDynamicColor]
 /// resolved for the app's brightness. `toARGB32()` on one ships its light

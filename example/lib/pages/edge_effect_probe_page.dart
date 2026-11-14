@@ -1,4 +1,4 @@
-import 'package:flutter/cupertino.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:cupertino_native_ui/cupertino_native_ui.dart';
 
 /// The scroll edge effect in its two hosting models, over identical content.

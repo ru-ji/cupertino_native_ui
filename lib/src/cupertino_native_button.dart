@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart' show Icon, Theme;
+import 'package:material_ui/material_ui.dart' show Icon, Theme;
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 

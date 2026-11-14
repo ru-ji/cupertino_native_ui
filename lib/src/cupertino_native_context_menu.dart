@@ -4,7 +4,7 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart' show kLongPressTimeout;
-import 'package:flutter/material.dart' show Theme;
+import 'package:material_ui/material_ui.dart' show Theme;
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';

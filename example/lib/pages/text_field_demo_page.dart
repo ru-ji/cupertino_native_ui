@@ -1,6 +1,6 @@
 import 'dart:io' show Platform;
 
-import 'package:flutter/cupertino.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:flutter/foundation.dart';
 import 'package:cupertino_native_ui/cupertino_native_ui.dart';
 

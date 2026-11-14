@@ -1,6 +1,6 @@
 import 'package:cupertino_native_ui/cupertino_native_ui.dart';
 import 'package:cupertino_native_ui/src/internal/legacy_sliver_navigation_bar.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 

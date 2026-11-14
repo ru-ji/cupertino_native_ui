@@ -1,4 +1,4 @@
-import 'package:flutter/cupertino.dart' show OverlayVisibilityMode;
+import 'package:cupertino_ui/cupertino_ui.dart' show OverlayVisibilityMode;
 import 'package:flutter/services.dart'
     show TextCapitalization, TextInputAction, TextInputType;
 import 'package:flutter/widgets.dart';

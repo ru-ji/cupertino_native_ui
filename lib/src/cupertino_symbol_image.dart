@@ -6,7 +6,7 @@ import 'models/cupertino_symbols.dart';
 import 'internal/native_color.dart';
 import 'internal/native_log.dart';
 
-import 'package:flutter/material.dart' show Theme;
+import 'package:material_ui/material_ui.dart' show Theme;
 
 /// How large the symbol is drawn for its point size, like SwiftUI's
 /// `imageScale`.

@@ -1,8 +1,8 @@
 import 'package:cupertino_native_ui/cupertino_native_ui.dart';
 import 'package:cupertino_native_ui/src/internal/bar_slot.dart';
-import 'package:flutter/cupertino.dart'
+import 'package:cupertino_ui/cupertino_ui.dart'
     show CupertinoColors, CupertinoPageScaffold, OverlayVisibilityMode;
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 

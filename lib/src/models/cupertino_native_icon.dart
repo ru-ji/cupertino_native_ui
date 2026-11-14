@@ -17,6 +17,9 @@ import '../internal/native_color.dart';
 ///
 /// The last two are drawn as templates, tinted like a symbol. To show a
 /// symbol in the Flutter tree instead, use `CupertinoSymbolImage`.
+/// The shape of a [CupertinoNativeIcon] tile.
+enum CupertinoNativeIconTileShape { circle, roundedSquare }
+
 class CupertinoNativeIcon {
   /// The SF Symbol name, e.g. `star.fill`. Null for a custom icon.
   final String? sfSymbol;
@@ -40,6 +43,23 @@ class CupertinoNativeIcon {
   /// Stroke weight. Null keeps the control's own (regular). SF Symbols only.
   final FontWeight? weight;
 
+  /// Fill of a tile drawn behind the icon, like Settings' coloured squares or
+  /// Reminders' round list icon. Null draws no tile. The glyph turns white
+  /// unless [color] is set.
+  final Color? tile;
+
+  final CupertinoNativeIconTileShape tileShape;
+
+  /// Side of the tile in points (Settings uses 30).
+  final double tileSize;
+
+  /// The Settings-style fill: [tile] lightened at the top, plain at the bottom.
+  final bool tileGradient;
+
+  /// Draw an [asset] as is, filling the tile, instead of tinting it as a
+  /// glyph: an app icon, a card thumbnail.
+  final bool original;
+
   const CupertinoNativeIcon._({
     this.sfSymbol,
     this.iconData,
@@ -48,6 +68,11 @@ class CupertinoNativeIcon {
     this.size,
     this.color,
     this.weight,
+    this.tile,
+    this.tileShape = CupertinoNativeIconTileShape.roundedSquare,
+    this.tileSize = 30,
+    this.tileGradient = false,
+    this.original = false,
   });
 
   /// A typo-safe SF Symbol from the [CupertinoSymbols] enum.
@@ -57,9 +82,14 @@ class CupertinoNativeIcon {
     this.color,
     this.weight,
     this.renderingMode,
+    this.tile,
+    this.tileShape = CupertinoNativeIconTileShape.roundedSquare,
+    this.tileSize = 30,
+    this.tileGradient = false,
   }) : sfSymbol = symbol.value,
        iconData = null,
-       asset = null;
+       asset = null,
+       original = false;
 
   /// A raw SF Symbol name, for symbols not covered by [CupertinoSymbols].
   const CupertinoNativeIcon.named(
@@ -68,8 +98,13 @@ class CupertinoNativeIcon {
     this.color,
     this.weight,
     this.renderingMode,
+    this.tile,
+    this.tileShape = CupertinoNativeIconTileShape.roundedSquare,
+    this.tileSize = 30,
+    this.tileGradient = false,
   }) : iconData = null,
-       asset = null;
+       asset = null,
+       original = false;
 
   /// A glyph of an icon font, e.g. `CupertinoIcons.heart` or `Icons.home`.
   /// The font must be bundled with the app, as it is for an [IconData] the
@@ -78,8 +113,13 @@ class CupertinoNativeIcon {
     IconData this.iconData, {
     this.size,
     this.color,
+    this.tile,
+    this.tileShape = CupertinoNativeIconTileShape.roundedSquare,
+    this.tileSize = 30,
+    this.tileGradient = false,
   }) : sfSymbol = null,
        asset = null,
+       original = false,
        weight = null,
        renderingMode = null;
 
@@ -91,6 +131,11 @@ class CupertinoNativeIcon {
     String? package,
     this.size,
     this.color,
+    this.tile,
+    this.tileShape = CupertinoNativeIconTileShape.roundedSquare,
+    this.tileSize = 30,
+    this.tileGradient = false,
+    this.original = false,
   }) : asset = package == null ? name : 'packages/$package/$name',
        sfSymbol = null,
        iconData = null,
@@ -114,6 +159,11 @@ class CupertinoNativeIcon {
         size: size ?? this.size,
         color: color,
         weight: weight ?? this.weight,
+        tile: tile,
+        tileShape: tileShape,
+        tileSize: tileSize,
+        tileGradient: tileGradient,
+        original: original,
       );
 
   Map<String, dynamic> toMap({bool isDark = false}) {
@@ -127,6 +177,11 @@ class CupertinoNativeIcon {
       'fontFamily': iconData?.fontFamily,
       'fontPackage': iconData?.fontPackage,
       'asset': asset,
+      'tile': nativeArgb(tile, isDark: isDark),
+      'tileShape': tileShape.name,
+      'tileSize': tileSize,
+      'tileGradient': tileGradient,
+      'original': original,
     };
   }
 
@@ -140,7 +195,12 @@ class CupertinoNativeIcon {
         other.renderingMode == renderingMode &&
         other.size == size &&
         other.color == color &&
-        other.weight == weight;
+        other.weight == weight &&
+        other.tile == tile &&
+        other.tileShape == tileShape &&
+        other.tileSize == tileSize &&
+        other.tileGradient == tileGradient &&
+        other.original == original;
   }
 
   @override
@@ -152,6 +212,11 @@ class CupertinoNativeIcon {
     size,
     color,
     weight,
+    tile,
+    tileShape,
+    tileSize,
+    tileGradient,
+    original,
   );
 
   static String _weightName(FontWeight w) => switch (w.value) {

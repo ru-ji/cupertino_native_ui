@@ -17,6 +17,9 @@ enum CupertinoNativeListStyle {
   plain,
   grouped,
   insetGrouped,
+
+  /// Edge-to-edge rows with the system's content inset, no cards.
+  inset,
   sidebar,
 }
 

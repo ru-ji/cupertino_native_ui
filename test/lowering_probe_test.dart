@@ -1,7 +1,7 @@
 import 'package:cupertino_native_ui/cupertino_native_ui.dart';
 import 'package:cupertino_native_ui/src/internal/widget_lowering.dart';
-import 'package:flutter/cupertino.dart' show CupertinoDynamicColor;
-import 'package:flutter/material.dart';
+import 'package:cupertino_ui/cupertino_ui.dart' show CupertinoDynamicColor;
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

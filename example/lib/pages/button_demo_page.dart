@@ -1,5 +1,5 @@
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart' show Icons;
+import 'package:cupertino_ui/cupertino_ui.dart';
+import 'package:material_ui/material_ui.dart' show Icons;
 import 'package:cupertino_native_ui/cupertino_native_ui.dart';
 
 /// [CupertinoNativeButton]: styles, icon and label + icon buttons, sizes and

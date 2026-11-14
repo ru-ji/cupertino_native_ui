@@ -1,5 +1,5 @@
 import 'package:cupertino_native_ui/src/internal/native_color.dart';
-import 'package:flutter/cupertino.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

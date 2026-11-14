@@ -1,6 +1,6 @@
 import 'dart:ui' show lerpDouble;
 
-import 'package:flutter/cupertino.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
 
 import '../cupertino_symbol_image.dart';
 

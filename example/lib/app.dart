@@ -1,7 +1,8 @@
-import 'package:flutter/cupertino.dart' show CupertinoColors;
-import 'package:flutter/material.dart';
+import 'package:cupertino_ui/cupertino_ui.dart' show CupertinoColors;
+import 'package:material_ui/material_ui.dart';
 
 import 'pages/home_page.dart';
+import 'pages/showcase_page.dart';
 
 /// Root app. This stays a [MaterialApp] on purpose: the plugin's platform
 /// views read `Theme.of(context)` to sync light/dark with the native side,
@@ -50,7 +51,9 @@ class MyApp extends StatelessWidget {
         // text style to inherit, and paints nothing.
         builder: (context, child) =>
             Material(type: MaterialType.transparency, child: child!),
-        home: const HomePage(),
+        home: const bool.fromEnvironment('SHOWCASE')
+            ? ShowcasePage()
+            : HomePage(),
       ),
     );
   }

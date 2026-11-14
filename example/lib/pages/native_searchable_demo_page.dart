@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:cupertino_native_ui/cupertino_native_ui.dart';
 
 /// Single-page native scaffold with a SwiftUI `.searchable` search field,
@@ -24,6 +25,9 @@ class NativeSearchableDemoPage extends StatelessWidget {
     return Scaffold(
       body: CupertinoNativePageScaffold(
         body: 'searchBody',
+        // The drawn cards are secondarySystemGroupedBackground: on the default
+        // white page they vanish in light mode.
+        backgroundColor: CupertinoColors.systemGroupedBackground,
         navigationBar: const CupertinoNativeScaffoldNavigationBar(
           title: 'CodeSpeedy',
           titleDisplayMode: CupertinoNativeToolbarTitleDisplayMode.large,
