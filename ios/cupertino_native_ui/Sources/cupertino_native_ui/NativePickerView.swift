@@ -28,7 +28,7 @@ class NativePickerFactory: NSObject, FlutterPlatformViewFactory {
 /// Hosts a SwiftUI `Picker` as a Flutter platform view.
 @available(iOS 15.0, *)
 class NativePickerView: NativeHostingView {
-    private var channel: FlutterMethodChannel?
+    private var channel: NativeChannel?
 
     init(
         frame: CGRect,
@@ -39,7 +39,7 @@ class NativePickerView: NativeHostingView {
         super.init()
         _view.viewId = viewId
 
-        channel = FlutterMethodChannel(
+        channel = NativeChannel(
             name: "cupertino_native_ui/picker_\(viewId)", binaryMessenger: messenger)
         sizeChannel = channel
         channel?.setMethodCallHandler { [weak self] call, result in

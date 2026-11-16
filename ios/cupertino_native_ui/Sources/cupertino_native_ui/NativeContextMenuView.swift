@@ -39,7 +39,7 @@ class NativeContextMenuFactory: NSObject, FlutterPlatformViewFactory {
 /// pixels, since the child is composited directly above.
 @available(iOS 15.0, *)
 class NativeContextMenuView: NSObject, FlutterPlatformView, UIContextMenuInteractionDelegate {
-    private let channel: FlutterMethodChannel
+    private let channel: NativeChannel
     private let container = UIView()
     private var items: [MenuItemConfig] = []
     private var previewImage: UIImage?
@@ -64,7 +64,7 @@ class NativeContextMenuView: NSObject, FlutterPlatformView, UIContextMenuInterac
         arguments args: Any?,
         messenger: FlutterBinaryMessenger
     ) {
-        channel = FlutterMethodChannel(
+        channel = NativeChannel(
             name: "cupertino_native_ui/context_menu_\(viewId)", binaryMessenger: messenger)
         super.init()
 

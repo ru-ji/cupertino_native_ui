@@ -7,6 +7,7 @@ import 'package:flutter/widgets.dart';
 import 'cupertino_scroll_edge_effect.dart' show CupertinoScrollEdgeEffectEdge;
 import 'internal/bar_holes.dart';
 import 'internal/native_color.dart';
+import 'internal/native_channel.dart';
 
 /// A progressive blur drawn by Core Animation, the way iOS 26's own scroll
 /// edge effect draws it, and, with [adaptiveTint], its luminance-tracked wash.
@@ -75,7 +76,7 @@ class CupertinoNativeEdgeBlur extends StatefulWidget {
 }
 
 class _CupertinoNativeEdgeBlurState extends State<CupertinoNativeEdgeBlur> {
-  MethodChannel? _channel;
+  NativeChannel? _channel;
   Map<String, Object?>? _sent;
 
   /// What the view was created with, its first build's, and the latest.
@@ -161,7 +162,7 @@ class _CupertinoNativeEdgeBlurState extends State<CupertinoNativeEdgeBlur> {
             // Never takes a touch: everything under it stays operable.
             hitTestBehavior: PlatformViewHitTestBehavior.transparent,
             onPlatformViewCreated: (id) {
-              _channel = MethodChannel('cupertino_native_ui/edge_blur_$id')
+              _channel = NativeChannel('cupertino_native_ui/edge_blur_$id')
                 ..setMethodCallHandler((call) async {
                   if (call.method != 'lumaChanged') return;
                   final light = (call.arguments as Map?)?['light'] == true;

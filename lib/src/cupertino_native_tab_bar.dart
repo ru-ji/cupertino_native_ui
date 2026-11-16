@@ -8,6 +8,7 @@ import 'internal/ios_version.dart';
 import 'models/cupertino_native_icon.dart';
 import 'models/cupertino_native_tab.dart';
 import 'internal/native_color.dart';
+import 'internal/native_channel.dart';
 
 /// iOS 26 tab-view bottom accessory: a persistent view shown above the tab bar
 /// (like the Music mini-player). Only takes effect inside
@@ -125,7 +126,7 @@ class CupertinoNativeTabBar extends StatefulWidget {
 }
 
 class _CupertinoNativeTabBarState extends State<CupertinoNativeTabBar> {
-  MethodChannel? _channel;
+  NativeChannel? _channel;
   double? _intrinsicHeight;
   double? _intrinsicWidth;
   int? _lastIndex;
@@ -192,7 +193,7 @@ class _CupertinoNativeTabBarState extends State<CupertinoNativeTabBar> {
   }
 
   void _onPlatformViewCreated(int id) {
-    final channel = MethodChannel('cupertino_native_ui/tabbar_$id');
+    final channel = NativeChannel('cupertino_native_ui/tabbar_$id');
     _channel = channel;
     channel.setMethodCallHandler(_handleMethodCall);
     _lastIndex = _selectedIndex;

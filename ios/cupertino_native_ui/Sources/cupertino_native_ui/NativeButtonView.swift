@@ -31,7 +31,7 @@ class NativeButtonFactory: NSObject, FlutterPlatformViewFactory {
 
 @available(iOS 15.0, *)
 class NativeButtonView: NativeHostingView {
-    private var channel: FlutterMethodChannel?
+    private var channel: NativeChannel?
 
     init(
         frame: CGRect,
@@ -42,7 +42,7 @@ class NativeButtonView: NativeHostingView {
         super.init()
         _view.viewId = viewId
 
-        channel = FlutterMethodChannel(
+        channel = NativeChannel(
             name: "cupertino_native_ui/button_\(viewId)", binaryMessenger: messenger)
         sizeChannel = channel
         channel?.setMethodCallHandler({

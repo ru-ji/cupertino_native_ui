@@ -9,11 +9,12 @@ import 'package:flutter/widgets.dart';
 
 import 'native_view_capture.dart';
 import 'scroll_friendly_recognizer.dart';
+import 'native_channel.dart';
 
-/// Shared `MethodChannel` and intrinsic-size plumbing for widgets hosting a
+/// Shared [NativeChannel] and intrinsic-size plumbing for widgets hosting a
 /// native `UiKitView`.
 mixin NativePlatformViewStateMixin<T extends StatefulWidget> on State<T> {
-  MethodChannel? channel;
+  NativeChannel? channel;
   double? intrinsicWidth;
   double? intrinsicHeight;
 
@@ -48,7 +49,7 @@ mixin NativePlatformViewStateMixin<T extends StatefulWidget> on State<T> {
     String channelName, {
     Future<dynamic> Function(MethodCall call)? onMethodCall,
   }) {
-    channel = MethodChannel(channelName);
+    channel = NativeChannel(channelName);
     // Always handled here, whether or not the widget wants calls of its own:
     // `intrinsicSize` is pushed by the native view the moment its container
     // lays out, and every widget wants that.

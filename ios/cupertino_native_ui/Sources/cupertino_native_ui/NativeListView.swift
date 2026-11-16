@@ -34,7 +34,7 @@ class NativeListFactory: NSObject, FlutterPlatformViewFactory {
 /// Flutter-provided width) so it can sit inside a Flutter scroll view.
 @available(iOS 15.0, *)
 class NativeListView: NativeHostingView {
-    private var channel: FlutterMethodChannel?
+    private var channel: NativeChannel?
 
     /// The toggle-row values the hosted list is actually showing. Same trap as
     /// the switch and the segmented control: `AdaptiveSystemListView` seeds its
@@ -106,7 +106,7 @@ class NativeListView: NativeHostingView {
         super.init()
         _view.viewId = viewId
 
-        channel = FlutterMethodChannel(
+        channel = NativeChannel(
             name: "cupertino_native_ui/list_\(viewId)", binaryMessenger: messenger)
         sizeChannel = channel
         channel?.setMethodCallHandler { [weak self] call, result in

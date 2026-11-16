@@ -129,14 +129,14 @@ final class ControlModel: ObservableObject {
 
 @available(iOS 15.0, *)
 class NativeControlView: NativeHostingView {
-    private var channel: FlutterMethodChannel?
+    private var channel: NativeChannel?
     private var model: ControlModel?
 
     init(viewIdentifier viewId: Int64, arguments args: Any?, messenger: FlutterBinaryMessenger) {
         super.init()
         _view.viewId = viewId
 
-        channel = FlutterMethodChannel(
+        channel = NativeChannel(
             name: "cupertino_native_ui/control_\(viewId)", binaryMessenger: messenger)
         sizeChannel = channel
         channel?.setMethodCallHandler { [weak self] call, result in

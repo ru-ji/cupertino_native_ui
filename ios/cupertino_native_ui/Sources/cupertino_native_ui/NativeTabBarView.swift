@@ -34,7 +34,7 @@ class NativeTabBarFactory: NSObject, FlutterPlatformViewFactory {
 /// Technique reproduced from the cupertino_native package.
 @available(iOS 15.0, *)
 class NativeTabBarView: NSObject, FlutterPlatformView, UITabBarDelegate {
-    private let channel: FlutterMethodChannel
+    private let channel: NativeChannel
     private let container: TabBarContainerView
     private var tabBar: UITabBar?
     private var tabBarLeft: UITabBar?
@@ -55,7 +55,7 @@ class NativeTabBarView: NSObject, FlutterPlatformView, UITabBarDelegate {
         arguments args: Any?,
         messenger: FlutterBinaryMessenger
     ) {
-        channel = FlutterMethodChannel(
+        channel = NativeChannel(
             name: "cupertino_native_ui/tabbar_\(viewId)", binaryMessenger: messenger)
         container = TabBarContainerView(frame: frame)
 

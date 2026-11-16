@@ -30,7 +30,7 @@ class NativeEdgeBlurFactory: NSObject, FlutterPlatformViewFactory {
 @available(iOS 15.0, *)
 final class NativeEdgeBlurPlatformView: NSObject, FlutterPlatformView {
     private let edgeView = EdgeBlurView()
-    private let channel: FlutterMethodChannel
+    private let channel: NativeChannel
 
     init(viewId: Int64, arguments args: Any?, messenger: FlutterBinaryMessenger) {
         #if DEBUG
@@ -44,7 +44,7 @@ final class NativeEdgeBlurPlatformView: NSObject, FlutterPlatformView {
                 )
             }
         #endif
-        channel = FlutterMethodChannel(
+        channel = NativeChannel(
             name: "cupertino_native_ui/edge_blur_\(viewId)", binaryMessenger: messenger)
         super.init()
         edgeView.onLightChange = { [weak self] light in

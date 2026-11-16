@@ -5,7 +5,7 @@ import UIKit
 /// Base class for platform views that host a SwiftUI view via `UIHostingController`.
 /// Owns the hosting-controller lifecycle, Auto Layout pinning, and intrinsic-size
 /// calculation shared by every `Native*View` bridge class. Subclasses own their own
-/// `FlutterMethodChannel`, method-call routing, and config decoding.
+/// `NativeChannel`, method-call routing, and config decoding.
 @available(iOS 15.0, *)
 class NativeHostingView: NSObject, FlutterPlatformView {
     let _view = HostingContainerView()
@@ -13,7 +13,7 @@ class NativeHostingView: NSObject, FlutterPlatformView {
 
     /// Where measured sizes are pushed. Subclasses assign their channel right
     /// after creating it; nil keeps the view pull-only.
-    var sizeChannel: FlutterMethodChannel?
+    var sizeChannel: NativeChannel?
 
     /// Last size handed to Dart, so an unchanged layout pass sends nothing.
     private var publishedSize: CGSize?

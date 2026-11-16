@@ -65,13 +65,13 @@ struct PhotosPickerConfig: Codable, Equatable {
 
 @available(iOS 15.0, *)
 class NativePhotosPickerView: NativeHostingView {
-    private var channel: FlutterMethodChannel?
+    private var channel: NativeChannel?
     private var model: AnyObject?
 
     init(viewIdentifier viewId: Int64, arguments args: Any?, messenger: FlutterBinaryMessenger) {
         super.init()
         _view.viewId = viewId
-        channel = FlutterMethodChannel(
+        channel = NativeChannel(
             name: "cupertino_native_ui/photos_picker_\(viewId)", binaryMessenger: messenger)
         channel?.setMethodCallHandler { [weak self] call, result in
             self?.handle(call, result: result)

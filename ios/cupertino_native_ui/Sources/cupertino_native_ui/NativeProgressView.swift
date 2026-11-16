@@ -31,7 +31,7 @@ class NativeProgressFactory: NSObject, FlutterPlatformViewFactory {
 
 @available(iOS 15.0, *)
 class NativeProgressView: NativeHostingView {
-    private var channel: FlutterMethodChannel?
+    private var channel: NativeChannel?
 
     /// The style the hosted view was attached with. Circular and linear are laid
     /// out by different constraints, and constraints are installed at attach
@@ -47,7 +47,7 @@ class NativeProgressView: NativeHostingView {
         super.init()
         _view.viewId = viewId
 
-        channel = FlutterMethodChannel(
+        channel = NativeChannel(
             name: "cupertino_native_ui/progress_\(viewId)", binaryMessenger: messenger)
         sizeChannel = channel
         channel?.setMethodCallHandler({

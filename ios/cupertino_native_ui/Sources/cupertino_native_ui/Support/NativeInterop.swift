@@ -90,4 +90,45 @@ public final class NativeInterop: NSObject {
                 })
         }
     }
+
+    // MARK: Per-view channels (see NativeChannel)
+
+    /// Calls the handler of a native view's channel. Returns the encoded reply
+    /// when it is ready at once, nil when it will arrive through the reply sink.
+    @objc public static func invoke(
+        engineId: Int64, channel: String, method: String, args: Data, token: Int64
+    ) -> Data? {
+        let hub = NativeEngineHub.hub(engineId)
+        if Thread.isMainThread {
+            return hub.invoke(channel: channel, method: method, args: args, token: token)
+        }
+        DispatchQueue.main.async {
+            if let data = hub.invoke(
+                channel: channel, method: method, args: args, token: token)
+            {
+                hub.replySink?(token, data)
+            }
+        }
+        return nil
+    }
+
+    @objc public static func attach(engineId: Int64, channel: String) {
+        NativeEngineHub.hub(engineId).attach(channel: channel)
+    }
+
+    @objc public static func detach(engineId: Int64, channel: String) {
+        NativeEngineHub.hub(engineId).detach(channel: channel)
+    }
+
+    @objc public static func setEventSink(
+        engineId: Int64, sink: @escaping (String, String, Data) -> Void
+    ) {
+        NativeEngineHub.hub(engineId).eventSink = sink
+    }
+
+    @objc public static func setReplySink(
+        engineId: Int64, sink: @escaping (Int64, Data) -> Void
+    ) {
+        NativeEngineHub.hub(engineId).replySink = sink
+    }
 }

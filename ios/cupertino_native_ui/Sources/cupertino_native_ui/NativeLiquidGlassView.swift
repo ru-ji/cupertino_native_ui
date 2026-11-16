@@ -33,7 +33,7 @@ class NativeLiquidGlassFactory: NSObject, FlutterPlatformViewFactory {
 /// renders an `ultraThinMaterial` approximation.
 @available(iOS 15.0, *)
 class NativeLiquidGlassView: NativeHostingView {
-    private var channel: FlutterMethodChannel?
+    private var channel: NativeChannel?
     /// What the SwiftUI view observes.
     private var model: GlassViewModel?
     /// Layout mode the hosting controller was attached with. A config change
@@ -49,7 +49,7 @@ class NativeLiquidGlassView: NativeHostingView {
         super.init()
         _view.viewId = viewId
 
-        channel = FlutterMethodChannel(
+        channel = NativeChannel(
             name: "cupertino_native_ui/liquid_glass_\(viewId)", binaryMessenger: messenger)
         sizeChannel = channel
         channel?.setMethodCallHandler({

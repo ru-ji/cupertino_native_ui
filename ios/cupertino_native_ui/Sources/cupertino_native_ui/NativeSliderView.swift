@@ -31,7 +31,7 @@ class NativeSliderFactory: NSObject, FlutterPlatformViewFactory {
 
 @available(iOS 15.0, *)
 class NativeSliderView: NativeHostingView {
-    private var channel: FlutterMethodChannel
+    private var channel: NativeChannel
     private var viewModel = SliderViewModel()
 
     init(
@@ -40,7 +40,7 @@ class NativeSliderView: NativeHostingView {
         arguments args: Any?,
         messenger: FlutterBinaryMessenger
     ) {
-        channel = FlutterMethodChannel(
+        channel = NativeChannel(
             name: "adaptive_slider_\(viewId)", binaryMessenger: messenger)
 
         super.init()

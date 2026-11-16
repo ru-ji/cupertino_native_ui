@@ -3,13 +3,15 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/services.dart';
 
+import 'native_channel.dart';
+
 /// Captures a hosted view over its own channel and decodes the pixels, with
 /// the rectangle the capture covers relative to the view.
 ///
 /// Straight from the platform buffer to a [ui.Image]: premultiplied BGRA at
 /// the device pixel ratio, which is exactly what [ui.decodeImageFromPixels]
 /// takes, so there is no codec in the path. See `PlatformViewSnapshot.swift`.
-Future<(ui.Image, Rect)?> captureNativeView(MethodChannel channel) async {
+Future<(ui.Image, Rect)?> captureNativeView(NativeChannel channel) async {
   final report = await channel.invokeMapMethod<String, dynamic>('snapshot');
   // Nothing to draw: an unlaid-out view, or one that has never rendered.
   if (report == null) return null;

@@ -31,7 +31,7 @@ class NativeToggleFactory: NSObject, FlutterPlatformViewFactory {
 
 @available(iOS 15.0, *)
 class NativeToggleView: NativeHostingView {
-    private var channel: FlutterMethodChannel?
+    private var channel: NativeChannel?
 
     /// The value the hosted switch shows. `AdaptiveToggleView` seeds its `@State`
     /// once, so a new value from Dart needs a rebuilt hosting controller; the echo
@@ -47,7 +47,7 @@ class NativeToggleView: NativeHostingView {
         super.init()
         _view.viewId = viewId
 
-        channel = FlutterMethodChannel(
+        channel = NativeChannel(
             name: "cupertino_native_ui/toggle_\(viewId)", binaryMessenger: messenger)
         sizeChannel = channel
         channel?.setMethodCallHandler({

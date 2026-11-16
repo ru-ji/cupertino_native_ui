@@ -31,7 +31,7 @@ class NativeSegmentedControlFactory: NSObject, FlutterPlatformViewFactory {
 
 @available(iOS 15.0, *)
 class NativeSegmentedControlView: NativeHostingView {
-    private var channel: FlutterMethodChannel?
+    private var channel: NativeChannel?
 
     /// The segment the hosted picker is actually showing. Same trap as the
     /// switch: `AdaptiveSegmentedControlView` seeds its `@State` from the
@@ -50,7 +50,7 @@ class NativeSegmentedControlView: NativeHostingView {
         super.init()
         _view.viewId = viewId
 
-        channel = FlutterMethodChannel(
+        channel = NativeChannel(
             name: "cupertino_native_ui/segmented_\(viewId)", binaryMessenger: messenger)
         sizeChannel = channel
         channel?.setMethodCallHandler({

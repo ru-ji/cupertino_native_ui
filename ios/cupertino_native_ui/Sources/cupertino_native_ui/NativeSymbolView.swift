@@ -29,7 +29,7 @@ class NativeSymbolFactory: NSObject, FlutterPlatformViewFactory {
 /// animate. Self-sizes to the symbol.
 @available(iOS 15.0, *)
 class NativeSymbolView: NativeHostingView {
-    private var channel: FlutterMethodChannel?
+    private var channel: NativeChannel?
     private let model = SymbolModel()
 
     init(
@@ -41,7 +41,7 @@ class NativeSymbolView: NativeHostingView {
         super.init()
         _view.viewId = viewId
 
-        channel = FlutterMethodChannel(
+        channel = NativeChannel(
             name: "cupertino_native_ui/symbol_\(viewId)", binaryMessenger: messenger)
         sizeChannel = channel
         channel?.setMethodCallHandler { [weak self] call, result in

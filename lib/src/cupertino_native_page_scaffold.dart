@@ -25,6 +25,7 @@ import 'models/cupertino_native_icon.dart';
 import 'models/cupertino_symbols.dart';
 import 'internal/body_echo.dart';
 import 'internal/native_color.dart';
+import 'internal/native_channel.dart';
 
 /// A page pushed onto a [CupertinoNativePageScaffold]'s native NavigationStack.
 /// [route] must match a builder registered in [CupertinoNativePageScaffold.run];
@@ -82,7 +83,7 @@ class CupertinoNativeSearchState {
 /// (the widget tree that created the scaffold). Inside body isolates use the
 /// static [CupertinoNativePageScaffold.push]/[CupertinoNativePageScaffold.pop].
 class CupertinoNativePageScaffoldController {
-  MethodChannel? _channel;
+  NativeChannel? _channel;
 
   Future<void> push(CupertinoNativePageScaffoldPage page) async {
     await _channel?.invokeMethod('push', page.toMap());

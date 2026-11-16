@@ -36,7 +36,7 @@ class NativeGlassGroupFactory: NSObject, FlutterPlatformViewFactory {
 /// group is one host.
 @available(iOS 26.0, *)
 class NativeGlassGroupView: NativeHostingView {
-    private var channel: FlutterMethodChannel?
+    private var channel: NativeChannel?
     private let model = GlassGroupModel()
 
     init(
@@ -48,7 +48,7 @@ class NativeGlassGroupView: NativeHostingView {
         super.init()
         _view.viewId = viewId
 
-        channel = FlutterMethodChannel(
+        channel = NativeChannel(
             name: "cupertino_native_ui/glass_group_\(viewId)", binaryMessenger: messenger)
         sizeChannel = channel
         channel?.setMethodCallHandler({ [weak self] call, result in
@@ -491,7 +491,7 @@ private struct FixedRadiusShape: Shape {
 /// in the accent colour, no material) the way a UIKit bar item looks there.
 @available(iOS 15.0, *)
 final class NativeLegacyGlassGroupView: NativeHostingView {
-    private var channel: FlutterMethodChannel?
+    private var channel: NativeChannel?
     private let model = GlassGroupModel()
 
     init(
@@ -500,7 +500,7 @@ final class NativeLegacyGlassGroupView: NativeHostingView {
     ) {
         super.init()
         _view.viewId = viewId
-        channel = FlutterMethodChannel(
+        channel = NativeChannel(
             name: "cupertino_native_ui/glass_group_\(viewId)", binaryMessenger: messenger)
         sizeChannel = channel
         channel?.setMethodCallHandler { [weak self] call, result in

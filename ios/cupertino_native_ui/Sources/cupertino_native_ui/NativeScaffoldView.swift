@@ -172,7 +172,7 @@ class NativeScaffoldView: NativeHostingView {
         }
     }
 
-    private let channel: FlutterMethodChannel
+    private let channel: NativeChannel
     private let model: ScaffoldModel
     private var bodyChannels: [String: FlutterMethodChannel] = [:]
     /// Last known (query, active) per searchable route, so each forwarded
@@ -189,7 +189,7 @@ class NativeScaffoldView: NativeHostingView {
         arguments args: Any?,
         messenger: FlutterBinaryMessenger
     ) {
-        channel = FlutterMethodChannel(
+        channel = NativeChannel(
             name: "cupertino_native_ui/scaffold_\(viewId)", binaryMessenger: messenger)
 
         if let argsMap = args as? [String: Any],

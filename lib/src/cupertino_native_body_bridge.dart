@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
+import 'internal/native_channel.dart';
+
 /// Carries state between the host app and a scaffold body: the only way they
 /// *can* talk.
 ///
@@ -40,7 +42,7 @@ import 'package:flutter/services.dart';
 abstract final class CupertinoNativeBodyBridge {
   /// The scaffold platform view's channel, on the host side. Assigned by
   /// `CupertinoNativePageScaffold` when its view is created.
-  static MethodChannel? hostChannel;
+  static NativeChannel? hostChannel;
 
   static const _bodyChannel = MethodChannel(
     'cupertino_native_ui/scaffold_body',

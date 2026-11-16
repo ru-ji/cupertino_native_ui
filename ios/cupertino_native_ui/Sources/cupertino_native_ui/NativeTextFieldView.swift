@@ -36,7 +36,7 @@ class NativeTextFieldFactory: NSObject, FlutterPlatformViewFactory {
 /// changes to Dart, and applies what Dart pushes back over the channel.
 @available(iOS 15.0, *)
 class NativeTextFieldView: NativeHostingView {
-    private let channel: FlutterMethodChannel
+    private let channel: NativeChannel
     private let model: TextFieldModel
 
     /// Whether the field currently holds focus, so a config push knows whether
@@ -55,7 +55,7 @@ class NativeTextFieldView: NativeHostingView {
         arguments args: Any?,
         messenger: FlutterBinaryMessenger
     ) {
-        channel = FlutterMethodChannel(
+        channel = NativeChannel(
             name: "cupertino_native_ui/textfield_\(viewId)", binaryMessenger: messenger)
         let config =
             (args as? [String: Any]).flatMap { decodeConfig(TextFieldConfig.self, from: $0) }

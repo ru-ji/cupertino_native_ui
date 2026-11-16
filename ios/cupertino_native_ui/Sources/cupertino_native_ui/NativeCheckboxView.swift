@@ -31,7 +31,7 @@ class NativeCheckboxFactory: NSObject, FlutterPlatformViewFactory {
 
 @available(iOS 15.0, *)
 class NativeCheckboxView: NativeHostingView {
-    private var channel: FlutterMethodChannel?
+    private var channel: NativeChannel?
 
     /// The value the hosted box shows. The view is `Binding`-driven, so a new
     /// value from Dart updates the same binding; the echo of a native tap
@@ -47,7 +47,7 @@ class NativeCheckboxView: NativeHostingView {
         super.init()
         _view.viewId = viewId
 
-        channel = FlutterMethodChannel(
+        channel = NativeChannel(
             name: "cupertino_native_ui/checkbox_\(viewId)", binaryMessenger: messenger)
         sizeChannel = channel
         channel?.setMethodCallHandler({

@@ -78,10 +78,10 @@ final class BarMaterialView: UIView {
 @available(iOS 15.0, *)
 final class NativeBarMaterialPlatformView: NSObject, FlutterPlatformView {
     private let barView = BarMaterialView()
-    private let channel: FlutterMethodChannel
+    private let channel: NativeChannel
 
     init(viewId: Int64, arguments args: Any?, messenger: FlutterBinaryMessenger) {
-        channel = FlutterMethodChannel(
+        channel = NativeChannel(
             name: "cupertino_native_ui/bar_material_\(viewId)", binaryMessenger: messenger)
         super.init()
         apply(args)

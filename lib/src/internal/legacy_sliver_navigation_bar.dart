@@ -12,6 +12,8 @@ import 'legacy_bar_transition.dart';
 import 'package:flutter/rendering.dart'
     show OverScrollHeaderStretchConfiguration, PlatformViewHitTestBehavior;
 
+import 'native_channel.dart';
+
 /// Geometry of the iOS 15–18 navigation bar, in points, from Apple's iOS 18
 /// UI kit (`Navigation Bar - iPhone (Compact Size Class)`, the `Default` and
 /// `Large` styles) and cross-checked against Flutter's own
@@ -164,7 +166,7 @@ class _NativeBarMaterial extends StatefulWidget {
 }
 
 class _NativeBarMaterialState extends State<_NativeBarMaterial> {
-  MethodChannel? _channel;
+  NativeChannel? _channel;
 
   Map<String, Object?> _params(bool isDark) => {
     'progress': widget.progress.clamp(0.0, 1.0),
@@ -200,7 +202,7 @@ class _NativeBarMaterialState extends State<_NativeBarMaterial> {
         creationParamsCodec: const StandardMessageCodec(),
         hitTestBehavior: PlatformViewHitTestBehavior.transparent,
         onPlatformViewCreated: (id) =>
-            _channel = MethodChannel('cupertino_native_ui/bar_material_$id'),
+            _channel = NativeChannel('cupertino_native_ui/bar_material_$id'),
       ),
     );
   }
