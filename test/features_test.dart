@@ -192,19 +192,6 @@ void main() {
       expect(config['maxDimension'], isNull, reason: 'null keeps originals');
       expect(config['showsAlbums'], isTrue);
     });
-
-    testWidgets('clearCache asks the plugin', (tester) async {
-      final calls = <String>[];
-      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
-        const MethodChannel('com.example.cupertino_native_ui/alert'),
-        (call) async {
-          calls.add(call.method);
-          return null;
-        },
-      );
-      await CupertinoNativePhotosPicker.clearCache();
-      expect(calls, ['clearPhotoCache']);
-    }, variant: iOS);
   });
 
   group('alert', () {

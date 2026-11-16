@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
 import 'internal/ios_version.dart';
+import 'internal/native_interop_bindings.g.dart';
 import 'internal/native_platform_view_mixin.dart';
 
 /// How the embedded picker lays out.
@@ -158,8 +159,7 @@ class CupertinoNativePhotosPicker extends StatefulWidget {
   /// Call it once you have copied or uploaded what you keep.
   static Future<void> clearCache() async {
     if (defaultTargetPlatform != TargetPlatform.iOS) return;
-    await const MethodChannel('com.example.cupertino_native_ui/alert')
-        .invokeMethod<void>('clearPhotoCache');
+    CNUNativeInterop.clearPhotoCache();
   }
 
   @override

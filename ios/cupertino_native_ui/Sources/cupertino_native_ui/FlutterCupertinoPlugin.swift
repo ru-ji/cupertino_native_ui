@@ -114,32 +114,35 @@ public class FlutterCupertinoPlugin: NSObject, FlutterPlugin {
     /// through one is invisible to a `BackdropFilter`: an icon rendered that
     /// way would punch a hole in the app bar's scroll edge effect.
     @available(iOS 15.0, *)
-    private static func renderSymbol(name: String, args: [String: Any]) -> FlutterStandardTypedData?
-    {
-        let size = CGFloat(args["size"] as? Double ?? 17)
-        let weight: UIImage.SymbolWeight
-        switch args["weight"] as? String {
-        case "light": weight = .light
-        case "medium": weight = .medium
-        case "semibold": weight = .semibold
-        case "bold": weight = .bold
-        default: weight = .regular
+    static func renderSymbol(
+        name: String, size: Double, argb: Int?, weight: String, symbolScale: String,
+        scale: Double
+    ) -> Data? {
+        let size = CGFloat(size)
+        let symbolWeight: UIImage.SymbolWeight
+        switch weight {
+        case "light": symbolWeight = .light
+        case "medium": symbolWeight = .medium
+        case "semibold": symbolWeight = .semibold
+        case "bold": symbolWeight = .bold
+        default: symbolWeight = .regular
         }
-        let symbolScale: UIImage.SymbolScale
-        switch args["symbolScale"] as? String {
-        case "small": symbolScale = .small
-        case "large": symbolScale = .large
-        default: symbolScale = .medium
+        let sizeScale: UIImage.SymbolScale
+        switch symbolScale {
+        case "small": sizeScale = .small
+        case "large": sizeScale = .large
+        default: sizeScale = .medium
         }
-        let config = UIImage.SymbolConfiguration(pointSize: size, weight: weight, scale: symbolScale)
+        let config = UIImage.SymbolConfiguration(
+            pointSize: size, weight: symbolWeight, scale: sizeScale)
         guard var image = UIImage(systemName: name, withConfiguration: config) else { return nil }
-        if let argb = args["color"] as? Int {
+        if let argb {
             image = image.withTintColor(UIColor(argb: argb), renderingMode: .alwaysOriginal)
         }
         // Rasterized at the caller's device pixel ratio: Flutter is handed raw
         // pixels and has no scale factor to read off the PNG.
         let format = UIGraphicsImageRendererFormat.default()
-        format.scale = CGFloat(args["scale"] as? Double ?? 3)
+        format.scale = CGFloat(scale)
         format.opaque = false
         // sRGB, not the display's wide gamut: `pngData()` is unreliable for
         // extended-range bitmaps, which is what `.preferred()` yields on every
@@ -148,18 +151,10 @@ public class FlutterCupertinoPlugin: NSObject, FlutterPlugin {
         let rendered = UIGraphicsImageRenderer(size: image.size, format: format).image { _ in
             image.draw(at: .zero)
         }
-        return rendered.pngData().map { FlutterStandardTypedData(bytes: $0) }
+        return rendered.pngData()
     }
 
     public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
-        if call.method == "isLiquidGlassSupported" {
-            if #available(iOS 26.0, *) {
-                result(true)
-            } else {
-                result(false)
-            }
-            return
-        }
         if call.method == "prewarmScaffold" {
             let args = call.arguments as? [String: Any]
             NativeScaffoldView.prewarm(
@@ -178,23 +173,8 @@ public class FlutterCupertinoPlugin: NSObject, FlutterPlugin {
                 args: call.arguments as? [String: Any] ?? [:], result: result)
             return
         }
-        if call.method == "clearPhotoCache" {
-            if #available(iOS 17.0, *) { PhotoCache.clear() }
-            result(nil)
-            return
-        }
         if call.method == "dismissSheet" {
             NativeSheetManager.shared.dismiss(result: result)
-            return
-        }
-        if call.method == "renderSymbol" {
-            guard let args = call.arguments as? [String: Any],
-                let name = args["name"] as? String
-            else {
-                result(nil)
-                return
-            }
-            result(FlutterCupertinoPlugin.renderSymbol(name: name, args: args))
             return
         }
         if call.method == "showAlert" || call.method == "showActionSheet" {

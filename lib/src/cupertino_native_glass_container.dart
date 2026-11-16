@@ -12,6 +12,7 @@ import 'internal/native_color.dart';
 import 'internal/bar_slot.dart';
 import 'internal/glass_leaves.dart';
 import 'internal/ios_version.dart';
+import 'internal/native_interop_bindings.g.dart';
 
 /// The shape of a [CupertinoNativeGlassContainer].
 enum CupertinoGlassShape { capsule, circle, roundedRect }
@@ -137,15 +138,7 @@ class CupertinoNativeGlassContainer extends StatefulWidget {
   /// Whether the running device renders real Liquid Glass (iOS 26+).
   static Future<bool> get isSupported async {
     if (defaultTargetPlatform != TargetPlatform.iOS) return false;
-    const channel = MethodChannel('com.example.cupertino_native_ui/alert');
-    try {
-      return await channel.invokeMethod<bool>('isLiquidGlassSupported') ??
-          false;
-    } on PlatformException {
-      return false;
-    } on MissingPluginException {
-      return false;
-    }
+    return CNUNativeInterop.isLiquidGlassSupported();
   }
 
   @override

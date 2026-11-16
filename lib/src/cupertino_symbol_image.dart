@@ -1,9 +1,11 @@
+import 'package:objective_c/objective_c.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
 import 'models/cupertino_symbols.dart';
 import 'internal/native_color.dart';
+import 'internal/native_interop_bindings.g.dart';
 import 'internal/native_log.dart';
 
 import 'package:material_ui/material_ui.dart' show Theme;
@@ -73,10 +75,6 @@ class CupertinoSymbolImage extends StatefulWidget {
 }
 
 class _CupertinoSymbolImageState extends State<CupertinoSymbolImage> {
-  static const _channel = MethodChannel(
-    'com.example.cupertino_native_ui/alert',
-  );
-
   /// Rendered PNGs, keyed by the full request. Futures (not bytes) so that N
   /// simultaneous rows asking for the same symbol share one platform call.
   static final Map<String, Future<Uint8List?>> _cache = {};
@@ -114,22 +112,45 @@ class _CupertinoSymbolImageState extends State<CupertinoSymbolImage> {
     final key =
         '${widget.name}|${widget.size}|$color|'
         '${widget.weight.value}|${widget.scale.name}|$scale';
-    _bytes = _cache[key] ??= _channel
-        .invokeMethod<Uint8List>('renderSymbol', {
-          'name': widget.name,
-          'size': widget.size,
-          'color': color,
-          'weight': _weightName(widget.weight),
-          'symbolScale': widget.scale.name,
-          'scale': scale,
-        })
-        // An unknown symbol name (or a non-iOS host) is a missing icon, not a
-        // crash: the widget stays empty. Logged, not swallowed: a silent
-        // catch here is indistinguishable from "the symbol just didn't draw".
-        .catchError((Object e) {
-          nativeLog(() => 'CupertinoSymbolImage: "${widget.name}" failed: $e');
-          return null;
-        });
+    _bytes = _cache[key] ??= _render(
+      name: widget.name,
+      size: widget.size,
+      argb: color,
+      weight: _weightName(widget.weight),
+      symbolScale: widget.scale.name,
+      scale: scale,
+    );
+  }
+
+  // Direct FFI call into the Swift renderer: no platform channel. Still a
+  // Future so N rows asking for the same symbol share one cached render. An
+  // unknown symbol name (or a non-iOS host) is a missing icon, not a crash:
+  // the widget stays empty. Logged, not swallowed: a silent catch here is
+  // indistinguishable from "the symbol just didn't draw".
+  static Future<Uint8List?> _render({
+    required String name,
+    required double size,
+    required int? argb,
+    required String weight,
+    required String symbolScale,
+    required double scale,
+  }) async {
+    try {
+      if (defaultTargetPlatform != TargetPlatform.iOS) return null;
+      final data = CNUNativeInterop.renderSymbolWithName(
+        name.toNSString(),
+        size: size,
+        argb: argb ?? 0,
+        hasColor: argb != null,
+        weight: weight.toNSString(),
+        symbolScale: symbolScale.toNSString(),
+        scale: scale,
+      );
+      return data?.toList();
+    } on Object catch (e) {
+      nativeLog(() => 'CupertinoSymbolImage: "$name" failed: $e');
+      return null;
+    }
   }
 
   static String _weightName(FontWeight weight) {
