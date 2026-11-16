@@ -13,13 +13,18 @@ public class FlutterCupertinoPlugin: NSObject, FlutterPlugin {
         let messenger = registrar.messenger()
         NativeEngines.register(messenger, engineId: registrar.engineIdentifier)
         let instance = FlutterCupertinoPlugin()
+        // The same handler, reachable over FFI (sheets) as well as the channel.
+        NativeEngineHub.hub(registrar.engineIdentifier)
+            .handlers["com.example.cupertino_native_ui/alert"] = { call, result in
+                instance.handle(call, result: result)
+            }
         registrar.addMethodCallDelegate(instance, channel: channel)
 
         // Sheet events (bar actions, segment/search changes) flow back to
         // Dart over the main app's messenger. First registration wins: the
         // app engine registers at launch, before any body/sheet engine.
         if NativeSheetManager.shared.mainMessenger == nil {
-            NativeSheetManager.shared.mainMessenger = registrar.messenger()
+            NativeSheetManager.shared.mainMessenger = messenger
         }
 
         let menuFactory = NativeMenuFactory(messenger: messenger)

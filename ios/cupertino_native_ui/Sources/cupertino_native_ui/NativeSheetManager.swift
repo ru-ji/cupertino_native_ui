@@ -16,7 +16,7 @@ final class NativeSheetManager: NSObject, UIAdaptivePresentationControllerDelega
     /// Main-app messenger, seeded at plugin registration; carries sheet
     /// events (bar actions, segment changes, search) back to Dart.
     var mainMessenger: FlutterBinaryMessenger?
-    private var eventsChannel: FlutterMethodChannel?
+    private var eventsChannel: NativeChannel?
 
     private var engine: FlutterEngine?
     /// The sheet's native body, when it has one instead of a Flutter route.
@@ -104,7 +104,7 @@ final class NativeSheetManager: NSObject, UIAdaptivePresentationControllerDelega
             return
         }
         if eventsChannel == nil, let messenger = mainMessenger {
-            eventsChannel = FlutterMethodChannel(
+            eventsChannel = NativeChannel(
                 name: "cupertino_native_ui/sheet_events", binaryMessenger: messenger)
         }
 

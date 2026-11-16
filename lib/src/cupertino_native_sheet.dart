@@ -11,6 +11,7 @@ import 'cupertino_scroll_edge_effect.dart';
 import 'cupertino_native_settings.dart';
 import 'internal/body_echo.dart';
 import 'internal/native_color.dart';
+import 'internal/native_channel.dart';
 
 /// The heights a [CupertinoNativeSheet] can rest at, mirroring
 /// `UISheetPresentationController.Detent`.
@@ -61,13 +62,13 @@ class CupertinoNativeSheetSegmentedControl {
 ///
 /// Inside the sheet's body, call [pop] to dismiss programmatically.
 abstract final class CupertinoNativeSheet {
-  static const _channel = MethodChannel(
+  static final _channel = NativeChannel(
     'com.example.cupertino_native_ui/alert',
   );
   static const _bodyChannel = MethodChannel(
     'cupertino_native_ui/scaffold_body',
   );
-  static const _eventsChannel = MethodChannel(
+  static final _eventsChannel = NativeChannel(
     'cupertino_native_ui/sheet_events',
   );
 
