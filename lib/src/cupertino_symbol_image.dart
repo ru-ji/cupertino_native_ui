@@ -1,11 +1,10 @@
-import 'package:objective_c/objective_c.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
 import 'models/cupertino_symbols.dart';
 import 'internal/native_color.dart';
-import 'internal/native_interop_bindings.g.dart';
+import 'internal/symbol_worker.dart';
 import 'internal/native_log.dart';
 
 import 'package:material_ui/material_ui.dart' show Theme;
@@ -137,16 +136,15 @@ class _CupertinoSymbolImageState extends State<CupertinoSymbolImage> {
   }) async {
     try {
       if (defaultTargetPlatform != TargetPlatform.iOS) return null;
-      final data = CNUNativeInterop.renderSymbolWithName(
-        name.toNSString(),
+      // Rasterized on a worker isolate, off the UI thread.
+      return await SymbolWorker.instance.render((
+        name: name,
         size: size,
-        argb: argb ?? 0,
-        hasColor: argb != null,
-        weight: weight.toNSString(),
-        symbolScale: symbolScale.toNSString(),
+        argb: argb,
+        weight: weight,
+        symbolScale: symbolScale,
         scale: scale,
-      );
-      return data?.toList();
+      ));
     } on Object catch (e) {
       nativeLog(() => 'CupertinoSymbolImage: "$name" failed: $e');
       return null;

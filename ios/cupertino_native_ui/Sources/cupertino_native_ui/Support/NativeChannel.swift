@@ -18,6 +18,55 @@ enum NativeEngines {
 
 typealias NativeCallHandler = (FlutterMethodCall, @escaping FlutterResult) -> Void
 
+/// A call argument or event payload. Scalars (nil, Bool, Int, Double, String)
+/// cross FFI as plain values, with no codec on either side; anything else
+/// (maps, lists, bytes) travels encoded in the standard codec as `data`.
+struct NativePayload {
+    /// 0 encoded, 1 nil, 2 bool, 3 int, 4 double, 5 string.
+    var kind: Int64 = 1
+    var number: Double = 0
+    var text: String?
+    var data: Data?
+
+    /// Ints past 2^53 do not survive a Double, so they go encoded.
+    private static let exactIntLimit: Int64 = 1 << 53
+
+    init(kind: Int64, number: Double, text: String?, data: Data?) {
+        self.kind = kind
+        self.number = number
+        self.text = text
+        self.data = data
+    }
+
+    init(_ value: Any?, codec: FlutterStandardMessageCodec) {
+        switch value {
+        case nil:
+            self.init(kind: 1, number: 0, text: nil, data: nil)
+        case let flag as Bool:
+            self.init(kind: 2, number: flag ? 1 : 0, text: nil, data: nil)
+        case let int as Int where abs(Int64(int)) <= Self.exactIntLimit:
+            self.init(kind: 3, number: Double(int), text: nil, data: nil)
+        case let double as Double:
+            self.init(kind: 4, number: double, text: nil, data: nil)
+        case let string as String:
+            self.init(kind: 5, number: 0, text: string, data: nil)
+        default:
+            self.init(kind: 0, number: 0, text: nil, data: codec.encode(value) ?? Data())
+        }
+    }
+
+    func value(codec: FlutterStandardMessageCodec) -> Any? {
+        switch kind {
+        case 0: return data.flatMap { codec.decode($0) }
+        case 2: return number != 0
+        case 3: return Int(number)
+        case 4: return number
+        case 5: return text
+        default: return nil
+        }
+    }
+}
+
 /// Per-engine routing for `NativeChannel`: handlers by channel name, the Dart
 /// sinks events and replies travel back through, and events that arrived
 /// before Dart attached to their channel (the buffering a real channel does).
@@ -33,23 +82,24 @@ final class NativeEngineHub {
         return hub
     }
 
-    var eventSink: ((String, String, Data) -> Void)?
+    var eventSink: ((String, String, NativePayload) -> Void)?
     var replySink: ((Int64, Data) -> Void)?
     var handlers: [String: NativeCallHandler] = [:]
     private var attached: Set<String> = []
-    private var pending: [String: [(String, Data)]] = [:]
+    private var pending: [String: [(String, NativePayload)]] = [:]
+    private static let okNilReply: Data = codec.encode([0, nil]) ?? Data()
 
     // MARK: Dart to Swift
 
     /// Runs the handler for `channel`. Returns the encoded reply when the
     /// handler answered before returning; nil means the reply goes to
     /// `replySink` under `token` later.
-    func invoke(channel: String, method: String, args: Data, token: Int64) -> Data? {
+    func invoke(channel: String, method: String, args: NativePayload, token: Int64) -> Data? {
         guard let handler = handlers[channel] else { return Self.reply(.notImplemented) }
         var immediate: Data?
         var returned = false
         let call = FlutterMethodCall(
-            methodName: method, arguments: Self.codec.decode(args))
+            methodName: method, arguments: args.value(codec: Self.codec))
         handler(call) { [weak self] value in
             let data = Self.reply(Self.outcome(of: value))
             if returned {
@@ -77,7 +127,7 @@ final class NativeEngineHub {
     }
 
     func emit(channel: String, method: String, arguments: Any?) {
-        let args = Self.codec.encode(arguments) ?? Data()
+        let args = NativePayload(arguments, codec: Self.codec)
         if attached.contains(channel), let sink = eventSink {
             sink(channel, method, args)
             return
@@ -107,7 +157,9 @@ final class NativeEngineHub {
     private static func reply(_ outcome: Outcome) -> Data {
         let message: [Any?]
         switch outcome {
-        case .value(let value): message = [0, value]
+        case .value(let value):
+            if value == nil { return okNilReply }
+            message = [0, value]
         case .notImplemented: message = [1]
         case .error(let error): message = [2, error.code, error.message, error.details]
         }

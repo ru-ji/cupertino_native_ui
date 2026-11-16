@@ -98,6 +98,26 @@ public final class NativeInterop: NSObject {
     @objc public static func invoke(
         engineId: Int64, channel: String, method: String, args: Data, token: Int64
     ) -> Data? {
+        run(
+            engineId: engineId, channel: channel, method: method,
+            args: NativePayload(kind: 0, number: 0, text: nil, data: args), token: token)
+    }
+
+    /// `invoke` for a scalar argument (kind 1 nil, 2 bool, 3 int, 4 double,
+    /// 5 string): no codec on either side of the call.
+    @objc public static func invokeScalar(
+        engineId: Int64, channel: String, method: String, kind: Int64, number: Double,
+        text: String?, token: Int64
+    ) -> Data? {
+        run(
+            engineId: engineId, channel: channel, method: method,
+            args: NativePayload(kind: kind, number: number, text: text, data: nil),
+            token: token)
+    }
+
+    private static func run(
+        engineId: Int64, channel: String, method: String, args: NativePayload, token: Int64
+    ) -> Data? {
         let hub = NativeEngineHub.hub(engineId)
         if Thread.isMainThread {
             return hub.invoke(channel: channel, method: method, args: args, token: token)
@@ -120,10 +140,16 @@ public final class NativeInterop: NSObject {
         NativeEngineHub.hub(engineId).detach(channel: channel)
     }
 
+    /// Receives every Swift-to-Dart event: channel, method, then the payload
+    /// as `kind` (see `invokeScalar`, plus 0 for encoded) with its `number`,
+    /// `text` or encoded `data`.
     @objc public static func setEventSink(
-        engineId: Int64, sink: @escaping (String, String, Data) -> Void
+        engineId: Int64,
+        sink: @escaping (String, String, Int64, Double, String?, Data?) -> Void
     ) {
-        NativeEngineHub.hub(engineId).eventSink = sink
+        NativeEngineHub.hub(engineId).eventSink = { channel, method, payload in
+            sink(channel, method, payload.kind, payload.number, payload.text, payload.data)
+        }
     }
 
     @objc public static func setReplySink(

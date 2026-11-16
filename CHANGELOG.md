@@ -1,7 +1,17 @@
 ## Unreleased
 
+### Added
+
+* `CupertinoNativeGlassContainer.isSupportedSync`: `isSupported` without the
+  `Future`, usable in `build`.
+
 ### Changed
 
+* SF Symbols are rasterized on a worker isolate instead of the UI isolate.
+* Scalar arguments and events (null, bool, int, double, String) cross FFI as
+  plain values, with no codec; maps and lists are still encoded.
+* The iOS version is read directly from `NSProcessInfo` through an ffigen
+  binding, with the old string parse as a fallback.
 * Migrated to Flutter 3.50: `package:flutter/material.dart` and
   `cupertino.dart` are replaced by `material_ui` and `cupertino_ui`.
   Requires Flutter 3.50 or newer.

@@ -26,6 +26,7 @@ environment:
 
 dependencies:
   cupertino_ui: ^1.1.6
+  ffi: ^2.2.0
   flutter:
     sdk: flutter
   material_ui: ^1.11.0

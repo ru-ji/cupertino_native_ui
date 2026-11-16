@@ -39,7 +39,7 @@ external ffi.Pointer<objc.ObjCBlockImpl> _fhn6xl_wrapBlockingBlock_mpxix1(
     >,
   )
 >(isLeaf: true)
-external ffi.Pointer<objc.ObjCBlockImpl> _fhn6xl_wrapBlockingBlock_r8gdi7(
+external ffi.Pointer<objc.ObjCBlockImpl> _fhn6xl_wrapBlockingBlock_oj1kx8(
   int port,
   ffi.Pointer<objc.DOBJC_Context> context,
   ffi.Pointer<
@@ -85,7 +85,7 @@ external ffi.Pointer<objc.ObjCBlockImpl> _fhn6xl_wrapListenerBlock_mpxix1(
     ffi.Pointer<objc.DOBJC_Context>,
   )
 >(isLeaf: true)
-external ffi.Pointer<objc.ObjCBlockImpl> _fhn6xl_wrapListenerBlock_r8gdi7(
+external ffi.Pointer<objc.ObjCBlockImpl> _fhn6xl_wrapListenerBlock_oj1kx8(
   int port,
   ffi.Pointer<objc.DOBJC_Context> context,
 );
@@ -176,6 +176,35 @@ extension type CNUNativeInterop._(objc.ObjCObject object$)
     );
   }
 
+  /// invokeScalarWithEngineId:channel:method:kind:number:text:token:
+  static objc.NSData? invokeScalarWithEngineId(
+    int engineId, {
+    required objc.NSString channel,
+    required objc.NSString method,
+    required int kind,
+    required double number,
+    objc.NSString? text,
+    required int token,
+  }) {
+    final _$$ref = channel.ref;
+    final _$$ref$1 = method.ref;
+    final _$$ref$2 = text?.ref;
+    final $ret = _objc_msgSend_1llco6o(
+      _class_CNUNativeInterop,
+      _sel_invokeScalarWithEngineId_channel_method_kind_number_text_token_,
+      engineId,
+      _$$ref.pointer,
+      _$$ref$1.pointer,
+      kind,
+      number,
+      _$$ref$2?.pointer ?? ffi.nullptr,
+      token,
+    );
+    return $ret.address == 0
+        ? null
+        : objc.NSData.fromPointer($ret, retain: true, release: true);
+  }
+
   /// invokeWithEngineId:channel:method:args:token:
   static objc.NSData? invokeWithEngineId(
     int engineId, {
@@ -262,7 +291,14 @@ extension type CNUNativeInterop._(objc.ObjCObject object$)
   static void setEventSinkWithEngineId(
     int engineId, {
     required objc.ObjCBlock<
-      ffi.Void Function(objc.NSString, objc.NSString, objc.NSData)
+      ffi.Void Function(
+        objc.NSString,
+        objc.NSString,
+        ffi.Int64,
+        ffi.Double,
+        objc.NSString?,
+        objc.NSData?,
+      )
     >
     sink,
   }) {
@@ -700,11 +736,18 @@ extension ObjCBlock_ffiVoid_NSString$CallExtension
   }
 }
 
-/// Construction methods for `objc.ObjCBlock<ffi.Void Function(objc.NSString, objc.NSString, objc.NSData)>`.
-abstract final class ObjCBlock_ffiVoid_NSString_NSString_NSData {
+/// Construction methods for `objc.ObjCBlock<ffi.Void Function(objc.NSString, objc.NSString, ffi.Int64, ffi.Double, objc.NSString?, objc.NSData?)>`.
+abstract final class ObjCBlock_ffiVoid_NSString_NSString_Int64_ffiDouble_NSString_NSData {
   /// Returns a block that wraps the given raw block pointer.
   static objc.ObjCBlock<
-    ffi.Void Function(objc.NSString, objc.NSString, objc.NSData)
+    ffi.Void Function(
+      objc.NSString,
+      objc.NSString,
+      ffi.Int64,
+      ffi.Double,
+      objc.NSString?,
+      objc.NSData?,
+    )
   >
   fromPointer(
     ffi.Pointer<objc.ObjCBlockImpl> pointer, {
@@ -712,7 +755,14 @@ abstract final class ObjCBlock_ffiVoid_NSString_NSString_NSData {
     bool release = false,
   }) =>
       objc.ObjCBlock<
-        ffi.Void Function(objc.NSString, objc.NSString, objc.NSData)
+        ffi.Void Function(
+          objc.NSString,
+          objc.NSString,
+          ffi.Int64,
+          ffi.Double,
+          objc.NSString?,
+          objc.NSData?,
+        )
       >(pointer, retain: retain, release: release);
 
   /// Creates a block from a C function pointer.
@@ -721,7 +771,14 @@ abstract final class ObjCBlock_ffiVoid_NSString_NSString_NSData {
   /// the isolate that registered it. Invoking the block on the wrong thread
   /// will result in a crash.
   static objc.ObjCBlock<
-    ffi.Void Function(objc.NSString, objc.NSString, objc.NSData)
+    ffi.Void Function(
+      objc.NSString,
+      objc.NSString,
+      ffi.Int64,
+      ffi.Double,
+      objc.NSString?,
+      objc.NSData?,
+    )
   >
   fromFunctionPointer(
     ffi.Pointer<
@@ -729,14 +786,24 @@ abstract final class ObjCBlock_ffiVoid_NSString_NSString_NSData {
         ffi.Void Function(
           ffi.Pointer<objc.ObjCObjectImpl> arg0,
           ffi.Pointer<objc.ObjCObjectImpl> arg1,
-          ffi.Pointer<objc.ObjCObjectImpl> arg2,
+          ffi.Int64 arg2,
+          ffi.Double arg3,
+          ffi.Pointer<objc.ObjCObjectImpl> arg4,
+          ffi.Pointer<objc.ObjCObjectImpl> arg5,
         )
       >
     >
     ptr,
   ) =>
       objc.ObjCBlock<
-        ffi.Void Function(objc.NSString, objc.NSString, objc.NSData)
+        ffi.Void Function(
+          objc.NSString,
+          objc.NSString,
+          ffi.Int64,
+          ffi.Double,
+          objc.NSString?,
+          objc.NSData?,
+        )
       >(
         objc.newPointerBlock(_fnPtrCallable, ptr.cast()),
         retain: false,
@@ -752,24 +819,56 @@ abstract final class ObjCBlock_ffiVoid_NSString_NSString_NSData {
   /// If `keepIsolateAlive` is true, this block will keep this isolate alive
   /// until it is garbage collected by both Dart and ObjC.
   static objc.ObjCBlock<
-    ffi.Void Function(objc.NSString, objc.NSString, objc.NSData)
+    ffi.Void Function(
+      objc.NSString,
+      objc.NSString,
+      ffi.Int64,
+      ffi.Double,
+      objc.NSString?,
+      objc.NSData?,
+    )
   >
   fromFunction(
-    void Function(objc.NSString, objc.NSString, objc.NSData) fn, {
+    void Function(
+      objc.NSString,
+      objc.NSString,
+      int,
+      double,
+      objc.NSString?,
+      objc.NSData?,
+    )
+    fn, {
     bool keepIsolateAlive = true,
   }) =>
       objc.ObjCBlock<
-        ffi.Void Function(objc.NSString, objc.NSString, objc.NSData)
+        ffi.Void Function(
+          objc.NSString,
+          objc.NSString,
+          ffi.Int64,
+          ffi.Double,
+          objc.NSString?,
+          objc.NSData?,
+        )
       >(
         objc.newClosureBlock(_closureCallable, (
           ffi.Pointer<objc.ObjCObjectImpl> arg0,
           ffi.Pointer<objc.ObjCObjectImpl> arg1,
-          ffi.Pointer<objc.ObjCObjectImpl> arg2,
+          int arg2,
+          double arg3,
+          ffi.Pointer<objc.ObjCObjectImpl> arg4,
+          ffi.Pointer<objc.ObjCObjectImpl> arg5,
         ) {
           return fn(
             objc.NSString.fromPointer(arg0, retain: true, release: true),
             objc.NSString.fromPointer(arg1, retain: true, release: true),
-            objc.NSData.fromPointer(arg2, retain: true, release: true),
+            arg2,
+            arg3,
+            arg4.address == 0
+                ? null
+                : objc.NSString.fromPointer(arg4, retain: true, release: true),
+            arg5.address == 0
+                ? null
+                : objc.NSData.fromPointer(arg5, retain: true, release: true),
           );
         }, keepIsolateAlive),
         retain: false,
@@ -785,25 +884,47 @@ abstract final class ObjCBlock_ffiVoid_NSString_NSString_NSData {
   /// If `keepIsolateAlive` is true, this block will keep this isolate alive
   /// until it is garbage collected by both Dart and ObjC.
   static objc.ObjCBlock<
-    ffi.Void Function(objc.NSString, objc.NSString, objc.NSData)
+    ffi.Void Function(
+      objc.NSString,
+      objc.NSString,
+      ffi.Int64,
+      ffi.Double,
+      objc.NSString?,
+      objc.NSData?,
+    )
   >
   listener(
-    void Function(objc.NSString, objc.NSString, objc.NSData) fn, {
+    void Function(
+      objc.NSString,
+      objc.NSString,
+      int,
+      double,
+      objc.NSString?,
+      objc.NSData?,
+    )
+    fn, {
     bool keepIsolateAlive = true,
   }) {
     return objc.ObjCBlock<
-      ffi.Void Function(objc.NSString, objc.NSString, objc.NSData)
+      ffi.Void Function(
+        objc.NSString,
+        objc.NSString,
+        ffi.Int64,
+        ffi.Double,
+        objc.NSString?,
+        objc.NSData?,
+      )
     >(
-      objc.newBlockPort(_fhn6xl_wrapListenerBlock_r8gdi7, (
+      objc.newBlockPort(_fhn6xl_wrapListenerBlock_oj1kx8, (
         ffi.Pointer<objc.ObjCObjectImpl> rawArgs,
       ) {
-        final args = _BlockArgs_1eyfvg1.fromPointer(
+        final args = _BlockArgs_gsltzc.fromPointer(
           rawArgs,
           retain: false,
           release: false,
         );
 
-        fn(args.arg0, args.arg1, args.arg2);
+        fn(args.arg0, args.arg1, args.arg2, args.arg3, args.arg4, args.arg5);
       }, keepIsolateAlive),
       retain: false,
       release: true,
@@ -821,25 +942,47 @@ abstract final class ObjCBlock_ffiVoid_NSString_NSString_NSData {
   /// has shut down, and the block is invoked by native code, it may block
   /// indefinitely, or have other undefined behavior.
   static objc.ObjCBlock<
-    ffi.Void Function(objc.NSString, objc.NSString, objc.NSData)
+    ffi.Void Function(
+      objc.NSString,
+      objc.NSString,
+      ffi.Int64,
+      ffi.Double,
+      objc.NSString?,
+      objc.NSData?,
+    )
   >
   blocking(
-    void Function(objc.NSString, objc.NSString, objc.NSData) fn, {
+    void Function(
+      objc.NSString,
+      objc.NSString,
+      int,
+      double,
+      objc.NSString?,
+      objc.NSData?,
+    )
+    fn, {
     bool keepIsolateAlive = true,
   }) {
     return objc.ObjCBlock<
-      ffi.Void Function(objc.NSString, objc.NSString, objc.NSData)
+      ffi.Void Function(
+        objc.NSString,
+        objc.NSString,
+        ffi.Int64,
+        ffi.Double,
+        objc.NSString?,
+        objc.NSData?,
+      )
     >(
-      objc.newBlockingBlockPort(_fhn6xl_wrapBlockingBlock_r8gdi7, (
+      objc.newBlockingBlockPort(_fhn6xl_wrapBlockingBlock_oj1kx8, (
         ffi.Pointer<objc.ObjCObjectImpl> rawArgs,
       ) {
-        final args = _BlockArgs_1eyfvg1.fromPointer(
+        final args = _BlockArgs_gsltzc.fromPointer(
           rawArgs,
           retain: false,
           release: false,
         );
 
-        fn(args.arg0, args.arg1, args.arg2);
+        fn(args.arg0, args.arg1, args.arg2, args.arg3, args.arg4, args.arg5);
       }, keepIsolateAlive),
       retain: false,
       release: true,
@@ -850,14 +993,20 @@ abstract final class ObjCBlock_ffiVoid_NSString_NSString_NSData {
     ffi.Pointer<objc.ObjCBlockImpl> block,
     ffi.Pointer<objc.ObjCObjectImpl> arg0,
     ffi.Pointer<objc.ObjCObjectImpl> arg1,
-    ffi.Pointer<objc.ObjCObjectImpl> arg2,
+    int arg2,
+    double arg3,
+    ffi.Pointer<objc.ObjCObjectImpl> arg4,
+    ffi.Pointer<objc.ObjCObjectImpl> arg5,
   ) => block.ref.target
       .cast<
         ffi.NativeFunction<
           ffi.Void Function(
             ffi.Pointer<objc.ObjCObjectImpl> arg0,
             ffi.Pointer<objc.ObjCObjectImpl> arg1,
-            ffi.Pointer<objc.ObjCObjectImpl> arg2,
+            ffi.Int64 arg2,
+            ffi.Double arg3,
+            ffi.Pointer<objc.ObjCObjectImpl> arg4,
+            ffi.Pointer<objc.ObjCObjectImpl> arg5,
           )
         >
       >()
@@ -865,14 +1014,20 @@ abstract final class ObjCBlock_ffiVoid_NSString_NSString_NSData {
         void Function(
           ffi.Pointer<objc.ObjCObjectImpl>,
           ffi.Pointer<objc.ObjCObjectImpl>,
+          int,
+          double,
+          ffi.Pointer<objc.ObjCObjectImpl>,
           ffi.Pointer<objc.ObjCObjectImpl>,
         )
-      >()(arg0, arg1, arg2);
+      >()(arg0, arg1, arg2, arg3, arg4, arg5);
   static ffi.Pointer<ffi.Void> _fnPtrCallable =
       ffi.Pointer.fromFunction<
             ffi.Void Function(
               ffi.Pointer<objc.ObjCBlockImpl>,
               ffi.Pointer<objc.ObjCObjectImpl>,
+              ffi.Pointer<objc.ObjCObjectImpl>,
+              ffi.Int64,
+              ffi.Double,
               ffi.Pointer<objc.ObjCObjectImpl>,
               ffi.Pointer<objc.ObjCObjectImpl>,
             )
@@ -882,19 +1037,28 @@ abstract final class ObjCBlock_ffiVoid_NSString_NSString_NSData {
     ffi.Pointer<objc.ObjCBlockImpl> block,
     ffi.Pointer<objc.ObjCObjectImpl> arg0,
     ffi.Pointer<objc.ObjCObjectImpl> arg1,
-    ffi.Pointer<objc.ObjCObjectImpl> arg2,
+    int arg2,
+    double arg3,
+    ffi.Pointer<objc.ObjCObjectImpl> arg4,
+    ffi.Pointer<objc.ObjCObjectImpl> arg5,
   ) =>
       (objc.getBlockClosure(block)
           as void Function(
             ffi.Pointer<objc.ObjCObjectImpl>,
             ffi.Pointer<objc.ObjCObjectImpl>,
+            int,
+            double,
             ffi.Pointer<objc.ObjCObjectImpl>,
-          ))(arg0, arg1, arg2);
+            ffi.Pointer<objc.ObjCObjectImpl>,
+          ))(arg0, arg1, arg2, arg3, arg4, arg5);
   static ffi.Pointer<ffi.Void> _closureCallable =
       ffi.Pointer.fromFunction<
             ffi.Void Function(
               ffi.Pointer<objc.ObjCBlockImpl>,
               ffi.Pointer<objc.ObjCObjectImpl>,
+              ffi.Pointer<objc.ObjCObjectImpl>,
+              ffi.Int64,
+              ffi.Double,
               ffi.Pointer<objc.ObjCObjectImpl>,
               ffi.Pointer<objc.ObjCObjectImpl>,
             )
@@ -902,16 +1066,31 @@ abstract final class ObjCBlock_ffiVoid_NSString_NSString_NSData {
           .cast();
 }
 
-/// Call operator for `objc.ObjCBlock<ffi.Void Function(objc.NSString, objc.NSString, objc.NSData)>`.
-extension ObjCBlock_ffiVoid_NSString_NSString_NSData$CallExtension
+/// Call operator for `objc.ObjCBlock<ffi.Void Function(objc.NSString, objc.NSString, ffi.Int64, ffi.Double, objc.NSString?, objc.NSData?)>`.
+extension ObjCBlock_ffiVoid_NSString_NSString_Int64_ffiDouble_NSString_NSData$CallExtension
     on
         objc.ObjCBlock<
-          ffi.Void Function(objc.NSString, objc.NSString, objc.NSData)
+          ffi.Void Function(
+            objc.NSString,
+            objc.NSString,
+            ffi.Int64,
+            ffi.Double,
+            objc.NSString?,
+            objc.NSData?,
+          )
         > {
-  void call(objc.NSString arg0, objc.NSString arg1, objc.NSData arg2) {
+  void call(
+    objc.NSString arg0,
+    objc.NSString arg1,
+    int arg2,
+    double arg3,
+    objc.NSString? arg4,
+    objc.NSData? arg5,
+  ) {
     final _$$ref = arg0.ref;
     final _$$ref$1 = arg1.ref;
-    final _$$ref$2 = arg2.ref;
+    final _$$ref$2 = arg4?.ref;
+    final _$$ref$3 = arg5?.ref;
     return ref.pointer.ref.invoke
         .cast<
           ffi.NativeFunction<
@@ -919,7 +1098,10 @@ extension ObjCBlock_ffiVoid_NSString_NSString_NSData$CallExtension
               ffi.Pointer<objc.ObjCBlockImpl> block,
               ffi.Pointer<objc.ObjCObjectImpl> arg0,
               ffi.Pointer<objc.ObjCObjectImpl> arg1,
-              ffi.Pointer<objc.ObjCObjectImpl> arg2,
+              ffi.Int64 arg2,
+              ffi.Double arg3,
+              ffi.Pointer<objc.ObjCObjectImpl> arg4,
+              ffi.Pointer<objc.ObjCObjectImpl> arg5,
             )
           >
         >()
@@ -928,21 +1110,32 @@ extension ObjCBlock_ffiVoid_NSString_NSString_NSData$CallExtension
             ffi.Pointer<objc.ObjCBlockImpl>,
             ffi.Pointer<objc.ObjCObjectImpl>,
             ffi.Pointer<objc.ObjCObjectImpl>,
+            int,
+            double,
+            ffi.Pointer<objc.ObjCObjectImpl>,
             ffi.Pointer<objc.ObjCObjectImpl>,
           )
-        >()(ref.pointer, _$$ref.pointer, _$$ref$1.pointer, _$$ref$2.pointer);
+        >()(
+      ref.pointer,
+      _$$ref.pointer,
+      _$$ref$1.pointer,
+      arg2,
+      arg3,
+      _$$ref$2?.pointer ?? ffi.nullptr,
+      _$$ref$3?.pointer ?? ffi.nullptr,
+    );
   }
 }
 
-extension type _BlockArgs_1eyfvg1._(objc.ObjCObject object$)
+extension type _BlockArgs_gsltzc._(objc.ObjCObject object$)
     implements objc.ObjCObject {
-  /// Constructs a [_BlockArgs_1eyfvg1] that points to the same underlying object as [other].
-  _BlockArgs_1eyfvg1.as(objc.ObjCObject other) : object$ = other {
+  /// Constructs a [_BlockArgs_gsltzc] that points to the same underlying object as [other].
+  _BlockArgs_gsltzc.as(objc.ObjCObject other) : object$ = other {
     assert(isA(object$));
   }
 
-  /// Constructs a [_BlockArgs_1eyfvg1] that wraps the given raw object pointer.
-  _BlockArgs_1eyfvg1.fromPointer(
+  /// Constructs a [_BlockArgs_gsltzc] that wraps the given raw object pointer.
+  _BlockArgs_gsltzc.fromPointer(
     ffi.Pointer<objc.ObjCObjectImpl> other, {
     bool retain = false,
     bool release = false,
@@ -950,17 +1143,17 @@ extension type _BlockArgs_1eyfvg1._(objc.ObjCObject object$)
     assert(isA(object$));
   }
 
-  /// Returns whether [obj] is an instance of [_BlockArgs_1eyfvg1].
+  /// Returns whether [obj] is an instance of [_BlockArgs_gsltzc].
   static bool isA(objc.ObjCObject? obj) => obj == null
       ? false
       : _objc_msgSend_19nvye5(
           obj.ref.pointer,
           _sel_isKindOfClass_,
-          _class__BlockArgs_1eyfvg1,
+          _class__BlockArgs_gsltzc,
         );
 }
 
-extension _BlockArgs_1eyfvg1$Methods on _BlockArgs_1eyfvg1 {
+extension _BlockArgs_gsltzc$Methods on _BlockArgs_gsltzc {
   objc.NSString get arg0 {
     final _$$ref = object$.ref;
     final $ret = _objc_msgSend_151sglz(_$$ref.pointer, _sel_arg0);
@@ -973,10 +1166,32 @@ extension _BlockArgs_1eyfvg1$Methods on _BlockArgs_1eyfvg1 {
     return objc.NSString.fromPointer($ret, retain: true, release: true);
   }
 
-  objc.NSData get arg2 {
+  int get arg2 {
     final _$$ref = object$.ref;
-    final $ret = _objc_msgSend_151sglz(_$$ref.pointer, _sel_arg2);
-    return objc.NSData.fromPointer($ret, retain: true, release: true);
+    return _objc_msgSend_pysgoz(_$$ref.pointer, _sel_arg2);
+  }
+
+  double get arg3 {
+    final _$$ref = object$.ref;
+    return objc.useMsgSendVariants
+        ? _objc_msgSend_1ukqyt8Fpret(_$$ref.pointer, _sel_arg3)
+        : _objc_msgSend_1ukqyt8(_$$ref.pointer, _sel_arg3);
+  }
+
+  objc.NSString? get arg4 {
+    final _$$ref = object$.ref;
+    final $ret = _objc_msgSend_151sglz(_$$ref.pointer, _sel_arg4);
+    return $ret.address == 0
+        ? null
+        : objc.NSString.fromPointer($ret, retain: true, release: true);
+  }
+
+  objc.NSData? get arg5 {
+    final _$$ref = object$.ref;
+    final $ret = _objc_msgSend_151sglz(_$$ref.pointer, _sel_arg5);
+    return $ret.address == 0
+        ? null
+        : objc.NSData.fromPointer($ret, retain: true, release: true);
   }
 }
 
@@ -1066,13 +1281,13 @@ final _class_CNUNativeInterop = objc.getClass(
   ).cast(),
 );
 @ffi.Native<ffi.Pointer<objc.ObjCObjectImpl>>(
-  symbol: 'OBJC_CLASS_\$__fhn6xl_BlockArgs_r8gdi7',
+  symbol: 'OBJC_CLASS_\$__fhn6xl_BlockArgs_oj1kx8',
 )
-external ffi.Pointer<objc.ObjCObjectImpl> _class__BlockArgs_1eyfvg1_raw;
-final _class__BlockArgs_1eyfvg1 = objc.getClass(
-  "_fhn6xl_BlockArgs_r8gdi7",
+external ffi.Pointer<objc.ObjCObjectImpl> _class__BlockArgs_gsltzc_raw;
+final _class__BlockArgs_gsltzc = objc.getClass(
+  "_fhn6xl_BlockArgs_oj1kx8",
   () => ffi.Native.addressOf<ffi.Pointer<objc.ObjCObjectImpl>>(
-    _class__BlockArgs_1eyfvg1_raw,
+    _class__BlockArgs_gsltzc_raw,
   ).cast(),
 );
 @ffi.Native<ffi.Pointer<objc.ObjCObjectImpl>>(
@@ -1217,6 +1432,35 @@ final _objc_msgSend_1i0cxyc = objc.msgSendPointer
         ffi.Pointer<objc.ObjCBlockImpl>,
       )
     >();
+final _objc_msgSend_1llco6o = objc.msgSendPointer
+    .cast<
+      ffi.NativeFunction<
+        ffi.Pointer<objc.ObjCObjectImpl> Function(
+          ffi.Pointer<objc.ObjCObjectImpl>,
+          ffi.Pointer<objc.ObjCSelector>,
+          ffi.Int64,
+          ffi.Pointer<objc.ObjCObjectImpl>,
+          ffi.Pointer<objc.ObjCObjectImpl>,
+          ffi.Int64,
+          ffi.Double,
+          ffi.Pointer<objc.ObjCObjectImpl>,
+          ffi.Int64,
+        )
+      >
+    >()
+    .asFunction<
+      ffi.Pointer<objc.ObjCObjectImpl> Function(
+        ffi.Pointer<objc.ObjCObjectImpl>,
+        ffi.Pointer<objc.ObjCSelector>,
+        int,
+        ffi.Pointer<objc.ObjCObjectImpl>,
+        ffi.Pointer<objc.ObjCObjectImpl>,
+        int,
+        double,
+        ffi.Pointer<objc.ObjCObjectImpl>,
+        int,
+      )
+    >();
 final _objc_msgSend_1pl9qdv = objc.msgSendPointer
     .cast<
       ffi.NativeFunction<
@@ -1228,6 +1472,36 @@ final _objc_msgSend_1pl9qdv = objc.msgSendPointer
     >()
     .asFunction<
       void Function(
+        ffi.Pointer<objc.ObjCObjectImpl>,
+        ffi.Pointer<objc.ObjCSelector>,
+      )
+    >();
+final _objc_msgSend_1ukqyt8 = objc.msgSendPointer
+    .cast<
+      ffi.NativeFunction<
+        ffi.Double Function(
+          ffi.Pointer<objc.ObjCObjectImpl>,
+          ffi.Pointer<objc.ObjCSelector>,
+        )
+      >
+    >()
+    .asFunction<
+      double Function(
+        ffi.Pointer<objc.ObjCObjectImpl>,
+        ffi.Pointer<objc.ObjCSelector>,
+      )
+    >();
+final _objc_msgSend_1ukqyt8Fpret = objc.msgSendFpretPointer
+    .cast<
+      ffi.NativeFunction<
+        ffi.Double Function(
+          ffi.Pointer<objc.ObjCObjectImpl>,
+          ffi.Pointer<objc.ObjCSelector>,
+        )
+      >
+    >()
+    .asFunction<
+      double Function(
         ffi.Pointer<objc.ObjCObjectImpl>,
         ffi.Pointer<objc.ObjCSelector>,
       )
@@ -1324,6 +1598,9 @@ late final _sel_allocWithZone_ = objc.registerName("allocWithZone:");
 late final _sel_arg0 = objc.registerName("arg0");
 late final _sel_arg1 = objc.registerName("arg1");
 late final _sel_arg2 = objc.registerName("arg2");
+late final _sel_arg3 = objc.registerName("arg3");
+late final _sel_arg4 = objc.registerName("arg4");
+late final _sel_arg5 = objc.registerName("arg5");
 late final _sel_attachWithEngineId_channel_ = objc.registerName(
   "attachWithEngineId:channel:",
 );
@@ -1332,6 +1609,10 @@ late final _sel_detachWithEngineId_channel_ = objc.registerName(
   "detachWithEngineId:channel:",
 );
 late final _sel_init = objc.registerName("init");
+late final _sel_invokeScalarWithEngineId_channel_method_kind_number_text_token_ =
+    objc.registerName(
+      "invokeScalarWithEngineId:channel:method:kind:number:text:token:",
+    );
 late final _sel_invokeWithEngineId_channel_method_args_token_ = objc
     .registerName("invokeWithEngineId:channel:method:args:token:");
 late final _sel_isKindOfClass_ = objc.registerName("isKindOfClass:");

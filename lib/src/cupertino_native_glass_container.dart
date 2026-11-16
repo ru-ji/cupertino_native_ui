@@ -136,9 +136,19 @@ class CupertinoNativeGlassContainer extends StatefulWidget {
   final double? height;
 
   /// Whether the running device renders real Liquid Glass (iOS 26+).
-  static Future<bool> get isSupported async {
+  ///
+  /// Answered at once by a direct native call. Prefer [isSupportedSync]; this
+  /// stays as a [Future] for existing callers.
+  static Future<bool> get isSupported async => isSupportedSync;
+
+  /// [isSupported] without the [Future]: usable in `build` or `initState`.
+  static bool get isSupportedSync {
     if (defaultTargetPlatform != TargetPlatform.iOS) return false;
-    return CNUNativeInterop.isLiquidGlassSupported();
+    try {
+      return CNUNativeInterop.isLiquidGlassSupported();
+    } on Object {
+      return false;
+    }
   }
 
   @override

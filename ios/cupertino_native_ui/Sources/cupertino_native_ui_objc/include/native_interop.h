@@ -24,11 +24,20 @@ NS_ASSUME_NONNULL_BEGIN
                                  method:(NSString *)method
                                    args:(NSData *)args
                                   token:(int64_t)token;
++ (nullable NSData *)invokeScalarWithEngineId:(int64_t)engineId
+                                      channel:(NSString *)channel
+                                       method:(NSString *)method
+                                         kind:(int64_t)kind
+                                       number:(double)number
+                                         text:(nullable NSString *)text
+                                        token:(int64_t)token;
 + (void)attachWithEngineId:(int64_t)engineId channel:(NSString *)channel;
 + (void)detachWithEngineId:(int64_t)engineId channel:(NSString *)channel;
 + (void)setEventSinkWithEngineId:(int64_t)engineId
                             sink:(void (^)(NSString *channel, NSString *method,
-                                           NSData *args))sink;
+                                           int64_t kind, double number,
+                                           NSString *_Nullable text,
+                                           NSData *_Nullable data))sink;
 + (void)setReplySinkWithEngineId:(int64_t)engineId
                             sink:(void (^)(int64_t token, NSData *reply))sink;
 @end

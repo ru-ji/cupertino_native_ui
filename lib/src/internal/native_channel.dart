@@ -79,21 +79,26 @@ class _Hub {
     _ready = true;
     CNUNativeInterop.setEventSinkWithEngineId(
       engineId,
-      sink: ObjCBlock_ffiVoid_NSString_NSString_NSData.listener((
-        channel,
-        method,
-        args,
-      ) {
-        final handler = _handlers[channel.toDartString()];
-        if (handler == null) return;
-        final call = MethodCall(method.toDartString(), _decode(args));
-        // Swift never waits on a reply to an event: an error is only logged.
-        unawaited(
-          Future<dynamic>.sync(() => handler(call)).catchError((Object e) {
-            nativeLog(() => 'NativeChannel handler for "${call.method}": $e');
-          }),
-        );
-      }),
+      sink:
+          ObjCBlock_ffiVoid_NSString_NSString_Int64_ffiDouble_NSString_NSData.listener(
+            (channel, method, kind, number, text, data) {
+              final handler = _handlers[channel.toDartString()];
+              if (handler == null) return;
+              final call = MethodCall(
+                method.toDartString(),
+                _payload(kind, number, text, data),
+              );
+              // Swift never waits on a reply to an event: an error is only logged.
+              unawaited(
+                Future<dynamic>.sync(() => handler(call))
+                    .catchError((Object e) {
+                      nativeLog(
+                        () => 'NativeChannel handler for "${call.method}": $e',
+                      );
+                    }),
+              );
+            },
+          ),
     );
     CNUNativeInterop.setReplySinkWithEngineId(
       engineId,
@@ -130,13 +135,29 @@ class _Hub {
     final completer = Completer<Object?>();
     _pending[token] = completer;
     try {
-      final immediate = CNUNativeInterop.invokeWithEngineId(
-        engineId,
-        channel: channel.toNSString(),
-        method: method.toNSString(),
-        args: _encode(arguments),
-        token: token,
-      );
+      final kind = _scalarKind(arguments);
+      // Scalars (and no argument at all) skip the codec in both directions.
+      final immediate = kind == 0
+          ? CNUNativeInterop.invokeWithEngineId(
+              engineId,
+              channel: channel.toNSString(),
+              method: method.toNSString(),
+              args: _encode(arguments),
+              token: token,
+            )
+          : CNUNativeInterop.invokeScalarWithEngineId(
+              engineId,
+              channel: channel.toNSString(),
+              method: method.toNSString(),
+              kind: kind,
+              number: switch (arguments) {
+                final bool b => b ? 1 : 0,
+                final num n => n.toDouble(),
+                _ => 0,
+              },
+              text: arguments is String ? arguments.toNSString() : null,
+              token: token,
+            );
       if (immediate != null) {
         _pending.remove(token);
         _complete(completer, immediate);
@@ -147,6 +168,31 @@ class _Hub {
     }
     return completer.future;
   }
+
+  /// 1 null, 2 bool, 3 int, 4 double, 5 string; 0 for anything the codec
+  /// has to carry (maps, lists, bytes, and ints past 2^53).
+  static int _scalarKind(Object? value) => switch (value) {
+    null => 1,
+    bool _ => 2,
+    int i when i.abs() <= (1 << 53) => 3,
+    double _ => 4,
+    String _ => 5,
+    _ => 0,
+  };
+
+  static Object? _payload(
+    int kind,
+    double number,
+    NSString? text,
+    NSData? data,
+  ) => switch (kind) {
+    0 => data == null ? null : _decode(data),
+    2 => number != 0,
+    3 => number.toInt(),
+    4 => number,
+    5 => text?.toDartString(),
+    _ => null,
+  };
 
   static NSData _encode(Object? value) {
     final bytes = _codec.encodeMessage(value)!;
