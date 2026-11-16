@@ -1,3 +1,8 @@
+import 'internal/native_interop_bindings.g.dart';
+import 'internal/native_log.dart';
+
+import 'package:objective_c/objective_c.dart' show StringToNSString;
+
 import 'dart:convert';
 import 'dart:ui' as ui;
 
@@ -307,13 +312,13 @@ class CupertinoNativePageScaffold extends StatefulWidget {
     final isDark =
         ui.PlatformDispatcher.instance.platformBrightness == ui.Brightness.dark;
     try {
-      await const MethodChannel('com.example.cupertino_native_ui/alert')
-          .invokeMethod<void>('prewarmScaffold', {
-            'routes': routes,
-            'isDark': isDark,
-          });
-    } on PlatformException {
+      CNUNativeInterop.prewarmScaffoldWithRoutesJson(
+        jsonEncode(routes).toNSString(),
+        isDark: isDark,
+      );
+    } on Object catch (e) {
       // Plugin unavailable (e.g. iOS < 15): nothing to warm.
+      nativeLog(() => 'prewarm failed: $e');
     }
   }
 

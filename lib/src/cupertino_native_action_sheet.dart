@@ -1,5 +1,6 @@
+import 'internal/native_alert_bridge.dart';
+
 import 'package:material_ui/material_ui.dart' show Theme;
-import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
 import 'cupertino_native_alert_dialog.dart';
@@ -36,10 +37,6 @@ import 'internal/native_log.dart';
 class CupertinoNativeActionSheet {
   const CupertinoNativeActionSheet._();
 
-  static const MethodChannel _channel = MethodChannel(
-    'com.example.cupertino_native_ui/alert',
-  );
-
   /// Presents the sheet and awaits the choice, calling that action's
   /// `onPressed`. Dismissing without choosing calls nothing.
   ///
@@ -56,7 +53,7 @@ class CupertinoNativeActionSheet {
     Rect? anchor,
   }) async {
     try {
-      final int? index = await _channel.invokeMethod<int>('showActionSheet', {
+      final index = await presentNativeAlert(actionSheet: true, {
         'title': title ?? '',
         'message': message,
         'actions': actions.map((a) => a.toMap()).toList(),
@@ -72,11 +69,11 @@ class CupertinoNativeActionSheet {
           },
       });
 
-      if (index != null && index >= 0 && index < actions.length) {
+      if (index is int && index >= 0 && index < actions.length) {
         actions[index].onPressed?.call();
       }
-    } on PlatformException catch (e) {
-      nativeLog(() => 'Failed to show action sheet: ${e.message}');
+    } on Object catch (e) {
+      nativeLog(() => 'Failed to show action sheet: $e');
     }
   }
 

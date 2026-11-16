@@ -1,5 +1,6 @@
+import 'internal/native_alert_bridge.dart';
+
 import 'package:material_ui/material_ui.dart' show Theme;
-import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
 import 'cupertino_native_text_field.dart';
@@ -33,10 +34,6 @@ class CupertinoNativeDialogAction {
 }
 
 class CupertinoNativeAlertDialog {
-  static const MethodChannel _channel = MethodChannel(
-    'com.example.cupertino_native_ui/alert',
-  );
-
   /// [textFields] puts UIKit's own fields in the alert, as in a rename or a
   /// sign-in prompt. Each is read, not mounted: its `controller` (the
   /// starting text, and what was typed by the time an action's `onPressed`
@@ -52,7 +49,7 @@ class CupertinoNativeAlertDialog {
   }) async {
     try {
       // The tapped action's index; with text fields, also what was typed.
-      final reply = await _channel.invokeMethod<Object?>('showAlert', {
+      final reply = await presentNativeAlert(actionSheet: false, {
         'title': title,
         'message': content,
         'textFields': textFields.map(_fieldMap).toList(),
@@ -77,9 +74,8 @@ class CupertinoNativeAlertDialog {
       if (index != null && index >= 0 && index < actions.length) {
         actions[index].onPressed?.call();
       }
-    } on PlatformException catch (e) {
-      // Handle error or print
-      nativeLog(() => 'Failed to show alert: ${e.message}');
+    } on Object catch (e) {
+      nativeLog(() => 'Failed to show alert: $e');
     }
   }
 

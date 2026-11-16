@@ -8,6 +8,36 @@ import 'package:objective_c/objective_c.dart' as objc;
 import 'package:ffi/ffi.dart' as pkg_ffi;
 
 const _$objcVersionCheck = objc.ObjCVersionCheck(9, 6);
+@ffi.Native<
+  ffi.Pointer<objc.ObjCBlockImpl> Function(
+    ffi.Int64,
+    ffi.Pointer<objc.DOBJC_Context>,
+    ffi.Pointer<
+      ffi.NativeFunction<
+        ffi.Void Function(ffi.Pointer<objc.ObjCObjectImpl> args)
+      >
+    >,
+  )
+>(isLeaf: true)
+external ffi.Pointer<objc.ObjCBlockImpl> _fhn6xl_wrapBlockingBlock_xtuoz7(
+  int port,
+  ffi.Pointer<objc.DOBJC_Context> context,
+  ffi.Pointer<
+    ffi.NativeFunction<ffi.Void Function(ffi.Pointer<objc.ObjCObjectImpl> args)>
+  >
+  directInvoke,
+);
+
+@ffi.Native<
+  ffi.Pointer<objc.ObjCBlockImpl> Function(
+    ffi.Int64,
+    ffi.Pointer<objc.DOBJC_Context>,
+  )
+>(isLeaf: true)
+external ffi.Pointer<objc.ObjCBlockImpl> _fhn6xl_wrapListenerBlock_xtuoz7(
+  int port,
+  ffi.Pointer<objc.DOBJC_Context> context,
+);
 
 /// CNUNativeInterop
 extension type CNUNativeInterop._(objc.ObjCObject object$)
@@ -70,6 +100,20 @@ extension type CNUNativeInterop._(objc.ObjCObject object$)
     return CNUNativeInterop.fromPointer($ret, retain: false, release: true);
   }
 
+  /// prewarmScaffoldWithRoutesJson:isDark:
+  static void prewarmScaffoldWithRoutesJson(
+    objc.NSString routesJson, {
+    required bool isDark,
+  }) {
+    final _$$ref = routesJson.ref;
+    _objc_msgSend_6p7ndb(
+      _class_CNUNativeInterop,
+      _sel_prewarmScaffoldWithRoutesJson_isDark_,
+      _$$ref.pointer,
+      isDark,
+    );
+  }
+
   /// renderSymbolWithName:size:argb:hasColor:weight:symbolScale:scale:
   static objc.NSData? renderSymbolWithName(
     objc.NSString name, {
@@ -99,6 +143,36 @@ extension type CNUNativeInterop._(objc.ObjCObject object$)
         : objc.NSData.fromPointer($ret, retain: true, release: true);
   }
 
+  /// showActionSheetWithJson:completion:
+  static void showActionSheetWithJson(
+    objc.NSString json, {
+    required objc.ObjCBlock<ffi.Void Function(objc.NSString?)> completion,
+  }) {
+    final _$$ref = json.ref;
+    final _$$ref$1 = completion.ref;
+    _objc_msgSend_o762yo(
+      _class_CNUNativeInterop,
+      _sel_showActionSheetWithJson_completion_,
+      _$$ref.pointer,
+      _$$ref$1.pointer,
+    );
+  }
+
+  /// showAlertWithJson:completion:
+  static void showAlertWithJson(
+    objc.NSString json, {
+    required objc.ObjCBlock<ffi.Void Function(objc.NSString?)> completion,
+  }) {
+    final _$$ref = json.ref;
+    final _$$ref$1 = completion.ref;
+    _objc_msgSend_o762yo(
+      _class_CNUNativeInterop,
+      _sel_showAlertWithJson_completion_,
+      _$$ref.pointer,
+      _$$ref$1.pointer,
+    );
+  }
+
   /// Returns a new instance of CNUNativeInterop constructed with the default `new` method.
   CNUNativeInterop() : this.as(new$().object$);
 }
@@ -120,6 +194,215 @@ extension CNUNativeInterop$Methods on CNUNativeInterop {
   }
 }
 
+/// Construction methods for `objc.ObjCBlock<ffi.Void Function(objc.NSString?)>`.
+abstract final class ObjCBlock_ffiVoid_NSString {
+  /// Returns a block that wraps the given raw block pointer.
+  static objc.ObjCBlock<ffi.Void Function(objc.NSString?)> fromPointer(
+    ffi.Pointer<objc.ObjCBlockImpl> pointer, {
+    bool retain = false,
+    bool release = false,
+  }) => objc.ObjCBlock<ffi.Void Function(objc.NSString?)>(
+    pointer,
+    retain: retain,
+    release: release,
+  );
+
+  /// Creates a block from a C function pointer.
+  ///
+  /// This block must be invoked by native code running on the same thread as
+  /// the isolate that registered it. Invoking the block on the wrong thread
+  /// will result in a crash.
+  static objc.ObjCBlock<ffi.Void Function(objc.NSString?)> fromFunctionPointer(
+    ffi.Pointer<
+      ffi.NativeFunction<
+        ffi.Void Function(ffi.Pointer<objc.ObjCObjectImpl> arg0)
+      >
+    >
+    ptr,
+  ) => objc.ObjCBlock<ffi.Void Function(objc.NSString?)>(
+    objc.newPointerBlock(_fnPtrCallable, ptr.cast()),
+    retain: false,
+    release: true,
+  );
+
+  /// Creates a block from a Dart function.
+  ///
+  /// This block must be invoked by native code running on the same thread as
+  /// the isolate that registered it. Invoking the block on the wrong thread
+  /// will result in a crash.
+  ///
+  /// If `keepIsolateAlive` is true, this block will keep this isolate alive
+  /// until it is garbage collected by both Dart and ObjC.
+  static objc.ObjCBlock<ffi.Void Function(objc.NSString?)> fromFunction(
+    void Function(objc.NSString?) fn, {
+    bool keepIsolateAlive = true,
+  }) => objc.ObjCBlock<ffi.Void Function(objc.NSString?)>(
+    objc.newClosureBlock(_closureCallable, (
+      ffi.Pointer<objc.ObjCObjectImpl> arg0,
+    ) {
+      return fn(
+        arg0.address == 0
+            ? null
+            : objc.NSString.fromPointer(arg0, retain: true, release: true),
+      );
+    }, keepIsolateAlive),
+    retain: false,
+    release: true,
+  );
+
+  /// Creates a listener block from a Dart function.
+  ///
+  /// This block can be invoked from any thread, but only supports void
+  /// functions, and is not run synchronously. Async functions (ie returning
+  /// Future<void>) are not supported.
+  ///
+  /// If `keepIsolateAlive` is true, this block will keep this isolate alive
+  /// until it is garbage collected by both Dart and ObjC.
+  static objc.ObjCBlock<ffi.Void Function(objc.NSString?)> listener(
+    void Function(objc.NSString?) fn, {
+    bool keepIsolateAlive = true,
+  }) {
+    return objc.ObjCBlock<ffi.Void Function(objc.NSString?)>(
+      objc.newBlockPort(_fhn6xl_wrapListenerBlock_xtuoz7, (
+        ffi.Pointer<objc.ObjCObjectImpl> rawArgs,
+      ) {
+        final args = _BlockArgs_oimzbh.fromPointer(
+          rawArgs,
+          retain: false,
+          release: false,
+        );
+
+        fn(args.arg0);
+      }, keepIsolateAlive),
+      retain: false,
+      release: true,
+    );
+  }
+
+  /// Creates a blocking block from a Dart function.
+  ///
+  /// This callback can be invoked from any native thread, and will block the
+  /// caller until the callback is handled by the Dart isolate that created
+  /// the block. Async functions (ie returning Future<void>) are not supported.
+  ///
+  /// If `keepIsolateAlive` is true, this block will keep this isolate alive
+  /// until it is garbage collected by both Dart and ObjC. If the owner isolate
+  /// has shut down, and the block is invoked by native code, it may block
+  /// indefinitely, or have other undefined behavior.
+  static objc.ObjCBlock<ffi.Void Function(objc.NSString?)> blocking(
+    void Function(objc.NSString?) fn, {
+    bool keepIsolateAlive = true,
+  }) {
+    return objc.ObjCBlock<ffi.Void Function(objc.NSString?)>(
+      objc.newBlockingBlockPort(_fhn6xl_wrapBlockingBlock_xtuoz7, (
+        ffi.Pointer<objc.ObjCObjectImpl> rawArgs,
+      ) {
+        final args = _BlockArgs_oimzbh.fromPointer(
+          rawArgs,
+          retain: false,
+          release: false,
+        );
+
+        fn(args.arg0);
+      }, keepIsolateAlive),
+      retain: false,
+      release: true,
+    );
+  }
+
+  static void _fnPtrTrampoline(
+    ffi.Pointer<objc.ObjCBlockImpl> block,
+    ffi.Pointer<objc.ObjCObjectImpl> arg0,
+  ) => block.ref.target
+      .cast<
+        ffi.NativeFunction<
+          ffi.Void Function(ffi.Pointer<objc.ObjCObjectImpl> arg0)
+        >
+      >()
+      .asFunction<void Function(ffi.Pointer<objc.ObjCObjectImpl>)>()(arg0);
+  static ffi.Pointer<ffi.Void> _fnPtrCallable =
+      ffi.Pointer.fromFunction<
+            ffi.Void Function(
+              ffi.Pointer<objc.ObjCBlockImpl>,
+              ffi.Pointer<objc.ObjCObjectImpl>,
+            )
+          >(_fnPtrTrampoline)
+          .cast();
+  static void _closureTrampoline(
+    ffi.Pointer<objc.ObjCBlockImpl> block,
+    ffi.Pointer<objc.ObjCObjectImpl> arg0,
+  ) =>
+      (objc.getBlockClosure(block)
+          as void Function(ffi.Pointer<objc.ObjCObjectImpl>))(arg0);
+  static ffi.Pointer<ffi.Void> _closureCallable =
+      ffi.Pointer.fromFunction<
+            ffi.Void Function(
+              ffi.Pointer<objc.ObjCBlockImpl>,
+              ffi.Pointer<objc.ObjCObjectImpl>,
+            )
+          >(_closureTrampoline)
+          .cast();
+}
+
+/// Call operator for `objc.ObjCBlock<ffi.Void Function(objc.NSString?)>`.
+extension ObjCBlock_ffiVoid_NSString$CallExtension
+    on objc.ObjCBlock<ffi.Void Function(objc.NSString?)> {
+  void call(objc.NSString? arg0) {
+    final _$$ref = arg0?.ref;
+    return ref.pointer.ref.invoke
+        .cast<
+          ffi.NativeFunction<
+            ffi.Void Function(
+              ffi.Pointer<objc.ObjCBlockImpl> block,
+              ffi.Pointer<objc.ObjCObjectImpl> arg0,
+            )
+          >
+        >()
+        .asFunction<
+          void Function(
+            ffi.Pointer<objc.ObjCBlockImpl>,
+            ffi.Pointer<objc.ObjCObjectImpl>,
+          )
+        >()(ref.pointer, _$$ref?.pointer ?? ffi.nullptr);
+  }
+}
+
+extension type _BlockArgs_oimzbh._(objc.ObjCObject object$)
+    implements objc.ObjCObject {
+  /// Constructs a [_BlockArgs_oimzbh] that points to the same underlying object as [other].
+  _BlockArgs_oimzbh.as(objc.ObjCObject other) : object$ = other {
+    assert(isA(object$));
+  }
+
+  /// Constructs a [_BlockArgs_oimzbh] that wraps the given raw object pointer.
+  _BlockArgs_oimzbh.fromPointer(
+    ffi.Pointer<objc.ObjCObjectImpl> other, {
+    bool retain = false,
+    bool release = false,
+  }) : object$ = objc.ObjCObject(other, retain: retain, release: release) {
+    assert(isA(object$));
+  }
+
+  /// Returns whether [obj] is an instance of [_BlockArgs_oimzbh].
+  static bool isA(objc.ObjCObject? obj) => obj == null
+      ? false
+      : _objc_msgSend_19nvye5(
+          obj.ref.pointer,
+          _sel_isKindOfClass_,
+          _class__BlockArgs_oimzbh,
+        );
+}
+
+extension _BlockArgs_oimzbh$Methods on _BlockArgs_oimzbh {
+  objc.NSString? get arg0 {
+    final _$$ref = object$.ref;
+    final $ret = _objc_msgSend_151sglz(_$$ref.pointer, _sel_arg0);
+    return $ret.address == 0
+        ? null
+        : objc.NSString.fromPointer($ret, retain: true, release: true);
+  }
+}
+
 @ffi.Native<ffi.Pointer<objc.ObjCObjectImpl>>(
   symbol: 'OBJC_CLASS_\$_CNUNativeInterop',
 )
@@ -128,6 +411,16 @@ final _class_CNUNativeInterop = objc.getClass(
   "CNUNativeInterop",
   () => ffi.Native.addressOf<ffi.Pointer<objc.ObjCObjectImpl>>(
     _class_CNUNativeInterop_raw,
+  ).cast(),
+);
+@ffi.Native<ffi.Pointer<objc.ObjCObjectImpl>>(
+  symbol: 'OBJC_CLASS_\$__fhn6xl_BlockArgs_xtuoz7',
+)
+external ffi.Pointer<objc.ObjCObjectImpl> _class__BlockArgs_oimzbh_raw;
+final _class__BlockArgs_oimzbh = objc.getClass(
+  "_fhn6xl_BlockArgs_xtuoz7",
+  () => ffi.Native.addressOf<ffi.Pointer<objc.ObjCObjectImpl>>(
+    _class__BlockArgs_oimzbh_raw,
   ).cast(),
 );
 final _objc_msgSend_151sglz = objc.msgSendPointer
@@ -223,6 +516,25 @@ final _objc_msgSend_1pl9qdv = objc.msgSendPointer
         ffi.Pointer<objc.ObjCSelector>,
       )
     >();
+final _objc_msgSend_6p7ndb = objc.msgSendPointer
+    .cast<
+      ffi.NativeFunction<
+        ffi.Void Function(
+          ffi.Pointer<objc.ObjCObjectImpl>,
+          ffi.Pointer<objc.ObjCSelector>,
+          ffi.Pointer<objc.ObjCObjectImpl>,
+          ffi.Bool,
+        )
+      >
+    >()
+    .asFunction<
+      void Function(
+        ffi.Pointer<objc.ObjCObjectImpl>,
+        ffi.Pointer<objc.ObjCSelector>,
+        ffi.Pointer<objc.ObjCObjectImpl>,
+        bool,
+      )
+    >();
 final _objc_msgSend_91o635 = objc.msgSendPointer
     .cast<
       ffi.NativeFunction<
@@ -238,8 +550,28 @@ final _objc_msgSend_91o635 = objc.msgSendPointer
         ffi.Pointer<objc.ObjCSelector>,
       )
     >();
+final _objc_msgSend_o762yo = objc.msgSendPointer
+    .cast<
+      ffi.NativeFunction<
+        ffi.Void Function(
+          ffi.Pointer<objc.ObjCObjectImpl>,
+          ffi.Pointer<objc.ObjCSelector>,
+          ffi.Pointer<objc.ObjCObjectImpl>,
+          ffi.Pointer<objc.ObjCBlockImpl>,
+        )
+      >
+    >()
+    .asFunction<
+      void Function(
+        ffi.Pointer<objc.ObjCObjectImpl>,
+        ffi.Pointer<objc.ObjCSelector>,
+        ffi.Pointer<objc.ObjCObjectImpl>,
+        ffi.Pointer<objc.ObjCBlockImpl>,
+      )
+    >();
 late final _sel_alloc = objc.registerName("alloc");
 late final _sel_allocWithZone_ = objc.registerName("allocWithZone:");
+late final _sel_arg0 = objc.registerName("arg0");
 late final _sel_clearPhotoCache = objc.registerName("clearPhotoCache");
 late final _sel_init = objc.registerName("init");
 late final _sel_isKindOfClass_ = objc.registerName("isKindOfClass:");
@@ -247,9 +579,18 @@ late final _sel_isLiquidGlassSupported = objc.registerName(
   "isLiquidGlassSupported",
 );
 late final _sel_new = objc.registerName("new");
+late final _sel_prewarmScaffoldWithRoutesJson_isDark_ = objc.registerName(
+  "prewarmScaffoldWithRoutesJson:isDark:",
+);
 late final _sel_renderSymbolWithName_size_argb_hasColor_weight_symbolScale_scale_ =
     objc.registerName(
       "renderSymbolWithName:size:argb:hasColor:weight:symbolScale:scale:",
     );
+late final _sel_showActionSheetWithJson_completion_ = objc.registerName(
+  "showActionSheetWithJson:completion:",
+);
+late final _sel_showAlertWithJson_completion_ = objc.registerName(
+  "showAlertWithJson:completion:",
+);
 typedef instancetype = ffi.Pointer<objc.ObjCObjectImpl>;
 typedef Dartinstancetype = objc.ObjCObject;

@@ -155,14 +155,6 @@ public class FlutterCupertinoPlugin: NSObject, FlutterPlugin {
     }
 
     public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
-        if call.method == "prewarmScaffold" {
-            let args = call.arguments as? [String: Any]
-            NativeScaffoldView.prewarm(
-                routes: args?["routes"] as? [String] ?? [],
-                isDark: args?["isDark"] as? Bool ?? false)
-            result(nil)
-            return
-        }
         if call.method == "showSheet" {
             NativeSheetManager.shared.show(
                 args: call.arguments as? [String: Any] ?? [:], result: result)
@@ -177,32 +169,6 @@ public class FlutterCupertinoPlugin: NSObject, FlutterPlugin {
             NativeSheetManager.shared.dismiss(result: result)
             return
         }
-        if call.method == "showAlert" || call.method == "showActionSheet" {
-            guard let args = call.arguments as? [String: Any],
-                let title = args["title"] as? String,
-                let actions = args["actions"] as? [[String: Any]]
-            else {
-                result(
-                    FlutterError(code: "INVALID_ARGS", message: "Missing arguments", details: nil))
-                return
-            }
-            let message = args["message"] as? String
-            let isDark = args["isDark"] as? Bool ?? false
-
-            var anchor: CGRect? = nil
-            if let rect = args["sourceRect"] as? [String: Any],
-                let x = rect["x"] as? Double, let y = rect["y"] as? Double,
-                let w = rect["width"] as? Double, let h = rect["height"] as? Double
-            {
-                anchor = CGRect(x: x, y: y, width: w, height: h)
-            }
-            AlertManager.shared.show(
-                title: title, message: message, actions: actions,
-                textFields: args["textFields"] as? [[String: Any]] ?? [], isDark: isDark,
-                style: call.method == "showActionSheet" ? .actionSheet : .alert,
-                sourceRect: anchor, result: result)
-        } else {
-            result(FlutterMethodNotImplemented)
-        }
+        result(FlutterMethodNotImplemented)
     }
 }

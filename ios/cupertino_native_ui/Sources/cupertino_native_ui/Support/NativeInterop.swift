@@ -2,7 +2,7 @@ import UIKit
 
 /// Entry points Dart calls directly through FFI (package:objective_c), with no
 /// platform channel in between: no codec, no async hop, callable from any
-/// isolate. The Dart side is generated from `tool/ffigen/native_interop.h`,
+/// isolate. The Dart side is generated from `ios/.../cupertino_native_ui_objc/include/native_interop.h`,
 /// which must be kept in sync with the signatures here.
 @objc(CNUNativeInterop)
 public final class NativeInterop: NSObject {
@@ -27,5 +27,67 @@ public final class NativeInterop: NSObject {
         FlutterCupertinoPlugin.renderSymbol(
             name: name, size: size, argb: hasColor ? argb : nil,
             weight: weight, symbolScale: symbolScale, scale: scale)
+    }
+
+    /// Pre-boots the engines for scaffold body `routes` (a JSON array of names).
+    @objc public static func prewarmScaffold(routesJson: String, isDark: Bool) {
+        let routes =
+            (try? JSONSerialization.jsonObject(with: Data(routesJson.utf8))) as? [String] ?? []
+        DispatchQueue.main.async {
+            NativeScaffoldView.prewarm(routes: routes, isDark: isDark)
+        }
+    }
+
+    /// Presents a UIAlertController alert. `json` is the same map the channel
+    /// used to carry. `completion` gets the JSON of the outcome: the tapped
+    /// action's index, `{"index":i,"texts":[...]}` with text fields, or nil.
+    @objc public static func showAlert(json: String, completion: @escaping (String?) -> Void) {
+        present(json: json, style: .alert, completion: completion)
+    }
+
+    /// As `showAlert`, as an action sheet (popover when `sourceRect` is given).
+    @objc public static func showActionSheet(
+        json: String, completion: @escaping (String?) -> Void
+    ) {
+        present(json: json, style: .actionSheet, completion: completion)
+    }
+
+    private static func present(
+        json: String, style: UIAlertController.Style, completion: @escaping (String?) -> Void
+    ) {
+        guard
+            let args = (try? JSONSerialization.jsonObject(with: Data(json.utf8)))
+                as? [String: Any],
+            let title = args["title"] as? String,
+            let actions = args["actions"] as? [[String: Any]]
+        else {
+            completion(nil)
+            return
+        }
+        var anchor: CGRect? = nil
+        if let rect = args["sourceRect"] as? [String: Any],
+            let x = rect["x"] as? Double, let y = rect["y"] as? Double,
+            let w = rect["width"] as? Double, let h = rect["height"] as? Double
+        {
+            anchor = CGRect(x: x, y: y, width: w, height: h)
+        }
+        DispatchQueue.main.async {
+            AlertManager.shared.show(
+                title: title, message: args["message"] as? String, actions: actions,
+                textFields: args["textFields"] as? [[String: Any]] ?? [],
+                isDark: args["isDark"] as? Bool ?? false, style: style, sourceRect: anchor,
+                result: { value in
+                    guard let value, JSONSerialization.isValidJSONObject([value]),
+                        let data = try? JSONSerialization.data(
+                            withJSONObject: [value]),
+                        let text = String(data: data, encoding: .utf8)
+                    else {
+                        completion(nil)
+                        return
+                    }
+                    // Wrapped in an array above so a bare number is valid JSON.
+                    completion(text)
+                })
+        }
     }
 }

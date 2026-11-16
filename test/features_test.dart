@@ -2,6 +2,7 @@
 // ignore_for_file: deprecated_member_use, deprecated_member_use_from_same_package
 
 import 'package:cupertino_native_ui/cupertino_native_ui.dart';
+import 'package:cupertino_native_ui/src/internal/native_alert_bridge.dart';
 import 'package:cupertino_native_ui/src/internal/widget_lowering.dart';
 import 'package:cupertino_ui/cupertino_ui.dart'
     show CupertinoApp, CupertinoIcons, CupertinoThemeData;
@@ -199,16 +200,14 @@ void main() {
       tester,
     ) async {
       Map? args;
-      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
-        const MethodChannel('com.example.cupertino_native_ui/alert'),
-        (call) async {
-          args = call.arguments as Map;
-          return {
-            'index': 1,
-            'texts': ['New name'],
-          };
-        },
-      );
+      presentNativeAlertOverride = (sent, {required actionSheet}) async {
+        args = sent;
+        return {
+          'index': 1,
+          'texts': ['New name'],
+        };
+      };
+      addTearDown(() => presentNativeAlertOverride = null);
       await tester.pumpWidget(const MaterialApp(home: SizedBox()));
       final name = TextEditingController(text: 'Old name');
       String? saved;

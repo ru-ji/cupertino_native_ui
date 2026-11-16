@@ -14,7 +14,7 @@ let package = Package(
         .iOS("15.0")
     ],
     products: [
-        .library(name: "cupertino-native-ui", targets: ["cupertino_native_ui"])
+        .library(name: "cupertino-native-ui", targets: ["cupertino_native_ui", "cupertino_native_ui_objc"])
     ],
     dependencies: [
         .package(name: "FlutterFramework", path: "../FlutterFramework")
@@ -26,6 +26,11 @@ let package = Package(
                 .product(name: "FlutterFramework", package: "FlutterFramework")
             ],
             resources: []
-        )
+        ),
+        // ffigen's Objective-C block trampolines for Dart <-> Swift calls.
+        .target(
+            name: "cupertino_native_ui_objc",
+            publicHeadersPath: "include"
+        ),
     ]
 )
