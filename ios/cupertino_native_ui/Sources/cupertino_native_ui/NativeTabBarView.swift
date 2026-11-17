@@ -358,8 +358,9 @@ class NativeTabBarView: NSObject, FlutterPlatformView, UITabBarDelegate {
                 result(FlutterError(code: "INVALID_ARGS", message: "Missing layout", details: nil))
             }
         case "setSelectedIndex":
-            if let args = call.arguments as? [String: Any],
-                let idx = (args["index"] as? NSNumber)?.intValue
+            // A bare int (the FFI path, no codec); a map still works.
+            if let idx = (call.arguments as? NSNumber)?.intValue
+                ?? ((call.arguments as? [String: Any])?["index"] as? NSNumber)?.intValue
             {
                 applySelection(idx)
                 result(nil)

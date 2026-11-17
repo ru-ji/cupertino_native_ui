@@ -137,6 +137,11 @@ class _CupertinoNativeSliderState extends State<CupertinoNativeSlider>
   static String _encode(Map<String, dynamic>? props) =>
       jsonEncode(props, toEncodable: (o) => o.toString());
 
+  static bool _sameExceptValue(
+    Map<String, dynamic> a,
+    Map<String, dynamic> b,
+  ) => _encode({...a, 'value': null}) == _encode({...b, 'value': null});
+
   Future<void> _handleMethodCall(MethodCall call) async {
     final value = (call.arguments as num?)?.toDouble();
     if (value == null) return;
@@ -156,7 +161,15 @@ class _CupertinoNativeSliderState extends State<CupertinoNativeSlider>
     super.didUpdateWidget(oldWidget);
     final props = _props();
     if (_encode(props) == _encode(_native)) return;
+    final previous = _native;
     _native = props;
+    // Only the value moved (a programmatic change, or the page moving the
+    // thumb): one number, with no map to encode and none of the icon, color
+    // and tick settings re-read natively.
+    if (previous != null && _sameExceptValue(props, previous)) {
+      channel?.invokeMethod<void>('setValue', props['value']);
+      return;
+    }
     updateNativeView('updateProps', props, refreshIntrinsicSize: false);
   }
 }

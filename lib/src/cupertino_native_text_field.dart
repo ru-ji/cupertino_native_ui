@@ -495,7 +495,7 @@ class _CupertinoNativeTextFieldState extends State<CupertinoNativeTextField>
     final quantized = (value * 20).roundToDouble() / 20;
     if (quantized == _lastSentOpacity) return;
     _lastSentOpacity = quantized;
-    channel?.invokeMethod('setContentOpacity', {'opacity': quantized});
+    channel?.invokeMethod('setContentOpacity', quantized);
   }
 
   @override
@@ -538,7 +538,7 @@ class _CupertinoNativeTextFieldState extends State<CupertinoNativeTextField>
     final text = widget.controller?.text ?? '';
     if (text != _lastNativeText) {
       _lastNativeText = text;
-      channel?.invokeMethod('setText', {'text': text});
+      channel?.invokeMethod('setText', text);
     }
   }
 

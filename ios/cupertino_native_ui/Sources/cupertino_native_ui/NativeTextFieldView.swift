@@ -262,8 +262,10 @@ class NativeTextFieldView: NativeHostingView {
             syncAccessory(rawToolbar: dict["keyboardToolbar"] as? [Any])
             result(nil)
         case "setText":
-            guard let args = call.arguments as? [String: Any],
-                let text = args["text"] as? String
+            // A bare string (the FFI path, no codec); a map still works.
+            guard
+                let text = call.arguments as? String
+                    ?? (call.arguments as? [String: Any])?["text"] as? String
             else {
                 result(
                     FlutterError(code: "INVALID_ARGS", message: "Missing text", details: nil))
@@ -291,8 +293,10 @@ class NativeTextFieldView: NativeHostingView {
             result(nil)
         case "setContentOpacity":
             // Scroll-driven fade of the field's content while the capsule squeezes.
-            guard let args = call.arguments as? [String: Any],
-                let opacity = (args["opacity"] as? NSNumber)?.doubleValue
+            // A bare number (the FFI path, no codec); a map still works.
+            guard
+                let opacity = (call.arguments as? NSNumber)?.doubleValue
+                    ?? ((call.arguments as? [String: Any])?["opacity"] as? NSNumber)?.doubleValue
             else {
                 result(
                     FlutterError(code: "INVALID_ARGS", message: "Missing opacity", details: nil))

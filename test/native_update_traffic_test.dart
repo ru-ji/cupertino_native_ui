@@ -186,10 +186,11 @@ void main() {
     await tester.pump();
     expect(sent.where((m) => m == 'updateProps'), isEmpty);
 
-    // A value the page sets on its own still goes across.
+    // A value the page sets on its own still goes across, as the value alone.
     value.value = 0.8;
     await tester.pump();
-    expect(sent.where((m) => m == 'updateProps'), hasLength(1));
+    expect(sent.where((m) => m == 'setValue'), hasLength(1));
+    expect(sent.where((m) => m == 'updateProps'), isEmpty);
   }, variant: iOS);
 
   testWidgets('a checkbox ignores a new onChanged closure', (tester) async {

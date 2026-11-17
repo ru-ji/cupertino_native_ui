@@ -88,6 +88,12 @@ class NativeSliderView: NativeHostingView {
             result(nil)
         case "getIntrinsicSize":
             result(intrinsicSize())
+        case "setValue":
+            // Value alone: the rest of the configuration is untouched.
+            if let value = call.arguments as? Double {
+                viewModel.setFromDart(value)
+            }
+            result(nil)
         case "updateProps":
             guard let args = call.arguments as? [String: Any] else {
                 result(

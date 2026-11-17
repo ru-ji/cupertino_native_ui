@@ -251,7 +251,7 @@ class _CupertinoNativeTabBarState extends State<CupertinoNativeTabBar> {
     final badges = _badges;
 
     if (_lastIndex != idx) {
-      await channel.invokeMethod('setSelectedIndex', {'index': idx});
+      await channel.invokeMethod('setSelectedIndex', idx);
       _lastIndex = idx;
     }
 
